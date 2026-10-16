@@ -2,7 +2,13 @@
 /**
  * Authentication helpers: login, logout, role checks.
  */
+require_once __DIR__ . '/../../includes/traffic.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/crypto.php';
+require_once __DIR__ . '/../../includes/hooks.php';
+require_once __DIR__ . '/../../includes/catalog.php';
+require_once __DIR__ . '/../../includes/inventory.php';
+require_once __DIR__ . '/../../includes/mailer.php';
 
 function attempt_login(string $email, string $password): bool
 {
@@ -70,6 +76,7 @@ function has_role(string ...$roles): bool
 
 function require_login(): void
 {
+    if (PHP_SAPI === 'cli') return;
     if (!is_logged_in()) {
         flash('warning', 'Please log in to continue.');
         admin_redirect('login.php');
@@ -78,6 +85,7 @@ function require_login(): void
 
 function require_role(string ...$roles): void
 {
+    if (PHP_SAPI === 'cli') return;
     require_login();
     if (!has_role(...$roles)) {
         http_response_code(403);

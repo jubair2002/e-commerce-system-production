@@ -112,7 +112,7 @@ function clear_old(): void
 // ----------------------------------------------------------------
 // Settings (key/value table)
 // ----------------------------------------------------------------
-function setting(string $key, ?string $default = null): ?string
+function &setting_cache(): array
 {
     static $cache = null;
     if ($cache === null) {
@@ -126,6 +126,12 @@ function setting(string $key, ?string $default = null): ?string
             // Settings table may not exist yet during install.
         }
     }
+    return $cache;
+}
+
+function setting(string $key, ?string $default = null): ?string
+{
+    $cache = &setting_cache();
     return $cache[$key] ?? $default;
 }
 
@@ -136,7 +142,146 @@ function update_setting(string $key, string $value): void
          ON DUPLICATE KEY UPDATE value = VALUES(value)'
     );
     $stmt->execute([':k' => $key, ':v' => $value]);
+    $cache = &setting_cache();
+    $cache[$key] = $value;
 }
+
+/**
+ * Validates and saves whitelisted settings pairs according to rules.
+ */
+function settings_save(array $pairs, array $rules, string $tabName = 'settings'): array
+{
+    $errors = [];
+    $changed = [];
+
+    foreach ($rules as $key => $rule) {
+        if (!array_key_exists($key, $pairs) && ($rule['type'] ?? '') !== 'bool') {
+            continue;
+        }
+
+        $raw = $pairs[$key] ?? '';
+        $type = $rule['type'] ?? 'text';
+        $val = null;
+
+        switch ($type) {
+            case 'bool':
+                $val = (!empty($raw) && $raw !== '0') ? '1' : '0';
+                break;
+
+            case 'int':
+                $num = (int)$raw;
+                if (isset($rule['min']) && $num < $rule['min']) {
+                    $errors[] = "Value for '{$key}' cannot be less than {$rule['min']}.";
+                    continue 2;
+                }
+                if (isset($rule['max']) && $num > $rule['max']) {
+                    $errors[] = "Value for '{$key}' cannot be greater than {$rule['max']}.";
+                    continue 2;
+                }
+                $val = (string)$num;
+                break;
+
+            case 'decimal':
+                $dec = (float)$raw;
+                if (isset($rule['min']) && $dec < $rule['min']) {
+                    $errors[] = "Value for '{$key}' cannot be less than {$rule['min']}.";
+                    continue 2;
+                }
+                if (isset($rule['max']) && $dec > $rule['max']) {
+                    $errors[] = "Value for '{$key}' cannot be greater than {$rule['max']}.";
+                    continue 2;
+                }
+                $val = number_format($dec, 2, '.', '');
+                break;
+
+            case 'enum':
+                $allowed = $rule['choices'] ?? [];
+                if (!in_array($raw, $allowed, true)) {
+                    $errors[] = "Invalid option for '{$key}'.";
+                    continue 2;
+                }
+                $val = (string)$raw;
+                break;
+
+            case 'hex':
+                $rawHex = trim((string)$raw);
+                if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $rawHex)) {
+                    $errors[] = "Invalid hex color format for '{$key}'. Example: #111111.";
+                    continue 2;
+                }
+                $val = $rawHex;
+                break;
+
+            case 'email':
+                $rawEmail = trim((string)$raw);
+                if ($rawEmail !== '' && !filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = "Invalid email format for '{$key}'.";
+                    continue 2;
+                }
+                $val = $rawEmail;
+                break;
+
+            case 'url':
+                $rawUrl = trim((string)$raw);
+                if ($rawUrl !== '' && !filter_var($rawUrl, FILTER_VALIDATE_URL) && !str_starts_with($rawUrl, '/')) {
+                    $errors[] = "Invalid URL format for '{$key}'.";
+                    continue 2;
+                }
+                $val = $rawUrl;
+                break;
+
+            case 'text':
+            default:
+                $val = trim((string)$raw);
+                break;
+        }
+
+        $current = setting($key, null);
+        if ($current !== $val) {
+            update_setting($key, $val);
+            $changed[] = $key;
+        }
+    }
+
+    if ($changed) {
+        log_activity('settings.update', "tab: {$tabName}; changed keys: " . implode(',', $changed));
+    }
+
+    return ['ok' => empty($errors), 'errors' => $errors, 'changed' => $changed];
+}
+
+// ----------------------------------------------------------------
+// Schema verification
+// ----------------------------------------------------------------
+/**
+ * Safe schema check: checks information_schema once per request for
+ * the core upgrade tables (product_variants and email_templates).
+ */
+function schema_ready(): bool
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        $stmt = db()->prepare(
+            "SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = :db AND TABLE_NAME IN ('product_variants', 'email_templates')"
+        );
+        $stmt->execute([':db' => DB_NAME]);
+        $ready = ((int)$stmt->fetchColumn() === 2);
+    } catch (Throwable $e) {
+        $ready = false;
+    }
+    return $ready;
+}
+
+// Ensure timezone from settings is applied if loaded
+$configuredTz = setting('timezone', 'Asia/Dhaka');
+if (!empty($configuredTz) && date_default_timezone_get() !== $configuredTz) {
+    @date_default_timezone_set($configuredTz);
+}
+
 
 // ----------------------------------------------------------------
 // Activity log
@@ -174,13 +319,13 @@ function format_date(?string $datetime, string $format = 'M j, Y H:i'): string
     return $ts ? date($format, $ts) : e($datetime);
 }
 
-function avatar_url(?string $avatar, string $name = ''): string
+function avatar_url(?string $avatar, ?string $name = ''): string
 {
     if (!empty($avatar) && file_exists(UPLOADS_PATH . '/' . $avatar)) {
         return UPLOADS_URL . $avatar;
     }
     // Fallback: use ui-avatars.com (no key required).
-    $initials = urlencode($name ?: 'User');
+    $initials = urlencode($name ? $name : 'User');
     return "https://ui-avatars.com/api/?name={$initials}&background=4f46e5&color=fff&size=128";
 }
 
@@ -219,6 +364,12 @@ function price(?float $amount): string
     $symbol = setting('currency_symbol', '$');
     if ($amount === null) return '—';
     return $symbol . number_format((float)$amount, 2);
+}
+
+/** Alias for price() */
+function format_price($amount): string
+{
+    return price($amount !== null ? (float)$amount : null);
 }
 
 /**

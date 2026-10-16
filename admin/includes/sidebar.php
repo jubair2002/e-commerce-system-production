@@ -1,3 +1,4 @@
+
 <?php
 /**
  * Sidebar navigation. Highlights the current page using $_SERVER['PHP_SELF'].
@@ -48,9 +49,19 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
         <i class="bi bi-box-seam"></i><span>Products</span>
       </a>
 
+      <a href="<?= e(admin_url('inventory.php')) ?>"
+         class="nav-link <?= active_if($current === 'inventory.php') ?>">
+        <i class="bi bi-boxes"></i><span>Inventory</span>
+      </a>
+
       <a href="<?= e(admin_url('categories.php')) ?>"
          class="nav-link <?= active_if($current === 'categories.php' || $current === 'category_form.php') ?>">
         <i class="bi bi-tags"></i><span>Categories</span>
+      </a>
+
+      <a href="<?= e(admin_url('banners.php')) ?>"
+         class="nav-link <?= active_if($current === 'banners.php' || $current === 'banner_form.php') ?>">
+        <i class="bi bi-images"></i><span>Banners</span>
       </a>
 
     <?php endif; ?>
@@ -60,19 +71,31 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
       <i class="bi bi-clock-history"></i><span>Activity log</span>
     </a>
 
-    <div class="nav-section">Account</div>
-
-    <a href="<?= e(admin_url('profile.php')) ?>"
-       class="nav-link <?= active_if($current === 'profile.php') ?>">
-      <i class="bi bi-person-circle"></i><span>Profile</span>
-    </a>
+    <div class="nav-section">Configuration</div>
 
     <?php if (has_role('admin')): ?>
       <a href="<?= e(admin_url('settings.php')) ?>"
          class="nav-link <?= active_if($current === 'settings.php') ?>">
         <i class="bi bi-gear"></i><span>Settings</span>
       </a>
+
+      <a href="<?= e(admin_url('mail_settings.php')) ?>"
+         class="nav-link <?= active_if($current === 'mail_settings.php' || $current === 'mail_templates.php' || $current === 'mail_queue.php') ?>">
+        <i class="bi bi-envelope"></i><span>Mail System</span>
+      </a>
+
+      <a href="<?= e(admin_url('monitoring.php')) ?>"
+         class="nav-link <?= active_if($current === 'monitoring.php') ?>">
+        <i class="bi bi-cpu"></i><span>Monitoring</span>
+      </a>
     <?php endif; ?>
+
+    <div class="nav-section">Account</div>
+
+    <a href="<?= e(admin_url('profile.php')) ?>"
+       class="nav-link <?= active_if($current === 'profile.php') ?>">
+      <i class="bi bi-person-circle"></i><span>Profile</span>
+    </a>
 
     <a href="<?= e(admin_url('logout.php')) ?>" class="nav-link text-danger">
       <i class="bi bi-box-arrow-right"></i><span>Logout</span>

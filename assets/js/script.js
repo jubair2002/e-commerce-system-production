@@ -11,10 +11,20 @@
         document.body.style.overflow = open ? 'hidden' : '';
     };
 
+    // Restore desktop sidebar collapsed state
+    if (window.innerWidth >= 992 && localStorage.getItem('sidebar_collapsed') === '1') {
+        document.body.classList.add('sidebar-collapsed');
+    }
+
     if (toggle && sidebar) {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            setOpen(!sidebar.classList.contains('open'));
+            if (window.innerWidth < 992) {
+                setOpen(!sidebar.classList.contains('open'));
+            } else {
+                const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0');
+            }
         });
         if (backdrop) {
             backdrop.addEventListener('click', () => setOpen(false));

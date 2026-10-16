@@ -98,6 +98,12 @@ $recentActivity = db()->query(
 include __DIR__ . '/includes/header.php';
 ?>
 
+<?php if (!schema_ready()): ?>
+  <div class="alert alert-warning py-2 mb-3">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i> Database upgrade required. Run <code>sql/upgrade_all.sql</code>.
+  </div>
+<?php endif; ?>
+
 <?php if (!$ecommerceEnabled): ?>
   <div class="alert alert-warning">
     The e-commerce tables don't exist yet. Run

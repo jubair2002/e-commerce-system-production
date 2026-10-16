@@ -1,32 +1,51 @@
 <?php
 /**
  * Global application configuration.
- * Edit the constants below to match your environment.
+ * All secrets and environment-specific settings are loaded from .env.
  */
+require_once __DIR__ . '/env.php';
 
 // ----- Database -----
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_NAME', 'php_admin_panel');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST',    (string)env('DB_HOST', '127.0.0.1'));
+define('DB_PORT',    (string)env('DB_PORT', '3306'));
+define('DB_NAME',    (string)env('DB_NAME', 'php_admin_panel'));
+define('DB_USER',    (string)env('DB_USER', 'root'));
+define('DB_PASS',    (string)env('DB_PASS', ''));
+define('DB_CHARSET', (string)env('DB_CHARSET', 'utf8mb4'));
 
 // ----- App -----
-define('APP_NAME', 'PHP Admin Panel');
-define('APP_ENV',  'development'); // 'development' or 'production'
+define('APP_NAME', (string)env('APP_NAME', 'PHP Admin Panel'));
+define('APP_ENV',  (string)env('APP_ENV', 'development')); // 'development' or 'production'
 
-// Auto-detect project root URL so it works whether the request is for /
-// (storefront), /admin/ (admin panel) or any other sub-folder.
-$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-$scriptDir = rtrim($scriptDir, '/');
-// If the request is inside /admin/ (or any deeper sub-folder of /admin),
-// climb back to the project root.
-if (preg_match('#/admin(/.*)?$#', $scriptDir)) {
-    $scriptDir = preg_replace('#/admin(/.*)?$#', '', $scriptDir);
+// Application Encryption Key (used for encrypting sensitive credentials like SMTP passwords).
+define('APP_KEY', (string)env('APP_KEY', 'CHANGE_ME_TO_64_RANDOM_CHARS'));
+
+// Auto-detect project root URL or use .env override
+$envBaseUrl = env('BASE_URL');
+if (!empty($envBaseUrl)) {
+    define('BASE_URL', rtrim((string)$envBaseUrl, '/') . '/');
+} else {
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+    $scriptDir = rtrim($scriptDir, '/');
+    if (preg_match('#/admin(/.*)?$#', $scriptDir)) {
+        $scriptDir = preg_replace('#/admin(/.*)?$#', '', $scriptDir);
+    }
+    define('BASE_URL', ($scriptDir === '' ? '/' : $scriptDir . '/'));
 }
-define('BASE_URL',  ($scriptDir === '' ? '/' : $scriptDir . '/'));
 define('ADMIN_URL', BASE_URL . 'admin/');
+
+// Absolute site URL (used in emails and background tasks)
+$envSiteUrl = env('SITE_URL');
+if (!empty($envSiteUrl)) {
+    define('SITE_URL', rtrim((string)$envSiteUrl, '/') . '/');
+} else {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    $scheme  = $isHttps ? 'https://' : 'http://';
+    $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    define('SITE_URL', rtrim($scheme . $host . BASE_URL, '/') . '/');
+}
 
 // ----- Paths -----
 define('ROOT_PATH',     dirname(__DIR__));
@@ -54,4 +73,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-date_default_timezone_set('UTC');
+// Default timezone - guarded for when settings table is not yet created
+$appTimezone = 'Asia/Dhaka';
+if (function_exists('setting')) {
+    try {
+        $stz = setting('timezone', 'Asia/Dhaka');
+        if (!empty($stz)) {
+            $appTimezone = $stz;
+        }
+    } catch (Throwable $e) {}
+}
+date_default_timezone_set($appTimezone);
+

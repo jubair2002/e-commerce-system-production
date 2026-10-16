@@ -24,6 +24,20 @@ class Database
 
             try {
                 self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+                // Keep DB timestamps consistent with configured timezone
+                $tzName = function_exists('setting') ? setting('timezone', 'Asia/Dhaka') : 'Asia/Dhaka';
+                if ($tzName === 'Asia/Dhaka') {
+                    self::$instance->exec("SET time_zone = '+06:00'");
+                } else {
+                    try {
+                        $tzObj = new DateTimeZone($tzName ?: 'UTC');
+                        $offset = (new DateTime('now', $tzObj))->format('P');
+                        self::$instance->exec("SET time_zone = '{$offset}'");
+                    } catch (Throwable $tzErr) {
+                        // Fallback gracefully if timezone offset cannot be computed
+                    }
+                }
             } catch (PDOException $e) {
                 if (APP_ENV === 'development') {
                     die('Database connection failed: ' . htmlspecialchars($e->getMessage()));

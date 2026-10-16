@@ -1,62 +1,98 @@
-</main><!-- /.site-main -->
+</main><!-- /#mainContent -->
 
-<footer class="site-footer">
+<footer class="site-footer" role="contentinfo">
   <div class="container">
-    <div class="row g-4">
-      <div class="col-md-4">
-        <h5 class="footer-brand">
-          <i class="bi bi-bag-fill"></i>
-          <?= e(setting('site_name', APP_NAME)) ?>
-        </h5>
-        <p class="mb-0">
-          <?= e(setting('site_about', 'Quality products, delivered to your door.')) ?>
+    <div class="row g-4 g-lg-5">
+
+      <!-- Col 1: About & Tagline -->
+      <div class="col-lg-4 col-md-6">
+        <h4 class="footer-col-title"><?= e(setting('site_name', APP_NAME)) ?></h4>
+        <p class="small text-muted mb-3" style="line-height: 1.6;">
+          <?= e(setting('store_tagline', 'Curated everyday essentials, made with intention and delivered straight to your door.')) ?>
+        </p>
+        <p class="small text-muted mb-0">
+          <?= e(setting('site_about', '')) ?>
         </p>
       </div>
 
-      <div class="col-md-2">
-        <h6>Shop</h6>
-        <ul class="list-unstyled">
-          <li><a href="<?= e(shop_url()) ?>">Home</a></li>
-          <li><a href="<?= e(shop_url('shop.php')) ?>">All products</a></li>
+      <!-- Col 2: Shop Links -->
+      <div class="col-lg-2 col-md-6 col-6">
+        <h4 class="footer-col-title">Shop</h4>
+        <ul class="footer-links">
+          <li><a href="<?= e(shop_url('shop.php')) ?>">All Products</a></li>
+          <li><a href="<?= e(shop_url('shop.php?sort=newest')) ?>">New Arrivals</a></li>
+          <li><a href="<?= e(shop_url('shop.php?sort=best_selling')) ?>">Best Sellers</a></li>
           <li><a href="<?= e(shop_url('shop.php?featured=1')) ?>">Featured</a></li>
-          <li><a href="<?= e(shop_url('shop.php?sort=newest')) ?>">New arrivals</a></li>
-          <li><a href="<?= e(shop_url('cart.php')) ?>">Cart</a></li>
-          <li><a href="<?= e(shop_url('track.php')) ?>">Track order</a></li>
+          <li><a href="<?= e(shop_url('cart.php')) ?>">Shopping Cart</a></li>
         </ul>
       </div>
 
-      <div class="col-md-3">
-        <h6>Categories</h6>
-        <ul class="list-unstyled">
-          <?php foreach (array_slice(shop_active_categories(), 0, 6) as $c): ?>
-            <li>
-              <a href="<?= e(shop_url('category.php?slug=' . urlencode($c['slug']))) ?>">
-                <?= e($c['name']) ?>
-              </a>
-            </li>
-          <?php endforeach; ?>
-          <?php if (!shop_active_categories()): ?>
-            <li class="text-muted small">No categories yet.</li>
+      <!-- Col 3: Customer Service & Help -->
+      <div class="col-lg-3 col-md-6 col-6">
+        <h4 class="footer-col-title">Customer Care</h4>
+        <ul class="footer-links">
+          <li><a href="<?= e(shop_url('track.php')) ?>">Track Your Order</a></li>
+          <li><a href="<?= e(shop_url('index.php#about')) ?>">About Our Store</a></li>
+          <li><a href="<?= e(shop_url('checkout.php')) ?>">Cash on Delivery Policy</a></li>
+          <li><a href="mailto:<?= e(setting('site_email', 'support@example.com')) ?>">Customer Support</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Contact & Social -->
+      <div class="col-lg-3 col-md-6">
+        <h4 class="footer-col-title">Get in Touch</h4>
+        <ul class="footer-links mb-3">
+          <?php $storeEmail = setting('site_email'); if ($storeEmail): ?>
+            <li><i class="bi bi-envelope me-2 text-muted"></i><?= e($storeEmail) ?></li>
+          <?php endif; ?>
+          <?php $storePhone = setting('store_phone'); if ($storePhone): ?>
+            <li><i class="bi bi-telephone me-2 text-muted"></i><?= e($storePhone) ?></li>
+          <?php endif; ?>
+          <?php $storeAddress = setting('store_address'); if ($storeAddress): ?>
+            <li><i class="bi bi-geo-alt me-2 text-muted"></i><?= e($storeAddress) ?></li>
           <?php endif; ?>
         </ul>
+
+        <?php
+        $fb = setting('social_facebook');
+        $ig = setting('social_instagram');
+        $wa = setting('social_whatsapp');
+        if ($fb || $ig || $wa):
+        ?>
+          <div class="social-links mt-2">
+            <?php if ($fb): ?>
+              <a href="<?= e($fb) ?>" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+            <?php endif; ?>
+            <?php if ($ig): ?>
+              <a href="<?= e($ig) ?>" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+            <?php endif; ?>
+            <?php if ($wa): ?>
+              <a href="https://wa.me/<?= e(preg_replace('/[^0-9]/', '', $wa)) ?>" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
       </div>
 
-      <div class="col-md-3">
-        <h6>Get in touch</h6>
-        <ul class="list-unstyled">
-          <li><i class="bi bi-envelope"></i> <?= e(setting('site_email', 'hello@bilalstore.com')) ?></li>
-          <li><i class="bi bi-geo-alt"></i> Online store</li>
-          <li><i class="bi bi-clock"></i> 24/7 customer support</li>
-        </ul>
-      </div>
     </div>
-    <hr>
-    <div class="text-center copyright small">
-      &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>. All rights reserved.
+
+    <!-- Bottom Bar -->
+    <div class="footer-bottom">
+      <div class="footer-payment-note">
+        <i class="bi bi-shield-check text-success"></i>
+        <span>Cash on Delivery (COD) available nationwide</span>
+      </div>
+      <div>
+        &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>. All rights reserved.
+      </div>
     </div>
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap 5.3 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
+<!-- Storefront JS Module -->
+<script src="<?= e(url('assets/js/shop.js')) ?>" defer></script>
+
 </body>
 </html>

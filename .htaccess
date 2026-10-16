@@ -4,4 +4,9 @@ Options -Indexes
 # Default file.
 DirectoryIndex index.php
 
-# Pretty-error page suppression in production is up to you.
+# Block direct access to environment files and hidden files/directories
+<FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
