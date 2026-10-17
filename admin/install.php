@@ -2,13 +2,14 @@
 /**
  * One-time installer.
  *  1. Creates the database (if it doesn't exist).
- *  2. Runs schema.sql.
- *  3. Creates the default admin user with a properly-hashed password.
+ *  2. Runs schema.sql through SqlRunner.
+ *  3. Creates the default admin user with a bcrypt hash.
  *
  * After running successfully, DELETE this file.
  */
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/SqlRunner.php';
 
 $messages = [];
 $errors   = [];
@@ -17,7 +18,7 @@ $done     = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adminName  = trim($_POST['name']     ?? 'Super Admin');
     $adminEmail = trim($_POST['email']    ?? '');
-    $adminPass  = (string)($_POST['password'] ?? '');
+    $adminPass  = (string) ($_POST['password'] ?? '');
 
     if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'A valid admin email is required.';
@@ -28,34 +29,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         try {
-            // 1. Connect without a database, create it if missing.
-            $rootDsn = sprintf('mysql:host=%s;port=%s;charset=%s', DB_HOST, DB_PORT, DB_CHARSET);
-            $pdo = new PDO($rootDsn, DB_USER, DB_PASS, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            // 1. Connect without a database and create it.
+            $dsn = sprintf(
+                'mysql:host=%s;port=%s;charset=%s',
+                DB_HOST, DB_PORT, DB_CHARSET
+            );
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE                  => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE       => PDO::FETCH_ASSOC,
+                PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
             ]);
-            $pdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "`
-                        DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+            $pdo->exec(
+                'CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '`
+                 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+            );
+            $pdo->exec('USE `' . DB_NAME . '`');
             $messages[] = 'Database <code>' . e(DB_NAME) . '</code> ready.';
 
-            // 2. Run schema.sql.
-            $pdo->exec('USE `' . DB_NAME . '`');
-            $sql = file_get_contents(__DIR__ . '/../sql/schema.sql');
-            // Strip the CREATE DATABASE / USE statements (already executed).
-            $sql = preg_replace('/CREATE DATABASE.*?;/is', '', $sql);
-            $sql = preg_replace('/USE\s+`?\w+`?\s*;/i', '', $sql);
-            // Strip SQL comments to avoid splitting issues.
-            $sql = preg_replace('/^\s*--.*$/m', '', $sql);
-            // Split into individual statements (naive but works for our schema).
-            $statements = array_filter(
-                array_map('trim', explode(';', $sql)),
-                fn($s) => $s !== ''
-            );
-            foreach ($statements as $oneSql) {
-                $pdo->exec($oneSql);
-            }
-            $messages[] = 'Schema executed (' . count($statements) . ' statements).';
+            // 2. Run schema.sql via SqlRunner.
+            $runner = new SqlRunner($pdo);
+            $count  = $runner->runFile(__DIR__ . '/../sql/schema.sql');
+            $messages[] = "Schema executed ($count statements).";
 
-            // 3. Create / update the admin user with a real bcrypt hash.
+            // 3. Admin user.
             $hash = password_hash($adminPass, PASSWORD_BCRYPT);
             $stmt = $pdo->prepare(
                 'INSERT INTO users (name, email, password, role, status)
@@ -65,18 +62,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                          role = "admin",
                                          status = "active"'
             );
-            $stmt->execute([
-                ':n' => $adminName,
-                ':e' => $adminEmail,
-                ':p' => $hash,
-            ]);
+            $stmt->execute([':n' => $adminName, ':e' => $adminEmail, ':p' => $hash]);
             $messages[] = 'Admin user <code>' . e($adminEmail) . '</code> created.';
             $done = true;
+
         } catch (Throwable $e) {
             $errors[] = 'Installer failed: ' . $e->getMessage();
         }
     }
 }
+?>
+
 ?>
 <!doctype html>
 <html lang="en">
