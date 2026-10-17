@@ -94,7 +94,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
       </a>
 
       <!-- Center: Navigation -->
-      <nav class="d-none d-desktop-none-mobile" role="navigation" aria-label="Main Navigation">
+      <nav class="d-none d-lg-block" role="navigation" aria-label="Main Navigation">
         <ul class="header-nav">
           <li>
             <a href="<?= e(route('home')) ?>" class="nav-link <?= route_is('home') ? 'is-active' : '' ?>">Home</a>
@@ -153,7 +153,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
         </div>
 
         <!-- Wishlist -->
-        <a href="<?= e(route('account_wishlist')) ?>" class="header-btn d-none d-md-inline-flex" aria-label="Wishlist">
+        <a href="<?= e(route('account_wishlist')) ?>" class="header-btn d-none d-md-inline-flex" aria-label="Wishlist" title="Wishlist">
           <?= icon('heart') ?>
         </a>
 
@@ -163,12 +163,13 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
           <span class="theme-icon-moon"><?= icon('moon') ?></span>
         </button>
 
-        <!-- Customer Account Menu -->
+        <!-- Customer Account Menu / Sign In -->
         <?php if ($headerCustomer): ?>
           <div class="shop-dropdown">
-            <button class="header-btn d-inline-flex align-items-center gap-1 w-auto px-2" type="button" data-dropdown-toggle aria-expanded="false">
-              <?= icon('user') ?>
-              <span class="d-none d-md-inline small fw-semibold"><?= e($customerFirstName) ?></span>
+            <button class="header-account-btn" type="button" data-dropdown-toggle aria-expanded="false" aria-label="Account menu">
+              <span class="header-account-avatar"><?= icon('user') ?></span>
+              <span class="small fw-semibold d-none d-md-inline"><?= e($customerFirstName) ?></span>
+              <?= icon('chevron-down') ?>
             </button>
             <div class="dropdown-menu">
               <div class="px-3 py-2 border-bottom">
@@ -189,7 +190,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
             </div>
           </div>
         <?php else: ?>
-          <a href="<?= e(route('login')) ?>" class="header-btn d-none d-md-inline-flex align-items-center gap-1 w-auto px-2" aria-label="Sign In">
+          <a href="<?= e(route('login')) ?>" class="header-auth-btn" aria-label="Sign In">
             <?= icon('user') ?>
             <span class="small fw-semibold">Sign In</span>
           </a>
@@ -202,7 +203,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
         </button>
 
         <!-- Mobile Menu Toggle -->
-        <button type="button" class="header-btn d-desktop-none" data-drawer-open="mobileNavDrawer" aria-label="Open menu">
+        <button type="button" class="header-btn d-lg-none" data-drawer-open="mobileNavDrawer" aria-label="Open menu">
           <?= icon('menu') ?>
         </button>
 

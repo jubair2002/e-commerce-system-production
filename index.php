@@ -15,7 +15,6 @@ $showNewArrivals = (int)setting('home_show_new_arrivals', '1') === 1;
 $showBestSellers = (int)setting('home_show_best_sellers', '1') === 1;
 $showFeatured    = (int)setting('home_show_featured', '1') === 1;
 $showReviews     = (int)setting('home_show_reviews', '1') === 1;
-$showBrandStory  = (int)setting('home_show_brand_story', '1') === 1;
 
 $heroBanner = null;
 if ($showHero) {
@@ -338,48 +337,5 @@ include __DIR__ . '/includes/partials/header.php';
   </section>
 <?php endif; ?>
 
-<!-- =================== BRAND STORY SECTION =================== -->
-<?php if ($showBrandStory): ?>
-  <section class="section-py bg-soft border-top" aria-label="Brand Philosophy">
-    <div class="container">
-      <div class="row align-items-center g-6">
-        <div class="col-lg-6">
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Our Philosophy</span>
-          <h2 class="display-serif mt-1 mb-4"><?= e(setting('brand_story_title', 'Crafted with Intention')) ?></h2>
-          <p class="text-ink-2 mb-6" style="line-height: 1.8;">
-            <?= nl2br(e(setting('brand_story_text', 'We believe everyday objects should be both functional and beautiful. Every piece in our collection is curated with care and designed to last.'))) ?>
-          </p>
-          <div class="d-flex gap-3">
-            <a href="<?= e(route('shop')) ?>" class="btn btn-primary">
-              Explore Collection
-            </a>
-            <a href="<?= e(route('track')) ?>" class="btn btn-secondary">
-              Track Existing Order
-            </a>
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="card p-6" style="background: var(--surface);">
-            <h3 class="mb-4">Why shop with us?</h3>
-            <ul class="d-flex flex-column gap-3 small text-ink-2 mb-0">
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-ok"><?= icon('check-circle') ?></span>
-                <span><strong>Zero prepayment required:</strong> Order with confidence using Cash on Delivery across all 64 districts.</span>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-ok"><?= icon('check-circle') ?></span>
-                <span><strong>Real-time availability:</strong> Every size and color variation reflects live inventory so we never oversell.</span>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-ok"><?= icon('check-circle') ?></span>
-                <span><strong>Instant order tracking:</strong> Check parcel dispatch and delivery milestones 24/7 with just your order ID.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-<?php endif; ?>
-
 <?php include __DIR__ . '/includes/partials/footer.php'; ?>
+

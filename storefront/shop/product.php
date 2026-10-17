@@ -187,12 +187,13 @@ include __DIR__ . '/../../includes/partials/header.php';
     <!-- Breadcrumb Navigation -->
     <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
-    <div class="row g-6">
+    <!-- Main PDP Grid: Gallery (Left) + Buy Box (Right) -->
+    <div class="pdp-grid">
 
       <!-- Gallery Column -->
-      <div class="col-lg-7">
+      <div class="pdp-gallery-col">
         <div class="product-gallery">
-          <!-- Thumbnails -->
+          <!-- Thumbnails Strip -->
           <?php if (count($gallery) > 1): ?>
             <div class="gallery-thumbs" aria-label="Product thumbnails">
               <?php foreach ($gallery as $idx => $img): ?>
@@ -210,12 +211,19 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <!-- Main Hero Image -->
           <div class="gallery-main" id="mainGalleryContainer">
-            <img src="<?= e($mainImgUrl) ?>"
-                 id="mainProductImage"
-                 alt="<?= e($product['name']) ?>"
-                 loading="eager"
-                 fetchpriority="high"
-                 data-zoom-src="<?= e($mainImgUrl) ?>">
+            <?php if (!empty($mainImgFile)): ?>
+              <img src="<?= e($mainImgUrl) ?>"
+                   id="mainProductImage"
+                   alt="<?= e($product['name']) ?>"
+                   loading="eager"
+                   fetchpriority="high"
+                   data-zoom-src="<?= e($mainImgUrl) ?>">
+            <?php else: ?>
+              <div class="d-flex flex-column align-items-center justify-content-center text-muted p-6 text-center">
+                <?= icon('bag') ?>
+                <span class="small mt-2">No image available</span>
+              </div>
+            <?php endif; ?>
 
             <?php if ($onSale && $discount > 0): ?>
               <span class="badge badge-sale position-absolute" style="top: 16px; left: 16px;">
@@ -227,8 +235,8 @@ include __DIR__ . '/../../includes/partials/header.php';
       </div>
 
       <!-- Buy Box Column -->
-      <div class="col-lg-5">
-        <div class="sticky-buy-box">
+      <div class="pdp-buybox-col">
+        <div class="sticky-buy-box" data-product-availability data-product-id="<?= $productId ?>" data-currency-symbol="৳" data-uploads-url="<?= e(UPLOADS_URL . 'products/') ?>" data-poll-seconds="15">
           
           <?php if (!empty($product['category_name'])): ?>
             <div class="text-muted small text-uppercase fw-semibold mb-1" style="letter-spacing: 0.05em;">
@@ -248,7 +256,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <?= icon($avgRating >= $i ? 'star' : 'star-empty') ?>
                 <?php endfor; ?>
               </div>
-              <span class="rating-score"><?= number_format($avgRating, 1) ?></span>
+              <span class="rating-score fw-bold"><?= number_format($avgRating, 1) ?></span>
               <a href="#reviewsSection" class="text-muted small text-decoration-underline">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
             </div>
             <?php if ($sizeGuidePage): ?>
@@ -259,13 +267,13 @@ include __DIR__ . '/../../includes/partials/header.php';
           </div>
 
           <!-- Price Presentation -->
-          <div class="price-wrap mb-4">
+          <div class="price-wrap mb-3 d-flex align-items-baseline gap-2">
             <?php if ($onSale): ?>
-              <span class="price-current fs-xl text-sale" id="pdpPrice"><?= e(price((float)$product['sale_price'])) ?></span>
-              <span class="price-strike fs-md" id="pdpOldPrice"><?= e(price((float)$product['price'])) ?></span>
+              <span class="price-current fs-2xl fw-bold text-sale" id="pdpPrice"><?= e(price((float)$product['sale_price'])) ?></span>
+              <span class="price-strike fs-md text-muted text-decoration-line-through" id="pdpOldPrice"><?= e(price((float)$product['price'])) ?></span>
               <span class="badge badge-sale">&minus;<?= $discount ?>%</span>
             <?php else: ?>
-              <span class="price-current fs-xl" id="pdpPrice"><?= e(price((float)$product['price'])) ?></span>
+              <span class="price-current fs-2xl fw-bold" id="pdpPrice"><?= e(price((float)$product['price'])) ?></span>
             <?php endif; ?>
           </div>
 
@@ -276,7 +284,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <?php endif; ?>
 
           <!-- Purchase Form -->
-          <form method="post" action="<?= e(route('cart')) ?>" id="pdpForm">
+          <form method="post" action="<?= e(route('cart')) ?>" id="pdpAddToCartForm">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add">
             <input type="hidden" name="product_id" value="<?= $productId ?>">
@@ -291,14 +299,14 @@ include __DIR__ . '/../../includes/partials/header.php';
                   $isColor = in_array($optNameLower, ['color', 'colour']) || ($opt['display_type'] ?? '') === 'color';
                   ?>
                   <div class="form-group mb-3">
-                    <label class="form-label d-flex justify-content-between">
-                      <span><?= e($opt['name']) ?>: <strong id="selectedLabel_<?= (int)$opt['id'] ?>">—</strong></span>
+                    <label class="form-label d-flex justify-content-between mb-2">
+                      <span class="fw-semibold small"><?= e($opt['name']) ?>: <span class="text-muted fw-normal" id="selectedLabel_<?= (int)$opt['id'] ?>">—</span></span>
                     </label>
                     <div class="swatch-group">
                       <?php foreach ($opt['values'] as $val): ?>
                         <?php if ($isColor): ?>
                           <button type="button"
-                                  class="swatch-color-circle option-picker-btn"
+                                  class="swatch-color-circle option-btn option-picker-btn"
                                   data-option-id="<?= (int)$opt['id'] ?>"
                                   data-value-id="<?= (int)$val['id'] ?>"
                                   data-value-name="<?= e($val['value']) ?>"
@@ -308,7 +316,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                           </button>
                         <?php else: ?>
                           <button type="button"
-                                  class="swatch-btn option-picker-btn"
+                                  class="swatch-btn option-btn option-picker-btn"
                                   data-option-id="<?= (int)$opt['id'] ?>"
                                   data-value-id="<?= (int)$val['id'] ?>"
                                   data-value-name="<?= e($val['value']) ?>">
@@ -328,7 +336,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <?= $inStock ? '● In Stock' : 'Out of Stock' ?>
               </span>
               <span class="text-muted" id="stockStatusText">
-                <?= $inStock ? 'Ready for fast dispatch' : 'Currently sold out' ?>
+                <?= $inStock ? ($product['show_stock_count'] && $currentStock <= ($product['low_stock_threshold'] ?: 5) ? 'Only ' . $currentStock . ' left in stock' : 'Ready for fast dispatch') : 'Currently sold out' ?>
               </span>
             </div>
 
@@ -349,21 +357,21 @@ include __DIR__ . '/../../includes/partials/header.php';
               </button>
             </div>
 
-            <button type="submit" name="action_type" value="buy_now" class="btn btn-secondary btn-w-full mb-4" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
-              Buy Now with COD
+            <button type="submit" name="action_type" value="buy_now" class="btn btn-secondary w-100 mb-4" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
+              Buy Now with Cash on Delivery
             </button>
           </form>
 
-          <!-- District Delivery Estimator -->
-          <div class="card p-3 mb-4 bg-soft" style="border: 1px dashed var(--line-strong);">
+          <!-- Trust & District Delivery Card -->
+          <div class="pdp-trust-card">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-semibold d-flex align-items-center gap-1">
-                <?= icon('truck') ?> Delivery Estimate
+              <span class="small fw-semibold d-flex align-items-center gap-2">
+                <?= icon('truck') ?> Delivery &amp; COD Rate
               </span>
-              <span class="small text-ok fw-bold" id="districtFee">৳60</span>
+              <span class="badge badge-stock small" id="districtFee">৳60</span>
             </div>
             <div class="d-flex gap-2">
-              <select id="districtSelect" class="form-select form-select-sm">
+              <select id="districtSelect" class="form-select form-select-sm" aria-label="Select delivery district">
                 <?php foreach ($bdDistricts as $dist): ?>
                   <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= $dist['name'] === 'Dhaka' ? 'selected' : '' ?>>
                     <?= e($dist['name']) ?>
@@ -372,49 +380,21 @@ include __DIR__ . '/../../includes/partials/header.php';
               </select>
             </div>
             <div class="small text-muted mt-2" id="districtEtaText">
-              Estimated delivery: <strong>24–48 hours</strong> inside Dhaka.
+              Estimated delivery: <strong>24–48 hours</strong> inside Dhaka · Cash on Delivery available
             </div>
-          </div>
-
-          <!-- Product Details Accordion -->
-          <div class="accordion-group mb-4">
-            <div class="accordion-item is-open">
-              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="true">
-                <span>Description</span>
-                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
-              </button>
-              <div class="accordion-content" style="max-height: 500px;">
-                <div class="accordion-body">
-                  <?= nl2br(e($product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials.')) ?>
-                </div>
+            <hr class="my-3" style="border: 0; border-top: 1px solid var(--line);">
+            <div class="d-flex flex-column gap-2">
+              <div class="pdp-trust-item">
+                <span class="text-ok"><?= icon('check-circle') ?></span>
+                <span><strong>100% Cash on Delivery:</strong> Pay at doorstep with zero prepayment.</span>
               </div>
-            </div>
-
-            <div class="accordion-item">
-              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="false">
-                <span>Specifications</span>
-                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
-              </button>
-              <div class="accordion-content">
-                <div class="accordion-body">
-                  <ul class="d-flex flex-column gap-2">
-                    <li><strong>Product Type:</strong> <?= ucfirst($product['product_type']) ?></li>
-                    <li><strong>SKU:</strong> <?= e($product['sku'] ?: '—') ?></li>
-                    <li><strong>Origin:</strong> Crafted & Quality Verified in Bangladesh</li>
-                  </ul>
-                </div>
+              <div class="pdp-trust-item">
+                <span class="text-ok"><?= icon('check-circle') ?></span>
+                <span><strong>Open Parcel Checking:</strong> Inspect item before paying courier.</span>
               </div>
-            </div>
-
-            <div class="accordion-item">
-              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="false">
-                <span>Shipping &amp; Returns</span>
-                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
-              </button>
-              <div class="accordion-content">
-                <div class="accordion-body">
-                  We offer nationwide Cash on Delivery. Open parcel inspection is permitted upon delivery. Easy 3-day exchanges for sizing or defect issues.
-                </div>
+              <div class="pdp-trust-item">
+                <span class="text-ok"><?= icon('check-circle') ?></span>
+                <span><strong>Easy 3-Day Return:</strong> Hassle-free exchanges nationwide.</span>
               </div>
             </div>
           </div>
@@ -422,6 +402,78 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
       </div>
 
+    </div>
+
+    <!-- Product Details Tabs (Description, Specifications, Shipping) -->
+    <div class="pdp-tabs-wrap">
+      <div class="pdp-tab-nav" role="tablist">
+        <button type="button" class="pdp-tab-btn is-active" data-pdp-tab="tab-desc" role="tab" aria-selected="true">
+          Description
+        </button>
+        <button type="button" class="pdp-tab-btn" data-pdp-tab="tab-specs" role="tab" aria-selected="false">
+          Specifications
+        </button>
+        <button type="button" class="pdp-tab-btn" data-pdp-tab="tab-shipping" role="tab" aria-selected="false">
+          Shipping &amp; Returns
+        </button>
+      </div>
+
+      <div class="pdp-tab-content is-active" id="tab-desc" role="tabpanel">
+        <div class="card p-6" style="line-height: 1.8; max-width: 840px;">
+          <?= nl2br(e($product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.')) ?>
+        </div>
+      </div>
+
+      <div class="pdp-tab-content" id="tab-specs" role="tabpanel">
+        <div class="card p-4" style="max-width: 840px;">
+          <table class="pdp-specs-table">
+            <tbody>
+              <tr>
+                <th>Product Name</th>
+                <td><?= e($product['name']) ?></td>
+              </tr>
+              <tr>
+                <th>Product Type</th>
+                <td><?= ucfirst($product['product_type']) ?></td>
+              </tr>
+              <tr>
+                <th>SKU</th>
+                <td><?= e($product['sku'] ?: 'PROD-' . str_pad($productId, 5, '0', STR_PAD_LEFT)) ?></td>
+              </tr>
+              <?php if (!empty($product['brand'])): ?>
+                <tr>
+                  <th>Brand</th>
+                  <td><?= e($product['brand']) ?></td>
+                </tr>
+              <?php endif; ?>
+              <?php if (!empty($product['category_name'])): ?>
+                <tr>
+                  <th>Category</th>
+                  <td><?= e($product['category_name']) ?></td>
+                </tr>
+              <?php endif; ?>
+              <tr>
+                <th>Authenticity</th>
+                <td>100% Genuine &amp; Direct from Verified Manufacturers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pdp-tab-content" id="tab-shipping" role="tabpanel">
+        <div class="card p-6" style="max-width: 840px; line-height: 1.8;">
+          <h4 class="mb-3">Nationwide Delivery &amp; Hassle-Free Returns</h4>
+          <p class="mb-3 text-ink-2">
+            We deliver across all 64 districts in Bangladesh with prompt dispatches. Orders inside Dhaka are delivered within 24 to 48 hours, while deliveries outside Dhaka typically arrive within 48 to 72 hours.
+          </p>
+          <ul class="d-flex flex-column gap-2 mb-0 text-ink-2 small">
+            <li><strong>Cash on Delivery:</strong> No advance payment or card required. Pay courier after inspecting your parcel.</li>
+            <li><strong>Open Parcel Checking:</strong> You are encouraged to inspect the item in front of the delivery partner.</li>
+            <li><strong>3-Day Exchange Guarantee:</strong> Sizing mismatch or transit defect? Contact us within 3 days for an instant replacement.</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <!-- =================== REVIEWS SECTION =================== -->
@@ -611,6 +663,62 @@ include __DIR__ . '/../../includes/partials/header.php';
 </div>
 
 <script>
+// PDP Tab Navigation
+document.querySelectorAll('.pdp-tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const target = this.getAttribute('data-pdp-tab');
+    document.querySelectorAll('.pdp-tab-btn').forEach(b => {
+      b.classList.remove('is-active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.pdp-tab-content').forEach(c => c.classList.remove('is-active'));
+    this.classList.add('is-active');
+    this.setAttribute('aria-selected', 'true');
+    const panel = document.getElementById(target);
+    if (panel) panel.classList.add('is-active');
+  });
+});
+
+// Gallery thumbnail switching
+document.querySelectorAll('[data-gallery-thumb]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('[data-gallery-thumb]').forEach(b => b.classList.remove('is-active'));
+    this.classList.add('is-active');
+    const newSrc = this.getAttribute('data-gallery-thumb');
+    const mainImg = document.getElementById('mainProductImage');
+    if (mainImg && newSrc) {
+      mainImg.src = newSrc;
+    }
+  });
+});
+
+// Swatch & Option button selection
+document.querySelectorAll('.option-picker-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const optId = this.getAttribute('data-option-id');
+    const valName = this.getAttribute('data-value-name');
+    const parentGroup = this.closest('.swatch-group');
+    if (parentGroup) {
+      parentGroup.querySelectorAll('.option-picker-btn').forEach(b => b.classList.remove('active', 'is-active'));
+    }
+    this.classList.add('active', 'is-active');
+    const label = document.getElementById('selectedLabel_' + optId);
+    if (label) label.textContent = valName;
+  });
+});
+
+// Quantity Stepper
+const pdpQty = document.getElementById('pdpQtyInput');
+document.getElementById('pdpQtyDec')?.addEventListener('click', () => {
+  let val = parseInt(pdpQty.value, 10) || 1;
+  if (val > 1) pdpQty.value = val - 1;
+});
+document.getElementById('pdpQtyInc')?.addEventListener('click', () => {
+  let val = parseInt(pdpQty.value, 10) || 1;
+  let max = parseInt(pdpQty.getAttribute('max'), 10) || 999;
+  if (val < max) pdpQty.value = val + 1;
+});
+
 // District delivery rate & ETA calculator
 document.getElementById('districtSelect')?.addEventListener('change', function() {
   const opt = this.options[this.selectedIndex];
@@ -619,10 +727,10 @@ document.getElementById('districtSelect')?.addEventListener('change', function()
   const etaEl = document.getElementById('districtEtaText');
   if (isDhaka) {
     if (feeEl) feeEl.textContent = '৳60';
-    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>24–48 hours</strong> inside Dhaka.';
+    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>24–48 hours</strong> inside Dhaka · Cash on Delivery available';
   } else {
     if (feeEl) feeEl.textContent = '৳120';
-    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>48–72 hours</strong> outside Dhaka.';
+    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>48–72 hours</strong> outside Dhaka · Cash on Delivery available';
   }
 });
 
