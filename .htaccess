@@ -10,8 +10,110 @@ DirectoryIndex index.php
     Deny from all
 </FilesMatch>
 
+# Error Documents
+ErrorDocument 404 errors/404.php
+ErrorDocument 500 errors/500.php
+
 # -----------------------------------------------------------------
-# 1. Gzip / Deflate Compression (HTML, CSS, JS, JSON, SVG, Fonts)
+# 1. Rewrites: 301 Legacy Redirects & Clean Pretty URLs
+# -----------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 301 Legacy Redirects (Preserving Query Strings)
+    RewriteRule ^shop\.php$ shop/index.php [R=301,L,QSA]
+    RewriteRule ^category\.php$ shop/category.php [R=301,L,QSA]
+    RewriteRule ^product\.php$ shop/product.php [R=301,L,QSA]
+    RewriteRule ^cart\.php$ cart/index.php [R=301,L,QSA]
+    RewriteRule ^checkout\.php$ cart/checkout.php [R=301,L,QSA]
+    RewriteRule ^order_confirmation\.php$ cart/confirmation.php [R=301,L,QSA]
+    RewriteRule ^track\.php$ track/index.php [R=301,L,QSA]
+    RewriteRule ^login\.php$ auth/login.php [R=301,L,QSA]
+    RewriteRule ^register\.php$ auth/register.php [R=301,L,QSA]
+    RewriteRule ^logout\.php$ auth/logout.php [R=301,L,QSA]
+    RewriteRule ^forgot_password\.php$ auth/forgot-password.php [R=301,L,QSA]
+    RewriteRule ^reset_password\.php$ auth/reset-password.php [R=301,L,QSA]
+    RewriteRule ^verify_email\.php$ auth/verify-email.php [R=301,L,QSA]
+    RewriteRule ^resend_verification\.php$ auth/resend-verification.php [R=301,L,QSA]
+    RewriteRule ^maintenance\.php$ errors/maintenance.php [R=301,L,QSA]
+    RewriteRule ^404\.php$ errors/404.php [R=301,L,QSA]
+    RewriteRule ^sitemap\.php$ seo/sitemap.php [R=301,L,QSA]
+
+    # Clean Pretty URLs
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^shop/?$ shop/index.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^category/([^/]+)/?$ shop/category.php?slug=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^product/([^/]+)/?$ shop/product.php?slug=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^cart/?$ cart/index.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^checkout/?$ cart/checkout.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^order/confirmation/?$ cart/confirmation.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^track/?$ track/index.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^login/?$ auth/login.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^register/?$ auth/register.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^logout/?$ auth/logout.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^forgot-password/?$ auth/forgot-password.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^reset-password/?$ auth/reset-password.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^verify-email/?$ auth/verify-email.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^resend-verification/?$ auth/resend-verification.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^page/([^/]+)/?$ pages/view.php?slug=$1 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^contact/?$ pages/contact.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^newsletter/?$ pages/newsletter.php [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^sitemap\.xml$ seo/sitemap.php [L]
+</IfModule>
+
+# -----------------------------------------------------------------
+# 2. Gzip / Deflate Compression (HTML, CSS, JS, JSON, SVG, Fonts)
 # -----------------------------------------------------------------
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
@@ -20,7 +122,7 @@ DirectoryIndex index.php
 </IfModule>
 
 # -----------------------------------------------------------------
-# 2. Browser Caching / Expiration Rules (Assets vs Dynamic Pages)
+# 3. Browser Caching / Expiration Rules (Assets vs Dynamic Pages)
 # -----------------------------------------------------------------
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -40,9 +142,12 @@ DirectoryIndex index.php
 </IfModule>
 
 # -----------------------------------------------------------------
-# 3. HTTP Header Directives (Cache-Control)
+# 4. HTTP Header Directives (Cache-Control & Security Headers)
 # -----------------------------------------------------------------
 <IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
     <FilesMatch "\.(css|js|woff2|woff|ttf|png|jpe?g|gif|svg|webp|ico)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>

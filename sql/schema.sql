@@ -1097,3 +1097,144 @@ INSERT INTO `email_templates` (`slug`,`name`,`audience`,`subject`,`body_html`,`v
   '<p>Hi {{customer_name}}, confirm this new email address for your account:</p><p><a href="{{verify_url}}">Confirm new email</a></p>',
   'customer_name, verify_url, site_name')
 ON DUPLICATE KEY UPDATE `slug` = `slug`;
+
+-- =======================================================
+-- 009 - Storefront content pages, contact, newsletter, reviews
+-- =======================================================
+-- =======================================================
+--  009 - Storefront content pages, contact form, newsletter, product reviews
+--  Safe to re-run. MySQL 5.7+ / MariaDB 10.x. Run AFTER 008 (or after your all-in-one schema.sql).
+-- =======================================================
+USE `php_admin_panel`;
+SET NAMES utf8mb4;
+
+-- Editable content pages (About, Shipping & Returns, Privacy, Terms, FAQ ...)
+CREATE TABLE IF NOT EXISTS `pages` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug`        VARCHAR(120) NOT NULL,
+  `title`       VARCHAR(200) NOT NULL,
+  `content`     MEDIUMTEXT   NOT NULL COMMENT 'sanitised HTML written by admin',
+  `meta_title`  VARCHAR(160) DEFAULT NULL,
+  `meta_description` VARCHAR(255) DEFAULT NULL,
+  `show_in_footer` TINYINT(1) NOT NULL DEFAULT 1,
+  `show_in_header` TINYINT(1) NOT NULL DEFAULT 0,
+  `position`    INT NOT NULL DEFAULT 0,
+  `status`      ENUM('published','draft') NOT NULL DEFAULT 'published',
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pages_slug` (`slug`),
+  KEY `idx_pages_status` (`status`,`position`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `contact_messages` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(120) NOT NULL,
+  `email`      VARCHAR(190) NOT NULL,
+  `phone`      VARCHAR(30)  DEFAULT NULL,
+  `subject`    VARCHAR(200) DEFAULT NULL,
+  `message`    TEXT NOT NULL,
+  `order_number` VARCHAR(40) DEFAULT NULL,
+  `status`     ENUM('new','read','replied','spam') NOT NULL DEFAULT 'new',
+  `ip`         VARCHAR(45) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cm_status` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `newsletter_subscribers` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email`      VARCHAR(190) NOT NULL,
+  `status`     ENUM('pending','subscribed','unsubscribed') NOT NULL DEFAULT 'pending',
+  `token_hash` CHAR(64) DEFAULT NULL COMMENT 'sha256 of confirm/unsubscribe secret',
+  `source`     VARCHAR(40) DEFAULT 'footer',
+  `ip`         VARCHAR(45) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `confirmed_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ns_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `product_reviews` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id`  INT UNSIGNED NOT NULL,
+  `customer_id` INT UNSIGNED DEFAULT NULL,
+  `order_id`    INT UNSIGNED DEFAULT NULL COMMENT 'set when reviewer bought the product (verified purchase)',
+  `author_name` VARCHAR(80)  NOT NULL,
+  `rating`      TINYINT UNSIGNED NOT NULL,
+  `title`       VARCHAR(120) DEFAULT NULL,
+  `body`        TEXT NOT NULL,
+  `status`      ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `admin_reply` TEXT DEFAULT NULL,
+  `ip`          VARCHAR(45) DEFAULT NULL,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_review_customer_product` (`product_id`,`customer_id`),
+  KEY `idx_pr_product_status` (`product_id`,`status`,`created_at`),
+  KEY `idx_pr_status` (`status`,`created_at`),
+  CONSTRAINT `fk_pr_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cached rating summary on products (updated in PHP when a review is approved/rejected/deleted)
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `products` ADD COLUMN `rating_avg` DECIMAL(3,2) NOT NULL DEFAULT 0.00',
+  'SELECT ''products.rating_avg exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'rating_avg');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `products` ADD COLUMN `rating_count` INT UNSIGNED NOT NULL DEFAULT 0',
+  'SELECT ''products.rating_count exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'rating_count');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+INSERT INTO `settings` (`key_name`,`value`) VALUES
+  ('pretty_urls','0'),
+  ('dark_mode_enabled','1'),
+  ('mobile_bottom_nav','1'),
+  ('sticky_add_to_cart','1'),
+  ('image_pipeline_enabled','1'),
+  ('newsletter_enabled','1'),
+  ('newsletter_double_optin','1'),
+  ('contact_notify_admin','1'),
+  ('reviews_enabled','1'),
+  ('reviews_require_login','1'),
+  ('reviews_require_purchase','0'),
+  ('reviews_auto_approve','0'),
+  ('home_show_reviews','1'),
+  ('home_show_brand_story','1'),
+  ('home_show_newsletter','1'),
+  ('home_brand_story_title','Made with intention'),
+  ('home_brand_story_text',''),
+  ('trust_item_1','Cash on Delivery nationwide'),
+  ('trust_item_2','Fast delivery in 1-3 days in Dhaka'),
+  ('trust_item_3','Easy returns'),
+  ('trust_item_4','Secure and private checkout'),
+  ('size_guide_page_slug','size-guide')
+ON DUPLICATE KEY UPDATE `key_name` = `key_name`;
+
+-- Starter content (edit in Admin -> Pages). INSERT IGNORE keeps your edits on re-run.
+INSERT IGNORE INTO `pages` (`slug`,`title`,`content`,`show_in_footer`,`position`) VALUES
+ ('about','About us','<p>Tell your story here: who you are, what you sell, and why customers can trust you.</p>',1,1),
+ ('shipping-returns','Shipping & returns','<h2>Delivery</h2><p>Inside Dhaka: 1-2 days. Outside Dhaka: 2-5 days. Cash on Delivery available.</p><h2>Returns</h2><p>Describe your return window and conditions here.</p>',1,2),
+ ('faq','Frequently asked questions','<h3>How does Cash on Delivery work?</h3><p>You pay the delivery person when your parcel arrives.</p><h3>How can I track my order?</h3><p>Use the Track order page with your order number and phone or email.</p>',1,3),
+ ('size-guide','Size guide','<p>Add your size chart here (tables are supported).</p>',0,4),
+ ('privacy-policy','Privacy policy','<p>Explain what data you collect (name, phone, address, email), why, and how customers can request deletion.</p>',1,5),
+ ('terms','Terms & conditions','<p>Write your terms of sale here.</p>',1,6);
+
+INSERT INTO `email_templates` (`slug`,`name`,`audience`,`subject`,`body_html`,`variables`) VALUES
+ ('contact_received_admin','New contact message','admin',
+  'New message from {{name}}',
+  '<p><strong>{{name}}</strong> ({{email}}, {{phone}}) wrote:</p><blockquote>{{message}}</blockquote><p>Order: {{order_number}}</p>',
+  'name, email, phone, message, order_number'),
+ ('newsletter_confirm','Confirm newsletter subscription','customer',
+  'Confirm your subscription to {{site_name}}',
+  '<p>Please confirm your subscription:</p><p><a href="{{confirm_url}}">Yes, subscribe me</a></p><p>If this was not you, ignore this email.</p>',
+  'confirm_url, site_name'),
+ ('review_received_admin','New product review','admin',
+  'New {{rating}}-star review on {{product_name}}',
+  '<p>{{author_name}} left a {{rating}}-star review on <strong>{{product_name}}</strong>:</p><blockquote>{{body}}</blockquote><p><a href="{{admin_review_url}}">Moderate</a></p>',
+  'author_name, rating, product_name, body, admin_review_url')
+ON DUPLICATE KEY UPDATE `slug` = `slug`;

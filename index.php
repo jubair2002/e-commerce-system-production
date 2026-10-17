@@ -89,7 +89,7 @@ if (!empty($newArrivals)) products_attach_card_data($newArrivals);
 if (!empty($bestSellers)) products_attach_card_data($bestSellers);
 if (!empty($featured))    products_attach_card_data($featured);
 
-include __DIR__ . '/includes/shop_header.php';
+include __DIR__ . '/includes/partials/header.php';
 ?>
 
 <!-- =================== HERO SECTION =================== -->
@@ -230,7 +230,7 @@ include __DIR__ . '/includes/shop_header.php';
       <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
         <?php foreach ($newArrivals as $p): ?>
           <div class="col">
-            <?php include __DIR__ . '/_product_card.php'; ?>
+            <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
           </div>
         <?php endforeach; ?>
       </div>
@@ -256,7 +256,7 @@ include __DIR__ . '/includes/shop_header.php';
       <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
         <?php foreach ($bestSellers as $p): ?>
           <div class="col">
-            <?php include __DIR__ . '/_product_card.php'; ?>
+            <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
           </div>
         <?php endforeach; ?>
       </div>
@@ -281,7 +281,7 @@ include __DIR__ . '/includes/shop_header.php';
       <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
         <?php foreach ($featured as $p): ?>
           <div class="col">
-            <?php include __DIR__ . '/_product_card.php'; ?>
+            <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
           </div>
         <?php endforeach; ?>
       </div>
@@ -331,4 +331,4 @@ include __DIR__ . '/includes/shop_header.php';
   </div>
 </section>
 
-<?php include __DIR__ . '/includes/shop_footer.php'; ?>
+<?php include __DIR__ . '/includes/partials/footer.php'; ?>

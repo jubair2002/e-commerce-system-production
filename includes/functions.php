@@ -2,6 +2,7 @@
 /**
  * Generic helper functions used throughout the panel.
  */
+require_once __DIR__ . '/polyfills.php';
 require_once __DIR__ . '/../config/database.php';
 
 // ----------------------------------------------------------------
@@ -23,12 +24,157 @@ function admin_url(string $path = ''): string
 }
 
 /**
- * Redirect to a path relative to the project root (BASE_URL).
- * For admin pages use admin_redirect() instead.
+ * Route registry mapping logical names to physical file paths and clean URL patterns.
  */
-function redirect(string $path): void
+function get_route_map(): array
 {
-    header('Location: ' . url($path));
+    static $map = [
+        'home'                => ['file' => '',                        'pretty' => ''],
+        'shop'                => ['file' => 'shop/index.php',          'pretty' => 'shop'],
+        'category'            => ['file' => 'shop/category.php',       'pretty' => 'category/{slug}'],
+        'product'             => ['file' => 'shop/product.php',        'pretty' => 'product/{slug}'],
+        'cart'                => ['file' => 'cart/index.php',          'pretty' => 'cart'],
+        'checkout'            => ['file' => 'cart/checkout.php',       'pretty' => 'checkout'],
+        'order_confirmation'  => ['file' => 'cart/confirmation.php',   'pretty' => 'order/confirmation'],
+        'track'               => ['file' => 'track/index.php',         'pretty' => 'track'],
+        'login'               => ['file' => 'auth/login.php',          'pretty' => 'login'],
+        'register'            => ['file' => 'auth/register.php',       'pretty' => 'register'],
+        'logout'              => ['file' => 'auth/logout.php',         'pretty' => 'logout'],
+        'forgot_password'     => ['file' => 'auth/forgot-password.php', 'pretty' => 'forgot-password'],
+        'reset_password'      => ['file' => 'auth/reset-password.php',  'pretty' => 'reset-password'],
+        'verify_email'        => ['file' => 'auth/verify-email.php',   'pretty' => 'verify-email'],
+        'resend_verification' => ['file' => 'auth/resend-verification.php', 'pretty' => 'resend-verification'],
+        'account'             => ['file' => 'account/index.php',       'pretty' => 'account'],
+        'account_orders'      => ['file' => 'account/orders.php',      'pretty' => 'account/orders'],
+        'account_order'       => ['file' => 'account/order.php',       'pretty' => 'account/order'],
+        'account_invoice'     => ['file' => 'account/invoice.php',     'pretty' => 'account/invoice'],
+        'account_addresses'   => ['file' => 'account/addresses.php',   'pretty' => 'account/addresses'],
+        'account_profile'     => ['file' => 'account/profile.php',     'pretty' => 'account/profile'],
+        'account_security'    => ['file' => 'account/security.php',    'pretty' => 'account/security'],
+        'account_wishlist'    => ['file' => 'account/wishlist.php',    'pretty' => 'account/wishlist'],
+        'account_export'      => ['file' => 'account/export.php',      'pretty' => 'account/export'],
+        'account_delete'      => ['file' => 'account/delete.php',      'pretty' => 'account/delete'],
+        'page'                => ['file' => 'pages/view.php',          'pretty' => 'page/{slug}'],
+        'contact'             => ['file' => 'pages/contact.php',       'pretty' => 'contact'],
+        'newsletter'          => ['file' => 'pages/newsletter.php',    'pretty' => 'newsletter'],
+        'sitemap'             => ['file' => 'seo/sitemap.php',         'pretty' => 'sitemap.xml'],
+        'maintenance'         => ['file' => 'errors/maintenance.php',  'pretty' => 'maintenance'],
+        '404'                 => ['file' => 'errors/404.php',          'pretty' => '404'],
+        '500'                 => ['file' => 'errors/500.php',          'pretty' => '500'],
+    ];
+    return $map;
+}
+
+/**
+ * Determine if pretty URLs are active.
+ */
+function pretty_urls_active(): bool
+{
+    static $active = null;
+    if ($active !== null) {
+        return $active;
+    }
+    $settingOn = function_exists('setting') ? ((int)setting('pretty_urls', '0') === 1) : false;
+    $lockFileOn = file_exists(__DIR__ . '/../storage/pretty_urls.on');
+    $active = ($settingOn || $lockFileOn);
+    return $active;
+}
+
+/**
+ * Central route generator.
+ *
+ * @param string $name Route name from get_route_map()
+ * @param array $params Query / placeholder parameters
+ * @return string Complete URL
+ */
+function route(string $name, array $params = []): string
+{
+    $map = get_route_map();
+    if (!isset($map[$name])) {
+        return url($name . (!empty($params) ? '?' . http_build_query($params) : ''));
+    }
+
+    $entry = $map[$name];
+    $isPretty = pretty_urls_active();
+
+    if ($isPretty && isset($entry['pretty'])) {
+        $pattern = $entry['pretty'];
+        foreach ($params as $k => $v) {
+            $placeholder = '{' . $k . '}';
+            if (str_contains($pattern, $placeholder)) {
+                $pattern = str_replace($placeholder, rawurlencode((string)$v), $pattern);
+                unset($params[$k]);
+            }
+        }
+        $url = BASE_URL . $pattern;
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
+        }
+        return $url;
+    }
+
+    $file = $entry['file'];
+    if ($file === '') {
+        return BASE_URL . (!empty($params) ? '?' . http_build_query($params) : '');
+    }
+
+    $url = BASE_URL . $file;
+    if (!empty($params)) {
+        $url .= '?' . http_build_query($params);
+    }
+    return $url;
+}
+
+/**
+ * Check if the current request matches a route name.
+ */
+function route_is(string $name): bool
+{
+    $map = get_route_map();
+    if (!isset($map[$name])) {
+        return false;
+    }
+
+    $entry = $map[$name];
+    $targetFile = $entry['file'];
+
+    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+    $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '/';
+
+    if ($targetFile === '') {
+        return ($script === BASE_URL . 'index.php' || $script === '/index.php' || (basename($script) === 'index.php' && !str_contains($script, '/shop/') && !str_contains($script, '/cart/') && !str_contains($script, '/track/') && !str_contains($script, '/account/') && !str_contains($script, '/auth/') && !str_contains($script, '/pages/') && !str_contains($script, '/errors/')));
+    }
+
+    if (str_ends_with($script, '/' . $targetFile) || (basename($script) === basename($targetFile) && str_contains($script, dirname($targetFile)))) {
+        return true;
+    }
+
+    if (!empty($entry['pretty'])) {
+        $cleanPattern = preg_replace('/\{[a-zA-Z0-9_]+\}/', '[^/]+', $entry['pretty']);
+        $expected = rtrim(BASE_URL, '/') . '/' . ltrim($cleanPattern, '/');
+        if (preg_match('#^' . preg_quote($expected, '#') . '$#', $uriPath)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Redirect to a path or route relative to project root.
+ */
+function redirect(string $path, int $code = 302): void
+{
+    $map = get_route_map();
+    if (isset($map[$path])) {
+        header('Location: ' . route($path), true, $code);
+        exit;
+    }
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+        header('Location: ' . $path, true, $code);
+        exit;
+    }
+    header('Location: ' . url($path), true, $code);
     exit;
 }
 

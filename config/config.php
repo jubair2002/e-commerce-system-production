@@ -40,8 +40,8 @@ if (!empty($envBaseUrl)) {
     if ($base === '') {
         $scriptDir = str_replace('\\', '/', dirname($scriptName));
         $scriptDir = rtrim($scriptDir, '/');
-        if (preg_match('#/(admin|account|api|cron|ajax)(/.*)?$#', $scriptDir)) {
-            $scriptDir = preg_replace('#/(admin|account|api|cron|ajax)(/.*)?$#', '', $scriptDir);
+        if (preg_match('#/(admin|account|api|cron|ajax|shop|cart|auth|track|pages|errors|seo)(/.*)?$#', $scriptDir)) {
+            $scriptDir = preg_replace('#/(admin|account|api|cron|ajax|shop|cart|auth|track|pages|errors|seo)(/.*)?$#', '', $scriptDir);
         }
         $base = $scriptDir;
     }

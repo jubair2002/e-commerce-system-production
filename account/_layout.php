@@ -25,7 +25,7 @@ function account_layout_start(string $activeTab, string $title, ?array $customer
         $avatarUrl = shop_url('assets/uploads/avatars/' . $customer['avatar']);
     }
 
-    include __DIR__ . '/../includes/shop_header.php';
+    include __DIR__ . '/../includes/partials/header.php';
     ?>
     <div class="account-wrapper">
       <div class="container">
@@ -126,5 +126,5 @@ function account_layout_end(): void
       </div>
     </div>
     <?php
-    include __DIR__ . '/../includes/shop_footer.php';
+    include __DIR__ . '/../includes/partials/footer.php';
 }

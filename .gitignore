@@ -49,3 +49,12 @@ config/config.local.php
 # One-time bootstrap scripts. Re-add locally if you need to re-install.
 admin/install.php
 admin/migrate.php
+
+# Storage runtime files
+storage/*
+!storage/.htaccess
+!storage/.gitkeep
+assets/uploads/cache/*
+!assets/uploads/cache/.gitkeep
+!assets/uploads/cache/.htaccess
+

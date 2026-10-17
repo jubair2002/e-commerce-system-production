@@ -74,19 +74,55 @@ function check_storefront_maintenance(): void
         exit;
     }
 
-    require __DIR__ . '/../maintenance.php';
+    require __DIR__ . '/../errors/maintenance.php';
     exit;
 }
 check_storefront_maintenance();
 
 /**
  * Build a URL relative to the storefront (project root).
- * The shop now lives at the root, so shop_url() and url() are equivalent.
- * Kept as a separate helper for readability in shop pages.
+ * Acts as a backward-compatible shim mapping legacy file names to central route().
  */
 function shop_url(string $path = ''): string
 {
-    return BASE_URL . ltrim($path, '/');
+    if ($path === '' || $path === '/') {
+        return BASE_URL;
+    }
+
+    static $legacyMap = [
+        'shop.php'                => 'shop',
+        'category.php'            => 'category',
+        'product.php'             => 'product',
+        'cart.php'                => 'cart',
+        'checkout.php'            => 'checkout',
+        'order_confirmation.php'  => 'order_confirmation',
+        'track.php'               => 'track',
+        'login.php'               => 'login',
+        'register.php'            => 'register',
+        'logout.php'              => 'logout',
+        'forgot_password.php'     => 'forgot_password',
+        'reset_password.php'      => 'reset_password',
+        'verify_email.php'        => 'verify_email',
+        'resend_verification.php' => 'resend_verification',
+        'maintenance.php'         => 'maintenance',
+        '404.php'                 => '404',
+        'sitemap.php'             => 'sitemap',
+    ];
+
+    $cleanPath = ltrim($path, '/');
+    $parts = explode('?', $cleanPath, 2);
+    $file = $parts[0];
+    $queryString = $parts[1] ?? '';
+
+    if (isset($legacyMap[$file])) {
+        $params = [];
+        if ($queryString !== '') {
+            parse_str($queryString, $params);
+        }
+        return route($legacyMap[$file], $params);
+    }
+
+    return BASE_URL . $cleanPath;
 }
 
 /** Active category list for the navbar. */

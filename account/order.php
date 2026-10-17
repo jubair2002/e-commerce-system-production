@@ -27,7 +27,7 @@ $order = $stmt->fetch();
 if (!$order) {
     http_response_code(404);
     $pageTitle = 'Order Not Found';
-    include __DIR__ . '/../includes/shop_header.php';
+    include __DIR__ . '/../includes/partials/header.php';
     ?>
     <div class="container py-5 text-center" style="max-width: 600px;">
       <div class="fs-1 text-muted mb-3"><i class="bi bi-question-circle"></i></div>
@@ -40,7 +40,7 @@ if (!$order) {
       </a>
     </div>
     <?php
-    include __DIR__ . '/../includes/shop_footer.php';
+    include __DIR__ . '/../includes/partials/footer.php';
     exit;
 }
 
