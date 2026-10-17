@@ -114,6 +114,9 @@ try {
     $stmt->bindValue(':off', $offset,  PDO::PARAM_INT);
     $stmt->execute();
     $products = $stmt->fetchAll();
+    if (!empty($products)) {
+        products_attach_card_data($products);
+    }
 } catch (Throwable $e) {
     $products = [];
     $total = 0;

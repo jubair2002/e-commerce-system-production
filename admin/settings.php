@@ -5,7 +5,7 @@ require_role('admin');
 $pageTitle = 'Settings & CMS';
 
 $activeTab = trim((string)($_GET['tab'] ?? 'general'));
-$allowedTabs = ['general', 'storefront', 'inventory', 'checkout', 'shipping', 'coupons', 'seo'];
+$allowedTabs = ['general', 'storefront', 'inventory', 'checkout', 'shipping', 'coupons', 'seo', 'customers'];
 if (!in_array($activeTab, $allowedTabs, true)) {
     $activeTab = 'general';
 }
@@ -425,6 +425,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         admin_redirect('settings.php?tab=seo');
     }
 
+    // Tab 8: Customers Settings (Prompt 14)
+    if ($action === 'save_customers') {
+        $rules = [
+            'customer_registration_enabled'         => ['type' => 'bool'],
+            'customer_require_email_verification'    => ['type' => 'bool'],
+            'customer_block_login_unverified'       => ['type' => 'bool'],
+            'customer_password_min_length'          => ['type' => 'int', 'min' => 6, 'max' => 64],
+            'customer_login_max_attempts'           => ['type' => 'int', 'min' => 3, 'max' => 20],
+            'customer_lockout_minutes'              => ['type' => 'int', 'min' => 1, 'max' => 1440],
+            'customer_remember_me_days'             => ['type' => 'int', 'min' => 1, 'max' => 365],
+            'customer_password_reset_minutes'       => ['type' => 'int', 'min' => 5, 'max' => 1440],
+            'customer_verify_token_hours'           => ['type' => 'int', 'min' => 1, 'max' => 168],
+            'customer_session_idle_minutes'         => ['type' => 'int', 'min' => 0, 'max' => 10080],
+            'customer_claim_guest_orders_on_verify' => ['type' => 'bool'],
+            'customer_allow_account_delete'         => ['type' => 'bool'],
+            'customer_wishlist_enabled'             => ['type' => 'bool'],
+            'customer_marketing_checkbox_default'   => ['type' => 'bool'],
+            'customer_terms_url'                    => ['type' => 'url'],
+            'customer_can_cancel'                   => ['type' => 'bool'],
+            'customer_unverified_ttl_days'          => ['type' => 'int', 'min' => 0, 'max' => 365],
+        ];
+
+        $res = settings_save($_POST, $rules, 'customers');
+        if ($res['errors']) {
+            foreach ($res['errors'] as $e) flash('danger', $e);
+        } else {
+            flash('success', 'Customer account settings saved.');
+        }
+        admin_redirect('settings.php?tab=customers');
+    }
+
     // Reset Tab to Defaults
     if ($action === 'reset_tab') {
         $tabToReset = trim((string)($_POST['tab_name'] ?? ''));
@@ -478,6 +509,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'seo_default_title' => '',
                 'seo_default_description' => '',
                 'robots_allow' => '1',
+            ],
+            'customers' => [
+                'customer_registration_enabled' => '1',
+                'customer_require_email_verification' => '1',
+                'customer_block_login_unverified' => '0',
+                'customer_password_min_length' => '8',
+                'customer_login_max_attempts' => '5',
+                'customer_lockout_minutes' => '15',
+                'customer_remember_me_days' => '30',
+                'customer_password_reset_minutes' => '60',
+                'customer_verify_token_hours' => '24',
+                'customer_session_idle_minutes' => '120',
+                'customer_claim_guest_orders_on_verify' => '1',
+                'customer_allow_account_delete' => '1',
+                'customer_wishlist_enabled' => '1',
+                'customer_marketing_checkbox_default' => '1',
+                'customer_terms_url' => '',
+                'customer_can_cancel' => '1',
+                'customer_unverified_ttl_days' => '14',
             ],
         ];
 
@@ -557,6 +607,11 @@ include __DIR__ . '/includes/header.php';
   <li class="nav-item">
     <a class="nav-link <?= $activeTab === 'seo' ? 'active fw-bold' : '' ?>" href="<?= e(admin_url('settings.php?tab=seo')) ?>">
       <i class="bi bi-search me-1"></i> SEO & Sitemap
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <?= $activeTab === 'customers' ? 'active fw-bold' : '' ?>" href="<?= e(admin_url('settings.php?tab=customers')) ?>">
+      <i class="bi bi-people me-1"></i> Customers
     </a>
   </li>
 </ul>
@@ -1351,6 +1406,193 @@ include __DIR__ . '/includes/header.php';
 
           <button type="submit" class="btn btn-primary px-4">
             <i class="bi bi-save me-1"></i> Save Settings
+          </button>
+        </form>
+      </div>
+    </div>
+  <!-- TAB 8: CUSTOMERS (Prompt 14) -->
+  <?php elseif ($activeTab === 'customers'): ?>
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1">Customer Accounts & Security Policy</h5>
+            <p class="text-muted small mb-0">Control registration, email verification, session timeouts, lockout thresholds, and data privacy policies.</p>
+          </div>
+          <form method="post" class="d-inline" onsubmit="return confirm('Reset all Customer settings to system defaults?');">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="reset_tab">
+            <input type="hidden" name="tab_name" value="customers">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Defaults
+            </button>
+          </form>
+        </div>
+
+        <form method="post" id="customersForm">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="save_customers">
+
+          <!-- Registration & Verification -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-person-plus text-primary me-2"></i> Registration & Email Verification
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_registration_enabled" value="1" <?= setting('customer_registration_enabled', '1') == '1' ? 'checked' : '' ?> id="regEnabledToggle">
+                    <label class="form-check-label fw-semibold" for="regEnabledToggle">Allow Public Registration</label>
+                  </div>
+                  <div class="form-text small">When disabled, new customers cannot register via the storefront.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_require_email_verification" value="1" <?= setting('customer_require_email_verification', '1') == '1' ? 'checked' : '' ?> id="reqVerifToggle">
+                    <label class="form-check-label fw-semibold" for="reqVerifToggle">Require Email Verification</label>
+                  </div>
+                  <div class="form-text small">Sends an activation link upon customer registration.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_block_login_unverified" value="1" <?= setting('customer_block_login_unverified', '0') == '1' ? 'checked' : '' ?> id="blockUnverifiedToggle">
+                    <label class="form-check-label fw-semibold" for="blockUnverifiedToggle">Block Login Until Verified</label>
+                  </div>
+                  <div class="form-text small">If enabled, customers cannot log in until their email has been verified.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_claim_guest_orders_on_verify" value="1" <?= setting('customer_claim_guest_orders_on_verify', '1') == '1' ? 'checked' : '' ?> id="claimOrdersToggle">
+                    <label class="form-check-label fw-semibold" for="claimOrdersToggle">Auto-Claim Guest Orders</label>
+                  </div>
+                  <div class="form-text small">Automatically links past guest orders matching the verified email.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Policy & Brute-Force Protection -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-shield-lock text-primary me-2"></i> Passwords & Brute-Force Lockout
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Minimum Password Length</label>
+                  <input type="number" name="customer_password_min_length" class="form-control" value="<?= (int)setting('customer_password_min_length', '8') ?>" min="6" max="64" required>
+                  <div class="form-text small">Recommended: 8 characters or more.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Max Login Attempts</label>
+                  <input type="number" name="customer_login_max_attempts" class="form-control" value="<?= (int)setting('customer_login_max_attempts', '5') ?>" min="3" max="20" required>
+                  <div class="form-text small">Before account is temporarily locked.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Lockout Duration (Minutes)</label>
+                  <input type="number" name="customer_lockout_minutes" class="form-control" value="<?= (int)setting('customer_lockout_minutes', '15') ?>" min="1" max="1440" required>
+                  <div class="form-text small">Cooldown after exceeding maximum attempts.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tokens, Sessions & Timeouts -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-clock-history text-primary me-2"></i> Tokens & Session Lifetimes
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Password Reset TTL (Minutes)</label>
+                  <input type="number" name="customer_password_reset_minutes" class="form-control" value="<?= (int)setting('customer_password_reset_minutes', '60') ?>" min="5" max="1440" required>
+                  <div class="form-text small">Expiration for password reset tokens.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Verify Email TTL (Hours)</label>
+                  <input type="number" name="customer_verify_token_hours" class="form-control" value="<?= (int)setting('customer_verify_token_hours', '24') ?>" min="1" max="168" required>
+                  <div class="form-text small">Activation link lifetime.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Remember-Me Lifetime (Days)</label>
+                  <input type="number" name="customer_remember_me_days" class="form-control" value="<?= (int)setting('customer_remember_me_days', '30') ?>" min="1" max="365" required>
+                  <div class="form-text small">Persistent login token validity.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Idle Timeout (Minutes)</label>
+                  <input type="number" name="customer_session_idle_minutes" class="form-control" value="<?= (int)setting('customer_session_idle_minutes', '120') ?>" min="0" max="10080" required>
+                  <div class="form-text small">Auto-logout after inactivity (0 = disabled).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features, Privacy & Compliance -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-toggles text-primary me-2"></i> Features, Wishlist & Privacy
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_wishlist_enabled" value="1" <?= setting('customer_wishlist_enabled', '1') == '1' ? 'checked' : '' ?> id="wishlistEnabledToggle">
+                    <label class="form-check-label fw-semibold" for="wishlistEnabledToggle">Enable Customer Wishlist</label>
+                  </div>
+                  <div class="form-text small">Allows customers to save favorite items.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_allow_account_delete" value="1" <?= setting('customer_allow_account_delete', '1') == '1' ? 'checked' : '' ?> id="allowDeleteToggle">
+                    <label class="form-check-label fw-semibold" for="allowDeleteToggle">Allow Self-Service Account Deletion</label>
+                  </div>
+                  <div class="form-text small">Permits customers to anonymize and delete their accounts.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_can_cancel" value="1" <?= setting('customer_can_cancel', '1') == '1' ? 'checked' : '' ?> id="canCancelToggle">
+                    <label class="form-check-label fw-semibold" for="canCancelToggle">Allow Customer Order Cancellation</label>
+                  </div>
+                  <div class="form-text small">Customers can cancel their orders while status is "pending".</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_marketing_checkbox_default" value="1" <?= setting('customer_marketing_checkbox_default', '1') == '1' ? 'checked' : '' ?> id="mktOptinToggle">
+                    <label class="form-check-label fw-semibold" for="mktOptinToggle">Pre-Check Marketing Opt-In</label>
+                  </div>
+                  <div class="form-text small">Default state of newsletter checkbox on registration/checkout.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Terms & Conditions URL</label>
+                  <input type="text" name="customer_terms_url" class="form-control" value="<?= e(setting('customer_terms_url', '')) ?>" placeholder="/terms.php or https://example.com/terms">
+                  <div class="form-text small">Optional link displayed on registration page.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Purge Unverified Accounts After (Days)</label>
+                  <input type="number" name="customer_unverified_ttl_days" class="form-control" value="<?= (int)setting('customer_unverified_ttl_days', '14') ?>" min="0" max="365" required>
+                  <div class="form-text small">Maintenance cron cleans up abandoned pending registrations (0 = keep forever).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save Customer Settings
           </button>
         </form>
       </div>

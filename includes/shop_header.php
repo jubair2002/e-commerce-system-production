@@ -21,6 +21,12 @@ $announcementText    = trim((string)setting('announcement_bar_text', ''));
 $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $announcementText !== '';
 
 $cartCnt = cart_count();
+$headerCustomer = function_exists('customer_current') ? customer_current() : null;
+$customerFirstName = '';
+if ($headerCustomer) {
+    $parts = explode(' ', trim($headerCustomer['name']));
+    $customerFirstName = $parts[0] ?: 'Account';
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -33,22 +39,24 @@ $cartCnt = cart_count();
     <link rel="icon" href="<?= e(UPLOADS_URL . 'branding/' . $storeFavicon) ?>">
   <?php endif; ?>
 
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Preload core storefront styles -->
+  <link rel="preload" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= filemtime(__DIR__ . '/../assets/css/shop.css') ?>" as="style">
 
-  <!-- Bootstrap 5.3 Grid Utilities & Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <!-- Self-Hosted Typography & Icons -->
+  <link rel="stylesheet" href="<?= e(url('assets/vendor/fonts/inter.css')) ?>">
+  <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap/bootstrap.min.css')) ?>">
+  <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>">
 
   <!-- Storefront Editorial Stylesheet -->
-  <link rel="stylesheet" href="<?= e(url('assets/css/shop.css')) ?>">
+  <link rel="stylesheet" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= filemtime(__DIR__ . '/../assets/css/shop.css') ?>">
 
   <!-- Dynamic Theme Accent Override -->
   <style>:root { --accent: <?= e($themeAccent) ?>; }</style>
 
-  <script>window.SHOP_BASE_URL = "<?= e(BASE_URL) ?>";</script>
+  <script>
+    window.SHOP_BASE_URL = "<?= e(BASE_URL) ?>";
+    window.SHOP_CSRF_TOKEN = "<?= e(csrf_token()) ?>";
+  </script>
 </head>
 <body>
 
@@ -137,6 +145,40 @@ $cartCnt = cart_count();
           </div>
         </div>
 
+        <!-- Customer Account Menu -->
+        <?php if ($headerCustomer): ?>
+          <div class="dropdown header-account-dropdown">
+            <button class="action-btn dropdown-toggle d-flex align-items-center gap-1" type="button" id="customerAccountDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border:none;background:none;">
+              <i class="bi bi-person"></i>
+              <span class="d-none d-md-inline small fw-semibold"><?= e($customerFirstName) ?></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="customerAccountDropdown">
+              <li class="px-3 py-2 border-bottom">
+                <div class="small fw-bold text-truncate"><?= e($headerCustomer['name']) ?></div>
+                <div class="small text-muted text-truncate" style="font-size: 0.75rem;"><?= e($headerCustomer['email']) ?></div>
+              </li>
+              <li><a class="dropdown-item" href="<?= e(shop_url('account/')) ?>"><i class="bi bi-person-circle"></i> My Account</a></li>
+              <li><a class="dropdown-item" href="<?= e(shop_url('account/orders.php')) ?>"><i class="bi bi-box-seam"></i> Orders</a></li>
+              <li><a class="dropdown-item" href="<?= e(shop_url('account/wishlist.php')) ?>"><i class="bi bi-heart"></i> Wishlist</a></li>
+              <li><a class="dropdown-item" href="<?= e(shop_url('account/addresses.php')) ?>"><i class="bi bi-geo-alt"></i> Addresses</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li>
+                <form method="post" action="<?= e(shop_url('logout.php')) ?>" class="m-0 p-0">
+                  <?= csrf_field() ?>
+                  <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                    <i class="bi bi-box-arrow-right text-danger"></i> Sign Out
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </div>
+        <?php else: ?>
+          <a href="<?= e(shop_url('login.php')) ?>" class="action-btn d-none d-sm-flex align-items-center gap-1 text-decoration-none text-reset" aria-label="Sign In">
+            <i class="bi bi-person"></i>
+            <span class="small fw-semibold d-none d-md-inline">Sign In</span>
+          </a>
+        <?php endif; ?>
+
         <!-- Cart Trigger -->
         <button type="button" class="action-btn" data-cart-drawer-trigger aria-label="View shopping cart">
           <i class="bi bi-bag"></i>
@@ -160,8 +202,8 @@ $cartCnt = cart_count();
     <h5 class="offcanvas-title fw-bold" id="mobileNavLabel"><?= e($siteName) ?></h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
-  <div class="offcanvas-body p-0">
-    <ul class="list-group list-group-flush">
+  <div class="offcanvas-body p-0 d-flex flex-column">
+    <ul class="list-group list-group-flush flex-grow-1">
       <li class="list-group-item py-3"><a href="<?= e(shop_url()) ?>" class="text-reset d-block">Home</a></li>
       <li class="list-group-item py-3"><a href="<?= e(shop_url('shop.php')) ?>" class="text-reset d-block">All Products</a></li>
       <?php if (!empty($cats)): ?>
@@ -179,6 +221,37 @@ $cartCnt = cart_count();
       <li class="list-group-item py-3"><a href="<?= e(shop_url('track.php')) ?>" class="text-reset d-block">Track Order</a></li>
       <li class="list-group-item py-3"><a href="<?= e(shop_url('index.php#about')) ?>" class="text-reset d-block">About Us</a></li>
     </ul>
+
+    <div class="p-3 border-top bg-light">
+      <?php if ($headerCustomer): ?>
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="bi bi-person text-secondary"></i>
+          </div>
+          <div class="overflow-hidden">
+            <div class="fw-bold small text-truncate"><?= e($headerCustomer['name']) ?></div>
+            <div class="text-muted small text-truncate" style="font-size: 0.75rem;"><?= e($headerCustomer['email']) ?></div>
+          </div>
+        </div>
+        <div class="d-flex flex-column gap-2 mb-3 ps-1">
+          <a href="<?= e(shop_url('account/')) ?>" class="small text-reset text-decoration-none"><i class="bi bi-person-circle me-2"></i>My Account</a>
+          <a href="<?= e(shop_url('account/orders.php')) ?>" class="small text-reset text-decoration-none"><i class="bi bi-box-seam me-2"></i>Orders</a>
+          <a href="<?= e(shop_url('account/wishlist.php')) ?>" class="small text-reset text-decoration-none"><i class="bi bi-heart me-2"></i>Wishlist</a>
+          <a href="<?= e(shop_url('account/addresses.php')) ?>" class="small text-reset text-decoration-none"><i class="bi bi-geo-alt me-2"></i>Addresses</a>
+        </div>
+        <form method="post" action="<?= e(shop_url('logout.php')) ?>">
+          <?= csrf_field() ?>
+          <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+            <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+          </button>
+        </form>
+      <?php else: ?>
+        <div class="d-grid gap-2">
+          <a href="<?= e(shop_url('login.php')) ?>" class="btn btn-editorial-primary btn-sm">Sign In</a>
+          <a href="<?= e(shop_url('register.php')) ?>" class="btn btn-outline-secondary btn-sm">Create Account</a>
+        </div>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 

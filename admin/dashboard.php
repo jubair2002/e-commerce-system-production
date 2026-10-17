@@ -86,6 +86,26 @@ try {
     // Orders table missing — silently skip.
 }
 
+// Customer stats (Prompt 14)
+$newCustomers7d  = 0;
+$repeatCustomers = 0;
+try {
+    $newCustomers7d = (int) db()->query(
+        "SELECT COUNT(*) FROM customers 
+         WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) 
+           AND deleted_at IS NULL"
+    )->fetchColumn();
+
+    $repeatCustomers = (int) db()->query(
+        "SELECT COUNT(*) FROM (
+            SELECT customer_id FROM orders 
+            WHERE customer_id IS NOT NULL AND status != 'cancelled'
+            GROUP BY customer_id 
+            HAVING COUNT(*) >= 2
+         ) t"
+    )->fetchColumn();
+} catch (Throwable $e) {}
+
 // Recent CRUD activity (filtered to e-commerce events).
 $recentActivity = db()->query(
     "SELECT a.*, u.name AS user_name
@@ -206,9 +226,31 @@ include __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Secondary stats -->
+<!-- Secondary stats & Customer metrics (Prompt 14) -->
 <div class="row g-3 mb-4">
-  <div class="col-sm-6">
+  <div class="col-sm-6 col-xl-3">
+    <a href="<?= e(admin_url('customers.php?joined_from=' . date('Y-m-d', strtotime('-7 days')))) ?>" class="text-decoration-none text-reset">
+      <div class="card stat-card">
+        <div class="stat-icon bg-indigo"><i class="bi bi-person-plus"></i></div>
+        <div>
+          <p class="stat-label">New customers (7 d)</p>
+          <p class="stat-value"><?= number_format($newCustomers7d) ?></p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="<?= e(admin_url('customers.php?orders=has_orders')) ?>" class="text-decoration-none text-reset">
+      <div class="card stat-card">
+        <div class="stat-icon bg-emerald"><i class="bi bi-people"></i></div>
+        <div>
+          <p class="stat-label">Repeat customers</p>
+          <p class="stat-value"><?= number_format($repeatCustomers) ?></p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
     <div class="card stat-card">
       <div class="stat-icon bg-amber"><i class="bi bi-star-fill"></i></div>
       <div>
@@ -217,9 +259,9 @@ include __DIR__ . '/includes/header.php';
       </div>
     </div>
   </div>
-  <div class="col-sm-6">
+  <div class="col-sm-6 col-xl-3">
     <div class="card stat-card">
-      <div class="stat-icon bg-emerald"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-icon bg-rose"><i class="bi bi-cash-stack"></i></div>
       <div>
         <p class="stat-label">Inventory value</p>
         <p class="stat-value"><?= e(price($inventoryValue)) ?></p>

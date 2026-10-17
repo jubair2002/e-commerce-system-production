@@ -88,11 +88,12 @@
   </div>
 </footer>
 
-<!-- Bootstrap 5.3 JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+<!-- Bootstrap 5.3 JS Bundle (Self-Hosted) -->
+<script src="<?= e(url('assets/vendor/bootstrap/bootstrap.bundle.min.js')) ?>" defer></script>
 
 <!-- Storefront JS Module -->
-<script src="<?= e(url('assets/js/shop.js')) ?>" defer></script>
+<script src="<?= e(url('assets/js/shop.js')) ?>?v=<?= filemtime(__DIR__ . '/../assets/js/shop.js') ?>" defer></script>
 
+<?php if (function_exists('app_finish_response')) app_finish_response(); ?>
 </body>
 </html>

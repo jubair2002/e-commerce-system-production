@@ -44,6 +44,21 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
         <?php endif; ?>
       </a>
 
+      <a href="<?= e(admin_url('customers.php')) ?>"
+         class="nav-link <?= active_if($current === 'customers.php' || $current === 'customer_view.php') ?>">
+        <i class="bi bi-people"></i><span>Customers</span>
+        <?php
+          try {
+            $pendingCustCount = (int) db()->query(
+              "SELECT COUNT(*) FROM customers WHERE status = 'pending' AND deleted_at IS NULL"
+            )->fetchColumn();
+          } catch (Throwable $e) { $pendingCustCount = 0; }
+        ?>
+        <?php if ($pendingCustCount > 0): ?>
+          <span class="badge text-bg-warning ms-auto" title="<?= $pendingCustCount ?> pending verification"><?= $pendingCustCount ?></span>
+        <?php endif; ?>
+      </a>
+
       <a href="<?= e(admin_url('products.php')) ?>"
          class="nav-link <?= active_if($current === 'products.php' || $current === 'product_form.php') ?>">
         <i class="bi bi-box-seam"></i><span>Products</span>

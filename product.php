@@ -104,6 +104,9 @@ if (!empty($product['category_id'])) {
         );
         $stmtRel->execute([':cid' => $product['category_id'], ':pid' => $productId]);
         $related = $stmtRel->fetchAll();
+        if (!empty($related)) {
+            products_attach_card_data($related);
+        }
     } catch (Throwable $e) { $related = []; }
 }
 
@@ -314,10 +317,20 @@ include __DIR__ . '/includes/shop_header.php';
               <button type="submit"
                       name="action_type"
                       value="add_to_cart"
-                      class="btn btn-editorial-primary pdp-add-btn"
+                      class="btn btn-editorial-primary pdp-add-btn flex-grow-1"
                       id="pdpAddBtn"
                       <?= !$inStock ? 'disabled' : '' ?>>
                 <i class="bi bi-bag me-1"></i> Add to Cart
+              </button>
+
+              <!-- Wishlist Heart Button -->
+              <button type="button"
+                      class="btn-wishlist pdp-wishlist-btn flex-shrink-0"
+                      data-wishlist-btn="<?= (int)$product['id'] ?>"
+                      style="width: 44px; height: 44px; font-size: 19px;"
+                      aria-label="Save to wishlist"
+                      title="Save to wishlist">
+                <i class="bi bi-heart"></i>
               </button>
             </div>
 

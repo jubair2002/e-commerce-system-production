@@ -25,12 +25,28 @@ $envBaseUrl = env('BASE_URL');
 if (!empty($envBaseUrl)) {
     define('BASE_URL', rtrim((string)$envBaseUrl, '/') . '/');
 } else {
-    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-    $scriptDir = rtrim($scriptDir, '/');
-    if (preg_match('#/admin(/.*)?$#', $scriptDir)) {
-        $scriptDir = preg_replace('#/admin(/.*)?$#', '', $scriptDir);
+    $rootPath = str_replace('\\', '/', realpath(dirname(__DIR__)) ?: dirname(__DIR__));
+    $scriptFilename = isset($_SERVER['SCRIPT_FILENAME']) ? str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']) ?: $_SERVER['SCRIPT_FILENAME']) : '';
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+
+    $base = '';
+    if (!empty($rootPath) && !empty($scriptFilename) && str_starts_with($scriptFilename, $rootPath)) {
+        $relScript = substr($scriptFilename, strlen($rootPath));
+        if ($relScript !== '' && str_ends_with($scriptName, $relScript)) {
+            $base = substr($scriptName, 0, -strlen($relScript));
+        }
     }
-    define('BASE_URL', ($scriptDir === '' ? '/' : $scriptDir . '/'));
+
+    if ($base === '') {
+        $scriptDir = str_replace('\\', '/', dirname($scriptName));
+        $scriptDir = rtrim($scriptDir, '/');
+        if (preg_match('#/(admin|account|api|cron|ajax)(/.*)?$#', $scriptDir)) {
+            $scriptDir = preg_replace('#/(admin|account|api|cron|ajax)(/.*)?$#', '', $scriptDir);
+        }
+        $base = $scriptDir;
+    }
+
+    define('BASE_URL', ($base === '' || $base === '/') ? '/' : (rtrim($base, '/') . '/'));
 }
 define('ADMIN_URL', BASE_URL . 'admin/');
 

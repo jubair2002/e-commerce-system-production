@@ -323,7 +323,7 @@ foreach ($allTimestamps as $ts) {
 $slowRequests = [];
 try {
     $slowRequests = $pdo->query(
-        "SELECT path, method, status_code, duration_ms, peak_mem, created_at
+        "SELECT path, method, status_code, duration_ms, query_count, peak_mem, created_at
          FROM slow_requests
          ORDER BY id DESC
          LIMIT 10"

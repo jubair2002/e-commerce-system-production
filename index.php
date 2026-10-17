@@ -84,6 +84,11 @@ if ($showFeatured) {
     } catch (Throwable $e) { $featured = []; }
 }
 
+// Batch attach hover images and swatches to eliminate N+1 queries
+if (!empty($newArrivals)) products_attach_card_data($newArrivals);
+if (!empty($bestSellers)) products_attach_card_data($bestSellers);
+if (!empty($featured))    products_attach_card_data($featured);
+
 include __DIR__ . '/includes/shop_header.php';
 ?>
 

@@ -86,14 +86,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         'mail_from_email'       => ['type' => 'email'],
         'mail_from_name'        => ['type' => 'text'],
         'mail_reply_to'         => ['type' => 'email'],
-        'mail_timeout'          => ['type' => 'int', 'min' => 5, 'max' => 60],
+        'mail_timeout'          => ['type' => 'int', 'min' => 2, 'max' => 60],
         'mail_max_attempts'     => ['type' => 'int', 'min' => 1, 'max' => 10],
         'mail_send_mode'        => ['type' => 'enum', 'choices' => ['queue', 'instant']],
+        'mail_poor_cron'        => ['type' => 'bool'],
         'mail_admin_notify'     => ['type' => 'bool'],
         'mail_admin_recipients' => ['type' => 'text'],
         'mail_notify_low_stock' => ['type' => 'bool'],
         'mail_footer_text'      => ['type' => 'text'],
     ];
+
+    if (!function_exists('fastcgi_finish_request') && ($_POST['mail_send_mode'] ?? '') === 'instant') {
+        $_POST['mail_send_mode'] = 'queue';
+        flash('info', 'Instant mode is only supported on PHP-FPM / Nginx. On Apache mod_php/XAMPP, Queue mode is enforced to ensure web responses remain ultra-fast.');
+    }
 
     $res = settings_save($_POST, $rules, 'mail');
 
@@ -363,7 +369,7 @@ include __DIR__ . '/includes/header.php';
 
           <div class="mb-3">
             <label class="form-label small fw-semibold">Admin Recipient Emails</label>
-            <input type="text" name="mail_admin_recipients" class="form-control form-control-sm" value="<?= e($cfg['admin_recipients']) ?>" placeholder="admin@store.com, manager@store.com">
+            <input type="text" name="mail_admin_recipients" class="form-control form-control-sm" value="<?= e($cfg['admin_recipients'] ?? setting('mail_admin_recipients', '')) ?>" placeholder="admin@store.com, manager@store.com">
             <div class="form-text" style="font-size: 11px;">Comma-separated list of administrative notification recipients.</div>
           </div>
         </div>

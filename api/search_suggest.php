@@ -40,6 +40,7 @@ if ($q === '' || mb_strlen($q) < 2) {
         }, $popularCats),
         'total_results' => 0,
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if (function_exists('app_finish_response')) app_finish_response();
     exit;
 }
 
@@ -136,3 +137,5 @@ echo json_encode([
     'categories'    => $categories,
     'total_results' => $totalFound,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+if (function_exists('app_finish_response')) app_finish_response();
+exit;

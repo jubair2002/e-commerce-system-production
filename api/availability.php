@@ -41,6 +41,7 @@ if (!$isAdmin) {
         header('Retry-After: ' . $retryAfter);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Too many requests. Please slow down.', 'retry_after' => $retryAfter]);
+        if (function_exists('app_finish_response')) app_finish_response();
         exit;
     }
 }
@@ -288,6 +289,7 @@ function send_etag_response(array $data): void
         header('HTTP/1.1 304 Not Modified');
         header('ETag: ' . $etag);
         header('Cache-Control: no-store');
+        if (function_exists('app_finish_response')) app_finish_response();
         exit;
     }
 
@@ -295,5 +297,6 @@ function send_etag_response(array $data): void
     header('ETag: ' . $etag);
     header('Cache-Control: no-store');
     echo $payload;
+    if (function_exists('app_finish_response')) app_finish_response();
     exit;
 }

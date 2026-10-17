@@ -182,22 +182,44 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <div class="row g-4 mb-4">
-  <!-- Customer Details Card -->
+  <!-- Customer Details Card (Prompt 14) -->
   <div class="col-md-4">
     <div class="card h-100 shadow-sm border-0">
-      <div class="card-header bg-white py-3 border-bottom">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-semibold"><i class="bi bi-person text-primary me-2"></i> Customer Info</h6>
+        <?php if (!empty($order['customer_id'])): ?>
+          <a href="<?= e(admin_url('customer_view.php?id=' . (int)$order['customer_id'])) ?>" class="badge bg-primary text-decoration-none">
+            <i class="bi bi-person-check me-1"></i> Registered
+          </a>
+        <?php else: ?>
+          <span class="badge bg-secondary-subtle text-muted border">Guest</span>
+        <?php endif; ?>
       </div>
       <div class="card-body">
-        <div class="fw-bold fs-6"><?= e($order['customer_name']) ?></div>
-        <div class="mt-1">
-          <i class="bi bi-telephone text-muted me-1"></i>
-          <a href="tel:<?= e($order['customer_phone']) ?>" class="text-decoration-none"><?= e($order['customer_phone']) ?></a>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="fw-bold fs-6 text-dark"><?= e($order['customer_name']) ?></div>
+          <?php if (!empty($order['customer_id'])): ?>
+            <a href="<?= e(admin_url('customer_view.php?id=' . (int)$order['customer_id'])) ?>" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+              <i class="bi bi-person me-1"></i> Profile
+            </a>
+          <?php endif; ?>
         </div>
+
+        <div class="mt-2 d-flex align-items-center gap-2">
+          <i class="bi bi-telephone text-muted"></i>
+          <a href="tel:<?= e($order['customer_phone']) ?>" class="text-decoration-none text-dark fw-medium"><?= e($order['customer_phone']) ?></a>
+          <?php $cleanPhone = preg_replace('/[^0-9]/', '', (string)$order['customer_phone']); ?>
+          <?php if ($cleanPhone): ?>
+            <a href="https://wa.me/<?= e($cleanPhone) ?>" target="_blank" class="badge bg-success-subtle text-success text-decoration-none border border-success-subtle" title="Chat on WhatsApp">
+              <i class="bi bi-whatsapp"></i> WhatsApp
+            </a>
+          <?php endif; ?>
+        </div>
+
         <?php if (!empty($order['customer_email'])): ?>
-          <div class="mt-1">
-            <i class="bi bi-envelope text-muted me-1"></i>
-            <a href="mailto:<?= e($order['customer_email']) ?>" class="text-decoration-none"><?= e($order['customer_email']) ?></a>
+          <div class="mt-2 d-flex align-items-center gap-2">
+            <i class="bi bi-envelope text-muted"></i>
+            <a href="mailto:<?= e($order['customer_email']) ?>" class="text-decoration-none text-dark small"><?= e($order['customer_email']) ?></a>
           </div>
         <?php endif; ?>
       </div>

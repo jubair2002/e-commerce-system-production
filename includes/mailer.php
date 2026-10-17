@@ -43,10 +43,10 @@ function mail_config(): array
         'from_name'        => setting('mail_from_name', setting('site_name', APP_NAME)),
         'reply_to'         => setting('mail_reply_to', ''),
         'admin_notify'     => (int)setting('mail_admin_notify', '1') === 1,
-        'admin_recipients' => setting('mail_admin_recipients', setting('site_email', '')),
-        'timeout'          => max(5, (int)setting('mail_timeout', '15')),
+        'admin_recipients' => setting('mail_admin_recipients', ''),
+        'timeout'          => min(max(2, (int)setting('mail_timeout', '8')), 8),
         'max_attempts'     => max(1, (int)setting('mail_max_attempts', '3')),
-        'send_mode'        => setting('mail_send_mode', 'queue'), // queue | instant
+        'send_mode'        => (function_exists('fastcgi_finish_request') && setting('mail_send_mode', 'queue') === 'instant') ? 'instant' : 'queue',
         'notify_low_stock' => (int)setting('mail_notify_low_stock', '1') === 1,
         'footer_text'      => setting('mail_footer_text', ''),
     ];
@@ -99,6 +99,7 @@ function mail_send_now(array $msg): array
 
         if ($driver === 'smtp') {
             $mail->isSMTP();
+            $mail->Timeout    = $cfg['timeout'];
             $mail->Host       = $cfg['host'];
             $mail->Port       = $cfg['port'];
             $mail->SMTPAuth   = !empty($cfg['username']);
@@ -365,22 +366,37 @@ function mail_process_queue_item(int $id): bool
  */
 function mail_process_queue(int $limit = 20): array
 {
+    // Return immediately if mail system is disabled
+    if ((int)setting('mail_enabled', '0') !== 1) {
+        return ['processed' => 0, 'sent' => 0, 'failed' => 0];
+    }
+
+    $deadline = microtime(true) + 8.0; // Stop loop after 8 seconds total
     $pdo = db();
     $stmt = $pdo->prepare(
-        "SELECT id FROM email_queue
+        "SELECT id, scheduled_at FROM email_queue
          WHERE status = 'pending' AND scheduled_at <= NOW()
          ORDER BY id ASC
          LIMIT :lim"
     );
     $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
     $stmt->execute();
-    $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $rows = $stmt->fetchAll();
 
     $sent = 0;
     $failed = 0;
+    $processed = 0;
 
-    foreach ($ids as $id) {
-        $ok = mail_process_queue_item((int)$id);
+    foreach ($rows as $r) {
+        if (microtime(true) >= $deadline) {
+            break; // Stop loop after 8 seconds total
+        }
+        if (!empty($r['scheduled_at']) && strtotime($r['scheduled_at']) > time()) {
+            continue;
+        }
+
+        $processed++;
+        $ok = mail_process_queue_item((int)$r['id']);
         if ($ok) {
             $sent++;
         } else {
@@ -392,7 +408,7 @@ function mail_process_queue(int $limit = 20): array
     update_setting('mail_last_run', (string)time());
 
     return [
-        'processed' => count($ids),
+        'processed' => $processed,
         'sent'      => $sent,
         'failed'    => $failed,
     ];
@@ -470,20 +486,25 @@ hook_register('order.placed', function (array $data) {
         $trackUrl = rtrim(BASE_URL, '/') . '/track.php?order_number=' . urlencode($order['order_number']) . '&phone=' . urlencode($order['customer_phone']);
         $adminOrderUrl = rtrim(BASE_URL, '/') . '/admin/order_view.php?id=' . $order['id'];
 
+        $accountOrderUrl = !empty($order['customer_id'])
+            ? rtrim(BASE_URL, '/') . '/account/order.php?o=' . urlencode($order['order_number'])
+            : $trackUrl;
+
         $vars = [
-            'order_number'     => $order['order_number'],
-            'customer_name'    => $order['customer_name'],
-            'customer_phone'   => $order['customer_phone'],
-            'customer_email'   => $order['customer_email'],
-            'shipping_address' => $order['shipping_address'] . ', ' . $order['shipping_city'],
-            'subtotal'         => format_price($order['subtotal']),
-            'shipping_fee'     => format_price($order['shipping_fee']),
-            'discount'         => format_price($order['discount_total']),
-            'total'            => format_price($order['total']),
-            'payment_method'   => strtoupper($order['payment_method']),
-            'track_url'        => $trackUrl,
-            'admin_order_url'  => $adminOrderUrl,
-            'items_table'      => $itemsTableHtml,
+            'order_number'      => $order['order_number'],
+            'customer_name'     => $order['customer_name'],
+            'customer_phone'    => $order['customer_phone'],
+            'customer_email'    => $order['customer_email'],
+            'shipping_address'  => $order['shipping_address'] . ', ' . $order['shipping_city'],
+            'subtotal'          => format_price($order['subtotal']),
+            'shipping_fee'      => format_price($order['shipping_fee']),
+            'discount'          => format_price($order['discount_total']),
+            'total'             => format_price($order['total']),
+            'payment_method'    => strtoupper($order['payment_method']),
+            'track_url'         => $trackUrl,
+            'account_order_url' => $accountOrderUrl,
+            'admin_order_url'   => $adminOrderUrl,
+            'items_table'       => $itemsTableHtml,
         ];
 
         // Send to Customer

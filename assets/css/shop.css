@@ -2089,3 +2089,329 @@ button, input, select, textarea {
   font-size: 15px;
   margin-bottom: 24px;
 }
+
+/* -------------------------------------------------------------
+   Customer Authentication & Account Layout (Prompt 12)
+   ------------------------------------------------------------- */
+.auth-page-wrapper {
+  min-height: calc(100vh - 240px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background-color: var(--bg-soft, #fbfbfb);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: var(--radius-md, 12px);
+  padding: 36px 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.auth-header {
+  margin-bottom: 24px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink, #111111);
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  font-size: 13.5px;
+  color: var(--ink-2, #666666);
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
+.btn-editorial-primary {
+  background: var(--ink, #111111);
+  color: #ffffff;
+  border: 1px solid var(--ink, #111111);
+  padding: 10px 18px;
+  font-size: 14.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm, 6px);
+  transition: all var(--transition-fast, 0.15s ease);
+  text-align: center;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.btn-editorial-primary:hover,
+.btn-editorial-primary:focus {
+  background: #333333;
+  color: #ffffff;
+  border-color: #333333;
+}
+
+.btn-pw-toggle {
+  border-color: var(--line, #dee2e6);
+  background-color: transparent;
+  color: var(--ink-2, #666);
+}
+
+.btn-pw-toggle:hover {
+  background-color: var(--bg-soft, #f8f9fa);
+  color: var(--ink, #111);
+}
+
+.password-meter-bar {
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Account dropdown in header */
+.header-account-dropdown .dropdown-menu {
+  min-width: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e5e5e5);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  padding: 8px 0;
+}
+
+.header-account-dropdown .dropdown-item {
+  font-size: 13.5px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink, #111);
+}
+
+.header-account-dropdown .dropdown-item:hover {
+  background-color: var(--bg-soft, #f8f9fa);
+}
+
+.header-account-dropdown .dropdown-item i {
+  font-size: 15px;
+  color: var(--ink-2, #666);
+}
+
+/* -------------------------------------------------------------
+   Customer Account Area (Prompt 13)
+   ------------------------------------------------------------- */
+.account-wrapper {
+  padding: 40px 0 60px;
+  background-color: var(--bg-soft, #fcfcfc);
+  min-height: calc(100vh - 260px);
+}
+
+.account-sidebar-card {
+  background: #ffffff;
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: var(--radius-md, 10px);
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.account-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line, #e5e5e5);
+  margin-bottom: 16px;
+}
+
+.avatar-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #111111 0%, #444444 100%);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+}
+
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.account-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2, #555);
+  text-decoration: none;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.account-nav-link:hover {
+  background-color: var(--bg-soft, #f4f4f4);
+  color: var(--ink, #111);
+}
+
+.account-nav-link.active {
+  background-color: var(--ink, #111);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.account-nav-link.active i {
+  color: #ffffff !important;
+}
+
+.account-nav-mobile {
+  display: none;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line, #e5e5e5);
+  gap: 8px;
+}
+
+@media (max-width: 991.98px) {
+  .account-nav-mobile {
+    display: flex;
+  }
+}
+
+.account-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2, #555);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.account-nav-pill.active {
+  background: var(--ink, #111);
+  border-color: var(--ink, #111);
+  color: #ffffff;
+}
+
+.account-card {
+  background: #ffffff;
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: var(--radius-md, 10px);
+  padding: 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+  margin-bottom: 24px;
+}
+
+.account-card-header {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line, #e5e5e5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink, #111);
+}
+
+/* Order timeline */
+.order-timeline {
+  position: relative;
+  padding-left: 28px;
+  list-style: none;
+  margin: 0;
+}
+
+.order-timeline::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--line, #e5e5e5);
+}
+
+.order-timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.order-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.order-timeline-dot {
+  position: absolute;
+  left: -28px;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--ink, #111);
+  z-index: 1;
+}
+
+.order-timeline-dot.active {
+  background: var(--ink, #111);
+}
+
+/* Wishlist Button */
+.btn-wishlist {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #dc3545;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  padding: 0;
+}
+
+.btn-wishlist:hover {
+  background: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.btn-wishlist.active i::before {
+  content: "\F415"; /* bi-heart-fill */
+}
+
+

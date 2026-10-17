@@ -378,3 +378,54 @@ function storefront_filter_options(): array
         return [];
     }
 }
+
+/**
+ * Attach second_image + swatches to a list of product rows (in place).
+ * Executes exactly 2 batch queries for any number of products to eliminate N+1 overhead.
+ */
+function products_attach_card_data(array &$products): void
+{
+    if (!$products) return;
+    $ids = array_values(array_unique(array_filter(array_map('intval', array_column($products, 'id')))));
+    if (!$ids) return;
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+
+    $second = [];
+    try {
+        $st = db()->prepare(
+            "SELECT product_id, filename FROM product_images
+             WHERE product_id IN ($in) AND is_primary = 0
+             ORDER BY product_id, position, id"
+        );
+        $st->execute($ids);
+        foreach ($st->fetchAll() as $r) {
+            if (!isset($second[$r['product_id']])) {
+                $second[$r['product_id']] = $r['filename'];
+            }
+        }
+    } catch (Throwable $e) {}
+
+    $sw = [];
+    try {
+        $st = db()->prepare(
+            "SELECT po.product_id, pov.value, pov.swatch_hex
+             FROM product_option_values pov
+             JOIN product_options po ON po.id = pov.option_id
+             WHERE po.product_id IN ($in)
+               AND (po.display_type IN ('color','swatch') OR LOWER(po.name) IN ('color','colour'))
+             ORDER BY po.product_id, pov.position, pov.id"
+        );
+        $st->execute($ids);
+        foreach ($st->fetchAll() as $r) {
+            $sw[$r['product_id']][] = ['value' => $r['value'], 'swatch_hex' => $r['swatch_hex']];
+        }
+    } catch (Throwable $e) {}
+
+    foreach ($products as &$p) {
+        $pid = (int)$p['id'];
+        $p['second_image'] = $second[$pid] ?? ''; // '' (not null) so the card won't re-query
+        $p['swatches']     = $sw[$pid] ?? [];
+    }
+    unset($p);
+}
+

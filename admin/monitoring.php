@@ -491,11 +491,12 @@ include __DIR__ . '/includes/header.php';
                 <th>Request Path</th>
                 <th>Status</th>
                 <th>Duration</th>
+                <th>Queries</th>
                 <th>Peak RAM</th>
               </tr>
             </thead>
             <tbody id="slowRequestsTableBody">
-              <tr><td colspan="6" class="text-center text-muted py-3">No slow requests recorded.</td></tr>
+              <tr><td colspan="7" class="text-center text-muted py-3">No slow requests recorded.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1042,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', function () {
         countSpan.textContent = slow.length;
 
         if (slow.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No slow requests recorded.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No slow requests recorded.</td></tr>';
             return;
         }
 
@@ -1055,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td><code>${r.path}</code></td>
                 <td><span class="badge ${statusClass}">${r.status_code || 200}</span></td>
                 <td class="fw-bold text-danger">${r.duration_ms} ms</td>
+                <td class="small text-muted font-monospace">${r.query_count !== null && r.query_count !== undefined ? r.query_count : '--'}</td>
                 <td class="small text-muted">${r.peak_mem ? formatBytes(r.peak_mem) : '--'}</td>
             </tr>`;
         });

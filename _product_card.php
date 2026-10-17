@@ -18,12 +18,21 @@ $showSaleBadge = (int)setting('shop_show_sale_badge', '1') === 1;
 $showLowBadge  = (int)setting('shop_show_low_stock_badge', '1') === 1;
 
 $primaryImg   = product_image_url($p['image'] ?? null);
-$secondImgRaw = $p['second_image'] ?? product_second_image($pid);
+$secondImgRaw = array_key_exists('second_image', $p) ? $p['second_image'] : product_second_image($pid);
 $secondImg    = $secondImgRaw ? product_image_url($secondImgRaw) : null;
-$swatches     = $p['swatches'] ?? product_color_swatches($pid);
+$swatches     = array_key_exists('swatches', $p) ? $p['swatches'] : product_color_swatches($pid);
 $productUrl   = shop_url('product.php?slug=' . urlencode($p['slug']));
 ?>
-<div class="product-card" data-product-id="<?= $pid ?>">
+<div class="product-card" data-product-id="<?= $pid ?>" style="position:relative;">
+  <!-- Wishlist Heart Button -->
+  <button type="button"
+          class="btn-wishlist card-wishlist-btn position-absolute top-0 end-0 m-2"
+          style="z-index: 5;"
+          data-wishlist-btn="<?= $pid ?>"
+          aria-label="Save to wishlist"
+          title="Save to wishlist">
+    <i class="bi bi-heart"></i>
+  </button>
   <a href="<?= e($productUrl) ?>" class="product-img-wrap" aria-label="<?= e($p['name']) ?>">
     <!-- Primary Image -->
     <img src="<?= e($primaryImg) ?>"

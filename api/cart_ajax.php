@@ -84,6 +84,11 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     cart_clear();
 }
 
+// For read-only cart inspection, release the session lock immediately
+if ($action === 'get' && session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 // Hydrate fresh state
 $cart = cart_load();
 
@@ -138,7 +143,8 @@ ob_start();
     <?php endforeach; ?>
   </div>
 <?php endif; ?>
-<?php
 $response['html'] = ob_get_clean();
 
 echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+if (function_exists('app_finish_response')) app_finish_response();
+exit;

@@ -39,3 +39,16 @@ Notes
 - The files start with `USE php_admin_panel;`. If your DB has another name, change that one line.
 - Needs MySQL 5.7+ or MariaDB 10.x. Tested on MariaDB 10.11 (clean install, then run twice).
 - Existing products stay "simple" and keep working; variants are opt-in per product.
+
+## Background Mail Queue Worker
+To ensure checkout and browsing remain fast with zero delay from external SMTP servers, run the background mail processor every 1 minute:
+
+- **Windows Task Scheduler (XAMPP):**
+  Program: `C:\xampp\php\php.exe`
+  Arguments: `C:\xampp\htdocs\SHOP\cron\process_mail_queue.php`
+  Trigger: Repeat every 1 minute indefinitely.
+
+- **Linux / cPanel Cron:**
+  `* * * * * php /path/to/cron/process_mail_queue.php >/dev/null 2>&1`
+
+For complete local and production tuning instructions (OPcache, MariaDB, Apache deflate/expires), see [DEPLOY.md](DEPLOY.md).

@@ -16,6 +16,15 @@ if (empty($cart['items'])) {
     redirect('cart.php');
 }
 
+// Prompt 12: Customer Account & Guest Checkout Enforce
+$guestCheckout = (int)setting('guest_checkout', '1') === 1;
+$currentCustomer = function_exists('customer_current') ? customer_current() : null;
+if (!$guestCheckout && !$currentCustomer) {
+    flash('info', 'Please sign in or create an account to proceed to checkout.');
+    header('Location: ' . shop_url('login.php?next=' . urlencode('/checkout.php')));
+    exit;
+}
+
 // Fetch active shipping methods
 $shippingMethods = [];
 try {
@@ -70,6 +79,48 @@ $old = [
     'shipping_method_id' => $selectedShippingId,
     'notes'            => '',
 ];
+
+$savedAddresses = [];
+if ($currentCustomer) {
+    try {
+        $stA = db()->prepare("SELECT * FROM customer_addresses WHERE customer_id = :cid ORDER BY is_default DESC, id DESC");
+        $stA->execute([':cid' => (int)$currentCustomer['id']]);
+        $savedAddresses = $stA->fetchAll();
+    } catch (Throwable $e) {}
+}
+
+if ($currentCustomer && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $old['customer_name']  = $currentCustomer['name'] ?? '';
+    $old['customer_email'] = $currentCustomer['email'] ?? '';
+    $old['customer_phone'] = $currentCustomer['phone'] ?? '';
+
+    if (!empty($savedAddresses)) {
+        $cAddr = $savedAddresses[0];
+        $old['shipping_address'] = $cAddr['address'] ?? '';
+        $old['shipping_city']    = $cAddr['city'] ?? '';
+        $old['shipping_zip']     = $cAddr['zip'] ?? '';
+        if (!empty($cAddr['phone']) && empty($old['customer_phone'])) {
+            $old['customer_phone'] = $cAddr['phone'];
+        }
+        if (!empty($cAddr['full_name']) && empty($old['customer_name'])) {
+            $old['customer_name'] = $cAddr['full_name'];
+        }
+    } else {
+        try {
+            $stL = db()->prepare("SELECT shipping_address, shipping_city, shipping_zip, customer_phone FROM orders WHERE customer_id = :cid ORDER BY id DESC LIMIT 1");
+            $stL->execute([':cid' => (int)$currentCustomer['id']]);
+            $lOrder = $stL->fetch();
+            if ($lOrder) {
+                $old['shipping_address'] = $lOrder['shipping_address'] ?? '';
+                $old['shipping_city']    = $lOrder['shipping_city'] ?? '';
+                $old['shipping_zip']     = $lOrder['shipping_zip'] ?? '';
+                if (!empty($lOrder['customer_phone']) && empty($old['customer_phone'])) {
+                    $old['customer_phone'] = $lOrder['customer_phone'];
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
@@ -210,19 +261,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $monthPrefix = $prefixSetting . '-' . date('Ym') . '-';
 
             // Find current highest sequence with row lock or generate
+            $customerId = $currentCustomer ? (int)$currentCustomer['id'] : null;
+
             for ($retry = 0; $retry < 5; $retry++) {
                 $randSuffix = str_pad((string)mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
                 $candidateNumber = $monthPrefix . $randSuffix;
 
                 $stmtInsertOrder = $pdo->prepare(
                     "INSERT INTO orders
-                      (order_number, customer_name, customer_email, customer_phone,
+                      (order_number, customer_id, customer_name, customer_email, customer_phone,
                        shipping_address, shipping_city, shipping_zip, shipping_country,
                        subtotal, shipping_fee, discount_total, cod_fee, total,
                        payment_method, payment_status, shipping_method_id, shipping_method_name,
                        coupon_code, ip_address, notes, status, stock_restored)
                      VALUES
-                      (:order_number, :name, :email, :phone,
+                      (:order_number, :customer_id, :name, :email, :phone,
                        :address, :city, :zip, 'Bangladesh',
                        :subtotal, :shipping_fee, :discount_total, :cod_fee, :total,
                        :payment_method, 'unpaid', :shipping_method_id, :shipping_method_name,
@@ -232,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $stmtInsertOrder->execute([
                         ':order_number'         => $candidateNumber,
+                        ':customer_id'          => $customerId,
                         ':name'                 => $old['customer_name'],
                         ':email'                => $old['customer_email'],
                         ':phone'                => $old['customer_phone'],
@@ -263,6 +317,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$orderId || !$orderNumber) {
                 throw new Exception('Unable to generate unique order number. Please try again.');
+            }
+
+            // Save address to customer address book if logged in and requested
+            if ($customerId && !empty($_POST['save_address']) && (empty($_POST['saved_address_id']) || $_POST['saved_address_id'] === 'new')) {
+                try {
+                    $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM customer_addresses WHERE customer_id = :cid");
+                    $cntStmt->execute([':cid' => $customerId]);
+                    $addrCount = (int)$cntStmt->fetchColumn();
+                    if ($addrCount < 10) {
+                        $isDef = ($addrCount === 0) ? 1 : 0;
+                        $stSave = $pdo->prepare(
+                            "INSERT INTO customer_addresses
+                              (customer_id, label, full_name, phone, address, city, zip, is_default, created_at)
+                             VALUES
+                              (:cid, 'Home', :rname, :phone, :addr, :city, :zip, :def, NOW())"
+                        );
+                        $stSave->execute([
+                            ':cid'   => $customerId,
+                            ':rname' => $old['customer_name'],
+                            ':phone' => $old['customer_phone'],
+                            ':addr'  => $old['shipping_address'],
+                            ':city'  => $old['shipping_city'],
+                            ':zip'   => $old['shipping_zip'] ?: null,
+                            ':def'   => $isDef,
+                        ]);
+                    }
+                } catch (Throwable $e) {}
             }
 
             // Insert line items & atomically adjust stock
@@ -408,8 +489,17 @@ include __DIR__ . '/includes/shop_header.php';
         <div class="col-lg-7">
 
           <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
               <h5 class="mb-0 fw-semibold"><i class="bi bi-person-circle text-primary me-2"></i> Contact Information</h5>
+              <?php if ($currentCustomer): ?>
+                <span class="badge bg-light text-dark border">
+                  <i class="bi bi-check-circle-fill text-success me-1"></i> <?= e($currentCustomer['name']) ?>
+                </span>
+              <?php else: ?>
+                <a href="<?= e(shop_url('login.php?next=' . urlencode('/checkout.php'))) ?>" class="small text-decoration-underline text-muted">
+                  Already have an account? Sign in
+                </a>
+              <?php endif; ?>
             </div>
             <div class="card-body">
               <div class="row g-3">
@@ -452,9 +542,48 @@ include __DIR__ . '/includes/shop_header.php';
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-12">
+                <?php if (!empty($savedAddresses)): ?>
+                  <div class="col-12 mb-2">
+                    <label class="form-label fw-medium d-flex justify-content-between align-items-center">
+                      <span><i class="bi bi-journal-bookmark me-1 text-primary"></i> Saved Delivery Addresses</span>
+                      <a href="<?= e(shop_url('account/addresses.php')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
+                    </label>
+                    <div class="d-flex flex-column gap-2" id="savedAddressSelector">
+                      <?php foreach ($savedAddresses as $idx => $sa): 
+                        $isSelected = ($idx === 0);
+                      ?>
+                        <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item <?= $isSelected ? 'border-primary bg-primary-subtle' : '' ?>" style="cursor:pointer;">
+                          <input type="radio" name="saved_address_id" value="<?= (int)$sa['id'] ?>" class="form-check-input mt-1" <?= $isSelected ? 'checked' : '' ?>
+                            data-name="<?= e($sa['full_name']) ?>"
+                            data-phone="<?= e($sa['phone']) ?>"
+                            data-addr="<?= e($sa['address']) ?>"
+                            data-city="<?= e($sa['city']) ?>"
+                            data-zip="<?= e($sa['zip'] ?? '') ?>"
+                          >
+                          <div class="small flex-grow-1">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                              <span class="badge bg-secondary"><?= e($sa['label']) ?></span>
+                              <?php if (!empty($sa['is_default'])): ?>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Default</span>
+                              <?php endif; ?>
+                              <strong class="ms-1"><?= e($sa['full_name']) ?></strong>
+                              <span class="text-muted ms-1">(<?= e($sa['phone']) ?>)</span>
+                            </div>
+                            <div class="text-secondary"><?= e($sa['address']) ?>, <?= e($sa['city']) ?><?= !empty($sa['zip']) ? ' - ' . e($sa['zip']) : '' ?></div>
+                          </div>
+                        </label>
+                      <?php endforeach; ?>
+                      <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer;">
+                        <input type="radio" name="saved_address_id" value="new" class="form-check-input">
+                        <span class="small fw-semibold text-primary"><i class="bi bi-plus-circle me-1"></i> Add new delivery address</span>
+                      </label>
+                    </div>
+                  </div>
+                <?php endif; ?>
+
+                <div class="col-12" id="addressInputWrap">
                   <label class="form-label fw-medium">Street Address / House / Flat <span class="text-danger">*</span></label>
-                  <textarea name="shipping_address" class="form-control" rows="2"
+                  <textarea name="shipping_address" id="shippingAddressInput" class="form-control" rows="2"
                             placeholder="House #, Road #, Area / Thana" required><?= e($old['shipping_address']) ?></textarea>
                 </div>
 
@@ -477,7 +606,7 @@ include __DIR__ . '/includes/shop_header.php';
 
                 <div class="col-md-6">
                   <label class="form-label fw-medium">Area / Postal Code</label>
-                  <input type="text" name="shipping_zip" class="form-control"
+                  <input type="text" name="shipping_zip" id="shippingZipInput" class="form-control"
                          value="<?= e($old['shipping_zip']) ?>" placeholder="e.g. 1205">
                 </div>
 
@@ -486,6 +615,17 @@ include __DIR__ . '/includes/shop_header.php';
                   <input type="text" name="notes" class="form-control"
                          value="<?= e($old['notes']) ?>" placeholder="Special instructions for delivery (e.g. call before arriving)">
                 </div>
+
+                <?php if ($currentCustomer): ?>
+                  <div class="col-12 mt-2" id="saveAddressCheckWrap" style="<?= !empty($savedAddresses) ? 'display:none;' : '' ?>">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="save_address" value="1" id="saveAddressCheck" <?= empty($savedAddresses) ? 'checked' : '' ?>>
+                      <label class="form-check-label small" for="saveAddressCheck">
+                        Save this address to my account for future orders
+                      </label>
+                    </div>
+                  </div>
+                <?php endif; ?>
               </div>
             </div>
           </div>
@@ -754,6 +894,61 @@ document.addEventListener('DOMContentLoaded', function() {
             recalculate();
         });
     });
+
+    // Saved address selection handling
+    const savedAddressRadios = document.querySelectorAll('input[name="saved_address_id"]');
+    if (savedAddressRadios.length) {
+        savedAddressRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.saved-addr-item').forEach(el => {
+                    el.classList.remove('border-primary', 'bg-primary-subtle');
+                });
+                const parentLabel = this.closest('.saved-addr-item');
+                if (parentLabel) {
+                    parentLabel.classList.add('border-primary', 'bg-primary-subtle');
+                }
+
+                const addrInput = document.getElementById('shippingAddressInput');
+                const zipInput = document.getElementById('shippingZipInput');
+                const phoneInput = document.querySelector('input[name="customer_phone"]');
+                const nameInput = document.querySelector('input[name="customer_name"]');
+                const saveWrap = document.getElementById('saveAddressCheckWrap');
+                const saveCheck = document.getElementById('saveAddressCheck');
+
+                if (this.value === 'new') {
+                    if (addrInput) { addrInput.value = ''; addrInput.focus(); }
+                    if (cityInput) cityInput.value = '';
+                    if (zipInput) zipInput.value = '';
+                    if (saveCheck) saveCheck.checked = true;
+                    if (saveWrap) saveWrap.style.display = '';
+                } else {
+                    if (addrInput && this.dataset.addr) addrInput.value = this.dataset.addr;
+                    if (cityInput && this.dataset.city) {
+                        cityInput.value = this.dataset.city;
+                        // Auto-match city to shipping rate
+                        const lowerCity = this.dataset.city.toLowerCase();
+                        for (const sRadio of shippingRadios) {
+                            const name = (sRadio.getAttribute('data-name') || '').toLowerCase();
+                            const zone = (sRadio.getAttribute('data-zone') || '').toLowerCase();
+                            if (lowerCity.includes('dhaka') && (name.includes('inside dhaka') || zone.includes('inside dhaka'))) {
+                                sRadio.checked = true;
+                                break;
+                            } else if (!lowerCity.includes('dhaka') && (name.includes('outside dhaka') || zone.includes('outside dhaka'))) {
+                                sRadio.checked = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (zipInput) zipInput.value = this.dataset.zip || '';
+                    if (phoneInput && this.dataset.phone && !phoneInput.value) phoneInput.value = this.dataset.phone;
+                    if (nameInput && this.dataset.name && !nameInput.value) nameInput.value = this.dataset.name;
+                    if (saveCheck) saveCheck.checked = false;
+                    if (saveWrap) saveWrap.style.display = 'none';
+                    recalculate();
+                }
+            });
+        });
+    }
 
     recalculate();
 });

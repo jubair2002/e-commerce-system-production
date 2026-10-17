@@ -10,20 +10,41 @@ require_once __DIR__ . '/hooks.php';
 require_once __DIR__ . '/catalog.php';
 require_once __DIR__ . '/inventory.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/customer_auth.php';
 
-// Poor man's cron fallback for queue processing
+// Silently restore customer session from remember-me token if present
+if (PHP_SAPI !== 'cli' && function_exists('customer_remember_restore')) {
+    customer_remember_restore();
+}
+
+// Safe fallback for mail queue processing: runs ONLY when explicitly enabled by admin (mail_poor_cron=1)
+// AND mail_enabled=1 AND pending emails actually exist, strictly after user response has finished.
 if (PHP_SAPI !== 'cli') {
     register_shutdown_function(function () {
+        if ((int)setting('mail_poor_cron', '0') !== 1 || (int)setting('mail_enabled', '0') !== 1) {
+            return;
+        }
         $lastRun = (int)setting('mail_last_run', '0');
-        if ((time() - $lastRun) > 120) {
-            update_setting('mail_last_run', (string)time());
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request();
+        if ((time() - $lastRun) < 120) {
+            return;
+        }
+        try {
+            // Cheap check to see if pending mail is ready
+            $hasPending = (bool)db()->query(
+                "SELECT 1 FROM email_queue WHERE status = 'pending' AND scheduled_at <= NOW() LIMIT 1"
+            )->fetchColumn();
+            if (!$hasPending) {
+                return;
             }
+
+            if (function_exists('app_finish_response')) {
+                app_finish_response();
+            }
+
             if (function_exists('mail_process_queue')) {
                 mail_process_queue(5);
             }
-        }
+        } catch (Throwable $e) {}
     });
 }
 
@@ -324,9 +345,9 @@ function cart_load(): array
         return ['items' => [], 'subtotal' => 0.0, 'alerts' => [], 'warnings' => []];
     }
 
-    $items    = [];
-    $subtotal = 0.0;
-    $alerts   = [];
+    $parsedItems = [];
+    $pids = [];
+    $vids = [];
 
     foreach ($rawCart as $cartKey => $qty) {
         $parsed = cart_parse_key((string)$cartKey);
@@ -339,21 +360,105 @@ function cart_load(): array
             continue;
         }
 
-        $product = product_get($pid);
+        $parsedItems[] = [
+            'cart_key'   => (string)$cartKey,
+            'product_id' => $pid,
+            'variant_id' => $vid,
+            'qty'        => $qty,
+        ];
+        $pids[] = $pid;
+        if ($vid !== null && $vid > 0) {
+            $vids[] = $vid;
+        }
+    }
+
+    if (!$parsedItems) {
+        return ['items' => [], 'subtotal' => 0.0, 'alerts' => [], 'warnings' => []];
+    }
+
+    $pids = array_values(array_unique($pids));
+    $vids = array_values(array_unique($vids));
+
+    // Batch fetch all products in cart (1 query)
+    $productsById = [];
+    if ($pids) {
+        $inP = implode(',', array_fill(0, count($pids), '?'));
+        $stP = db()->prepare("SELECT * FROM products WHERE id IN ($inP)");
+        $stP->execute($pids);
+        foreach ($stP->fetchAll() as $p) {
+            $productsById[(int)$p['id']] = $p;
+        }
+    }
+
+    // Batch fetch all variants in cart (max 2 queries total)
+    $variantsById = [];
+    if ($vids) {
+        $inV = implode(',', array_fill(0, count($vids), '?'));
+        $stV = db()->prepare("SELECT * FROM product_variants WHERE id IN ($inV)");
+        $stV->execute($vids);
+        foreach ($stV->fetchAll() as $v) {
+            $v['id'] = (int)$v['id'];
+            $v['product_id'] = (int)$v['product_id'];
+            $v['stock'] = (int)$v['stock'];
+            $v['option_value_ids'] = [];
+            $v['label_parts'] = [];
+            $variantsById[$v['id']] = $v;
+        }
+
+        // Batch fetch all variant value labels
+        $stVal = db()->prepare(
+            "SELECT pvv.variant_id, pvv.option_id, pvv.option_value_id,
+                    po.name AS option_name, pov.value AS option_value
+             FROM product_variant_values pvv
+             JOIN product_options po ON po.id = pvv.option_id
+             JOIN product_option_values pov ON pov.id = pvv.option_value_id
+             WHERE pvv.variant_id IN ($inV)
+             ORDER BY pvv.variant_id, po.position ASC, po.id ASC"
+        );
+        $stVal->execute($vids);
+        foreach ($stVal->fetchAll() as $r) {
+            $vid = (int)$r['variant_id'];
+            if (isset($variantsById[$vid])) {
+                $oid  = (int)$r['option_id'];
+                $ovid = (int)$r['option_value_id'];
+                $variantsById[$vid]['option_value_ids'][$oid] = $ovid;
+                $variantsById[$vid]['label_parts'][] = $r['option_name'] . ': ' . $r['option_value'];
+            }
+        }
+        foreach ($variantsById as &$vRef) {
+            $vRef['label'] = !empty($vRef['label_parts'])
+                ? implode(' / ', $vRef['label_parts'])
+                : ($vRef['sku'] ?: 'Default');
+            unset($vRef['label_parts']);
+        }
+        unset($vRef);
+    }
+
+    $items    = [];
+    $subtotal = 0.0;
+    $alerts   = [];
+
+    foreach ($parsedItems as $itemMeta) {
+        $cartKey = $itemMeta['cart_key'];
+        $pid     = $itemMeta['product_id'];
+        $vid     = $itemMeta['variant_id'];
+        $qty     = $itemMeta['qty'];
+
+        $product = $productsById[$pid] ?? null;
         if (!$product || $product['status'] !== 'active') {
             unset($_SESSION['cart'][$cartKey]);
             $alerts[] = 'An item in your cart is no longer available and was removed.';
             continue;
         }
 
-        // Variable product validation: MUST have a valid, active variant belonging to this product
+        // Variable product validation
         if (($product['product_type'] ?? 'simple') === 'variable') {
             if ($vid === null || $vid <= 0) {
                 unset($_SESSION['cart'][$cartKey]);
                 $alerts[] = '"' . $product['name'] . '" requires an option selection and was removed.';
                 continue;
             }
-            $variant = variant_get($vid);
+            $variant = $variantsById[$vid] ?? null;
             if (!$variant || (int)$variant['product_id'] !== $pid || $variant['status'] !== 'active') {
                 unset($_SESSION['cart'][$cartKey]);
                 $alerts[] = 'The selected combination for "' . $product['name'] . '" is no longer available and was removed.';

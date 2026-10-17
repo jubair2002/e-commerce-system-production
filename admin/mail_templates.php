@@ -61,6 +61,41 @@ $defaultTemplates = [
         'body_html' => '<p>If you can read this, your mail settings work.</p><p>Sent at {{sent_at}}.</p>',
         'variables' => 'site_name, sent_at',
     ],
+    'customer_welcome' => [
+        'name'      => 'Welcome (new account)',
+        'audience'  => 'customer',
+        'subject'   => 'Welcome to {{site_name}}, {{customer_name}}!',
+        'body_html' => '<p>Hi {{customer_name}},</p><p>Welcome to <strong>{{site_name}}</strong>! Your account is ready.</p><p><a href="{{login_url}}">Sign in to your account</a></p>',
+        'variables' => 'customer_name, customer_email, site_name, login_url',
+    ],
+    'customer_verify_email' => [
+        'name'      => 'Verify email address',
+        'audience'  => 'customer',
+        'subject'   => 'Verify your email address for {{site_name}}',
+        'body_html' => '<p>Hi {{customer_name}},</p><p>Please verify your email address by clicking the link below:</p><p><a href="{{verify_url}}">{{verify_url}}</a></p><p>This link expires in {{expires_in}}.</p>',
+        'variables' => 'customer_name, verify_url, expires_in, site_name',
+    ],
+    'customer_password_reset' => [
+        'name'      => 'Password reset link',
+        'audience'  => 'customer',
+        'subject'   => 'Reset your password for {{site_name}}',
+        'body_html' => '<p>Hi {{customer_name}},</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="{{reset_url}}">{{reset_url}}</a></p><p>This link expires in {{expires_in}}.</p>',
+        'variables' => 'customer_name, reset_url, expires_in, site_name',
+    ],
+    'customer_password_changed' => [
+        'name'      => 'Password changed notice',
+        'audience'  => 'customer',
+        'subject'   => 'Your password was changed - {{site_name}}',
+        'body_html' => '<p>Hi {{customer_name}},</p><p>Your account password was successfully changed at {{changed_at}}.</p><p>If you did not make this change, please contact us immediately at {{support_email}}.</p>',
+        'variables' => 'customer_name, changed_at, support_email, site_name',
+    ],
+    'customer_email_change' => [
+        'name'      => 'Confirm new email',
+        'audience'  => 'customer',
+        'subject'   => 'Confirm your new email address for {{site_name}}',
+        'body_html' => '<p>Hi {{customer_name}},</p><p>Click the link below to confirm {{new_email}} as your new account email:</p><p><a href="{{confirm_url}}">{{confirm_url}}</a></p><p>This link expires in {{expires_in}}.</p>',
+        'variables' => 'customer_name, new_email, confirm_url, expires_in, site_name',
+    ],
 ];
 
 $activeSlug = trim((string)($_GET['slug'] ?? 'order_placed_customer'));
@@ -104,6 +139,15 @@ if (isset($_GET['preview_slug'])) {
         'site_name'         => setting('site_name', APP_NAME),
         'sent_at'           => date('Y-m-d H:i:s'),
         'items_table'       => $sampleTable,
+        'verify_url'        => rtrim(BASE_URL, '/') . '/verify_email.php?t=sample_verify_token',
+        'reset_url'         => rtrim(BASE_URL, '/') . '/reset_password.php?t=sample_reset_token',
+        'confirm_url'       => rtrim(BASE_URL, '/') . '/verify_email.php?t=sample_change_token',
+        'login_url'         => rtrim(BASE_URL, '/') . '/login.php',
+        'new_email'         => 'newaddress@example.com',
+        'expires_in'        => '24 hours',
+        'changed_at'        => date('Y-m-d H:i:s'),
+        'support_email'     => setting('site_email', 'support@example.com'),
+        'account_order_url' => rtrim(BASE_URL, '/') . '/account/order.php?o=ORD-202610-0042',
     ];
 
     $renderedHtml = $tmpl['body_html'];
@@ -197,6 +241,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'site_name'         => setting('site_name', APP_NAME),
                 'sent_at'           => date('Y-m-d H:i:s'),
                 'items_table'       => $sampleTable,
+                'verify_url'        => rtrim(BASE_URL, '/') . '/verify_email.php?t=sample_verify_token',
+                'reset_url'         => rtrim(BASE_URL, '/') . '/reset_password.php?t=sample_reset_token',
+                'confirm_url'       => rtrim(BASE_URL, '/') . '/verify_email.php?t=sample_change_token',
+                'login_url'         => rtrim(BASE_URL, '/') . '/login.php',
+                'new_email'         => 'newaddress@example.com',
+                'expires_in'        => '24 hours',
+                'changed_at'        => date('Y-m-d H:i:s'),
+                'support_email'     => setting('site_email', 'support@example.com'),
+                'account_order_url' => rtrim(BASE_URL, '/') . '/account/order.php?o=ORD-SAMPLE-99',
             ];
 
             mail_queue_template($slug, $adminEmail, 'Admin Sample', $sampleVars, [

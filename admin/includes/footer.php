@@ -9,8 +9,9 @@
   </main><!-- /.app-main -->
 </div><!-- /.app -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="<?= e(url('assets/js/script.js')) ?>"></script>
+<script src="<?= e(url('assets/vendor/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
+<script src="<?= e(url('assets/vendor/chartjs/chart.umd.min.js')) ?>"></script>
+<script src="<?= e(url('assets/js/script.js')) ?>?v=<?= filemtime(__DIR__ . '/../../assets/js/script.js') ?>"></script>
+<?php if (function_exists('app_finish_response')) app_finish_response(); ?>
 </body>
 </html>

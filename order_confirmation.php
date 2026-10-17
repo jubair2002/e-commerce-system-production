@@ -32,6 +32,89 @@ if ($isAuthorized) {
     }
 }
 
+$guestAccountCreated = false;
+$guestAccountError = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_guest_account']) && $order && empty($order['customer_id'])) {
+    if (!csrf_verify($_POST['_csrf'] ?? null)) {
+        $guestAccountError = 'Invalid or expired session. Please try again.';
+    } else {
+        $password = (string)($_POST['password'] ?? '');
+        $email = strtolower(trim($order['customer_email']));
+        $name = trim($order['customer_name']);
+        $phone = trim($order['customer_phone'] ?? '');
+
+        $pwdErr = password_ok($password, $email, $name);
+        if ($pwdErr !== null) {
+            $guestAccountError = $pwdErr;
+        } else {
+            $pdo = db();
+            $stmtC = $pdo->prepare("SELECT id FROM customers WHERE email = :e LIMIT 1");
+            $stmtC->execute([':e' => $email]);
+            $existing = $stmtC->fetch();
+
+            if ($existing) {
+                // Link this order to the existing customer
+                $pdo->prepare("UPDATE orders SET customer_id = :cid WHERE id = :oid")
+                    ->execute([':cid' => (int)$existing['id'], ':oid' => (int)$order['id']]);
+                $order['customer_id'] = (int)$existing['id'];
+                $guestAccountCreated = true;
+                flash('success', 'This order has been linked to your existing account.');
+            } else {
+                $requireVerify = (int)setting('customer_require_email_verification', '1') === 1;
+                $status = $requireVerify ? 'pending' : 'active';
+                $hash = customer_password_hash($password);
+
+                $stmtIns = $pdo->prepare(
+                    "INSERT INTO customers (name, email, phone, password_hash, status, created_at)
+                     VALUES (:name, :email, :phone, :hash, :status, NOW())"
+                );
+                $stmtIns->execute([
+                    ':name'   => $name,
+                    ':email'  => $email,
+                    ':phone'  => $phone ?: null,
+                    ':hash'   => $hash,
+                    ':status' => $status,
+                ]);
+                $newCid = (int)$pdo->lastInsertId();
+
+                // Link this order
+                $pdo->prepare("UPDATE orders SET customer_id = :cid WHERE id = :oid")
+                    ->execute([':cid' => $newCid, ':oid' => (int)$order['id']]);
+                $order['customer_id'] = $newCid;
+
+                if ($requireVerify) {
+                    $verifyHours = (int)setting('customer_verify_token_hours', '48');
+                    $token = token_issue($newCid, 'verify_email', max(3600, $verifyHours * 3600));
+                    $verifyUrl = shop_url('verify_email.php?t=' . urlencode($token));
+
+                    mail_queue_template('customer_verify_email', $email, $name, [
+                        'customer_name' => $name,
+                        'verify_url'    => $verifyUrl,
+                        'expires_in'    => $verifyHours . ' hours',
+                        'site_name'     => setting('site_name', 'Store'),
+                    ]);
+                    flash('success', 'Account created! Please check your email to verify your account.');
+                } else {
+                    customer_session_start([
+                        'id' => $newCid,
+                        'name' => $name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'status' => 'active',
+                        'email_verified_at' => date('Y-m-d H:i:s'),
+                        'password_hash' => $hash,
+                    ]);
+                    customer_claim_guest_orders($newCid, $email);
+                    flash('success', 'Your account has been created and you are now signed in!');
+                }
+
+                $guestAccountCreated = true;
+            }
+        }
+    }
+}
+
 $storePhone = setting('store_phone', '');
 $storeWhatsapp = setting('social_whatsapp', '');
 $storeEmail = setting('store_email', '');
@@ -95,6 +178,57 @@ include __DIR__ . '/includes/shop_header.php';
             <p class="mb-0 text-dark">
               <?= nl2br(e(setting('bank_transfer_instructions', 'Please transfer the total amount to our bank account. Use your order number as reference.'))) ?>
             </p>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($guestAccountCreated): ?>
+        <div class="card border-success bg-success bg-opacity-10 mb-4 shadow-sm">
+          <div class="card-body p-4 d-flex align-items-center">
+            <div class="fs-1 text-success me-3"><i class="bi bi-person-check-fill"></i></div>
+            <div>
+              <h5 class="fw-bold mb-1">Account Ready &amp; Linked!</h5>
+              <p class="mb-0 text-dark">
+                This order has been linked to your account. You can now track its progress and view your past orders in your customer dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      <?php elseif ($order && empty($order['customer_id']) && !customer_current()): ?>
+        <div class="card border-primary bg-primary bg-opacity-10 mb-4 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center mb-2">
+              <div class="fs-3 text-primary me-2"><i class="bi bi-person-plus-fill"></i></div>
+              <h5 class="fw-bold mb-0">Create an Account to Track This Order</h5>
+            </div>
+            <p class="text-muted small mb-3">
+              We already have your name (<strong><?= e($order['customer_name']) ?></strong>) and email (<strong><?= e($order['customer_email']) ?></strong>). Just choose a password to track this delivery and save your information for next time.
+            </p>
+
+            <?php if ($guestAccountError): ?>
+              <div class="alert alert-danger small py-2 mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($guestAccountError) ?>
+              </div>
+            <?php endif; ?>
+
+            <form method="post" action="order_confirmation.php?o=<?= urlencode($order['order_number']) ?>&t=<?= urlencode($token) ?>" class="row g-2 align-items-end" novalidate>
+              <?= csrf_field() ?>
+              <input type="hidden" name="create_guest_account" value="1">
+              <div class="col-md-7">
+                <label for="guestPass" class="form-label small fw-semibold">Choose a Password</label>
+                <div class="input-group">
+                  <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                  <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-5">
+                <button type="submit" class="btn btn-primary w-100">
+                  Create Account &amp; Link Order
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       <?php endif; ?>
@@ -241,4 +375,5 @@ include __DIR__ . '/includes/shop_header.php';
   </div>
 </section>
 
+<script src="<?= e(shop_url('assets/js/auth.js')) ?>"></script>
 <?php include __DIR__ . '/includes/shop_footer.php'; ?>

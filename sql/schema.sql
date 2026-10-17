@@ -593,8 +593,8 @@ INSERT INTO `email_templates` (`slug`,`name`,`audience`,`subject`,`body_html`,`v
 VALUES
  ('order_placed_customer','Order confirmation','customer',
   'Your order {{order_number}} is confirmed',
-  '<h2>Thanks for your order, {{customer_name}}!</h2><p>We received order <strong>{{order_number}}</strong> and will contact you before delivery.</p>{{items_table}}<p>Subtotal: {{subtotal}}<br>Shipping: {{shipping_fee}}<br><strong>Total (Cash on Delivery): {{total}}</strong></p><p>Deliver to:<br>{{shipping_address}}</p><p>Track your order: <a href=\"{{track_url}}\">{{track_url}}</a></p>',
-  'order_number, customer_name, items_table, subtotal, shipping_fee, discount, total, payment_method, shipping_address, track_url, site_name'),
+  '<h2>Thanks for your order, {{customer_name}}!</h2><p>We received order <strong>{{order_number}}</strong> and will contact you before delivery.</p>{{items_table}}<p>Subtotal: {{subtotal}}<br>Shipping: {{shipping_fee}}<br><strong>Total (Cash on Delivery): {{total}}</strong></p><p>Deliver to:<br>{{shipping_address}}</p><p>Track your order: <a href=\"{{track_url}}\">{{track_url}}</a></p><p><a href=\"{{account_order_url}}\">View in my account</a></p>',
+  'order_number, customer_name, items_table, subtotal, shipping_fee, discount, total, payment_method, shipping_address, track_url, account_order_url, site_name'),
  ('order_placed_admin','New order (admin alert)','admin',
   'New order {{order_number}} - {{total}}',
   '<p>New order <strong>{{order_number}}</strong> from {{customer_name}} ({{customer_phone}}).</p>{{items_table}}<p>Total: {{total}} - {{payment_method}}</p><p><a href=\"{{admin_order_url}}\">Open in admin</a></p>',
@@ -931,3 +931,169 @@ LEFT JOIN (
   GROUP BY oi.product_id
 ) s ON s.product_id = p.id
 SET p.sold_count = COALESCE(s.q, 0);
+
+-- ================================================================
+-- Migration 009: Performance Tuning & Monitoring Enhancements
+-- ================================================================
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `slow_requests` ADD COLUMN `query_count` INT UNSIGNED DEFAULT NULL AFTER `duration_ms`',
+  'SELECT ''slow_requests.query_count exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'slow_requests' AND COLUMN_NAME = 'query_count');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- =======================================================
+--  008 - Customer accounts (register, login, profile, addresses, wishlist, reset)
+--  Safe to re-run. MySQL 5.7+ / MariaDB 10.x. Run AFTER 001..007.
+--  Customers are a SEPARATE table from admin `users` on purpose.
+-- =======================================================
+USE `php_admin_panel`;
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `customers` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`             VARCHAR(120) NOT NULL,
+  `email`            VARCHAR(190) NOT NULL,
+  `phone`            VARCHAR(30)  DEFAULT NULL,
+  `password_hash`    VARCHAR(255) NOT NULL,
+  `status`           ENUM('active','pending','blocked') NOT NULL DEFAULT 'active',
+  `email_verified_at` DATETIME DEFAULT NULL,
+  `avatar`           VARCHAR(255) DEFAULT NULL,
+  `marketing_opt_in` TINYINT(1) NOT NULL DEFAULT 0,
+  `failed_logins`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `locked_until`     DATETIME DEFAULT NULL,
+  `last_login_at`    DATETIME DEFAULT NULL,
+  `last_login_ip`    VARCHAR(45) DEFAULT NULL,
+  `admin_note`       VARCHAR(500) DEFAULT NULL,
+  `deleted_at`       DATETIME DEFAULT NULL COMMENT 'soft delete / anonymised',
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_customer_email` (`email`),
+  KEY `idx_customer_status` (`status`),
+  KEY `idx_customer_phone` (`phone`),
+  KEY `idx_customer_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `customer_addresses` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `label`       VARCHAR(40)  NOT NULL DEFAULT 'Home',
+  `full_name`   VARCHAR(120) NOT NULL,
+  `phone`       VARCHAR(30)  NOT NULL,
+  `address`     VARCHAR(255) NOT NULL,
+  `city`        VARCHAR(100) NOT NULL,
+  `area`        VARCHAR(100) DEFAULT NULL,
+  `zip`         VARCHAR(20)  DEFAULT NULL,
+  `country`     VARCHAR(100) NOT NULL DEFAULT 'Bangladesh',
+  `is_default`  TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ca_customer` (`customer_id`,`is_default`),
+  CONSTRAINT `fk_ca_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- One table for every single-use token. Only a SHA-256 HASH of the secret is stored.
+CREATE TABLE IF NOT EXISTS `customer_tokens` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `type`        ENUM('verify_email','password_reset','remember_me','email_change') NOT NULL,
+  `selector`    CHAR(24)  NOT NULL COMMENT 'public lookup part of the token',
+  `token_hash`  CHAR(64)  NOT NULL COMMENT 'sha256 of secret part',
+  `payload`     VARCHAR(190) DEFAULT NULL COMMENT 'e.g. the NEW email for email_change',
+  `expires_at`  DATETIME NOT NULL,
+  `used_at`     DATETIME DEFAULT NULL,
+  `ip`          VARCHAR(45) DEFAULT NULL,
+  `user_agent`  VARCHAR(200) DEFAULT NULL,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ct_selector` (`selector`),
+  KEY `idx_ct_customer_type` (`customer_id`,`type`),
+  KEY `idx_ct_expires` (`expires_at`),
+  CONSTRAINT `fk_ct_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Rate limiting / brute-force log (no raw email: hashed)
+CREATE TABLE IF NOT EXISTS `auth_attempts` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `scope`       ENUM('login','register','forgot','reset','resend') NOT NULL,
+  `identifier_hash` CHAR(64) NOT NULL COMMENT 'sha256(lowercase email) or sha256(ip)',
+  `ip`          VARCHAR(45) NOT NULL,
+  `success`     TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_aa_scope_ident` (`scope`,`identifier_hash`,`created_at`),
+  KEY `idx_aa_scope_ip`    (`scope`,`ip`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `wishlists` (
+  `customer_id` INT UNSIGNED NOT NULL,
+  `product_id`  INT UNSIGNED NOT NULL,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`,`product_id`),
+  KEY `idx_wl_product` (`product_id`),
+  CONSTRAINT `fk_wl_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_wl_product`  FOREIGN KEY (`product_id`)  REFERENCES `products`(`id`)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Link orders to a customer (guest orders keep customer_id NULL)
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `orders` ADD COLUMN `customer_id` INT UNSIGNED DEFAULT NULL AFTER `order_number`',
+  'SELECT ''orders.customer_id exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'customer_id');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `orders` ADD INDEX `idx_orders_customer` (`customer_id`,`created_at`)',
+  'SELECT ''orders.idx_orders_customer exists'' AS info')
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND INDEX_NAME = 'idx_orders_customer');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+INSERT INTO `settings` (`key_name`,`value`) VALUES
+  ('customer_registration_enabled','1'),
+  ('customer_require_email_verification','1'),
+  ('customer_block_login_until_verified','0'),
+  ('customer_block_login_unverified','0'),
+  ('customer_password_min_length','8'),
+  ('customer_login_max_attempts','5'),
+  ('customer_lockout_minutes','15'),
+  ('customer_remember_me_days','30'),
+  ('customer_reset_token_minutes','60'),
+  ('customer_password_reset_minutes','60'),
+  ('customer_verify_token_hours','24'),
+  ('customer_session_idle_minutes','120'),
+  ('customer_claim_guest_orders','1'),
+  ('customer_claim_guest_orders_on_verify','1'),
+  ('customer_allow_account_delete','1'),
+  ('customer_can_cancel','1'),
+  ('customer_wishlist_enabled','1'),
+  ('customer_marketing_checkbox','1'),
+  ('customer_marketing_checkbox_default','1'),
+  ('customer_unverified_ttl_days','14'),
+  ('customer_terms_url','')
+ON DUPLICATE KEY UPDATE `key_name` = `key_name`;
+
+INSERT INTO `email_templates` (`slug`,`name`,`audience`,`subject`,`body_html`,`variables`) VALUES
+ ('customer_welcome','Welcome (new account)','customer',
+  'Welcome to {{site_name}}, {{customer_name}}!',
+  '<h2>Welcome, {{customer_name}}!</h2><p>Your account is ready. You can now track orders, save addresses and keep a wishlist.</p><p><a href="{{account_url}}">Go to my account</a></p>',
+  'customer_name, site_name, account_url'),
+ ('customer_verify_email','Verify email address','customer',
+  'Confirm your email for {{site_name}}',
+  '<p>Hi {{customer_name}}, please confirm your email address:</p><p><a href="{{verify_url}}">Verify my email</a></p><p>This link expires in {{expires_in}}. If you did not create an account, ignore this email.</p>',
+  'customer_name, verify_url, expires_in, site_name'),
+ ('customer_password_reset','Password reset link','customer',
+  'Reset your {{site_name}} password',
+  '<p>Hi {{customer_name}}, we received a request to reset your password.</p><p><a href="{{reset_url}}">Choose a new password</a></p><p>This link expires in {{expires_in}} and works once. If you did not ask for this, you can ignore this email - your password stays the same.</p>',
+  'customer_name, reset_url, expires_in, site_name'),
+ ('customer_password_changed','Password changed notice','customer',
+  'Your {{site_name}} password was changed',
+  '<p>Hi {{customer_name}}, your password was just changed (IP {{ip}}, {{changed_at}}).</p><p>If this was not you, reset it immediately: <a href="{{reset_url}}">reset password</a> and contact us.</p>',
+  'customer_name, ip, changed_at, reset_url, site_name'),
+ ('customer_email_change','Confirm new email','customer',
+  'Confirm your new email address',
+  '<p>Hi {{customer_name}}, confirm this new email address for your account:</p><p><a href="{{verify_url}}">Confirm new email</a></p>',
+  'customer_name, verify_url, site_name')
+ON DUPLICATE KEY UPDATE `slug` = `slug`;
