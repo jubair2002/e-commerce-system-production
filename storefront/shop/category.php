@@ -136,7 +136,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <ol class="breadcrumb small" style="background:none; padding:0;">
         <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>" class="text-muted">Home</a></li>
         <li class="breadcrumb-item"><a href="<?= e(route('shop')) ?>" class="text-muted">Shop</a></li>
-        <li class="breadcrumb-item active text-dark" aria-current="page"><?= e($category['name']) ?></li>
+        <li class="breadcrumb-item active" aria-current="page"><?= e($category['name']) ?></li>
       </ol>
     </nav>
 
@@ -184,7 +184,7 @@ include __DIR__ . '/../../includes/partials/header.php';
               <?php foreach ($categoriesList as $cl): ?>
                 <li>
                   <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>"
-                     class="small <?= $cl['slug'] === $slug ? 'fw-bold text-dark' : 'text-muted' ?>">
+                     class="small <?= $cl['slug'] === $slug ? 'fw-bold text-ink' : 'text-muted' ?>">
                     <?= e($cl['name']) ?>
                   </a>
                 </li>

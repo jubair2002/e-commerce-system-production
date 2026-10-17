@@ -1,4 +1,12 @@
 <?php
+// Handle direct media delivery if requested through built-in PHP server fallback
+$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+if ($requestUri !== null && preg_match('#^/(?:assets/)?uploads/(.+)$#', $requestUri, $matches)) {
+    $_GET['file'] = $matches[1];
+    require __DIR__ . '/uploads.php';
+    exit;
+}
+
 /**
  * Storefront Home Page (Phase C).
  * Modern, calm, editorial design driven by admin settings.

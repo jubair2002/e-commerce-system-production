@@ -201,7 +201,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   ?>
                   <div class="text-center position-relative" style="z-index: 2;">
                     <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white <?= $isDone ? 'bg-primary' : 'bg-secondary' ?>"
-                         style="width: 40px; height: 40px; font-size: 18px; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                         style="width: 40px; height: 40px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm);">
                       <?= icon($step['icon']) ?>
                     </div>
                     <div class="small fw-semibold <?= $isCur ? 'text-primary' : 'text-muted' ?>">
@@ -217,7 +217,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Courier & Tracking Info -->
       <?php if (!empty($order['courier']) || !empty($order['tracking_number'])): ?>
-        <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card shadow-sm border-0 mb-4">
           <div class="card-body p-4">
             <h6 class="fw-bold mb-2"><?= icon('truck', 'text-primary me-2') ?> Courier Shipment Details</h6>
             <div class="row g-2">
@@ -241,11 +241,11 @@ include __DIR__ . '/../../includes/partials/header.php';
       <!-- Detailed Status History Logs -->
       <?php if (!empty($history)): ?>
         <div class="card shadow-sm border-0 mb-4">
-          <div class="card-header bg-white py-3 border-bottom">
+          <div class="card-header py-3 border-bottom">
             <h6 class="mb-0 fw-semibold"><?= icon('rotate-ccw', 'text-primary me-2') ?> Status Timeline Logs</h6>
           </div>
           <div class="card-body p-4">
-            <ul class="list-unstyled mb-0 position-relative ps-3" style="border-left: 2px solid #e9ecef;">
+            <ul class="list-unstyled mb-0 position-relative ps-3" style="border-left: 2px solid var(--line);">
               <?php foreach ($history as $h): ?>
                 <li class="mb-3 position-relative ps-3">
                   <div class="position-absolute rounded-circle bg-primary"
@@ -270,7 +270,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Items in Order -->
       <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white py-3 border-bottom">
+        <div class="card-header py-3 border-bottom">
           <h6 class="mb-0 fw-semibold"><?= icon('bag', 'text-primary me-2') ?> Items in This Order</h6>
         </div>
         <div class="card-body p-0">

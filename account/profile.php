@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         imagecopyresampled($destImg, $srcImg, 0, 0, $srcX, $srcY, 400, 400, $minSide, $minSide);
 
-                        $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
+                        $uploadDir = UPLOADS_PATH . '/avatars/';
                         if (!is_dir($uploadDir)) {
                             @mkdir($uploadDir, 0775, true);
                         }
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle Avatar Removal
         if ($removeAvatar && empty($newAvatarFilename)) {
-            $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
+            $uploadDir = UPLOADS_PATH . '/avatars/';
             if (!empty($freshCustomer['avatar']) && file_exists($uploadDir . $freshCustomer['avatar'])) {
                 @unlink($uploadDir . $freshCustomer['avatar']);
             }
@@ -170,8 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $avatarUrl = null;
-if (!empty($freshCustomer['avatar']) && file_exists(__DIR__ . '/../assets/uploads/avatars/' . $freshCustomer['avatar'])) {
-    $avatarUrl = shop_url('assets/uploads/avatars/' . $freshCustomer['avatar']);
+if (!empty($freshCustomer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'])) {
+    $avatarUrl = UPLOADS_URL . 'avatars/' . $freshCustomer['avatar'];
 }
 $initials = strtoupper(mb_substr($freshCustomer['name'], 0, 1));
 

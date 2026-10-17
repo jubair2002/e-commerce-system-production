@@ -277,11 +277,11 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
                     <?php endif; ?>
                     <div>
                       <?php if (!empty($it['product_slug'])): ?>
-                        <a href="<?= e(shop_url('product.php?slug=' . urlencode($it['product_slug']))) ?>" class="fw-semibold text-dark text-decoration-none">
+                        <a href="<?= e(shop_url('product.php?slug=' . urlencode($it['product_slug']))) ?>" class="fw-semibold text-ink text-decoration-none">
                           <?= e($it['product_name']) ?>
                         </a>
                       <?php else: ?>
-                        <span class="fw-semibold text-dark"><?= e($it['product_name']) ?></span>
+                        <span class="fw-semibold text-ink"><?= e($it['product_name']) ?></span>
                       <?php endif; ?>
                       <?php if (!empty($it['variant_label'])): ?>
                         <div class="small text-muted"><?= e($it['variant_label']) ?></div>
@@ -340,7 +340,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
       </div>
       <div class="d-flex justify-content-between small text-muted mb-2">
         <span>Subtotal</span>
-        <span class="text-dark fw-semibold"><?= e(price($order['subtotal'])) ?></span>
+        <span class="text-ink fw-semibold"><?= e(price($order['subtotal'])) ?></span>
       </div>
       <?php if ((float)$order['discount_total'] > 0): ?>
         <div class="d-flex justify-content-between small text-success mb-2">
@@ -350,12 +350,12 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
       <?php endif; ?>
       <div class="d-flex justify-content-between small text-muted mb-2">
         <span>Shipping (<?= e($order['shipping_method_name'] ?: 'Standard') ?>)</span>
-        <span class="text-dark fw-semibold"><?= (float)$order['shipping_fee'] > 0 ? e(price($order['shipping_fee'])) : 'Free' ?></span>
+        <span class="text-ink fw-semibold"><?= (float)$order['shipping_fee'] > 0 ? e(price($order['shipping_fee'])) : 'Free' ?></span>
       </div>
       <?php if ((float)$order['cod_fee'] > 0): ?>
         <div class="d-flex justify-content-between small text-muted mb-2">
           <span>COD Handling Fee</span>
-          <span class="text-dark fw-semibold"><?= e(price($order['cod_fee'])) ?></span>
+          <span class="text-ink fw-semibold"><?= e(price($order['cod_fee'])) ?></span>
         </div>
       <?php endif; ?>
       <hr class="my-2">

@@ -411,7 +411,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
             </div>
           </div>
 
-          <div class="fw-bold fs-6 mb-1 text-dark"><?= e($addr['full_name']) ?></div>
+          <div class="fw-bold fs-6 mb-1 text-ink"><?= e($addr['full_name']) ?></div>
           <div class="text-muted small mb-2"><?= icon('phone', 'me-1') ?> <?= e($addr['phone']) ?></div>
           <div class="text-muted small">
             <?= nl2br(e($addr['address'])) ?><br>

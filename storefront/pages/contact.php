@@ -96,7 +96,7 @@ include __DIR__ . '/../../includes/partials/header.php';
     <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
     <div class="mb-4 pb-2 border-bottom">
-      <h1 class="h2 fw-bold text-dark mb-1">Get in Touch</h1>
+      <h1 class="h2 fw-bold mb-1">Get in Touch</h1>
       <p class="text-muted small mb-0">Have questions about an order, products, or deliveries? We are here to help.</p>
     </div>
 
@@ -172,13 +172,13 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Information Column -->
       <div class="col-lg-5">
-        <div class="p-4 bg-light rounded-3 h-100 border">
+        <div class="card p-4 rounded-3 h-100 border">
           <h3 class="h6 fw-bold text-uppercase tracking-wide text-secondary mb-3">Customer Support</h3>
 
           <div class="d-flex align-items-start gap-3 mb-4">
             <div class="fs-4 text-primary"><?= icon('mail') ?></div>
             <div>
-              <div class="fw-semibold text-dark">Email Support</div>
+              <div class="fw-semibold">Email Support</div>
               <a href="mailto:<?= e($storeEmail) ?>" class="text-muted text-decoration-none small"><?= e($storeEmail) ?></a>
               <div class="small text-muted mt-1">Typical reply time: 2–6 hours</div>
             </div>
@@ -188,7 +188,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="d-flex align-items-start gap-3 mb-4">
               <div class="fs-4 text-success"><?= icon('phone') ?></div>
               <div>
-                <div class="fw-semibold text-dark">Phone &amp; WhatsApp</div>
+                <div class="fw-semibold">Phone &amp; WhatsApp</div>
                 <a href="tel:<?= e($storePhone) ?>" class="text-muted text-decoration-none small"><?= e($storePhone) ?></a>
                 <div class="small text-muted mt-1">Sat &ndash; Thu: 10:00 AM &ndash; 8:00 PM</div>
               </div>
@@ -199,7 +199,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="d-flex align-items-start gap-3 mb-4">
               <div class="fs-4 text-secondary"><?= icon('map-pin') ?></div>
               <div>
-                <div class="fw-semibold text-dark">Location</div>
+                <div class="fw-semibold">Location</div>
                 <div class="small text-muted"><?= nl2br(e($storeAddress)) ?></div>
               </div>
             </div>

@@ -70,6 +70,12 @@ if (empty($_SESSION['checkout_rendered_at'])) {
     $_SESSION['checkout_rendered_at'] = time();
 }
 
+// Track checkout.started event once per checkout session
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($cart) && empty($_SESSION['checkout_started_tracked'])) {
+    $_SESSION['checkout_started_tracked'] = true;
+    hook_fire('checkout.started', ['total' => $totals['total'] ?? 0]);
+}
+
 $errors = [];
 $old = [
     'customer_name'    => '',
@@ -415,6 +421,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cart_clear();
             unset($_SESSION['applied_coupon']);
             unset($_SESSION['checkout_token']);
+            unset($_SESSION['checkout_started_tracked']);
             $_SESSION['last_placed_order'] = $orderNumber;
 
             // Trigger order.placed hook
@@ -502,7 +509,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="col-lg-7">
 
           <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 border-bottom d-flex justify-content-between align-items-center">
               <h5 class="mb-0 fw-semibold"><?= icon('user', 'text-primary me-2') ?> Contact Information</h5>
               <?php if ($currentCustomer): ?>
                 <span class="badge bg-light text-dark border">
@@ -550,7 +557,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           </div>
 
           <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header py-3 border-bottom">
               <h5 class="mb-0 fw-semibold"><?= icon('map-pin', 'text-primary me-2') ?> Delivery Address</h5>
             </div>
             <div class="card-body">
@@ -651,7 +658,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <!-- Shipping Method Selection -->
           <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 border-bottom d-flex justify-content-between align-items-center">
               <h5 class="mb-0 fw-semibold"><?= icon('truck', 'text-primary me-2') ?> Delivery Area &amp; Shipping Rate</h5>
               <span class="badge text-bg-light border text-muted">Select your delivery zone</span>
             </div>
@@ -681,7 +688,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                       </div>
                     </div>
                     <div class="text-end">
-                      <span class="fw-bold fs-6 <?= $isFree ? 'text-success' : 'text-dark' ?>">
+                      <span class="fw-bold fs-6 <?= $isFree ? 'text-success' : 'text-ink' ?>">
                         <?= $isFree ? 'FREE' : price($cost) ?>
                       </span>
                     </div>
@@ -693,7 +700,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <!-- Payment Method Selection -->
           <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header py-3 border-bottom">
               <h5 class="mb-0 fw-semibold"><?= icon('lock', 'text-primary me-2') ?> Payment Method</h5>
             </div>
             <div class="card-body">
@@ -733,7 +740,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <!-- Right: Order Summary Sidebar -->
         <div class="col-lg-5">
           <div class="card shadow-sm border-0 sticky-top" style="top: 90px;">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header py-3 border-bottom">
               <h5 class="mb-0 fw-semibold">Order Summary (<?= cart_count() ?>)</h5>
             </div>
             <div class="card-body p-0">

@@ -155,7 +155,7 @@ try {
 } catch (Throwable $e) {}
 
 // Storage & uploads breakdown
-$uploadsPath = __DIR__ . '/../assets/uploads';
+$uploadsPath = UPLOADS_PATH;
 $uploadsSize = 0;
 if (is_dir($uploadsPath)) {
     try {

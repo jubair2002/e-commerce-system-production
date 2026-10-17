@@ -126,12 +126,12 @@ include __DIR__ . '/../../includes/partials/header.php';
 <div class="container py-5 text-center" style="max-width: 600px;">
   <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
-  <div class="p-4 p-md-5 bg-white border rounded-3 shadow-sm my-3">
+  <div class="card p-4 p-md-5 shadow-sm my-3 border">
     <div class="fs-1 text-primary mb-3">
       <i class="bi bi-envelope-heart"></i>
     </div>
 
-    <h1 class="h3 fw-bold text-dark mb-2">Subscribe to Our Newsletter</h1>
+    <h1 class="h3 fw-bold mb-2">Subscribe to Our Newsletter</h1>
     <p class="text-muted small mb-4">
       Receive thoughtful updates, early access to new seasonal products, and private promotions. No spam, ever.
     </p>

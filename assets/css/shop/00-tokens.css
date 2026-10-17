@@ -51,11 +51,15 @@
   --radius-pill: 999px;
 
   /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.12);
   --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+  --surface-muted: #f3f4f6;
+  --line-subtle: #f3f4f6;
 
   /* Layout */
   --max-w: 1240px;
@@ -70,14 +74,17 @@
 
 /* Dark Theme Tokens */
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0f1115;
   --bg-soft: #17191f;
   --surface: #1e2129;
   --surface-raised: #252932;
+  --surface-muted: #222630;
   --ink: #f3f4f6;
-  --ink-2: #9ca3af;
-  --muted: #6b7280;
+  --ink-2: #cbd5e1;
+  --muted: #94a3b8;
   --line: #2b303c;
+  --line-subtle: #232731;
   --line-strong: #3b4252;
   --accent: #f3f4f6;
   --accent-contrast: #0f1115;
@@ -87,6 +94,7 @@
   --danger: #f87171;
   --focus: #60a5fa;
 
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);

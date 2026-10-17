@@ -20,6 +20,10 @@ ErrorDocument 500 storefront/errors/500.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Dynamic uploads delivery (delivers from external UPLOADS_PATH when not on disk)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(?:assets/)?uploads/(.+)$ uploads.php?file=$1 [L,QSA]
+
     # 301 Legacy Redirects (Preserving Query Strings)
     RewriteRule ^shop\.php$ storefront/shop/index.php [R=301,L,QSA]
     RewriteRule ^category\.php$ storefront/shop/category.php [R=301,L,QSA]

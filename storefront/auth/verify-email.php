@@ -23,23 +23,25 @@ if ($res['ok']) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper py-5">
-  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm text-center" style="max-width: 440px;">
-    <div class="fs-1 text-danger mb-3">
-      <?= icon('x', 'text-danger', 'Error') ?>
-    </div>
-    <h1 class="h4 fw-bold text-dark mb-2">Verification Failed</h1>
-    <p class="text-muted small mb-4">
-      <?= e($res['error'] ?? 'This email verification link is invalid, expired, or has already been used.') ?>
-    </p>
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5 text-center" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <div class="fs-1 text-danger mb-3">
+        <?= icon('x', 'text-danger', 'Error') ?>
+      </div>
+      <h1 class="h4 fw-bold mb-2">Verification Failed</h1>
+      <p class="text-muted small mb-4">
+        <?= e($res['error'] ?? 'This email verification link is invalid, expired, or has already been used.') ?>
+      </p>
 
-    <div class="d-grid gap-2">
-      <a href="<?= e(route('resend_verification')) ?>" class="btn btn-editorial-primary">
-        Resend Verification Link &rarr;
-      </a>
-      <a href="<?= e(route('login')) ?>" class="btn btn-editorial-secondary btn-sm">
-        Go to Sign In
-      </a>
+      <div class="d-grid gap-2">
+        <a href="<?= e(route('resend_verification')) ?>" class="btn btn-editorial-primary">
+          Resend Verification Link &rarr;
+        </a>
+        <a href="<?= e(route('login')) ?>" class="btn btn-editorial-secondary btn-sm">
+          Go to Sign In
+        </a>
+      </div>
     </div>
   </div>
 </div>

@@ -164,7 +164,7 @@ account_layout_start('orders', 'My Orders', $customer);
             ?>
             <tr>
               <td class="ps-3">
-                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="fw-bold text-dark text-decoration-none">
+                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="fw-bold text-ink text-decoration-none">
                   <?= e($o['order_number']) ?>
                 </a>
               </td>
@@ -177,7 +177,7 @@ account_layout_start('orders', 'My Orders', $customer);
               </td>
               <td class="fw-bold"><?= e(price($o['total'])) ?></td>
               <td class="pe-3 text-end">
-                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="btn btn-outline-dark btn-sm py-1 px-3" style="font-size: 0.8rem;">
+                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="btn btn-editorial-secondary btn-sm py-1 px-3" style="font-size: 0.8rem;">
                   View &rarr;
                 </a>
               </td>
@@ -197,13 +197,13 @@ account_layout_start('orders', 'My Orders', $customer);
           <ul class="pagination pagination-sm mb-0">
             <?php if ($page > 1): ?>
               <li class="page-item">
-                <a class="page-link text-dark" href="<?= e(shop_url('account/orders.php?page=' . ($page - 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">&laquo; Prev</a>
+                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . ($page - 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">&laquo; Prev</a>
               </li>
             <?php endif; ?>
 
             <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
               <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                <a class="page-link <?= $p === $page ? 'bg-dark border-dark text-white' : 'text-dark' ?>" href="<?= e(shop_url('account/orders.php?page=' . $p . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">
+                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . $p . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">
                   <?= $p ?>
                 </a>
               </li>
@@ -211,7 +211,7 @@ account_layout_start('orders', 'My Orders', $customer);
 
             <?php if ($page < $totalPages): ?>
               <li class="page-item">
-                <a class="page-link text-dark" href="<?= e(shop_url('account/orders.php?page=' . ($page + 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">Next &raquo;</a>
+                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . ($page + 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">Next &raquo;</a>
               </li>
             <?php endif; ?>
           </ul>

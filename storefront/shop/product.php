@@ -50,6 +50,10 @@ if (!$product) {
 }
 
 $productId  = (int)$product['id'];
+hook_fire('product.viewed', [
+    'product_id' => $productId,
+    'price'      => (float)($product['sale_price'] ?: $product['price']),
+]);
 $pageTitle  = $product['name'];
 $siteName   = setting('site_name', APP_NAME);
 
@@ -506,8 +510,8 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <?php $pct = $totalReviews > 0 ? round(($ratingCounts[$s] / $totalReviews) * 100) : 0; ?>
                 <div class="d-flex align-items-center gap-2 small">
                   <span style="width: 50px;" class="text-muted"><?= $s ?> star</span>
-                  <div class="flex-grow-1 bg-white rounded-pill overflow-hidden border" style="height: 8px;">
-                    <div class="h-100 bg-dark" style="width: <?= $pct ?>%;"></div>
+                  <div class="flex-grow-1 rounded-pill overflow-hidden border" style="height: 8px; background-color: var(--surface-muted);">
+                    <div class="h-100" style="width: <?= $pct ?>%; background-color: var(--ink);"></div>
                   </div>
                   <span style="width: 30px;" class="text-end text-muted"><?= $pct ?>%</span>
                 </div>

@@ -365,7 +365,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <!-- Coupon Code: Right side, Top of Order Summary -->
             <div class="card shadow-sm border-0 mb-3">
               <div class="card-body p-3">
-                <h6 class="card-title fw-semibold mb-2 d-flex align-items-center gap-1 text-dark" style="font-size: 0.875rem;">
+                <h6 class="card-title fw-semibold mb-2 d-flex align-items-center gap-1" style="font-size: 0.875rem;">
                   <?= icon('bag') ?> Have a Coupon Code?
                 </h6>
                 <?php if (!empty($totals['coupon'])): ?>

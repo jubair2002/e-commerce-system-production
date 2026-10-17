@@ -59,60 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $registrationEnabled) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-split-wrapper">
-  <!-- Brand Side Panel -->
-  <div class="auth-brand-panel">
-    <div>
-      <div class="d-inline-flex align-items-center gap-2 mb-4">
-        <h2 class="auth-brand-title fw-bold text-dark mb-0"><?= e(setting('site_name', APP_NAME)) ?></h2>
-      </div>
-      <p class="auth-brand-subtitle text-muted mb-5">
-        Join our shopping community for personalized experiences, faster checkouts, and priority parcel dispatches across all 64 districts.
-      </p>
-
-      <div class="d-flex flex-column gap-4">
-        <div class="d-flex align-items-start gap-3">
-          <div class="trust-icon bg-white shadow-sm text-primary">
-            <svg class="icon"><use href="<?= e(url('assets/img/icons.svg#check')) ?>"></use></svg>
-          </div>
-          <div>
-            <div class="fw-semibold text-dark">One-Click Reorders</div>
-            <div class="small text-muted">Easily review past orders, download invoices, and reorder favourite products.</div>
-          </div>
-        </div>
-
-        <div class="d-flex align-items-start gap-3">
-          <div class="trust-icon bg-white shadow-sm text-primary">
-            <svg class="icon"><use href="<?= e(url('assets/img/icons.svg#map-pin')) ?>"></use></svg>
-          </div>
-          <div>
-            <div class="fw-semibold text-dark">Multiple Addresses</div>
-            <div class="small text-muted">Save home, office, and family delivery locations for zero-typing checkout.</div>
-          </div>
-        </div>
-
-        <div class="d-flex align-items-start gap-3">
-          <div class="trust-icon bg-white shadow-sm text-primary">
-            <svg class="icon"><use href="<?= e(url('assets/img/icons.svg#tag')) ?>"></use></svg>
-          </div>
-          <div>
-            <div class="fw-semibold text-dark">Member Only Deals</div>
-            <div class="small text-muted">Receive secret coupon codes and instant alerts for limited seasonal drops.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="small text-muted pt-4 border-top">
-      &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>. All rights reserved.
-    </div>
-  </div>
-
-  <!-- Form Panel -->
-  <div class="auth-form-panel">
-    <div class="auth-card">
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5" style="max-width: 480px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
       <div class="auth-header text-center mb-4">
-        <h1 class="h3 fw-bold text-dark mb-2">Create an Account</h1>
+        <h1 class="h3 fw-bold mb-2">Create an Account</h1>
         <p class="text-muted small">Join us today to manage orders, track deliveries, and save your favorites.</p>
       </div>
 

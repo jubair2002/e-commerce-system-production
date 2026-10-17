@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // Remove avatar file if exists
             if (!empty($customer['avatar'])) {
-                $oldPath = __DIR__ . '/../assets/uploads/avatars/' . $customer['avatar'];
+                $oldPath = UPLOADS_PATH . '/avatars/' . $customer['avatar'];
                 if (file_exists($oldPath)) {
                     @unlink($oldPath);
                 }
@@ -309,8 +309,8 @@ try {
 } catch (Throwable $e) {}
 
 $initials = strtoupper(mb_substr(trim($customer['name']), 0, 1));
-$avatarPath = !empty($customer['avatar']) ? __DIR__ . '/../assets/uploads/avatars/' . $customer['avatar'] : null;
-$avatarUrl = ($avatarPath && file_exists($avatarPath)) ? shop_url('assets/uploads/avatars/' . $customer['avatar']) : null;
+$avatarPath = !empty($customer['avatar']) ? UPLOADS_PATH . '/avatars/' . $customer['avatar'] : null;
+$avatarUrl = ($avatarPath && file_exists($avatarPath)) ? UPLOADS_URL . 'avatars/' . $customer['avatar'] : null;
 
 $pageTitle = 'Customer: ' . $customer['name'];
 include __DIR__ . '/includes/header.php';
@@ -663,7 +663,7 @@ include __DIR__ . '/includes/header.php';
               <tr>
                 <td>
                   <?php if (!empty($w['image'])): ?>
-                    <img src="<?= e(shop_url('assets/uploads/products/' . $w['image'])) ?>" alt="" class="rounded" style="width: 44px; height: 44px; object-fit: cover;">
+                    <img src="<?= e(UPLOADS_URL . 'products/' . $w['image']) ?>" alt="" class="rounded" style="width: 44px; height: 44px; object-fit: cover;">
                   <?php else: ?>
                     <div class="rounded bg-light d-flex align-items-center justify-content-center text-muted" style="width: 44px; height: 44px;">
                       <i class="bi bi-image"></i>

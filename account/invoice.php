@@ -140,7 +140,7 @@ $storeLogo    = setting('store_logo', '');
     <!-- COD Banner -->
     <?php if ($order['payment_method'] === 'cod'): ?>
       <div class="cod-collect-banner">
-        <div class="fs-5 fw-bold text-dark d-flex align-items-center">
+        <div class="fs-5 fw-bold text-ink d-flex align-items-center">
           <?= icon('cash', 'i-md text-warning me-2') ?>
           Cash on Delivery Amount: <?= e(price($order['total'])) ?>
         </div>

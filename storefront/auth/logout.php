@@ -14,17 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $pageTitle = 'Method Not Allowed';
     include __DIR__ . '/../../includes/partials/header.php';
     ?>
-    <div class="auth-page-wrapper py-5">
-      <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm text-center" style="max-width: 440px;">
-        <h1 class="h4 fw-bold text-dark mb-3">Sign Out Request</h1>
-        <div class="alert alert-warning small mb-4">
-          For your security, sign out must be requested via a POST form. Direct links or GET requests are not permitted.
+    <div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+      <div class="container d-flex justify-content-center">
+        <div class="auth-card card shadow-sm p-4 p-sm-5 text-center" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+          <h1 class="h4 fw-bold mb-3">Sign Out Request</h1>
+          <div class="alert alert-warning small mb-4">
+            For your security, sign out must be requested via a POST form. Direct links or GET requests are not permitted.
+          </div>
+          <form method="post" action="<?= e(route('logout')) ?>">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-primary w-100 mb-2">Confirm Sign Out</button>
+            <a href="<?= e(route('home')) ?>" class="btn btn-outline-secondary w-100">Cancel &amp; Return</a>
+          </form>
         </div>
-        <form method="post" action="<?= e(route('logout')) ?>">
-          <?= csrf_field() ?>
-          <button type="submit" class="btn btn-primary w-100 mb-2">Confirm Sign Out</button>
-          <a href="<?= e(route('home')) ?>" class="btn btn-outline-secondary w-100">Cancel &amp; Return</a>
-        </form>
       </div>
     </div>
     <?php

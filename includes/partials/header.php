@@ -57,7 +57,12 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
   <link rel="stylesheet" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= $cssVersion ?>">
 
   <!-- Dynamic Theme Accent Override -->
-  <style>:root { --accent: <?= e($themeAccent) ?>; }</style>
+  <?php if ($themeAccent !== '#111827'): ?>
+    <style>
+      :root { --accent: <?= e($themeAccent) ?>; }
+      [data-theme="dark"] { --accent: <?= e($themeAccent) ?>; --accent-contrast: #ffffff; }
+    </style>
+  <?php endif; ?>
 
   <script>
     window.SHOP_BASE_URL = "<?= e(BASE_URL) ?>";

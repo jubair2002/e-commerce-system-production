@@ -29,6 +29,11 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
     <?php if (has_role('admin', 'editor')): ?>
       <div class="nav-section">E-commerce</div>
 
+      <a href="<?= e(admin_url('analytics.php')) ?>"
+         class="nav-link <?= active_if($current === 'analytics.php' || $current === 'analytics_product.php') ?>">
+        <i class="bi bi-graph-up-arrow"></i><span>Analytics</span>
+      </a>
+
       <a href="<?= e(admin_url('orders.php')) ?>"
          class="nav-link <?= active_if($current === 'orders.php' || $current === 'order_view.php') ?>">
         <i class="bi bi-receipt"></i><span>Orders</span>

@@ -100,6 +100,10 @@ try {
     $total = (int)$stmtCount->fetchColumn();
     $pages = max(1, (int)ceil($total / $perPage));
 
+    if ($search !== '' && $page === 1 && function_exists('analytics_log_search')) {
+        analytics_log_search($search, $total);
+    }
+
     $selectSql = "
         SELECT p.*, c.name AS category_name, c.slug AS category_slug,
                COALESCE(vps.total_stock, p.stock) AS calculated_stock

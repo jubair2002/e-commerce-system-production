@@ -18,12 +18,10 @@ error_log
 access_log
 
 # User uploads — these are runtime, not source.
-# Keep the folder structure with .gitkeep files.
-assets/uploads/*
-!assets/uploads/.gitkeep
-!assets/uploads/products/
-assets/uploads/products/*
-!assets/uploads/products/.gitkeep
+# Ignore all files in all subdirectories of assets/uploads, keeping only structure
+assets/uploads/**/*
+!assets/uploads/**/.gitkeep
+!assets/uploads/**/.htaccess
 
 # Local-only PHP files (e.g. quick scratch scripts)
 scratch.php

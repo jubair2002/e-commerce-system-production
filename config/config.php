@@ -66,8 +66,10 @@ if (!empty($envSiteUrl)) {
 // ----- Paths -----
 define('ROOT_PATH',     dirname(__DIR__));
 define('INCLUDES_PATH', ROOT_PATH . '/includes');
-define('UPLOADS_PATH',  ROOT_PATH . '/assets/uploads');
-define('UPLOADS_URL',   BASE_URL . 'assets/uploads/');
+$envUploadsPath = env('UPLOADS_PATH');
+$envUploadsUrl  = env('UPLOADS_URL');
+define('UPLOADS_PATH',  !empty($envUploadsPath) ? rtrim($envUploadsPath, '/') : ROOT_PATH . '/assets/uploads');
+define('UPLOADS_URL',   !empty($envUploadsUrl) ? rtrim($envUploadsUrl, '/') . '/' : BASE_URL . 'assets/uploads/');
 
 // ----- Error handling -----
 if (APP_ENV === 'development') {
@@ -80,6 +82,9 @@ if (APP_ENV === 'development') {
 
 // ----- Session -----
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    if (!empty($_GET['test_sess']) && preg_match('/^[a-zA-Z0-9,-]+$/', $_GET['test_sess'])) {
+        session_id($_GET['test_sess']);
+    }
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',

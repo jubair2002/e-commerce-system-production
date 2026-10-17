@@ -21,8 +21,8 @@ function account_layout_start(string $activeTab, string $title, ?array $customer
     $initials = strtoupper(mb_substr($name, 0, 1));
 
     $avatarUrl = null;
-    if (!empty($customer['avatar']) && file_exists(__DIR__ . '/../assets/uploads/avatars/' . $customer['avatar'])) {
-        $avatarUrl = shop_url('assets/uploads/avatars/' . $customer['avatar']);
+    if (!empty($customer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $customer['avatar'])) {
+        $avatarUrl = UPLOADS_URL . 'avatars/' . $customer['avatar'];
     }
 
     include __DIR__ . '/../includes/partials/header.php';
@@ -65,7 +65,7 @@ function account_layout_start(string $activeTab, string $title, ?array $customer
                   <?php endif; ?>
                 </div>
                 <div class="overflow-hidden">
-                  <div class="fw-bold text-truncate text-dark" title="<?= e($name) ?>"><?= e($name) ?></div>
+                  <div class="fw-bold text-truncate" title="<?= e($name) ?>"><?= e($name) ?></div>
                   <div class="small text-muted text-truncate" title="<?= e($email) ?>" style="font-size: 0.8rem;"><?= e($email) ?></div>
                 </div>
               </div>

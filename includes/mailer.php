@@ -213,7 +213,8 @@ function mail_wrap_html(string $innerHtml, string $title = ''): string
 
     $logoHtml = "<h2>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</h2>";
     if (!empty($storeLogo)) {
-        $logoUrl = rtrim(BASE_URL, '/') . '/assets/uploads/branding/' . $storeLogo;
+        $fullUploadsUrl = str_starts_with(UPLOADS_URL, 'http') ? UPLOADS_URL : rtrim(defined('SITE_URL') ? SITE_URL : BASE_URL, '/') . '/' . ltrim(UPLOADS_URL, '/');
+        $logoUrl = rtrim($fullUploadsUrl, '/') . '/branding/' . $storeLogo;
         $logoHtml = "<img src=\"{$logoUrl}\" alt=\"" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "\" style=\"max-height: 48px; border:0;\">";
     }
 
@@ -430,7 +431,8 @@ function items_table(array $items): string
 
         $imgUrl = '';
         if (!empty($item['image'])) {
-            $imgUrl = $baseUrl . '/assets/uploads/products/' . $item['image'];
+            $fullUploadsUrl = str_starts_with(UPLOADS_URL, 'http') ? UPLOADS_URL : rtrim(defined('SITE_URL') ? SITE_URL : $baseUrl, '/') . '/' . ltrim(UPLOADS_URL, '/');
+            $imgUrl = rtrim($fullUploadsUrl, '/') . '/products/' . $item['image'];
         }
         $imgCell = $imgUrl ? "<td style=\"width:54px; padding:10px 0;\"><img src=\"{$imgUrl}\" width=\"48\" height=\"48\" style=\"border-radius:4px; object-fit:cover; border:1px solid #e4e4e7;\" alt=\"\"></td>" : '';
 

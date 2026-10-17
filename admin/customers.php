@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // Remove avatar
             if (!empty($targetCustomer['avatar'])) {
-                $oldPath = __DIR__ . '/../assets/uploads/avatars/' . $targetCustomer['avatar'];
+                $oldPath = UPLOADS_PATH . '/avatars/' . $targetCustomer['avatar'];
                 if (file_exists($oldPath)) {
                     @unlink($oldPath);
                 }
@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $avRows = $stmtAvatars->fetchAll();
                 foreach ($avRows as $av) {
                     if (!empty($av['avatar'])) {
-                        $p = __DIR__ . '/../assets/uploads/avatars/' . $av['avatar'];
+                        $p = UPLOADS_PATH . '/avatars/' . $av['avatar'];
                         if (file_exists($p)) @unlink($p);
                     }
                 }
@@ -642,8 +642,8 @@ include __DIR__ . '/includes/header.php';
             <?php foreach ($customers as $c): ?>
               <?php
               $initials = strtoupper(mb_substr(trim($c['name']), 0, 1));
-              $avatarPath = !empty($c['avatar']) ? __DIR__ . '/../assets/uploads/avatars/' . $c['avatar'] : null;
-              $avatarUrl = ($avatarPath && file_exists($avatarPath)) ? shop_url('assets/uploads/avatars/' . $c['avatar']) : null;
+              $avatarPath = !empty($c['avatar']) ? UPLOADS_PATH . '/avatars/' . $c['avatar'] : null;
+              $avatarUrl = ($avatarPath && file_exists($avatarPath)) ? UPLOADS_URL . 'avatars/' . $c['avatar'] : null;
 
               $statusBadge = 'bg-secondary';
               if ($c['status'] === 'active') $statusBadge = 'bg-success';

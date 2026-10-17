@@ -38,13 +38,13 @@ include __DIR__ . '/../../includes/partials/header.php';
     <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
     <header class="mb-4 pb-3 border-bottom">
-      <h1 class="h2 fw-bold text-dark mb-2"><?= e($page['title']) ?></h1>
+      <h1 class="h2 fw-bold mb-2"><?= e($page['title']) ?></h1>
       <div class="small text-muted">
         Updated <?= date('F j, Y', strtotime($page['updated_at'])) ?>
       </div>
     </header>
 
-    <article class="content-page-body prose lh-lg text-dark">
+    <article class="content-page-body prose lh-lg">
       <?= $page['content'] ?>
     </article>
   </div>

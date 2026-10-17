@@ -60,7 +60,7 @@ account_layout_start('overview', 'Overview', $customer);
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
     <div>
       <span class="account-badge-pill mb-2 d-inline-block">Customer Dashboard</span>
-      <h1 class="h3 fw-bold mb-1 text-dark">Welcome back, <?= e($firstName) ?></h1>
+      <h1 class="h3 fw-bold mb-1">Welcome back, <?= e($firstName) ?></h1>
       <p class="text-muted small mb-0">From your portal you can track live orders, manage saved shipping addresses, and control security settings.</p>
     </div>
     <div>
@@ -77,7 +77,7 @@ account_layout_start('overview', 'Overview', $customer);
     <div class="d-flex align-items-center gap-3">
       <div class="text-warning flex-shrink-0"><?= icon('alert-circle') ?></div>
       <div>
-        <strong class="d-block text-dark">Verify your email address</strong>
+        <strong class="d-block">Verify your email address</strong>
         <div class="small text-muted">We sent an activation link to <strong><?= e($customer['email']) ?></strong>. Verify your email to ensure uninterrupted account access.</div>
       </div>
     </div>
@@ -99,7 +99,7 @@ account_layout_start('overview', 'Overview', $customer);
       </div>
       <div>
         <div class="small text-muted fw-medium">Recent Orders</div>
-        <div class="fs-5 fw-bold text-dark"><?= count($latestOrders) ?> <?= count($latestOrders) === 1 ? 'active' : 'orders' ?></div>
+        <div class="fs-5 fw-bold text-ink"><?= count($latestOrders) ?> <?= count($latestOrders) === 1 ? 'active' : 'orders' ?></div>
       </div>
     </div>
   </div>
@@ -111,7 +111,7 @@ account_layout_start('overview', 'Overview', $customer);
       </div>
       <div>
         <div class="small text-muted fw-medium">Saved in Wishlist</div>
-        <div class="fs-5 fw-bold text-dark"><?= $wishlistCount ?> <?= $wishlistCount === 1 ? 'item' : 'items' ?></div>
+        <div class="fs-5 fw-bold text-ink"><?= $wishlistCount ?> <?= $wishlistCount === 1 ? 'item' : 'items' ?></div>
       </div>
     </div>
   </div>
@@ -176,7 +176,7 @@ account_layout_start('overview', 'Overview', $customer);
             ?>
             <tr>
               <td class="fw-bold">
-                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="text-decoration-none text-dark">
+                <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="text-decoration-none text-ink">
                   <?= e($o['order_number']) ?>
                 </a>
                 <div class="small text-muted"><?= (int)$o['item_count'] ?> <?= (int)$o['item_count'] === 1 ? 'item' : 'items' ?></div>
@@ -216,7 +216,7 @@ account_layout_start('overview', 'Overview', $customer);
       <?php if ($defaultAddress): ?>
         <div>
           <div class="d-flex align-items-center gap-2 mb-2">
-            <strong class="text-dark"><?= e($defaultAddress['full_name']) ?></strong>
+            <strong class="text-ink"><?= e($defaultAddress['full_name']) ?></strong>
             <span class="badge bg-light text-dark border small" style="font-size: 0.7rem;"><?= e($defaultAddress['label'] ?: 'Default') ?></span>
           </div>
           <div class="text-muted small mb-1"><?= icon('phone', 'me-1') ?> <?= e($defaultAddress['phone']) ?></div>

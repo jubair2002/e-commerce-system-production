@@ -43,32 +43,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$tokenInvalid) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper py-5">
-  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm" style="max-width: 440px;">
-    <?php if ($tokenInvalid): ?>
-      <div class="text-center py-3">
-        <div class="fs-1 text-warning mb-3">
-          <i class="bi bi-shield-exclamation"></i>
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <?php if ($tokenInvalid): ?>
+        <div class="text-center py-3">
+          <div class="fs-1 text-warning mb-3">
+            <i class="bi bi-shield-exclamation"></i>
+          </div>
+          <h1 class="h4 fw-bold mb-2">Invalid or Expired Link</h1>
+          <p class="text-muted small mb-4">
+            This password reset link is invalid, has expired, or has already been used.
+            For your security, reset links are single-use and expire within 60 minutes.
+          </p>
+          <div class="d-grid gap-2">
+            <a href="<?= e(route('forgot_password')) ?>" class="btn btn-primary">
+              Request New Reset Link &rarr;
+            </a>
+            <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
+              Back to Sign In
+            </a>
+          </div>
         </div>
-        <h1 class="h4 fw-bold text-dark mb-2">Invalid or Expired Link</h1>
-        <p class="text-muted small mb-4">
-          This password reset link is invalid, has expired, or has already been used.
-          For your security, reset links are single-use and expire within 60 minutes.
-        </p>
-        <div class="d-grid gap-2">
-          <a href="<?= e(route('forgot_password')) ?>" class="btn btn-primary">
-            Request New Reset Link &rarr;
-          </a>
-          <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
-            Back to Sign In
-          </a>
+      <?php else: ?>
+        <div class="auth-header text-center mb-4">
+          <h1 class="h3 fw-bold mb-2">Set New Password</h1>
+          <p class="text-muted small">Create a strong, unique password for your account.</p>
         </div>
-      </div>
-    <?php else: ?>
-      <div class="auth-header text-center mb-4">
-        <h1 class="h3 fw-bold text-dark mb-2">Set New Password</h1>
-        <p class="text-muted small">Create a strong, unique password for your account.</p>
-      </div>
 
       <?php if ($error): ?>
         <div class="alert alert-danger small py-2 mb-3" role="alert">
@@ -132,6 +133,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
       </form>
     <?php endif; ?>
+    </div>
   </div>
 </div>
 

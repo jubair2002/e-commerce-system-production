@@ -165,7 +165,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
           <div class="card-body p-3 d-flex flex-column justify-content-between">
             <div>
               <h6 class="card-title mb-1 text-truncate" title="<?= e($p['name']) ?>">
-                <a href="<?= e(shop_url('product.php?slug=' . urlencode($p['slug']))) ?>" class="text-dark text-decoration-none fw-semibold">
+                <a href="<?= e(shop_url('product.php?slug=' . urlencode($p['slug']))) ?>" class="text-ink text-decoration-none fw-semibold">
                   <?= e($p['name']) ?>
                 </a>
               </h6>

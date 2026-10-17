@@ -11,6 +11,13 @@ if ($uri !== '/' && file_exists($file) && !is_dir($file)) {
     return false; // let PHP CLI server serve the file directly
 }
 
+// Uploads delivery: serve from UPLOADS_PATH if requested via /uploads/ or /assets/uploads/
+if (preg_match('#^/(?:assets/)?uploads/(.+)$#', $uri, $m)) {
+    $_GET['file'] = $m[1];
+    require __DIR__ . '/uploads.php';
+    exit;
+}
+
 // 2. Exact rewrites
 $rewrites = [
     '/' => 'index.php',

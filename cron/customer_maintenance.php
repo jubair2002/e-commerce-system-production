@@ -64,7 +64,7 @@ try {
 
             // Clean avatar file if present
             if (!empty($cust['avatar'])) {
-                $aPath = __DIR__ . '/../assets/uploads/avatars/' . $cust['avatar'];
+                $aPath = UPLOADS_PATH . '/avatars/' . $cust['avatar'];
                 if (file_exists($aPath)) {
                     @unlink($aPath);
                 }

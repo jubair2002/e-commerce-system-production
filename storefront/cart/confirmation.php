@@ -170,7 +170,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             </div>
             <div>
               <h5 class="fw-bold mb-1">Cash on Delivery Reminder</h5>
-              <p class="mb-0 text-dark">
+              <p class="mb-0">
                 Please keep <strong><?= e(price($order['total'])) ?></strong> in cash ready to hand over to the delivery courier when your parcel arrives.
               </p>
             </div>
@@ -180,7 +180,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="card border-info bg-info bg-opacity-10 mb-4 shadow-sm">
           <div class="card-body p-4">
             <h5 class="fw-bold mb-2"><?= icon('info', 'me-2 text-primary') ?> Bank Transfer Instructions</h5>
-            <p class="mb-0 text-dark">
+            <p class="mb-0">
               <?= nl2br(e(setting('bank_transfer_instructions', 'Please transfer the total amount to our bank account. Use your order number as reference.'))) ?>
             </p>
           </div>
@@ -193,7 +193,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="fs-1 text-success me-3"><?= icon('check-circle', 'text-success') ?></div>
             <div>
               <h5 class="fw-bold mb-1">Account Ready &amp; Linked!</h5>
-              <p class="mb-0 text-dark">
+              <p class="mb-0">
                 This order has been linked to your account. You can now track its progress and view your past orders in your customer dashboard.
               </p>
             </div>
@@ -242,7 +242,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <div class="row g-4 mb-4">
         <div class="col-md-6">
           <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header py-3 border-bottom">
               <h6 class="mb-0 fw-semibold"><?= icon('map-pin', 'text-primary me-2') ?> Delivery Information</h6>
             </div>
             <div class="card-body">
@@ -264,7 +264,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
         <div class="col-md-6">
           <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3 border-bottom">
+            <div class="card-header py-3 border-bottom">
               <h6 class="mb-0 fw-semibold"><?= icon('info', 'text-primary me-2') ?> Need Help?</h6>
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
@@ -299,7 +299,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Items Breakdown -->
       <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white py-3 border-bottom">
+        <div class="card-header py-3 border-bottom">
           <h6 class="mb-0 fw-semibold"><?= icon('bag', 'text-primary me-2') ?> Purchased Items</h6>
         </div>
         <div class="card-body p-0">

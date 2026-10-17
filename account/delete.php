@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Delete avatar image file if exists
             if (!empty($freshCustomer['avatar'])) {
-                $avatarFile = __DIR__ . '/../assets/uploads/avatars/' . $freshCustomer['avatar'];
+                $avatarFile = UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'];
                 if (file_exists($avatarFile)) {
                     @unlink($avatarFile);
                 }

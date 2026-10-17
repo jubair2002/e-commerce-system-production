@@ -36,12 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper py-5">
-  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm" style="max-width: 440px;">
-    <div class="auth-header text-center mb-4">
-      <h1 class="h3 fw-bold text-dark mb-2">Reset Password</h1>
-      <p class="text-muted small">Enter your email address and we will send you a link to reset your password.</p>
-    </div>
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <div class="auth-header text-center mb-4">
+        <h1 class="h3 fw-bold mb-2">Reset Password</h1>
+        <p class="text-muted small">Enter your email address and we will send you a link to reset your password.</p>
+      </div>
 
     <?php if ($successMessage): ?>
       <div class="alert alert-success text-center mb-4">
@@ -91,6 +92,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
       </form>
     <?php endif; ?>
+    </div>
   </div>
 </div>
 
