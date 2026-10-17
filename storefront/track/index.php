@@ -87,10 +87,10 @@ $statusBadge = [
 ];
 
 $timelineSteps = [
-    'pending'    => ['title' => 'Order Placed', 'icon' => 'bi-receipt'],
-    'processing' => ['title' => 'Processing',   'icon' => 'bi-box-seam'],
-    'shipped'    => ['title' => 'Shipped',      'icon' => 'bi-truck'],
-    'completed'  => ['title' => 'Delivered',    'icon' => 'bi-check2-circle'],
+    'pending'    => ['title' => 'Order Placed', 'icon' => 'bag'],
+    'processing' => ['title' => 'Processing',   'icon' => 'bag'],
+    'shipped'    => ['title' => 'Shipped',      'icon' => 'truck'],
+    'completed'  => ['title' => 'Delivered',    'icon' => 'check-circle'],
 ];
 
 include __DIR__ . '/../../includes/partials/header.php';
@@ -107,7 +107,7 @@ include __DIR__ . '/../../includes/partials/header.php';
     </nav>
 
     <div class="section-header text-center mb-4">
-      <h2 class="fw-bold"><i class="bi bi-geo-alt text-primary me-2"></i> Track Your Order</h2>
+      <h2 class="fw-bold"><?= icon('map-pin', 'text-primary me-2') ?> Track Your Order</h2>
       <p class="text-muted">Enter your order number and the phone number or email you used when placing the order.</p>
     </div>
 
@@ -118,7 +118,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <div class="col-md-6">
             <label class="form-label fw-semibold">Order Number <span class="text-danger">*</span></label>
             <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-hash"></i></span>
+              <span class="input-group-text"><?= icon('bag') ?></span>
               <input type="text" name="order_number" class="form-control"
                      value="<?= e($orderNumber) ?>"
                      placeholder="e.g. ORD-202610-0001" required>
@@ -127,7 +127,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <div class="col-md-6">
             <label class="form-label fw-semibold">Phone Number or Email <span class="text-danger">*</span></label>
             <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+              <span class="input-group-text"><?= icon('user') ?></span>
               <input type="text" name="contact" class="form-control"
                      value="<?= e($contact) ?>"
                      placeholder="01712345678 or you@example.com" required>
@@ -135,7 +135,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           </div>
           <div class="col-12 mt-3">
             <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
-              <i class="bi bi-search me-1"></i> Track Order Status
+              <?= icon('search', 'me-1') ?> Track Order Status
             </button>
           </div>
         </form>
@@ -144,7 +144,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php if ($errors): ?>
       <div class="alert alert-danger alert-dismissible fade show mb-4">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <?= icon('alert-circle', 'me-2') ?>
         <?= e($errors[0]) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
@@ -180,7 +180,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <?php if ($isCancelled): ?>
             <div class="alert alert-danger mb-0">
-              <h6 class="fw-bold mb-1"><i class="bi bi-x-circle me-1"></i> This order was cancelled</h6>
+              <h6 class="fw-bold mb-1"><?= icon('x', 'me-1') ?> This order was cancelled</h6>
               <p class="mb-0 small">
                 If you have questions regarding this cancellation, please contact our support team.
               </p>
@@ -202,7 +202,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <div class="text-center position-relative" style="z-index: 2;">
                     <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white <?= $isDone ? 'bg-primary' : 'bg-secondary' ?>"
                          style="width: 40px; height: 40px; font-size: 18px; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-                      <i class="bi <?= e($step['icon']) ?>"></i>
+                      <?= icon($step['icon']) ?>
                     </div>
                     <div class="small fw-semibold <?= $isCur ? 'text-primary' : 'text-muted' ?>">
                       <?= e($step['title']) ?>
@@ -219,7 +219,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php if (!empty($order['courier']) || !empty($order['tracking_number'])): ?>
         <div class="card shadow-sm border-0 mb-4 bg-light">
           <div class="card-body p-4">
-            <h6 class="fw-bold mb-2"><i class="bi bi-box-seam text-primary me-2"></i> Courier Shipment Details</h6>
+            <h6 class="fw-bold mb-2"><?= icon('truck', 'text-primary me-2') ?> Courier Shipment Details</h6>
             <div class="row g-2">
               <?php if (!empty($order['courier'])): ?>
                 <div class="col-sm-6">
@@ -242,7 +242,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php if (!empty($history)): ?>
         <div class="card shadow-sm border-0 mb-4">
           <div class="card-header bg-white py-3 border-bottom">
-            <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history text-primary me-2"></i> Status Timeline Logs</h6>
+            <h6 class="mb-0 fw-semibold"><?= icon('rotate-ccw', 'text-primary me-2') ?> Status Timeline Logs</h6>
           </div>
           <div class="card-body p-4">
             <ul class="list-unstyled mb-0 position-relative ps-3" style="border-left: 2px solid #e9ecef;">
@@ -271,7 +271,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <!-- Items in Order -->
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3 border-bottom">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-cart-check text-primary me-2"></i> Items in This Order</h6>
+          <h6 class="mb-0 fw-semibold"><?= icon('bag', 'text-primary me-2') ?> Items in This Order</h6>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">

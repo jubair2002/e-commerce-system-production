@@ -72,7 +72,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <?php if ($error): ?>
         <div class="alert alert-danger small py-2 mb-3" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($error) ?>
+          <?= icon('alert-circle', 'me-1') ?> <?= e($error) ?>
         </div>
       <?php endif; ?>
 
@@ -92,7 +92,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                    required
                    placeholder="At least 8 characters">
             <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPassword" aria-label="Toggle password visibility">
-              <i class="bi bi-eye"></i>
+              <?= icon('eye') ?>
             </button>
           </div>
           <!-- Live password strength meter -->
@@ -114,20 +114,20 @@ include __DIR__ . '/../../includes/partials/header.php';
                    required
                    placeholder="Repeat new password">
             <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPasswordConfirm" aria-label="Toggle password visibility">
-              <i class="bi bi-eye"></i>
+              <?= icon('eye') ?>
             </button>
           </div>
         </div>
 
         <div class="d-grid gap-2 mb-3">
-          <button type="submit" class="btn btn-primary py-2 fw-semibold" id="btnSubmitReset">
+          <button type="submit" class="btn btn-editorial-primary py-2 fw-semibold" id="btnSubmitReset">
             Update Password &amp; Sign In
           </button>
         </div>
 
         <div class="text-center pt-2">
-          <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Return to Sign In
+          <a href="<?= e(route('login')) ?>" class="btn btn-editorial-secondary btn-sm">
+            <?= icon('arrow-left', 'me-1') ?> Return to Sign In
           </a>
         </div>
       </form>

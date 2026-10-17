@@ -101,10 +101,10 @@ $storeLogo    = setting('store_logo', '');
   <!-- Screen Action Toolbar -->
   <div class="container text-center mb-4 no-print" style="max-width: 860px;">
     <button onclick="window.print()" class="btn btn-dark btn-lg px-4 me-2">
-      <i class="bi bi-printer me-2"></i> Print Invoice
+      <?= icon('printer', 'i-sm me-2') ?> Print Invoice
     </button>
     <a href="<?= e(shop_url('account/order.php?o=' . urlencode($order['order_number']))) ?>" class="btn btn-outline-secondary btn-lg">
-      <i class="bi bi-arrow-left me-1"></i> Back to Order Details
+      <?= icon('arrow-left', 'i-sm me-1') ?> Back to Order Details
     </a>
   </div>
 
@@ -140,8 +140,8 @@ $storeLogo    = setting('store_logo', '');
     <!-- COD Banner -->
     <?php if ($order['payment_method'] === 'cod'): ?>
       <div class="cod-collect-banner">
-        <div class="fs-5 fw-bold text-dark">
-          <i class="bi bi-cash-coin text-warning me-2"></i>
+        <div class="fs-5 fw-bold text-dark d-flex align-items-center">
+          <?= icon('cash', 'i-md text-warning me-2') ?>
           Cash on Delivery Amount: <?= e(price($order['total'])) ?>
         </div>
         <div class="text-muted small mt-1">Please keep this amount ready to hand to the delivery courier.</div>
@@ -156,9 +156,9 @@ $storeLogo    = setting('store_logo', '');
         <div><?= nl2br(e($order['shipping_address'])) ?></div>
         <div><?= e($order['shipping_city']) ?><?= !empty($order['shipping_zip']) ? ' - ' . e($order['shipping_zip']) : '' ?></div>
         <div><?= e($order['shipping_country'] ?: 'Bangladesh') ?></div>
-        <div class="mt-2 text-muted small"><i class="bi bi-telephone me-1"></i> <?= e($order['customer_phone']) ?></div>
+        <div class="mt-2 text-muted small"><?= icon('phone', 'i-sm me-1') ?> <?= e($order['customer_phone']) ?></div>
         <?php if (!empty($order['customer_email'])): ?>
-          <div class="text-muted small"><i class="bi bi-envelope me-1"></i> <?= e($order['customer_email']) ?></div>
+          <div class="text-muted small"><?= icon('mail', 'i-sm me-1') ?> <?= e($order['customer_email']) ?></div>
         <?php endif; ?>
       </div>
       <div class="col-6 text-end">

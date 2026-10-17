@@ -185,7 +185,7 @@ account_layout_start('profile', 'Edit Profile', $freshCustomer);
 
   <?php if (!empty($errors['general'])): ?>
     <div class="alert alert-danger small py-2 mb-3">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($errors['general']) ?>
+      <?= icon('alert-circle', 'i-sm me-1') ?> <?= e($errors['general']) ?>
     </div>
   <?php endif; ?>
 
@@ -277,11 +277,11 @@ account_layout_start('profile', 'Edit Profile', $freshCustomer);
     <!-- Metadata Section -->
     <div class="p-3 bg-light rounded border mb-4 text-muted small">
       <div class="row g-2">
-        <div class="col-sm-6">
-          <i class="bi bi-calendar3 me-1"></i> Member since: <strong><?= date('F j, Y', strtotime($freshCustomer['created_at'])) ?></strong>
+        <div class="col-sm-6 d-flex align-items-center gap-1">
+          <?= icon('box', 'i-sm text-muted') ?> Member since: <strong><?= date('F j, Y', strtotime($freshCustomer['created_at'])) ?></strong>
         </div>
-        <div class="col-sm-6">
-          <i class="bi bi-clock-history me-1"></i> Last sign in: <strong><?= !empty($freshCustomer['last_login_at']) ? date('M j, Y, g:i a', strtotime($freshCustomer['last_login_at'])) : 'Recent session' ?></strong>
+        <div class="col-sm-6 d-flex align-items-center gap-1">
+          <?= icon('rotate-ccw', 'i-sm text-muted') ?> Last sign in: <strong><?= !empty($freshCustomer['last_login_at']) ? date('M j, Y, g:i a', strtotime($freshCustomer['last_login_at'])) : 'Recent session' ?></strong>
         </div>
       </div>
     </div>

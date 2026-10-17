@@ -45,19 +45,19 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php if ($successMessage): ?>
       <div class="alert alert-success text-center mb-4">
-        <div class="fs-4 mb-2"><i class="bi bi-envelope-check"></i></div>
+        <div class="fs-4 mb-2"><?= icon('mail', 'text-success') ?></div>
         <h6 class="fw-bold mb-1">Check Your Email</h6>
         <p class="small mb-0"><?= e($successMessage) ?></p>
       </div>
       <div class="d-grid gap-2">
-        <a href="<?= e(route('login')) ?>" class="btn btn-primary">
+        <a href="<?= e(route('login')) ?>" class="btn btn-editorial-primary">
           Back to Sign In &rarr;
         </a>
       </div>
     <?php else: ?>
       <?php if ($error): ?>
         <div class="alert alert-danger small py-2 mb-3" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($error) ?>
+          <?= icon('alert-circle', 'me-1') ?> <?= e($error) ?>
         </div>
       <?php endif; ?>
 
@@ -78,7 +78,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
 
         <div class="d-grid gap-2 mb-3">
-          <button type="submit" class="btn btn-primary py-2 fw-semibold">
+          <button type="submit" class="btn btn-editorial-primary py-2 fw-semibold">
             Send Reset Link
           </button>
         </div>

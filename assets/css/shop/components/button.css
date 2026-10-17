@@ -86,8 +86,108 @@
   border-radius: var(--radius-pill);
 }
 
+.btn-outline-primary {
+  background-color: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-outline-secondary {
+  background-color: transparent;
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--bg-soft);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.btn-outline-danger {
+  background-color: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-outline-danger:hover {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+.btn-outline-dark {
+  background-color: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.btn-outline-dark:hover {
+  background-color: var(--ink);
+  color: var(--bg);
+}
+
+.btn-editorial-primary {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
+.btn-editorial-primary:hover {
+  opacity: 0.92;
+  color: var(--accent-contrast);
+}
+
+.btn-editorial-secondary {
+  background-color: var(--surface);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn-editorial-secondary:hover {
+  border-color: var(--ink);
+  background-color: var(--bg-soft);
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--ink-2);
+  text-decoration: underline;
+  padding: 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  color: var(--ink);
+}
+
+.btn-close {
+  box-sizing: content-box;
+  width: 1em;
+  height: 1em;
+  padding: 0.25em;
+  color: var(--muted);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236b7280'%3E%3Cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3E%3C/svg%3E") center/1em auto no-repeat;
+  border: 0;
+  border-radius: var(--radius-sm);
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.btn-close:hover {
+  opacity: 1;
+}
+
 .btn:disabled, .btn.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
+

@@ -107,3 +107,55 @@ textarea.form-control {
 .btn-password-toggle:hover {
   color: var(--ink);
 }
+
+/* Input Group */
+.input-group {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-group > .form-control,
+.input-group > .form-select {
+  position: relative;
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+}
+
+.input-group > :not(:first-child):not(.dropdown-menu) {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.input-group > :not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-group-text {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--bg-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.input-group-sm > .form-control,
+.input-group-sm > .input-group-text,
+.input-group-sm > .btn {
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+  border-radius: var(--radius-sm);
+}
+

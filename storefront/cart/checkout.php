@@ -476,7 +476,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php if ($errors): ?>
       <div class="alert alert-danger alert-dismissible fade show mb-4">
-        <strong><i class="bi bi-exclamation-octagon"></i> Please check the following:</strong>
+        <strong><?= icon('alert-circle', 'me-1') ?> Please check the following:</strong>
         <ul class="mb-0 mt-2 ps-3">
           <?php foreach ($errors as $err): ?>
             <li><?= e($err) ?></li>
@@ -503,10 +503,10 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-semibold"><i class="bi bi-person-circle text-primary me-2"></i> Contact Information</h5>
+              <h5 class="mb-0 fw-semibold"><?= icon('user', 'text-primary me-2') ?> Contact Information</h5>
               <?php if ($currentCustomer): ?>
                 <span class="badge bg-light text-dark border">
-                  <i class="bi bi-check-circle-fill text-success me-1"></i> <?= e($currentCustomer['name']) ?>
+                  <?= icon('check-circle', 'text-success me-1') ?> <?= e($currentCustomer['name']) ?>
                 </span>
               <?php else: ?>
                 <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-decoration-underline text-muted">
@@ -527,7 +527,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                     Phone Number <?= $requirePhone ? '<span class="text-danger">*</span>' : '' ?>
                   </label>
                   <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                    <span class="input-group-text"><?= icon('phone') ?></span>
                     <input type="tel" name="customer_phone" class="form-control"
                            value="<?= e($old['customer_phone']) ?>" placeholder="01712345678" <?= $requirePhone ? 'required' : '' ?>>
                   </div>
@@ -539,7 +539,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                     Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted">(Optional)</span>' ?>
                   </label>
                   <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    <span class="input-group-text"><?= icon('mail') ?></span>
                     <input type="email" name="customer_email" class="form-control"
                            value="<?= e($old['customer_email']) ?>" placeholder="tanvir@example.com" <?= $requireEmail ? 'required' : '' ?>>
                   </div>
@@ -551,14 +551,14 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">
-              <h5 class="mb-0 fw-semibold"><i class="bi bi-geo-alt text-primary me-2"></i> Delivery Address</h5>
+              <h5 class="mb-0 fw-semibold"><?= icon('map-pin', 'text-primary me-2') ?> Delivery Address</h5>
             </div>
             <div class="card-body">
               <div class="row g-3">
                 <?php if (!empty($savedAddresses)): ?>
                   <div class="col-12 mb-2">
                     <label class="form-label fw-medium d-flex justify-content-between align-items-center">
-                      <span><i class="bi bi-journal-bookmark me-1 text-primary"></i> Saved Delivery Addresses</span>
+                      <span><?= icon('map-pin', 'me-1 text-primary') ?> Saved Delivery Addresses</span>
                       <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
                     </label>
                     <div class="d-flex flex-column gap-2" id="savedAddressSelector">
@@ -588,7 +588,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                       <?php endforeach; ?>
                       <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer;">
                         <input type="radio" name="saved_address_id" value="new" class="form-check-input">
-                        <span class="small fw-semibold text-primary"><i class="bi bi-plus-circle me-1"></i> Add new delivery address</span>
+                        <span class="small fw-semibold text-primary"><?= icon('map-pin', 'me-1') ?> Add new delivery address</span>
                       </label>
                     </div>
                   </div>
@@ -612,13 +612,13 @@ include __DIR__ . '/../../includes/partials/header.php';
                   </select>
                   <div class="mt-2 d-flex flex-wrap gap-1">
                     <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Dhaka" data-method-keyword="Inside Dhaka" style="font-size: 0.78rem;">
-                      <i class="bi bi-geo-alt"></i> Inside Dhaka
+                      <?= icon('map-pin', 'me-1') ?> Inside Dhaka
                     </button>
                     <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Chattogram" data-method-keyword="Outside Dhaka" style="font-size: 0.78rem;">
-                      <i class="bi bi-truck"></i> Outside Dhaka
+                      <?= icon('truck', 'me-1') ?> Outside Dhaka
                     </button>
                     <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Gazipur" data-method-keyword="Custom Area" style="font-size: 0.78rem;">
-                      <i class="bi bi-pin-map"></i> Gazipur / Suburbs
+                      <?= icon('map-pin', 'me-1') ?> Gazipur / Suburbs
                     </button>
                   </div>
                 </div>
@@ -652,7 +652,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <!-- Shipping Method Selection -->
           <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-semibold"><i class="bi bi-truck text-primary me-2"></i> Delivery Area & Shipping Rate</h5>
+              <h5 class="mb-0 fw-semibold"><?= icon('truck', 'text-primary me-2') ?> Delivery Area &amp; Shipping Rate</h5>
               <span class="badge text-bg-light border text-muted">Select your delivery zone</span>
             </div>
             <div class="card-body p-0">
@@ -694,7 +694,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <!-- Payment Method Selection -->
           <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">
-              <h5 class="mb-0 fw-semibold"><i class="bi bi-wallet2 text-primary me-2"></i> Payment Method</h5>
+              <h5 class="mb-0 fw-semibold"><?= icon('lock', 'text-primary me-2') ?> Payment Method</h5>
             </div>
             <div class="card-body">
               <?php if ($codEnabled): ?>
@@ -702,7 +702,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_cod"
                          value="cod" <?= $old['payment_method'] === 'cod' ? 'checked' : '' ?>>
                   <label class="form-check-label fw-semibold d-block" for="pay_cod" style="cursor: pointer;">
-                    <i class="bi bi-cash-stack text-success me-1"></i> Cash on Delivery (COD)
+                    <?= icon('check', 'text-success me-1') ?> Cash on Delivery (COD)
                     <?php if ($codFee > 0): ?>
                       <span class="badge bg-secondary ms-2" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
                     <?php endif; ?>
@@ -718,7 +718,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_bank"
                          value="bank_transfer" <?= $old['payment_method'] === 'bank_transfer' ? 'checked' : '' ?>>
                   <label class="form-check-label fw-semibold d-block" for="pay_bank">
-                    <i class="bi bi-bank text-primary me-1"></i> Direct Bank Transfer
+                    <?= icon('shield', 'text-primary me-1') ?> Direct Bank Transfer
                   </label>
                   <div class="text-muted small mt-1">
                     <?= nl2br(e($bankInstructions ?: 'Bank account details will be shown upon placing the order.')) ?>
@@ -790,11 +790,11 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </div>
 
                 <button type="submit" id="btnSubmitOrder" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
-                  <i class="bi bi-bag-check-fill me-2"></i> Place Order Now
+                  <?= icon('bag', 'me-2') ?> Place Order Now
                 </button>
 
                 <div class="text-center mt-3 text-muted small">
-                  <i class="bi bi-shield-lock-fill text-success"></i> 100% Secure Checkout · No account needed
+                  <?= icon('shield', 'text-success me-1') ?> 100% Secure Checkout · No account needed
                 </div>
               </div>
             </div>

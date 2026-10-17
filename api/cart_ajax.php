@@ -102,10 +102,10 @@ ob_start();
 ?>
 <?php if (empty($cart['items'])): ?>
   <div class="mini-cart-empty">
-    <div class="empty-icon"><i class="bi bi-bag"></i></div>
+    <div class="empty-icon"><?= icon('bag') ?></div>
     <div class="empty-title">Your cart is empty</div>
     <p class="empty-text">Discover our latest essentials and find something you love.</p>
-    <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-outline-dark btn-sm mt-2">
+    <a href="<?= e(route('shop')) ?>" class="btn btn-outline-dark btn-sm mt-2">
       Continue Shopping
     </a>
   </div>
@@ -113,16 +113,16 @@ ob_start();
   <div class="mini-cart-list">
     <?php foreach ($cart['items'] as $item): ?>
       <div class="mini-cart-item" data-cart-key="<?= e($item['cart_key']) ?>">
-        <a href="<?= e(shop_url('product.php?slug=' . urlencode($item['product']['slug']))) ?>" class="item-img-link">
+        <a href="<?= e(route('product', ['slug' => $item['product']['slug']])) ?>" class="item-img-link">
           <img src="<?= e(product_image_url($item['image'])) ?>" alt="<?= e($item['product_name']) ?>" class="item-thumb" loading="lazy">
         </a>
         <div class="item-details">
           <div class="item-header">
-            <a href="<?= e(shop_url('product.php?slug=' . urlencode($item['product']['slug']))) ?>" class="item-name">
+            <a href="<?= e(route('product', ['slug' => $item['product']['slug']])) ?>" class="item-name">
               <?= e($item['product_name']) ?>
             </a>
             <button type="button" class="item-remove-btn" data-cart-remove="<?= e($item['cart_key']) ?>" aria-label="Remove item">
-              <i class="bi bi-x"></i>
+              <?= icon('x') ?>
             </button>
           </div>
           <?php if (!empty($item['variant_label'])): ?>
@@ -143,8 +143,10 @@ ob_start();
     <?php endforeach; ?>
   </div>
 <?php endif; ?>
+<?php
 $response['html'] = ob_get_clean();
 
 echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 if (function_exists('app_finish_response')) app_finish_response();
 exit;
+

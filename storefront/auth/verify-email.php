@@ -26,7 +26,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 <div class="auth-page-wrapper py-5">
   <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm text-center" style="max-width: 440px;">
     <div class="fs-1 text-danger mb-3">
-      <i class="bi bi-x-circle"></i>
+      <?= icon('x', 'text-danger', 'Error') ?>
     </div>
     <h1 class="h4 fw-bold text-dark mb-2">Verification Failed</h1>
     <p class="text-muted small mb-4">
@@ -34,10 +34,10 @@ include __DIR__ . '/../../includes/partials/header.php';
     </p>
 
     <div class="d-grid gap-2">
-      <a href="<?= e(route('resend_verification')) ?>" class="btn btn-primary">
+      <a href="<?= e(route('resend_verification')) ?>" class="btn btn-editorial-primary">
         Resend Verification Link &rarr;
       </a>
-      <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
+      <a href="<?= e(route('login')) ?>" class="btn btn-editorial-secondary btn-sm">
         Go to Sign In
       </a>
     </div>

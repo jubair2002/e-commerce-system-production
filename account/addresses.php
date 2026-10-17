@@ -214,7 +214,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
   </div>
   <?php if (count($addresses) < 10 && !$editAddress): ?>
     <button type="button" class="btn btn-editorial-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addressFormCollapse" aria-expanded="<?= !empty($errors) ? 'true' : 'false' ?>">
-      <i class="bi bi-plus-lg me-1"></i> Add New Address
+      + Add New Address
     </button>
   <?php endif; ?>
 </div>
@@ -225,7 +225,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
     <div class="account-card-header">
       <h2 class="account-card-title"><?= $editAddress ? 'Edit Delivery Address' : 'Add New Delivery Address' ?></h2>
       <?php if ($editAddress): ?>
-        <a href="<?= e(shop_url('account/addresses.php')) ?>" class="btn btn-outline-secondary btn-sm">Cancel Edit</a>
+        <a href="<?= e(shop_url('account/addresses.php')) ?>" class="btn btn-editorial-secondary btn-sm">Cancel Edit</a>
       <?php else: ?>
         <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#addressFormCollapse" aria-label="Close form"></button>
       <?php endif; ?>
@@ -233,7 +233,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
 
     <?php if (!empty($errors['general'])): ?>
       <div class="alert alert-danger small py-2 mb-3">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($errors['general']) ?>
+        <?= icon('alert-circle', 'me-1') ?> <?= e($errors['general']) ?>
       </div>
     <?php endif; ?>
 
@@ -356,7 +356,9 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
 <!-- Saved Addresses List -->
 <?php if (empty($addresses)): ?>
   <div class="account-card text-center py-5">
-    <div class="fs-1 text-muted mb-2"><i class="bi bi-geo-alt"></i></div>
+    <div class="empty-state-icon mb-3" style="width: 52px; height: 52px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: var(--surface-muted); border-radius: 50%; color: var(--ink-2);">
+      <?= icon('map-pin') ?>
+    </div>
     <h3 class="h5 fw-bold mb-1">No Delivery Addresses Saved</h3>
     <p class="text-muted small mb-3">Add your home or office address to save time when checking out.</p>
   </div>
@@ -369,17 +371,17 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-light text-dark border fw-semibold"><?= e($addr['label'] ?: 'Address') ?></span>
               <?php if ((int)$addr['is_default'] === 1): ?>
-                <span class="badge bg-primary text-white"><i class="bi bi-check2"></i> Default</span>
+                <span class="badge bg-primary text-white"><?= icon('check') ?> Default</span>
               <?php endif; ?>
             </div>
             <div class="dropdown">
               <button class="btn btn-sm btn-light border-0 py-0 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots-vertical"></i>
+                &vellip;
               </button>
               <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
                 <li>
                   <a class="dropdown-item" href="<?= e(shop_url('account/addresses.php?edit=' . (int)$addr['id'])) ?>">
-                    <i class="bi bi-pencil me-2 text-secondary"></i> Edit
+                    <?= icon('edit', 'me-2 text-secondary') ?> Edit
                   </a>
                 </li>
                 <?php if ((int)$addr['is_default'] !== 1): ?>
@@ -389,7 +391,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
                       <input type="hidden" name="action" value="set_default">
                       <input type="hidden" name="address_id" value="<?= (int)$addr['id'] ?>">
                       <button type="submit" class="dropdown-item">
-                        <i class="bi bi-check-circle me-2 text-secondary"></i> Set as Default
+                        <?= icon('check-circle', 'me-2 text-secondary') ?> Set as Default
                       </button>
                     </form>
                   </li>
@@ -401,7 +403,7 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="address_id" value="<?= (int)$addr['id'] ?>">
                     <button type="submit" class="dropdown-item text-danger">
-                      <i class="bi bi-trash3 me-2 text-danger"></i> Delete
+                      <?= icon('trash', 'me-2 text-danger') ?> Delete
                     </button>
                   </form>
                 </li>
@@ -409,8 +411,8 @@ account_layout_start('addresses', 'Delivery Addresses', $customer);
             </div>
           </div>
 
-          <div class="fw-bold fs-6 mb-1"><?= e($addr['full_name']) ?></div>
-          <div class="text-muted small mb-2"><i class="bi bi-telephone me-1"></i> <?= e($addr['phone']) ?></div>
+          <div class="fw-bold fs-6 mb-1 text-dark"><?= e($addr['full_name']) ?></div>
+          <div class="text-muted small mb-2"><?= icon('phone', 'me-1') ?> <?= e($addr['phone']) ?></div>
           <div class="text-muted small">
             <?= nl2br(e($addr['address'])) ?><br>
             <?= e($addr['city']) ?><?= !empty($addr['area']) ? ', ' . e($addr['area']) : '' ?><?= !empty($addr['zip']) ? ' - ' . e($addr['zip']) : '' ?><br>

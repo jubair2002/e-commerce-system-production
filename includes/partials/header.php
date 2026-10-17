@@ -120,12 +120,6 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
           <li>
             <a href="<?= e(route('track')) ?>" class="nav-link <?= route_is('track') ? 'is-active' : '' ?>">Track Order</a>
           </li>
-          <li>
-            <a href="<?= e(route('page', ['slug' => 'about'])) ?>" class="nav-link <?= (route_is('page') && ($_GET['slug'] ?? '') === 'about') ? 'is-active' : '' ?>">About</a>
-          </li>
-          <li>
-            <a href="<?= e(route('contact')) ?>" class="nav-link <?= route_is('contact') ? 'is-active' : '' ?>">Contact</a>
-          </li>
         </ul>
       </nav>
 

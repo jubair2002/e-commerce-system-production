@@ -118,14 +118,14 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <?php if (!$registrationEnabled): ?>
         <div class="alert alert-warning text-center small mb-4">
-          <i class="bi bi-info-circle me-1"></i> Customer registration is temporarily disabled. Please check back later.
+          <?= icon('info', 'me-1') ?> Customer registration is temporarily disabled. Please check back later.
         </div>
         <div class="text-center">
           <a href="<?= e(route('home')) ?>" class="btn btn-outline-dark btn-sm">Return to Store</a>
         </div>
       <?php elseif ($successMessage): ?>
         <div class="alert alert-success text-center mb-4">
-          <div class="fs-4 mb-2"><i class="bi bi-envelope-check"></i></div>
+          <div class="fs-4 mb-2"><?= icon('mail') ?></div>
           <h6 class="fw-bold mb-1">Check Your Email</h6>
           <p class="small mb-0"><?= e($successMessage) ?></p>
         </div>
@@ -137,7 +137,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php else: ?>
         <?php if (!empty($errors['general'])): ?>
           <div class="alert alert-danger small py-2 mb-3">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($errors['general']) ?>
+            <?= icon('alert-circle', 'me-1') ?> <?= e($errors['general']) ?>
           </div>
         <?php endif; ?>
 
@@ -213,7 +213,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                      required
                      placeholder="At least 8 characters">
               <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regPassword" aria-label="Toggle password visibility">
-                <i class="bi bi-eye"></i>
+                <?= icon('eye') ?>
               </button>
             </div>
             <div class="password-meter-wrap mt-1">
@@ -237,7 +237,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                      required
                      placeholder="Re-enter your password">
               <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regConfirm" aria-label="Toggle password visibility">
-                <i class="bi bi-eye"></i>
+                <?= icon('eye') ?>
               </button>
             </div>
             <?php if (isset($errors['confirm_password'])): ?>

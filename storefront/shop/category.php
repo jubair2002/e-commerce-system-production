@@ -29,7 +29,7 @@ if (!$category) {
     <section class="section">
       <div class="container">
         <div class="empty-state-card">
-          <div class="empty-state-icon"><i class="bi bi-tag"></i></div>
+          <div class="empty-state-icon"><?= icon('bag') ?></div>
           <h2>Category Not Found</h2>
           <p>The category you're looking for does not exist or has been moved.</p>
           <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
@@ -258,7 +258,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
         <?php else: ?>
           <div class="empty-state-card">
-            <div class="empty-state-icon"><i class="bi bi-box-seam"></i></div>
+            <div class="empty-state-icon"><?= icon('bag') ?></div>
             <h2>No products in this category</h2>
             <p>We are currently restocking this category. Check back soon or explore our full collection.</p>
             <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">

@@ -3,9 +3,40 @@
   background-color: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
   position: relative;
   transition: all var(--duration-fast) var(--ease);
+}
+
+.card:not(:has(.card-body)):not(.p-0):not(.p-1):not(.p-2):not(.p-3):not(.p-4):not(.p-6):not(.p-8) {
+  padding: var(--space-6);
+}
+
+.card-header {
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--line);
+  background-color: var(--surface);
+  border-top-left-radius: calc(var(--radius-lg) - 1px);
+  border-top-right-radius: calc(var(--radius-lg) - 1px);
+}
+
+.card-body {
+  padding: var(--space-6);
+  flex: 1 1 auto;
+}
+
+.card-footer {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--line);
+  background-color: var(--bg-soft);
+  border-bottom-left-radius: calc(var(--radius-lg) - 1px);
+  border-bottom-right-radius: calc(var(--radius-lg) - 1px);
+}
+
+.card-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+  color: var(--ink);
 }
 
 .card-raised {
@@ -16,6 +47,11 @@
   box-shadow: var(--shadow-md);
   border-color: var(--line-strong);
 }
+
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+
 
 /* Product Card Component (4:5 Aspect Ratio, Hover Image Swap, Swatches) */
 .product-card {

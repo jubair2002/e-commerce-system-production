@@ -198,7 +198,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <div class="toolbar-controls">
         <!-- Mobile Filter Button Trigger -->
         <button type="button" class="btn btn-editorial-secondary btn-sm mobile-filter-btn" data-filter-drawer-trigger>
-          <i class="bi bi-funnel me-1"></i> Filters <?= count($activeChips) > 0 ? '(' . count($activeChips) . ')' : '' ?>
+          <?= icon('filter', 'me-1') ?> Filters <?= count($activeChips) > 0 ? '(' . count($activeChips) . ')' : '' ?>
         </button>
 
         <!-- Sort Select -->
@@ -227,7 +227,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <?php foreach ($activeChips as $chip): ?>
           <span class="filter-chip">
             <?= e($chip['label']) ?>
-            <a href="<?= e($chip['url']) ?>" aria-label="Remove filter <?= e($chip['label']) ?>"><i class="bi bi-x"></i></a>
+            <a href="<?= e($chip['url']) ?>" aria-label="Remove filter <?= e($chip['label']) ?>"><?= icon('x') ?></a>
           </span>
         <?php endforeach; ?>
         <a href="<?= e(route('shop')) ?>" class="clear-all-link">Clear all</a>
@@ -352,7 +352,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <nav aria-label="Page navigation">
               <ul class="editorial-pagination">
                 <?php if ($page > 1): $qs['page'] = $page - 1; ?>
-                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a></li>
+                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Previous page"><?= icon('chevron-left') ?></a></li>
                 <?php endif; ?>
 
                 <?php for ($pn = 1; $pn <= $pages; $pn++): $qs['page'] = $pn; ?>
@@ -366,7 +366,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <?php endfor; ?>
 
                 <?php if ($page < $pages): $qs['page'] = $page + 1; ?>
-                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Next page"><i class="bi bi-chevron-right"></i></a></li>
+                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Next page"><?= icon('chevron-right') ?></a></li>
                 <?php endif; ?>
               </ul>
             </nav>
@@ -375,7 +375,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <?php else: ?>
           <!-- Friendly Empty State -->
           <div class="empty-state-card">
-            <div class="empty-state-icon"><i class="bi bi-search"></i></div>
+            <div class="empty-state-icon"><?= icon('search') ?></div>
             <h2>No products found</h2>
             <p>We couldn't find any items matching your selected criteria. Try adjusting your filters or search terms.</p>
             <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
@@ -393,7 +393,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 <!-- Mobile Filter Bottom-Sheet Drawer -->
 <div class="mobile-filter-drawer" id="mobileFilterDrawer" role="dialog" aria-modal="true" aria-label="Filters">
   <div class="filter-drawer-header">
-    <h5 class="fw-semibold m-0"><i class="bi bi-funnel me-1"></i> Filter Products</h5>
+    <h5 class="fw-semibold m-0"><?= icon('filter', 'me-1') ?> Filter Products</h5>
     <button type="button" class="btn-close" data-filter-drawer-close aria-label="Close filters"></button>
   </div>
   <div class="filter-drawer-body">

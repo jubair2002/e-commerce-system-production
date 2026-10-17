@@ -543,12 +543,13 @@ function product_image_url(?string $image): string
     if (!empty($image) && file_exists(UPLOADS_PATH . '/products/' . $image)) {
         return UPLOADS_URL . 'products/' . $image;
     }
-    // SVG placeholder.
+    // Clean, subtle editorial placeholder SVG
     return 'data:image/svg+xml;utf8,' . rawurlencode(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' .
-        '<rect width="100" height="100" fill="#e5e7eb"/>' .
-        '<text x="50" y="55" text-anchor="middle" fill="#9ca3af" ' .
-        'font-family="sans-serif" font-size="12">No image</text></svg>'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250" width="200" height="250">' .
+        '<rect width="200" height="250" fill="#f4f4f5"/>' .
+        '<path d="M70 105 L130 105 L125 160 L75 160 Z" fill="none" stroke="#d4d4d8" stroke-width="2.5" stroke-linejoin="round"/>' .
+        '<path d="M85 105 C85 90 115 90 115 105" fill="none" stroke="#d4d4d8" stroke-width="2.5"/>' .
+        '</svg>'
     );
 }
 

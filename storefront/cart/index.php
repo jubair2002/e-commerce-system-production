@@ -113,7 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             if ($isAjax) $respondJson(true, 'Cart updated.');
-            flash('success', 'Cart updated.');
+            if (empty($_POST['auto_update'])) {
+                flash('success', 'Cart updated.');
+            }
         }
         redirect(route('cart'));
     }
@@ -225,9 +227,9 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
           <span>
             <?php if ($qualifies): ?>
-              <i class="bi bi-check-circle-fill text-success me-1"></i> You unlocked <strong>FREE Delivery!</strong>
+              <?= icon('check-circle', 'text-success me-1') ?> You unlocked <strong>FREE Delivery!</strong>
             <?php else: ?>
-              <i class="bi bi-truck text-primary me-1"></i> Add <strong><?= e(price($diff)) ?></strong> more to qualify for <strong>FREE Delivery</strong>
+              <?= icon('truck', 'text-primary me-1') ?> Add <strong><?= e(price($diff)) ?></strong> more to qualify for <strong>FREE Delivery</strong>
             <?php endif; ?>
           </span>
           <span class="text-muted"><?= $pct ?>%</span>
@@ -247,7 +249,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php if (!empty($cart['alerts'])): ?>
       <div class="alert alert-warning alert-dismissible fade show py-2 mb-3">
-        <strong><i class="bi bi-exclamation-triangle"></i> Cart Notice:</strong>
+        <strong><?= icon('alert-circle', 'me-1') ?> Cart Notice:</strong>
         <ul class="mb-0 mt-1 ps-3">
           <?php foreach ($cart['alerts'] as $alt): ?>
             <li><?= e($alt) ?></li>
@@ -258,12 +260,12 @@ include __DIR__ . '/../../includes/partials/header.php';
     <?php endif; ?>
 
     <?php if (empty($cart['items'])): ?>
-      <div class="empty-state text-center py-5 border rounded bg-light">
-        <i class="bi bi-cart-x fs-1 text-muted d-block mb-3"></i>
+      <div class="empty-state-card text-center py-5">
+        <div class="empty-state-icon mb-3"><?= icon('bag') ?></div>
         <h3>Your cart is empty</h3>
         <p class="text-muted">Explore our curated collection and add your favorite items.</p>
-        <a href="<?= e(route('shop')) ?>" class="btn btn-primary mt-2">
-          <i class="bi bi-bag"></i> Continue Shopping
+        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary mt-2">
+          <?= icon('bag', 'me-1') ?> Continue Shopping
         </a>
       </div>
     <?php else: ?>
@@ -311,13 +313,17 @@ include __DIR__ . '/../../includes/partials/header.php';
                           </td>
                           <td><?= e(price($i['unit_price'])) ?></td>
                           <td>
-                            <div class="input-group input-group-sm" style="max-width: 110px;">
+                            <div class="cart-qty-stepper" data-cart-key="<?= e($i['cart_key']) ?>">
+                              <button type="button" class="cart-qty-btn cart-qty-minus" aria-label="Decrease quantity" <?= (int)$i['qty'] <= 1 ? 'disabled' : '' ?>>&minus;</button>
                               <input type="number" name="qty[<?= e($i['cart_key']) ?>]"
-                                     class="form-control text-center"
+                                     class="cart-qty-input"
                                      value="<?= (int)$i['qty'] ?>"
-                                     min="1" max="<?= (int)$i['available_qty'] ?>">
+                                     min="1" max="<?= (int)$i['available_qty'] ?>"
+                                     data-cart-key="<?= e($i['cart_key']) ?>"
+                                     aria-label="Item quantity">
+                              <button type="button" class="cart-qty-btn cart-qty-plus" aria-label="Increase quantity" <?= (int)$i['qty'] >= (int)$i['available_qty'] ? 'disabled' : '' ?>>&plus;</button>
                             </div>
-                            <div class="text-muted" style="font-size: 11px;"><?= (int)$i['available_qty'] ?> in stock</div>
+                            <div class="text-muted" style="font-size: 11px; margin-top: 4px;"><?= (int)$i['available_qty'] ?> in stock</div>
                           </td>
                           <td class="text-end fw-semibold"><?= e(price($i['line_total'])) ?></td>
                           <td class="text-end">
@@ -325,7 +331,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                                     name="remove_key" value="<?= e($i['cart_key']) ?>"
                                     title="Remove" formnovalidate
                                     onclick="return confirm('Remove this item from your cart?');">
-                              <i class="bi bi-trash"></i>
+                              <?= icon('trash') ?>
                             </button>
                           </td>
                         </tr>
@@ -337,130 +343,204 @@ include __DIR__ . '/../../includes/partials/header.php';
             </div>
 
             <div class="d-flex gap-2 mt-3 flex-wrap justify-content-between align-items-center">
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary">
-                  <i class="bi bi-arrow-clockwise"></i> Update Cart
-                </button>
-                <a href="<?= e(route('shop')) ?>" class="btn btn-outline-secondary">
-                  <i class="bi bi-arrow-left"></i> Continue Shopping
+              <div>
+                <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary">
+                  <?= icon('arrow-left', 'me-1') ?> Continue Shopping
                 </a>
               </div>
               <div>
                 <button type="submit" name="action" value="clear" class="btn btn-link text-danger text-decoration-none px-0"
                         onclick="return confirm('Clear all items from your cart?');">
-                  <i class="bi bi-x-circle"></i> Clear Cart
+                  <?= icon('trash', 'me-1') ?> Clear Cart
                 </button>
               </div>
             </div>
           </form>
 
-          <!-- Coupon code input -->
-          <div class="card shadow-sm border-0 mt-4">
-            <div class="card-body">
-              <h6 class="card-title mb-3"><i class="bi bi-ticket-perforated"></i> Have a Coupon Code?</h6>
-              <?php if (!empty($totals['coupon'])): ?>
-                <div class="d-flex align-items-center justify-content-between p-2 bg-success bg-opacity-10 rounded border border-success">
-                  <div>
-                    <span class="badge bg-success me-2"><?= e($totals['coupon']['code']) ?></span>
-                    <span class="text-success fw-medium">Coupon applied: -<?= e(price($totals['discount'])) ?></span>
-                  </div>
-                  <form method="post" class="d-inline">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="remove_coupon">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                  </form>
-                </div>
-              <?php else: ?>
-                <form method="post" class="row g-2">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="action" value="apply_coupon">
-                  <div class="col-sm-8 col-md-6">
-                    <input type="text" name="coupon_code" class="form-control" placeholder="Enter coupon code" required style="text-transform: uppercase;">
-                  </div>
-                  <div class="col-sm-4 col-md-3">
-                    <button type="submit" class="btn btn-outline-dark w-100">Apply Code</button>
-                  </div>
-                </form>
-              <?php endif; ?>
-            </div>
-          </div>
-
         </div>
 
         <div class="col-lg-4">
-          <div class="card shadow-sm border-0 sticky-top" style="top: 90px;">
-            <div class="card-body">
-              <h5 class="card-title fw-semibold">Order Summary</h5>
-              <hr>
+          <div class="sticky-top" style="top: 90px;">
 
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Subtotal</span>
-                <strong><?= e(price($totals['subtotal'])) ?></strong>
-              </div>
-
-              <?php if ($totals['discount'] > 0): ?>
-                <div class="d-flex justify-content-between mb-2 text-success">
-                  <span>Coupon Discount</span>
-                  <strong>-<?= e(price($totals['discount'])) ?></strong>
-                </div>
-              <?php endif; ?>
-
-              <!-- Shipping estimate selector -->
-              <?php if (!empty($shippingMethods)): ?>
-                <div class="mb-3 mt-3">
-                  <label class="form-label small fw-semibold text-muted text-uppercase mb-1">Shipping Estimate</label>
-                  <form method="post" id="shippingMethodForm">
+            <!-- Coupon Code: Right side, Top of Order Summary -->
+            <div class="card shadow-sm border-0 mb-3">
+              <div class="card-body p-3">
+                <h6 class="card-title fw-semibold mb-2 d-flex align-items-center gap-1 text-dark" style="font-size: 0.875rem;">
+                  <?= icon('bag') ?> Have a Coupon Code?
+                </h6>
+                <?php if (!empty($totals['coupon'])): ?>
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-success bg-opacity-10 rounded border border-success">
+                    <div>
+                      <span class="badge bg-success me-1"><?= e($totals['coupon']['code']) ?></span>
+                      <span class="text-success small fw-medium">-<?= e(price($totals['discount'])) ?></span>
+                    </div>
+                    <form method="post" class="d-inline m-0">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="remove_coupon">
+                      <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;">Remove</button>
+                    </form>
+                  </div>
+                <?php else: ?>
+                  <form method="post" class="d-flex gap-2">
                     <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="set_shipping">
-                    <select name="shipping_method_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                      <?php foreach ($shippingMethods as $sm): ?>
-                        <?php
-                          $isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
-                          $costStr = $isFree ? 'Free' : price($sm['cost']);
-                        ?>
-                        <option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
-                          <?= e($sm['name']) ?> (<?= $costStr ?>)
-                        </option>
-                      <?php endforeach; ?>
-                    </select>
+                    <input type="hidden" name="action" value="apply_coupon">
+                    <input type="text" name="coupon_code" class="form-control form-control-sm" placeholder="Enter coupon code" required style="text-transform: uppercase;">
+                    <button type="submit" class="btn btn-editorial-secondary btn-sm flex-shrink-0">Apply</button>
                   </form>
-                </div>
-              <?php endif; ?>
-
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Estimated Shipping</span>
-                <strong>
-                  <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
-                </strong>
-              </div>
-
-              <?php if ($totals['cod_fee'] > 0): ?>
-                <div class="d-flex justify-content-between mb-2 text-muted">
-                  <span>Cash on Delivery Fee</span>
-                  <strong><?= e(price($totals['cod_fee'])) ?></strong>
-                </div>
-              <?php endif; ?>
-
-              <hr>
-
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="fs-5 fw-bold">Total</span>
-                <span class="fs-4 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
-              </div>
-
-              <a href="<?= e(route('checkout')) ?>" class="btn btn-primary btn-lg w-100">
-                <i class="bi bi-lock-fill me-1"></i> Proceed to Checkout
-              </a>
-
-              <div class="text-center mt-3 text-muted small">
-                <i class="bi bi-shield-check text-success"></i> Cash on Delivery available at checkout
+                <?php endif; ?>
               </div>
             </div>
+
+            <!-- Order Summary Card -->
+            <div class="card shadow-sm border-0">
+              <div class="card-body">
+                <h5 class="card-title fw-semibold">Order Summary</h5>
+                <hr>
+
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Subtotal</span>
+                  <strong><?= e(price($totals['subtotal'])) ?></strong>
+                </div>
+
+                <?php if ($totals['discount'] > 0): ?>
+                  <div class="d-flex justify-content-between mb-2 text-success">
+                    <span>Coupon Discount</span>
+                    <strong>-<?= e(price($totals['discount'])) ?></strong>
+                  </div>
+                <?php endif; ?>
+
+                <!-- Shipping estimate selector -->
+                <?php if (!empty($shippingMethods)): ?>
+                  <div class="mb-3 mt-3">
+                    <label class="form-label small fw-semibold text-muted text-uppercase mb-1">Shipping Estimate</label>
+                    <form method="post" id="shippingMethodForm">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="set_shipping">
+                      <select name="shipping_method_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <?php foreach ($shippingMethods as $sm): ?>
+                          <?php
+                            $isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
+                            $costStr = $isFree ? 'Free' : price($sm['cost']);
+                          ?>
+                          <option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
+                            <?= e($sm['name']) ?> (<?= $costStr ?>)
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </form>
+                  </div>
+                <?php endif; ?>
+
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Estimated Shipping</span>
+                  <strong>
+                    <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
+                  </strong>
+                </div>
+
+                <?php if ($totals['cod_fee'] > 0): ?>
+                  <div class="d-flex justify-content-between mb-2 text-muted">
+                    <span>Cash on Delivery Fee</span>
+                    <strong><?= e(price($totals['cod_fee'])) ?></strong>
+                  </div>
+                <?php endif; ?>
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <span class="fs-5 fw-bold">Total</span>
+                  <span class="fs-4 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
+                </div>
+
+                <a href="<?= e(route('checkout')) ?>" class="btn btn-editorial-primary btn-lg w-100">
+                  <?= icon('lock', 'me-1') ?> Proceed to Checkout
+                </a>
+
+                <div class="text-center mt-3 text-muted small">
+                  <?= icon('shield', 'text-success me-1') ?> Cash on Delivery available at checkout
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
     <?php endif; ?>
   </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cartForm = document.getElementById('cartForm');
+    if (!cartForm) return;
+
+    // Restore scroll position after auto update
+    const savedScroll = sessionStorage.getItem('cart_scroll_y');
+    if (savedScroll !== null) {
+        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+        sessionStorage.removeItem('cart_scroll_y');
+    }
+
+    let debounceTimer = null;
+    function submitCartUpdate() {
+        sessionStorage.setItem('cart_scroll_y', String(window.scrollY));
+        if (!cartForm.querySelector('input[name="auto_update"]')) {
+            const h = document.createElement('input');
+            h.type = 'hidden';
+            h.name = 'auto_update';
+            h.value = '1';
+            cartForm.appendChild(h);
+        }
+        cartForm.submit();
+    }
+
+    // Handle plus and minus stepper clicks
+    cartForm.addEventListener('click', function(e) {
+        const plusBtn = e.target.closest('.cart-qty-plus');
+        const minusBtn = e.target.closest('.cart-qty-minus');
+
+        if (plusBtn) {
+            e.preventDefault();
+            const stepper = plusBtn.closest('.cart-qty-stepper');
+            const input = stepper?.querySelector('.cart-qty-input');
+            if (input) {
+                const max = parseInt(input.getAttribute('max') || '99', 10);
+                const cur = parseInt(input.value || '1', 10);
+                if (cur < max) {
+                    input.value = cur + 1;
+                    submitCartUpdate();
+                }
+            }
+        } else if (minusBtn) {
+            e.preventDefault();
+            const stepper = minusBtn.closest('.cart-qty-stepper');
+            const input = stepper?.querySelector('.cart-qty-input');
+            if (input) {
+                const min = parseInt(input.getAttribute('min') || '1', 10);
+                const cur = parseInt(input.value || '1', 10);
+                if (cur > min) {
+                    input.value = cur - 1;
+                    submitCartUpdate();
+                }
+            }
+        }
+    });
+
+    // Handle manual input change
+    cartForm.addEventListener('change', function(e) {
+        if (e.target.classList.contains('cart-qty-input')) {
+            submitCartUpdate();
+        }
+    });
+
+    // Debounce typing in quantity input
+    cartForm.addEventListener('input', function(e) {
+        if (e.target.classList.contains('cart-qty-input')) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(submitCartUpdate, 600);
+        }
+    });
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

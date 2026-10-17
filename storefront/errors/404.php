@@ -15,7 +15,7 @@ include __DIR__ . '/../../includes/partials/header.php';
   <div class="container">
     <div class="empty-state-card py-5">
       <div class="empty-state-icon">
-        <i class="bi bi-compass"></i>
+        <?= icon('compass', 'empty-state-svg', 'Page Not Found') ?>
       </div>
       <h1 class="h2 mb-3">Page Not Found</h1>
       <p class="text-muted mb-4">

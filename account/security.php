@@ -158,12 +158,12 @@ account_layout_start('security', 'Account Security', $freshCustomer);
 <!-- 1. Change Password Section -->
 <div class="account-card" id="password">
   <div class="account-card-header">
-    <h2 class="account-card-title"><i class="bi bi-key me-2 text-primary"></i> Change Password</h2>
+    <h2 class="account-card-title"><?= icon('lock', 'me-2 text-primary') ?> Change Password</h2>
   </div>
 
   <?php if (!empty($pwErrors['general'])): ?>
     <div class="alert alert-danger small py-2 mb-3">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($pwErrors['general']) ?>
+      <?= icon('alert-circle', 'me-1') ?> <?= e($pwErrors['general']) ?>
     </div>
   <?php endif; ?>
 
@@ -181,7 +181,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
                required
                autocomplete="current-password">
         <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="currentPassword" aria-label="Toggle password visibility">
-          <i class="bi bi-eye"></i>
+          <?= icon('eye') ?>
         </button>
         <?php if (isset($pwErrors['current_password'])): ?>
           <div class="invalid-feedback"><?= e($pwErrors['current_password']) ?></div>
@@ -200,7 +200,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
                  required
                  autocomplete="new-password">
           <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPassword" aria-label="Toggle password visibility">
-            <i class="bi bi-eye"></i>
+            <?= icon('eye') ?>
           </button>
           <?php if (isset($pwErrors['new_password'])): ?>
             <div class="invalid-feedback"><?= e($pwErrors['new_password']) ?></div>
@@ -228,7 +228,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
                  required
                  autocomplete="new-password">
           <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="newPasswordConfirm" aria-label="Toggle password visibility">
-            <i class="bi bi-eye"></i>
+            <?= icon('eye') ?>
           </button>
           <?php if (isset($pwErrors['new_password_confirm'])): ?>
             <div class="invalid-feedback"><?= e($pwErrors['new_password_confirm']) ?></div>
@@ -248,7 +248,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
 <!-- 2. Change Email Section -->
 <div class="account-card" id="email">
   <div class="account-card-header">
-    <h2 class="account-card-title"><i class="bi bi-envelope me-2 text-primary"></i> Change Email Address</h2>
+    <h2 class="account-card-title"><?= icon('mail', 'me-2 text-primary') ?> Change Email Address</h2>
   </div>
 
   <p class="text-muted small mb-3">
@@ -286,7 +286,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
                  autocomplete="current-password"
                  placeholder="Your current password">
           <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="emailPassInput" aria-label="Toggle password visibility">
-            <i class="bi bi-eye"></i>
+            <?= icon('eye') ?>
           </button>
           <?php if (isset($emailErrors['email_change_password'])): ?>
             <div class="invalid-feedback"><?= e($emailErrors['email_change_password']) ?></div>
@@ -296,7 +296,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
     </div>
 
     <div>
-      <button type="submit" class="btn btn-outline-dark btn-sm">
+      <button type="submit" class="btn btn-editorial-primary btn-sm">
         Send Email Change Confirmation
       </button>
     </div>
@@ -306,13 +306,13 @@ account_layout_start('security', 'Account Security', $freshCustomer);
 <!-- 3. Signed-in Devices Section -->
 <div class="account-card" id="devices">
   <div class="account-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <h2 class="account-card-title"><i class="bi bi-laptop me-2 text-primary"></i> Signed-in Devices</h2>
+    <h2 class="account-card-title"><?= icon('shield', 'me-2 text-primary') ?> Signed-in Devices</h2>
     <?php if (!empty($devices)): ?>
       <form method="post" action="security.php" class="m-0" onsubmit="return confirm('Sign out all other devices?');">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="revoke_all_devices">
         <button type="submit" class="btn btn-outline-danger btn-sm">
-          <i class="bi bi-box-arrow-right me-1"></i> Sign Out Everywhere
+          <?= icon('logout', 'me-1') ?> Sign Out Everywhere
         </button>
       </form>
     <?php endif; ?>
@@ -337,7 +337,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
         ?>
         <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 p-3">
           <div class="d-flex align-items-center gap-3">
-            <div class="fs-3 text-secondary"><i class="bi bi-display"></i></div>
+            <div class="fs-3 text-secondary"><?= icon('user') ?></div>
             <div>
               <div class="fw-semibold small"><?= e($browserSnippet) ?></div>
               <div class="text-muted small" style="font-size: 0.78rem;">
@@ -362,18 +362,18 @@ account_layout_start('security', 'Account Security', $freshCustomer);
 <!-- 4. Privacy & Data Rights Section -->
 <div class="account-card">
   <div class="account-card-header">
-    <h2 class="account-card-title"><i class="bi bi-shield me-2 text-primary"></i> Privacy &amp; Data Rights</h2>
+    <h2 class="account-card-title"><?= icon('shield', 'me-2 text-primary') ?> Privacy &amp; Data Rights</h2>
   </div>
 
   <div class="row g-3">
     <div class="col-md-6">
       <div class="p-3 border rounded h-100 d-flex flex-column justify-content-between">
         <div>
-          <h6 class="fw-bold mb-1"><i class="bi bi-download me-1 text-primary"></i> Download My Data</h6>
+          <h6 class="fw-bold mb-1"><?= icon('arrow-right', 'me-1 text-primary') ?> Download My Data</h6>
           <p class="text-muted small mb-3">Export all your personal data, past order histories, saved addresses, and wishlist items in standard JSON format.</p>
         </div>
         <div>
-          <a href="<?= e(shop_url('account/export.php')) ?>" class="btn btn-outline-dark btn-sm">
+          <a href="<?= e(shop_url('account/export.php')) ?>" class="btn btn-editorial-secondary btn-sm">
             Export Data (JSON) &rarr;
           </a>
         </div>
@@ -384,7 +384,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
       <div class="col-md-6">
         <div class="p-3 border border-danger border-opacity-25 rounded bg-danger bg-opacity-10 h-100 d-flex flex-column justify-content-between">
           <div>
-            <h6 class="fw-bold text-danger mb-1"><i class="bi bi-trash3 me-1"></i> Delete Account</h6>
+            <h6 class="fw-bold text-danger mb-1"><?= icon('trash', 'me-1') ?> Delete Account</h6>
             <p class="text-muted small mb-3">Permanently close and anonymize your account and personal details. Past completed orders are retained anonymously for accounting records.</p>
           </div>
           <div>

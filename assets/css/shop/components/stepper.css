@@ -3,30 +3,48 @@
   margin-bottom: var(--space-4);
 }
 
-.breadcrumb-list {
+.breadcrumb-list,
+.breadcrumb {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--fs-xs);
   color: var(--muted);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
 }
 
 .breadcrumb-item a {
   color: var(--muted);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease);
 }
 
 .breadcrumb-item a:hover {
   color: var(--ink);
 }
 
-.breadcrumb-item.is-current {
+.breadcrumb-item.is-current,
+.breadcrumb-item.active {
   color: var(--ink);
   font-weight: 500;
 }
 
 .breadcrumb-separator {
   color: var(--line-strong);
+}
+
+.breadcrumb > .breadcrumb-item + .breadcrumb-item::before {
+  content: "/";
+  color: var(--line-strong);
+  margin-right: var(--space-2);
 }
 
 /* skeleton.css: Shimmer Loading States */

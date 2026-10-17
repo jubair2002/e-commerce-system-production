@@ -76,7 +76,7 @@ account_layout_start('orders', 'My Orders', $customer);
   </div>
   <div>
     <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary btn-sm">
-      <i class="bi bi-bag-plus me-1"></i> Start New Order
+      <?= icon('bag', 'me-1') ?> Start New Order
     </a>
   </div>
 </div>
@@ -87,12 +87,12 @@ account_layout_start('orders', 'My Orders', $customer);
     <div class="col-md-7">
       <div class="d-flex flex-wrap gap-1">
         <a href="<?= e(shop_url('account/orders.php' . ($searchQuery ? '?q=' . urlencode($searchQuery) : ''))) ?>"
-           class="btn btn-sm <?= empty($statusFilter) ? 'btn-dark' : 'btn-outline-secondary' ?>">
+           class="btn btn-sm <?= empty($statusFilter) ? 'btn-editorial-primary' : 'btn-editorial-secondary' ?>">
           All (<?= $totalOrders ?>)
         </a>
         <?php foreach ($allowedStatuses as $st): ?>
           <a href="<?= e(shop_url('account/orders.php?status=' . $st . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>"
-             class="btn btn-sm <?= $statusFilter === $st ? 'btn-dark' : 'btn-outline-secondary' ?> text-capitalize">
+             class="btn btn-sm <?= $statusFilter === $st ? 'btn-editorial-primary' : 'btn-editorial-secondary' ?> text-capitalize">
             <?= $st ?>
           </a>
         <?php endforeach; ?>
@@ -109,12 +109,12 @@ account_layout_start('orders', 'My Orders', $customer);
                  class="form-control"
                  placeholder="Search by order #"
                  value="<?= e($searchQuery) ?>">
-          <button type="submit" class="btn btn-dark" aria-label="Search orders">
-            <i class="bi bi-search"></i>
+          <button type="submit" class="btn btn-editorial-primary" aria-label="Search orders">
+            <?= icon('search') ?>
           </button>
           <?php if ($searchQuery !== ''): ?>
-            <a href="<?= e(shop_url('account/orders.php' . ($statusFilter ? '?status=' . $statusFilter : ''))) ?>" class="btn btn-outline-secondary" aria-label="Clear search">
-              <i class="bi bi-x"></i>
+            <a href="<?= e(shop_url('account/orders.php' . ($statusFilter ? '?status=' . $statusFilter : ''))) ?>" class="btn btn-editorial-secondary" aria-label="Clear search">
+              <?= icon('x') ?>
             </a>
           <?php endif; ?>
         </div>
@@ -126,13 +126,15 @@ account_layout_start('orders', 'My Orders', $customer);
 <!-- Orders Table / List -->
 <?php if (empty($orders)): ?>
   <div class="account-card text-center py-5">
-    <div class="fs-1 text-muted mb-2"><i class="bi bi-inbox"></i></div>
+    <div class="empty-state-icon mb-3" style="width: 52px; height: 52px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: var(--surface-muted); border-radius: 50%; color: var(--ink-2);">
+      <?= icon('box') ?>
+    </div>
     <h3 class="h5 fw-bold mb-1">No Orders Found</h3>
     <p class="text-muted small mb-3">
       <?= ($statusFilter || $searchQuery) ? 'No orders matched your active filters.' : 'You have not placed any orders yet.' ?>
     </p>
     <?php if ($statusFilter || $searchQuery): ?>
-      <a href="<?= e(shop_url('account/orders.php')) ?>" class="btn btn-outline-dark btn-sm">Clear Filters</a>
+      <a href="<?= e(shop_url('account/orders.php')) ?>" class="btn btn-editorial-secondary btn-sm">Clear Filters</a>
     <?php else: ?>
       <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary btn-sm">Browse Products</a>
     <?php endif; ?>

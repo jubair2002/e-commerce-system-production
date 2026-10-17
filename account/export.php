@@ -95,7 +95,7 @@ account_layout_start('security', 'Download My Data', $freshCustomer);
 
 <div class="account-card" style="max-width: 600px;">
   <div class="account-card-header">
-    <h2 class="account-card-title"><i class="bi bi-download me-2 text-primary"></i> Download Personal Data</h2>
+    <h2 class="account-card-title"><?= icon('box', 'i-sm me-2 text-primary') ?> Download Personal Data</h2>
   </div>
 
   <p class="text-muted small mb-4">
@@ -105,7 +105,7 @@ account_layout_start('security', 'Download My Data', $freshCustomer);
 
   <?php if ($error): ?>
     <div class="alert alert-danger small py-2 mb-3">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($error) ?>
+      <?= icon('alert-circle', 'i-sm me-1') ?> <?= e($error) ?>
     </div>
   <?php endif; ?>
 
@@ -123,14 +123,14 @@ account_layout_start('security', 'Download My Data', $freshCustomer);
                autocomplete="current-password"
                placeholder="Enter your password">
         <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="exportPassword" aria-label="Toggle password visibility">
-          <i class="bi bi-eye"></i>
+          <?= icon('eye', 'i-sm') ?>
         </button>
       </div>
     </div>
 
     <div class="d-flex align-items-center gap-2">
       <button type="submit" class="btn btn-editorial-primary">
-        <i class="bi bi-download me-1"></i> Confirm &amp; Download JSON
+        <?= icon('box', 'i-sm me-1') ?> Confirm &amp; Download JSON
       </button>
       <a href="<?= e(shop_url('account/security.php')) ?>" class="btn btn-outline-secondary btn-sm">
         Cancel

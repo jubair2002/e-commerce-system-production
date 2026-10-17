@@ -5,14 +5,14 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.shop-table {
+.shop-table, .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: var(--fs-sm);
 }
 
-.shop-table th {
+.shop-table th, .table th, .cart-table th {
   padding: 12px 16px;
   background-color: var(--bg-soft);
   color: var(--ink-2);
@@ -23,20 +23,64 @@
   border-bottom: 1px solid var(--line);
 }
 
-.shop-table td {
-  padding: 16px;
+.shop-table td, .table td, .cart-table td {
+  padding: 14px 16px;
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   vertical-align: middle;
 }
 
-.shop-table tr:hover td {
+.table-light {
+  background-color: var(--bg-soft) !important;
+}
+
+.align-middle {
+  vertical-align: middle !important;
+}
+
+.cart-table {
+  min-width: 580px;
+}
+
+.shop-table tr:hover td, .table tr:hover td {
   background-color: rgba(0, 0, 0, 0.01);
 }
 
-[data-theme="dark"] .shop-table tr:hover td {
+[data-theme="dark"] .shop-table tr:hover td,
+[data-theme="dark"] .table tr:hover td {
   background-color: rgba(255, 255, 255, 0.02);
 }
+
+/* Progress bar for free shipping */
+.progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  background-color: var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--accent);
+  transition: width 0.6s ease;
+  border-radius: var(--radius-pill);
+}
+
+.progress-bar.bg-success { background-color: var(--ok) !important; }
+.progress-bar.bg-primary { background-color: var(--accent) !important; }
+.bg-light { background-color: var(--bg-soft) !important; }
+.bg-success { background-color: var(--ok) !important; }
+.text-success { color: var(--ok) !important; }
+.text-primary { color: var(--accent) !important; }
+
 
 /* pagination.css: Numbered Pagination */
 .pagination-wrap {

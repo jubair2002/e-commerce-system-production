@@ -102,15 +102,15 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
 
 <?php if (!$wishlistEnabled): ?>
   <div class="alert alert-warning text-center py-4">
-    <i class="bi bi-info-circle me-1"></i> The customer wishlist feature is currently disabled by store management.
+    <?= icon('info', 'i-sm me-1') ?> The customer wishlist feature is currently disabled by store management.
   </div>
 <?php elseif (empty($products)): ?>
   <div class="account-card text-center py-5">
-    <div class="fs-1 text-danger mb-2"><i class="bi bi-heart"></i></div>
+    <div class="mb-3 d-flex justify-content-center"><?= icon('heart', 'i-xl text-rose', 'Wishlist') ?></div>
     <h3 class="h5 fw-bold mb-1">Your Wishlist is Empty</h3>
     <p class="text-muted small mb-3">Explore our curated collections and tap the heart icon to save items you love.</p>
     <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary btn-sm">
-      <i class="bi bi-bag me-1"></i> Explore Products
+      <?= icon('bag', 'i-sm me-1') ?> Explore Products
     </a>
   </div>
 <?php else: ?>
@@ -128,7 +128,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
       if ($stock <= 0 && (!empty($p['manage_stock']) || $isVariable)) {
           $stockBadge = '<span class="badge bg-secondary">Sold Out</span>';
       } elseif ($stock > 0 && $stock <= 5 && !empty($p['manage_stock'])) {
-          $stockBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-fire"></i> Only ' . $stock . ' left</span>';
+          $stockBadge = '<span class="badge bg-warning text-dark">Only ' . $stock . ' left</span>';
       } else {
           $stockBadge = '<span class="badge bg-success bg-opacity-75">In Stock</span>';
       }
@@ -142,7 +142,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
                 <img src="<?= e($imageUrl) ?>" alt="<?= e($p['name']) ?>" class="w-100 h-100 object-fit-cover">
               <?php else: ?>
                 <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
-                  <i class="bi bi-image fs-1"></i>
+                  <?= icon('box', 'i-xl text-muted') ?>
                 </div>
               <?php endif; ?>
             </a>
@@ -155,8 +155,8 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
               <?= csrf_field() ?>
               <input type="hidden" name="action" value="remove">
               <input type="hidden" name="product_id" value="<?= (int)$p['id'] ?>">
-              <button type="submit" class="btn btn-sm btn-light rounded-circle shadow-sm p-1" style="width: 32px; height: 32px;" title="Remove from wishlist" aria-label="Remove item">
-                <i class="bi bi-trash3 text-danger"></i>
+              <button type="submit" class="btn btn-sm btn-light rounded-circle shadow-sm p-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Remove from wishlist" aria-label="Remove item">
+                <?= icon('trash', 'i-sm text-danger') ?>
               </button>
             </form>
           </div>
@@ -178,7 +178,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
             <div>
               <?php if ($isVariable): ?>
                 <a href="<?= e(shop_url('product.php?slug=' . urlencode($p['slug']))) ?>" class="btn btn-outline-dark btn-sm w-100">
-                  <i class="bi bi-sliders me-1"></i> Choose Options
+                  <?= icon('filter', 'i-sm me-1') ?> Choose Options
                 </a>
               <?php elseif ($stock <= 0 && !empty($p['manage_stock'])): ?>
                 <button type="button" class="btn btn-secondary btn-sm w-100" disabled>
@@ -190,7 +190,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
                   <input type="hidden" name="action" value="move_to_cart">
                   <input type="hidden" name="product_id" value="<?= (int)$p['id'] ?>">
                   <button type="submit" class="btn btn-editorial-primary btn-sm w-100">
-                    <i class="bi bi-bag-plus me-1"></i> Move to Cart
+                    <?= icon('bag', 'i-sm me-1') ?> Move to Cart
                   </button>
                 </form>
               <?php endif; ?>

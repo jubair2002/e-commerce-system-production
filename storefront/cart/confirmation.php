@@ -127,17 +127,17 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php if (!$isAuthorized || !$order): ?>
       <div class="card shadow-sm border-0 text-center p-5">
-        <div class="text-warning display-4 mb-3"><i class="bi bi-shield-lock"></i></div>
+        <div class="text-warning display-4 mb-3"><?= icon('shield', 'text-warning', 'Security') ?></div>
         <h3>Order Confirmation Unavailable</h3>
         <p class="text-muted">
           We could not verify the security token for this order, or the order does not exist.<br>
           If you placed this order recently, you can easily look it up on our tracking page.
         </p>
         <div class="mt-3">
-          <a href="<?= e(route('track')) ?>" class="btn btn-primary me-2">
-            <i class="bi bi-search"></i> Track Your Order
+          <a href="<?= e(route('track')) ?>" class="btn btn-editorial-primary me-2">
+            <?= icon('search', 'me-1') ?> Track Your Order
           </a>
-          <a href="<?= e(route('shop')) ?>" class="btn btn-outline-secondary">
+          <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary">
             Continue Shopping
           </a>
         </div>
@@ -145,12 +145,12 @@ include __DIR__ . '/../../includes/partials/header.php';
     <?php else: ?>
 
       <div class="text-center mb-4">
-        <div class="display-3 text-success mb-2"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="display-3 text-success mb-2"><?= icon('check-circle', 'text-success', 'Success') ?></div>
         <h2 class="fw-bold">Thank You for Your Order!</h2>
         <p class="lead text-muted mb-3">
           Your order <strong id="orderNumberVal"><?= e($order['order_number']) ?></strong> has been received and is being processed.
-          <button type="button" class="btn btn-sm btn-outline-secondary ms-2 py-0 px-2" id="btnCopyOrder" title="Copy Order Number">
-            <i class="bi bi-clipboard"></i> Copy
+          <button type="button" class="btn btn-sm btn-editorial-secondary ms-2 py-0 px-2" id="btnCopyOrder" title="Copy Order Number">
+            <?= icon('copy', 'me-1') ?> Copy
           </button>
         </p>
         <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-2 rounded border">
@@ -166,7 +166,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="card border-warning bg-warning bg-opacity-10 mb-4 shadow-sm">
           <div class="card-body p-4 d-flex align-items-center">
             <div class="fs-1 text-warning me-3 flex-shrink-0">
-              <i class="bi bi-cash-coin"></i>
+              <?= icon('cash', 'text-warning') ?>
             </div>
             <div>
               <h5 class="fw-bold mb-1">Cash on Delivery Reminder</h5>
@@ -179,7 +179,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php elseif ($order['payment_method'] === 'bank_transfer'): ?>
         <div class="card border-info bg-info bg-opacity-10 mb-4 shadow-sm">
           <div class="card-body p-4">
-            <h5 class="fw-bold mb-2"><i class="bi bi-bank me-2"></i> Bank Transfer Instructions</h5>
+            <h5 class="fw-bold mb-2"><?= icon('info', 'me-2 text-primary') ?> Bank Transfer Instructions</h5>
             <p class="mb-0 text-dark">
               <?= nl2br(e(setting('bank_transfer_instructions', 'Please transfer the total amount to our bank account. Use your order number as reference.'))) ?>
             </p>
@@ -190,7 +190,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php if ($guestAccountCreated): ?>
         <div class="card border-success bg-success bg-opacity-10 mb-4 shadow-sm">
           <div class="card-body p-4 d-flex align-items-center">
-            <div class="fs-1 text-success me-3"><i class="bi bi-person-check-fill"></i></div>
+            <div class="fs-1 text-success me-3"><?= icon('check-circle', 'text-success') ?></div>
             <div>
               <h5 class="fw-bold mb-1">Account Ready &amp; Linked!</h5>
               <p class="mb-0 text-dark">
@@ -203,7 +203,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="card border-primary bg-primary bg-opacity-10 mb-4 shadow-sm">
           <div class="card-body p-4">
             <div class="d-flex align-items-center mb-2">
-              <div class="fs-3 text-primary me-2"><i class="bi bi-person-plus-fill"></i></div>
+              <div class="fs-3 text-primary me-2"><?= icon('user', 'text-primary') ?></div>
               <h5 class="fw-bold mb-0">Create an Account to Track This Order</h5>
             </div>
             <p class="text-muted small mb-3">
@@ -212,7 +212,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
             <?php if ($guestAccountError): ?>
               <div class="alert alert-danger small py-2 mb-3">
-                <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($guestAccountError) ?>
+                <?= icon('alert-circle', 'me-1') ?> <?= e($guestAccountError) ?>
               </div>
             <?php endif; ?>
 
@@ -224,12 +224,12 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <div class="input-group">
                   <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
                   <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
-                    <i class="bi bi-eye"></i>
+                    <?= icon('eye') ?>
                   </button>
                 </div>
               </div>
               <div class="col-md-5">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-editorial-primary w-100">
                   Create Account &amp; Link Order
                 </button>
               </div>
@@ -243,13 +243,13 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="col-md-6">
           <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3 border-bottom">
-              <h6 class="mb-0 fw-semibold"><i class="bi bi-geo-alt text-primary me-2"></i> Delivery Information</h6>
+              <h6 class="mb-0 fw-semibold"><?= icon('map-pin', 'text-primary me-2') ?> Delivery Information</h6>
             </div>
             <div class="card-body">
               <div class="fw-bold"><?= e($order['customer_name']) ?></div>
-              <div><i class="bi bi-telephone text-muted me-1"></i> <?= e($order['customer_phone']) ?></div>
+              <div><?= icon('phone', 'text-muted me-1') ?> <?= e($order['customer_phone']) ?></div>
               <?php if (!empty($order['customer_email'])): ?>
-                <div><i class="bi bi-envelope text-muted me-1"></i> <?= e($order['customer_email']) ?></div>
+                <div><?= icon('mail', 'text-muted me-1') ?> <?= e($order['customer_email']) ?></div>
               <?php endif; ?>
               <hr class="my-2">
               <div class="text-muted small">Address:</div>
@@ -265,7 +265,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="col-md-6">
           <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3 border-bottom">
-              <h6 class="mb-0 fw-semibold"><i class="bi bi-info-circle text-primary me-2"></i> Need Help?</h6>
+              <h6 class="mb-0 fw-semibold"><?= icon('info', 'text-primary me-2') ?> Need Help?</h6>
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
               <p class="text-muted small">
@@ -275,17 +275,17 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <?php if ($storeWhatsapp): ?>
                   <a href="https://wa.me/<?= preg_replace('/\D/', '', $storeWhatsapp) ?>?text=<?= urlencode('Hello, I have an inquiry about order ' . $order['order_number']) ?>"
                      target="_blank" rel="noopener" class="btn btn-outline-success btn-sm text-start">
-                    <i class="bi bi-whatsapp me-2"></i> Chat on WhatsApp (<?= e($storeWhatsapp) ?>)
+                    <?= icon('phone', 'me-2') ?> Chat on WhatsApp (<?= e($storeWhatsapp) ?>)
                   </a>
                 <?php endif; ?>
                 <?php if ($storePhone): ?>
-                  <a href="tel:<?= e($storePhone) ?>" class="btn btn-outline-primary btn-sm text-start">
-                    <i class="bi bi-telephone me-2"></i> Call: <?= e($storePhone) ?>
+                  <a href="tel:<?= e($storePhone) ?>" class="btn btn-editorial-secondary btn-sm text-start">
+                    <?= icon('phone', 'me-2') ?> Call: <?= e($storePhone) ?>
                   </a>
                 <?php endif; ?>
                 <?php if ($storeEmail): ?>
-                  <a href="mailto:<?= e($storeEmail) ?>" class="btn btn-outline-secondary btn-sm text-start">
-                    <i class="bi bi-envelope me-2"></i> Email: <?= e($storeEmail) ?>
+                  <a href="mailto:<?= e($storeEmail) ?>" class="btn btn-editorial-secondary btn-sm text-start">
+                    <?= icon('mail', 'me-2') ?> Email: <?= e($storeEmail) ?>
                   </a>
                 <?php endif; ?>
               </div>
@@ -300,7 +300,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <!-- Items Breakdown -->
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3 border-bottom">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-bag text-primary me-2"></i> Purchased Items</h6>
+          <h6 class="mb-0 fw-semibold"><?= icon('bag', 'text-primary me-2') ?> Purchased Items</h6>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -368,15 +368,15 @@ include __DIR__ . '/../../includes/partials/header.php';
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div class="d-flex gap-2">
           <a href="<?= e(route('track', ['order_number' => $order['order_number'], 'phone' => $order['customer_phone']])) ?>"
-             class="btn btn-outline-primary btn-lg">
-            <i class="bi bi-geo-alt me-1"></i> Track Order Status
+             class="btn btn-editorial-secondary btn-lg">
+            <?= icon('map-pin', 'me-1') ?> Track Order Status
           </a>
-          <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-lg d-none d-sm-inline-flex align-items-center">
-            <i class="bi bi-printer me-1"></i> Print Receipt
+          <button type="button" onclick="window.print()" class="btn btn-editorial-secondary btn-lg d-none d-sm-inline-flex align-items-center">
+            <?= icon('printer', 'me-1') ?> Print Receipt
           </button>
         </div>
-        <a href="<?= e(route('shop')) ?>" class="btn btn-primary btn-lg">
-          <i class="bi bi-bag me-1"></i> Continue Shopping
+        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary btn-lg">
+          <?= icon('bag', 'me-1') ?> Continue Shopping
         </a>
       </div>
 

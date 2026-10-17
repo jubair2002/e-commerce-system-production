@@ -11,11 +11,17 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!input) return;
 
       var icon = this.querySelector('i');
+      var svgUse = this.querySelector('use');
+      var spriteUrl = window.SHOP_BASE_URL ? (window.SHOP_BASE_URL + 'assets/img/icons.svg') : 'assets/img/icons.svg';
+
       if (input.type === 'password') {
         input.type = 'text';
         if (icon) {
           icon.classList.remove('bi-eye');
           icon.classList.add('bi-eye-slash');
+        }
+        if (svgUse) {
+          svgUse.setAttribute('href', spriteUrl + '#eye-off');
         }
         this.setAttribute('aria-label', 'Hide password');
       } else {
@@ -23,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (icon) {
           icon.classList.remove('bi-eye-slash');
           icon.classList.add('bi-eye');
+        }
+        if (svgUse) {
+          svgUse.setAttribute('href', spriteUrl + '#eye');
         }
         this.setAttribute('aria-label', 'Show password');
       }

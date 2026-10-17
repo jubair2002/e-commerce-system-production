@@ -102,13 +102,13 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <?php foreach (get_flashes() as $f): ?>
       <div class="alert alert-<?= e($f['type']) ?> py-3 mb-4 rounded-2">
-        <i class="bi bi-check-circle-fill me-2"></i><?= e($f['message']) ?>
+        <?= icon('check-circle', 'me-2') ?><?= e($f['message']) ?>
       </div>
     <?php endforeach; ?>
 
     <?php if (!empty($errors)): ?>
       <div class="alert alert-danger py-3 mb-4 rounded-2">
-        <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please fix the following:</div>
+        <div class="fw-semibold mb-1"><?= icon('alert-circle', 'me-2') ?>Please fix the following:</div>
         <ul class="mb-0 ps-3 small">
           <?php foreach ($errors as $err): ?>
             <li><?= e($err) ?></li>
@@ -162,7 +162,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
               <div class="col-12">
                 <button type="submit" class="btn btn-editorial-primary px-4 py-2">
-                  <i class="bi bi-send me-1"></i> Send Message
+                  <?= icon('arrow-right', 'me-1') ?> Send Message
                 </button>
               </div>
             </div>
@@ -176,7 +176,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <h3 class="h6 fw-bold text-uppercase tracking-wide text-secondary mb-3">Customer Support</h3>
 
           <div class="d-flex align-items-start gap-3 mb-4">
-            <div class="fs-4 text-primary"><i class="bi bi-envelope"></i></div>
+            <div class="fs-4 text-primary"><?= icon('mail') ?></div>
             <div>
               <div class="fw-semibold text-dark">Email Support</div>
               <a href="mailto:<?= e($storeEmail) ?>" class="text-muted text-decoration-none small"><?= e($storeEmail) ?></a>
@@ -186,7 +186,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <?php if (!empty($storePhone)): ?>
             <div class="d-flex align-items-start gap-3 mb-4">
-              <div class="fs-4 text-success"><i class="bi bi-telephone"></i></div>
+              <div class="fs-4 text-success"><?= icon('phone') ?></div>
               <div>
                 <div class="fw-semibold text-dark">Phone &amp; WhatsApp</div>
                 <a href="tel:<?= e($storePhone) ?>" class="text-muted text-decoration-none small"><?= e($storePhone) ?></a>
@@ -197,7 +197,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
           <?php if (!empty($storeAddress)): ?>
             <div class="d-flex align-items-start gap-3 mb-4">
-              <div class="fs-4 text-secondary"><i class="bi bi-geo-alt"></i></div>
+              <div class="fs-4 text-secondary"><?= icon('map-pin') ?></div>
               <div>
                 <div class="fw-semibold text-dark">Location</div>
                 <div class="small text-muted"><?= nl2br(e($storeAddress)) ?></div>
@@ -210,7 +210,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <h3 class="h6 fw-bold text-uppercase tracking-wide text-secondary mb-2">Need quick answers?</h3>
           <p class="small text-muted mb-3">Check out our frequently asked questions for immediate help with orders, tracking and returns.</p>
           <a href="<?= e(route('page', ['slug' => 'faq'])) ?>" class="btn btn-outline-dark btn-sm">
-            <i class="bi bi-question-circle me-1"></i> View FAQ
+            <?= icon('info', 'me-1') ?> View FAQ
           </a>
         </div>
       </div>

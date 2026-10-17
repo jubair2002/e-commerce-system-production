@@ -119,7 +119,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <?php if ($error): ?>
         <div class="alert alert-danger small py-2 mb-3" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($error) ?>
+          <?= icon('alert-circle', 'me-1') ?> <?= e($error) ?>
         </div>
       <?php endif; ?>
 
@@ -159,7 +159,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                    required
                    placeholder="Enter your password">
             <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="loginPassword" aria-label="Toggle password visibility">
-              <i class="bi bi-eye"></i>
+              <?= icon('eye') ?>
             </button>
           </div>
         </div>

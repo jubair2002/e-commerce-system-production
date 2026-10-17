@@ -109,7 +109,7 @@ account_layout_start('security', 'Delete Account', $freshCustomer);
 
 <div class="account-card" style="max-width: 600px;">
   <div class="account-card-header border-danger">
-    <h2 class="account-card-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i> Delete Customer Account</h2>
+    <h2 class="account-card-title text-danger"><?= icon('alert-circle', 'i-sm me-2 text-danger') ?> Delete Customer Account</h2>
   </div>
 
   <div class="alert alert-danger bg-danger bg-opacity-10 border-danger small mb-4">
@@ -123,7 +123,7 @@ account_layout_start('security', 'Delete Account', $freshCustomer);
 
   <?php if ($error): ?>
     <div class="alert alert-danger small py-2 mb-3">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i> <?= e($error) ?>
+      <?= icon('alert-circle', 'i-sm me-1') ?> <?= e($error) ?>
     </div>
   <?php endif; ?>
 
@@ -141,7 +141,7 @@ account_layout_start('security', 'Delete Account', $freshCustomer);
                autocomplete="current-password"
                placeholder="Enter your password">
         <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="delPassword" aria-label="Toggle password visibility">
-          <i class="bi bi-eye"></i>
+          <?= icon('eye', 'i-sm') ?>
         </button>
       </div>
     </div>
@@ -161,7 +161,7 @@ account_layout_start('security', 'Delete Account', $freshCustomer);
 
     <div class="d-flex align-items-center gap-2">
       <button type="submit" class="btn btn-danger">
-        <i class="bi bi-trash3 me-1"></i> Permanently Delete Account
+        <?= icon('trash', 'i-sm me-1') ?> Permanently Delete Account
       </button>
       <a href="<?= e(shop_url('account/security.php')) ?>" class="btn btn-outline-secondary btn-sm">
         Cancel

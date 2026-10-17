@@ -30,13 +30,13 @@ if (!$order) {
     include __DIR__ . '/../includes/partials/header.php';
     ?>
     <div class="container py-5 text-center" style="max-width: 600px;">
-      <div class="fs-1 text-muted mb-3"><i class="bi bi-question-circle"></i></div>
+      <div class="mb-3 d-flex justify-content-center"><?= icon('alert-circle', 'i-xl text-muted') ?></div>
       <h1 class="h3 fw-bold mb-2">Order Not Found</h1>
       <p class="text-muted small mb-4">
         The order you requested could not be found or does not belong to your account.
       </p>
-      <a href="<?= e(shop_url('account/orders.php')) ?>" class="btn btn-dark btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Back to My Orders
+      <a href="<?= e(shop_url('account/orders.php')) ?>" class="btn btn-editorial-primary btn-sm">
+        <?= icon('arrow-left', 'i-sm me-1') ?> Back to My Orders
       </a>
     </div>
     <?php
@@ -214,12 +214,12 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
   <div class="d-flex flex-wrap align-items-center gap-2">
     <!-- Track Order Button -->
     <a href="<?= e(shop_url('track.php?order_number=' . urlencode($order['order_number']) . '&phone=' . urlencode($order['customer_phone']))) ?>" class="btn btn-outline-dark btn-sm">
-      <i class="bi bi-geo-alt me-1"></i> Track Order
+      <?= icon('map-pin', 'i-sm me-1') ?> Track Order
     </a>
 
     <!-- Print Invoice Button -->
     <a href="<?= e(shop_url('account/invoice.php?o=' . urlencode($order['order_number']))) ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-printer me-1"></i> Print Invoice
+      <?= icon('printer', 'i-sm me-1') ?> Print Invoice
     </a>
 
     <!-- Buy Again Form -->
@@ -227,7 +227,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="buy_again">
       <button type="submit" class="btn btn-editorial-primary btn-sm">
-        <i class="bi bi-arrow-repeat me-1"></i> Buy Again
+        <?= icon('rotate-ccw', 'i-sm me-1') ?> Buy Again
       </button>
     </form>
 
@@ -237,7 +237,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="cancel_order">
         <button type="submit" class="btn btn-outline-danger btn-sm">
-          <i class="bi bi-x-circle me-1"></i> Cancel Order
+          <?= icon('x', 'i-sm me-1') ?> Cancel Order
         </button>
       </form>
     <?php endif; ?>
@@ -272,7 +272,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
                       <img src="<?= e(UPLOADS_URL . 'products/' . $it['product_image']) ?>" alt="<?= e($it['product_name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">
                     <?php else: ?>
                       <div class="border rounded bg-light d-flex align-items-center justify-content-center text-muted" style="width: 50px; height: 50px;">
-                        <i class="bi bi-image"></i>
+                        <?= icon('box', 'i-sm text-muted') ?>
                       </div>
                     <?php endif; ?>
                     <div>
@@ -305,7 +305,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
     <!-- Status Timeline Card -->
     <div class="account-card">
       <div class="account-card-header">
-        <h2 class="account-card-title fs-6"><i class="bi bi-clock-history me-2 text-primary"></i> Status Timeline</h2>
+        <h2 class="account-card-title fs-6"><?= icon('rotate-ccw', 'i-sm me-2 text-primary') ?> Status Timeline</h2>
       </div>
 
       <?php if (empty($statusHistory)): ?>
@@ -374,7 +374,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
         <h2 class="account-card-title fs-6">Delivery Information</h2>
       </div>
       <div class="fw-bold mb-1"><?= e($order['customer_name']) ?></div>
-      <div class="text-muted small mb-1"><i class="bi bi-telephone me-1"></i> <?= e($order['customer_phone']) ?></div>
+      <div class="text-muted small mb-1"><?= icon('phone', 'i-sm me-1') ?> <?= e($order['customer_phone']) ?></div>
       <div class="text-muted small mb-3">
         <?= nl2br(e($order['shipping_address'])) ?><br>
         <?= e($order['shipping_city']) ?><?= !empty($order['shipping_zip']) ? ' - ' . e($order['shipping_zip']) : '' ?><br>
@@ -383,7 +383,7 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
 
       <?php if (!empty($order['tracking_number'])): ?>
         <div class="p-3 bg-light rounded border">
-          <div class="small fw-bold mb-1"><i class="bi bi-truck me-1"></i> Courier Tracking</div>
+          <div class="small fw-bold mb-1"><?= icon('truck', 'i-sm me-1') ?> Courier Tracking</div>
           <div class="small text-muted">Courier: <strong><?= e($order['courier'] ?: 'Standard Courier') ?></strong></div>
           <div class="small text-muted">Tracking #: <strong><?= e($order['tracking_number']) ?></strong></div>
         </div>
