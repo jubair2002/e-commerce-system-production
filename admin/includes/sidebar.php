@@ -142,16 +142,5 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
         <i class="bi bi-cpu"></i><span>Monitoring</span>
       </a>
     <?php endif; ?>
-
-    <div class="nav-section">Account</div>
-
-    <a href="<?= e(admin_url('profile.php')) ?>"
-       class="nav-link <?= active_if($current === 'profile.php') ?>">
-      <i class="bi bi-person-circle"></i><span>Profile</span>
-    </a>
-
-    <a href="<?= e(admin_url('logout.php')) ?>" class="nav-link text-danger">
-      <i class="bi bi-box-arrow-right"></i><span>Logout</span>
-    </a>
   </nav>
 </aside>
