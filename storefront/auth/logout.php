@@ -3,7 +3,7 @@
  * Customer Logout Action (Prompt 12).
  * Strictly requires POST + CSRF token. Rejects GET requests.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 header('X-Frame-Options: SAMEORIGIN');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
     // If request was a GET, inform the user or redirect safely
     $pageTitle = 'Method Not Allowed';
-    include __DIR__ . '/../includes/partials/header.php';
+    include __DIR__ . '/../../includes/partials/header.php';
     ?>
     <div class="auth-page-wrapper">
       <div class="auth-card text-center">
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
       </div>
     </div>
     <?php
-    include __DIR__ . '/../includes/partials/footer.php';
+    include __DIR__ . '/../../includes/partials/footer.php';
     exit;
 }
 

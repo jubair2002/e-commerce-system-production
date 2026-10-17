@@ -3,7 +3,7 @@
  * Category Listing Page (Prompt 04).
  * Breadcrumb, Category Title, Filter Sidebar, Sort, and Clean Cards.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $slug = trim((string)($_GET['slug'] ?? ''));
 if ($slug === '') {
@@ -24,7 +24,7 @@ try {
 if (!$category) {
     http_response_code(404);
     $pageTitle = 'Category Not Found';
-    include __DIR__ . '/../includes/partials/header.php';
+    include __DIR__ . '/../../includes/partials/header.php';
     ?>
     <section class="section">
       <div class="container">
@@ -39,7 +39,7 @@ if (!$category) {
       </div>
     </section>
     <?php
-    include __DIR__ . '/../includes/partials/footer.php';
+    include __DIR__ . '/../../includes/partials/footer.php';
     exit;
 }
 
@@ -125,7 +125,7 @@ try {
 
 $categoriesList = shop_active_categories();
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section">
@@ -234,7 +234,7 @@ include __DIR__ . '/../includes/partials/header.php';
           <div class="row g-4 row-cols-2 row-cols-md-2 row-cols-lg-3">
             <?php foreach ($products as $p): ?>
               <div class="col">
-                <?php include __DIR__ . '/../includes/partials/product_card.php'; ?>
+                <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
               </div>
             <?php endforeach; ?>
           </div>
@@ -273,4 +273,4 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </section>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

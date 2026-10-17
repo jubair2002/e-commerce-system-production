@@ -3,7 +3,7 @@
  * Storefront Maintenance Screen.
  * Displayed when maintenance mode is active or when directly previewed.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $siteName = setting('site_name', APP_NAME);
 $siteAbout = setting('site_about', 'Quality essentials delivered to your door.');

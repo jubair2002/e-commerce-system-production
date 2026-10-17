@@ -2,7 +2,7 @@
 /**
  * Dynamic Content Page View (About, Shipping & Returns, FAQ, Privacy, Terms, Size Guide, etc.)
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pdo = db();
 $slug = trim((string)($_GET['slug'] ?? ''));
@@ -30,12 +30,12 @@ $breadcrumbs = [
     ['label' => $page['title'], 'url' => null]
 ];
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="container py-4 py-md-5">
   <div class="mx-auto" style="max-width: 820px;">
-    <?php include __DIR__ . '/../includes/partials/breadcrumb.php'; ?>
+    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
     <header class="mb-4 pb-3 border-bottom">
       <h1 class="h2 fw-bold text-dark mb-2"><?= e($page['title']) ?></h1>
@@ -51,4 +51,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </div>
 
 <?php
-include __DIR__ . '/../includes/partials/footer.php';
+include __DIR__ . '/../../includes/partials/footer.php';

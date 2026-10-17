@@ -3,7 +3,7 @@
  * Resend Email Verification Page (Prompt 12).
  * Rate-limited endpoint for requesting a new email verification token.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 header('X-Frame-Options: SAMEORIGIN');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="auth-page-wrapper">
@@ -103,4 +103,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </div>
 
 <?php
-include __DIR__ . '/../includes/partials/footer.php';
+include __DIR__ . '/../../includes/partials/footer.php';

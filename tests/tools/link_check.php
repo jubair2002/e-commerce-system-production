@@ -13,7 +13,7 @@ if (PHP_SAPI !== 'cli') {
     die("This tool can only be run from the command line.\n");
 }
 
-$rootDir = realpath(__DIR__ . '/..');
+$rootDir = realpath(__DIR__ . '/../..');
 echo "=== Jinispotro Storefront Link & Integrity Check ===\n";
 echo "Root directory: {$rootDir}\n\n";
 
@@ -85,9 +85,13 @@ if ($foundObsolete === 0) {
 // -------------------------------------------------------------
 echo "\n[3/4] Verifying route registry and physical target files...\n";
 @ob_start();
-require_once $rootDir . '/config/config.php';
-require_once $rootDir . '/includes/polyfills.php';
-require_once $rootDir . '/includes/functions.php';
+$_SERVER['HTTP_HOST'] = 'localhost';
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    @session_start();
+}
+@require_once $rootDir . '/config/config.php';
+@require_once $rootDir . '/includes/polyfills.php';
+@require_once $rootDir . '/includes/functions.php';
 @ob_end_clean();
 
 $routeMap = get_route_map();

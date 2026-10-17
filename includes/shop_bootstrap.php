@@ -74,7 +74,7 @@ function check_storefront_maintenance(): void
         exit;
     }
 
-    require __DIR__ . '/../errors/maintenance.php';
+    require __DIR__ . '/../storefront/errors/maintenance.php';
     exit;
 }
 check_storefront_maintenance();

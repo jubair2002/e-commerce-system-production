@@ -2,8 +2,8 @@
 /**
  * Contact Us Page (Form + Store Information + Anti-Spam)
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
-require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/mailer.php';
 
 $pdo = db();
 $pageTitle = 'Contact Us';
@@ -88,12 +88,12 @@ $breadcrumbs = [
     ['label' => 'Contact Us', 'url' => null]
 ];
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="container py-4 py-md-5">
   <div class="mx-auto" style="max-width: 960px;">
-    <?php include __DIR__ . '/../includes/partials/breadcrumb.php'; ?>
+    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
     <div class="mb-4 pb-2 border-bottom">
       <h1 class="h2 fw-bold text-dark mb-1">Get in Touch</h1>
@@ -219,4 +219,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </div>
 
 <?php
-include __DIR__ . '/../includes/partials/footer.php';
+include __DIR__ . '/../../includes/partials/footer.php';

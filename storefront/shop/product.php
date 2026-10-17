@@ -13,7 +13,7 @@
  * - Related products & Recently viewed section
  * - JSON-LD Schema & OpenGraph meta tags
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $slug = trim((string)($_GET['slug'] ?? ''));
 if ($slug === '') {
@@ -40,7 +40,7 @@ try {
 if (!$product) {
     http_response_code(404);
     $pageTitle = 'Product Not Found';
-    include __DIR__ . '/../includes/partials/header.php';
+    include __DIR__ . '/../../includes/partials/header.php';
     ?>
     <section class="section">
       <div class="container">
@@ -55,7 +55,7 @@ if (!$product) {
       </div>
     </section>
     <?php
-    include __DIR__ . '/../includes/partials/footer.php';
+    include __DIR__ . '/../../includes/partials/footer.php';
     exit;
 }
 
@@ -110,7 +110,7 @@ if (!empty($product['category_id'])) {
     } catch (Throwable $e) { $related = []; }
 }
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <!-- OpenGraph & SEO JSON-LD Tags -->
@@ -425,7 +425,7 @@ include __DIR__ . '/../includes/partials/header.php';
         <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
           <?php foreach ($related as $p): ?>
             <div class="col">
-              <?php include __DIR__ . '/../includes/partials/product_card.php'; ?>
+              <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
             </div>
           <?php endforeach; ?>
         </div>
@@ -455,4 +455,4 @@ include __DIR__ . '/../includes/partials/header.php';
 <!-- Prompt 03 Real-Time Availability Client Module -->
 <script src="<?= e(url('assets/js/availability.js')) ?>"></script>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

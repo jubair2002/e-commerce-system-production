@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'Checkout';
 
@@ -442,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Reset rendered_at for next attempt
 $_SESSION['checkout_rendered_at'] = time();
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section">
@@ -954,4 +954,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

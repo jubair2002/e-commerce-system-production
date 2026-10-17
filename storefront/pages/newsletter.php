@@ -2,8 +2,8 @@
 /**
  * Newsletter Subscription & Confirmation/Unsubscribe Page
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
-require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/mailer.php';
 
 $pdo = db();
 $pageTitle = 'Newsletter';
@@ -120,11 +120,11 @@ $breadcrumbs = [
     ['label' => 'Newsletter', 'url' => null]
 ];
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="container py-5 text-center" style="max-width: 600px;">
-  <?php include __DIR__ . '/../includes/partials/breadcrumb.php'; ?>
+  <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
   <div class="p-4 p-md-5 bg-white border rounded-3 shadow-sm my-3">
     <div class="fs-1 text-primary mb-3">
@@ -159,4 +159,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </div>
 
 <?php
-include __DIR__ . '/../includes/partials/footer.php';
+include __DIR__ . '/../../includes/partials/footer.php';

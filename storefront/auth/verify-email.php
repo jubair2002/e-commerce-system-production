@@ -3,7 +3,7 @@
  * Customer Email Verification Endpoint (Prompt 12).
  * Consumes single-use verify_email token, activates account, claims guest orders.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 header('X-Frame-Options: SAMEORIGIN');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -20,7 +20,7 @@ if ($res['ok']) {
 }
 
 // Failed verification page
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="auth-page-wrapper">
@@ -45,4 +45,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </div>
 
 <?php
-include __DIR__ . '/../includes/partials/footer.php';
+include __DIR__ . '/../../includes/partials/footer.php';

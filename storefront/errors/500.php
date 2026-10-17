@@ -3,7 +3,7 @@
  * 500 Server Error Page.
  */
 if (!defined('BASE_URL')) {
-    require_once __DIR__ . '/../config/config.php';
+    require_once __DIR__ . '/../../config/config.php';
 }
 http_response_code(500);
 $siteName = function_exists('setting') ? setting('site_name', APP_NAME) : APP_NAME;

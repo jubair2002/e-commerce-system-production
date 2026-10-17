@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'Track Your Order';
 
@@ -93,7 +93,7 @@ $timelineSteps = [
     'completed'  => ['title' => 'Delivered',    'icon' => 'bi-check2-circle'],
 ];
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section py-5">
@@ -318,4 +318,4 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </section>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

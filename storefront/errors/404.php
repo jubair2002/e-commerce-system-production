@@ -3,12 +3,12 @@
  * 404 Not Found Page.
  * Matches the calm, editorial, minimal storefront design.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 http_response_code(404);
 $pageTitle = 'Page Not Found';
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section py-5">
@@ -33,4 +33,4 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </section>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

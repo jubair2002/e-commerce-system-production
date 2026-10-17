@@ -2,7 +2,7 @@
 /**
  * Dynamic XML Sitemap generator listing home, shop, active categories, and active products.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 if (!headers_sent()) {
     header('Content-Type: application/xml; charset=utf-8');

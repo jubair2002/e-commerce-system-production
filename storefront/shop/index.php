@@ -4,7 +4,7 @@
  * Desktop filter sidebar + mobile bottom-sheet drawer.
  * Live filtering by category, price, availability, on-sale, and variant options.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'All Products';
 $siteName  = setting('site_name', APP_NAME);
@@ -182,7 +182,7 @@ foreach ($selectedOptValues as $vId) {
     }
 }
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section">
@@ -342,7 +342,7 @@ include __DIR__ . '/../includes/partials/header.php';
           <div class="row g-4 row-cols-2 row-cols-md-2 row-cols-lg-3">
             <?php foreach ($products as $p): ?>
               <div class="col">
-                <?php include __DIR__ . '/../includes/partials/product_card.php'; ?>
+                <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
               </div>
             <?php endforeach; ?>
           </div>
@@ -454,4 +454,4 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </div>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

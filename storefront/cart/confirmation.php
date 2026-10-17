@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'Order Confirmation';
 
@@ -119,7 +119,7 @@ $storePhone = setting('store_phone', '');
 $storeWhatsapp = setting('social_whatsapp', '');
 $storeEmail = setting('store_email', '');
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section py-5">
@@ -376,4 +376,4 @@ include __DIR__ . '/../includes/partials/header.php';
 </section>
 
 <script src="<?= e(shop_url('assets/js/auth.js')) ?>"></script>
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

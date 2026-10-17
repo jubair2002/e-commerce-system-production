@@ -11,8 +11,8 @@ DirectoryIndex index.php
 </FilesMatch>
 
 # Error Documents
-ErrorDocument 404 errors/404.php
-ErrorDocument 500 errors/500.php
+ErrorDocument 404 storefront/errors/404.php
+ErrorDocument 500 storefront/errors/500.php
 
 # -----------------------------------------------------------------
 # 1. Rewrites: 301 Legacy Redirects & Clean Pretty URLs
@@ -21,95 +21,100 @@ ErrorDocument 500 errors/500.php
     RewriteEngine On
 
     # 301 Legacy Redirects (Preserving Query Strings)
-    RewriteRule ^shop\.php$ shop/index.php [R=301,L,QSA]
-    RewriteRule ^category\.php$ shop/category.php [R=301,L,QSA]
-    RewriteRule ^product\.php$ shop/product.php [R=301,L,QSA]
-    RewriteRule ^cart\.php$ cart/index.php [R=301,L,QSA]
-    RewriteRule ^checkout\.php$ cart/checkout.php [R=301,L,QSA]
-    RewriteRule ^order_confirmation\.php$ cart/confirmation.php [R=301,L,QSA]
-    RewriteRule ^track\.php$ track/index.php [R=301,L,QSA]
-    RewriteRule ^login\.php$ auth/login.php [R=301,L,QSA]
-    RewriteRule ^register\.php$ auth/register.php [R=301,L,QSA]
-    RewriteRule ^logout\.php$ auth/logout.php [R=301,L,QSA]
-    RewriteRule ^forgot_password\.php$ auth/forgot-password.php [R=301,L,QSA]
-    RewriteRule ^reset_password\.php$ auth/reset-password.php [R=301,L,QSA]
-    RewriteRule ^verify_email\.php$ auth/verify-email.php [R=301,L,QSA]
-    RewriteRule ^resend_verification\.php$ auth/resend-verification.php [R=301,L,QSA]
-    RewriteRule ^maintenance\.php$ errors/maintenance.php [R=301,L,QSA]
-    RewriteRule ^404\.php$ errors/404.php [R=301,L,QSA]
-    RewriteRule ^sitemap\.php$ seo/sitemap.php [R=301,L,QSA]
+    RewriteRule ^shop\.php$ storefront/shop/index.php [R=301,L,QSA]
+    RewriteRule ^category\.php$ storefront/shop/category.php [R=301,L,QSA]
+    RewriteRule ^product\.php$ storefront/shop/product.php [R=301,L,QSA]
+    RewriteRule ^cart\.php$ storefront/cart/index.php [R=301,L,QSA]
+    RewriteRule ^checkout\.php$ storefront/cart/checkout.php [R=301,L,QSA]
+    RewriteRule ^order_confirmation\.php$ storefront/cart/confirmation.php [R=301,L,QSA]
+    RewriteRule ^track\.php$ storefront/track/index.php [R=301,L,QSA]
+    RewriteRule ^login\.php$ storefront/auth/login.php [R=301,L,QSA]
+    RewriteRule ^register\.php$ storefront/auth/register.php [R=301,L,QSA]
+    RewriteRule ^logout\.php$ storefront/auth/logout.php [R=301,L,QSA]
+    RewriteRule ^forgot_password\.php$ storefront/auth/forgot-password.php [R=301,L,QSA]
+    RewriteRule ^reset_password\.php$ storefront/auth/reset-password.php [R=301,L,QSA]
+    RewriteRule ^verify_email\.php$ storefront/auth/verify-email.php [R=301,L,QSA]
+    RewriteRule ^resend_verification\.php$ storefront/auth/resend-verification.php [R=301,L,QSA]
+    RewriteRule ^maintenance\.php$ storefront/errors/maintenance.php [R=301,L,QSA]
+    RewriteRule ^404\.php$ storefront/errors/404.php [R=301,L,QSA]
+    RewriteRule ^sitemap\.php$ storefront/seo/sitemap.php [R=301,L,QSA]
 
     # Clean Pretty URLs
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^shop/?$ shop/index.php [L,QSA]
+    RewriteRule ^shop/?$ storefront/shop/index.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^category/([^/]+)/?$ shop/category.php?slug=$1 [L,QSA]
+    RewriteRule ^category/([^/]+)/?$ storefront/shop/category.php?slug=$1 [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^product/([^/]+)/?$ shop/product.php?slug=$1 [L,QSA]
+    RewriteRule ^product/([^/]+)/?$ storefront/shop/product.php?slug=$1 [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^cart/?$ cart/index.php [L,QSA]
+    RewriteRule ^cart/?$ storefront/cart/index.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^checkout/?$ cart/checkout.php [L,QSA]
+    RewriteRule ^checkout/?$ storefront/cart/checkout.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^order/confirmation/?$ cart/confirmation.php [L,QSA]
+    RewriteRule ^order/confirmation/?$ storefront/cart/confirmation.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^track/?$ track/index.php [L,QSA]
+    RewriteRule ^track/?$ storefront/track/index.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^login/?$ auth/login.php [L,QSA]
+    RewriteRule ^login/?$ storefront/auth/login.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^register/?$ auth/register.php [L,QSA]
+    RewriteRule ^register/?$ storefront/auth/register.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^logout/?$ auth/logout.php [L,QSA]
+    RewriteRule ^logout/?$ storefront/auth/logout.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^forgot-password/?$ auth/forgot-password.php [L,QSA]
+    RewriteRule ^forgot-password/?$ storefront/auth/forgot-password.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^reset-password/?$ auth/reset-password.php [L,QSA]
+    RewriteRule ^reset-password/?$ storefront/auth/reset-password.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^verify-email/?$ auth/verify-email.php [L,QSA]
+    RewriteRule ^verify-email/?$ storefront/auth/verify-email.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^resend-verification/?$ auth/resend-verification.php [L,QSA]
+    RewriteRule ^resend-verification/?$ storefront/auth/resend-verification.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^page/([^/]+)/?$ pages/view.php?slug=$1 [L,QSA]
+    RewriteRule ^page/([^/]+)/?$ storefront/pages/view.php?slug=$1 [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^contact/?$ pages/contact.php [L,QSA]
+    RewriteRule ^contact/?$ storefront/pages/contact.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^newsletter/?$ pages/newsletter.php [L,QSA]
+    RewriteRule ^newsletter/?$ storefront/pages/newsletter.php [L,QSA]
 
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^sitemap\.xml$ seo/sitemap.php [L]
+    RewriteRule ^sitemap\.xml$ storefront/seo/sitemap.php [L]
+
+    # Fallback rewrite for direct legacy folder paths (e.g. /shop/ -> /storefront/shop/)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(shop|cart|auth|track|pages|errors|seo)(/.*)?$ storefront/$1$2 [L,QSA]
 </IfModule>
 
 # -----------------------------------------------------------------

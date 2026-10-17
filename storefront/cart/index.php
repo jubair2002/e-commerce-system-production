@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'Shopping Cart';
 
@@ -189,7 +189,7 @@ $appliedCouponCode = $_SESSION['applied_coupon'] ?? null;
 
 $totals = cart_totals($cart, $selectedShippingId, $appliedCouponCode, 'cod');
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section">
@@ -432,4 +432,4 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </section>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

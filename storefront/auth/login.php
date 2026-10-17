@@ -3,7 +3,7 @@
  * Customer Sign In Page (Prompt 12).
  * Constant-time authentication, rate-limiting, account lockout protection.
  */
-require_once __DIR__ . '/../includes/shop_bootstrap.php';
+require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 header('X-Frame-Options: SAMEORIGIN');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include __DIR__ . '/../includes/partials/header.php';
+include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <div class="auth-page-wrapper">
@@ -136,6 +136,6 @@ include __DIR__ . '/../includes/partials/header.php';
   </div>
 </div>
 
-<script src="<?= e(url('assets/js/auth.js')) ?>?v=<?= filemtime(__DIR__ . '/assets/vendor/fonts/inter.css') ?>" defer></script>
+<script src="<?= e(url('assets/js/auth.js')) ?>?v=<?= filemtime(__DIR__ . '/../../assets/vendor/fonts/inter.css') ?>" defer></script>
 
-<?php include __DIR__ . '/../includes/partials/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>
