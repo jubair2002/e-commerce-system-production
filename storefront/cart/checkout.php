@@ -13,7 +13,7 @@ if (!empty($cart['alerts'])) {
 
 if (empty($cart['items'])) {
     flash('warning', 'Your cart is empty. Please add items to your cart before proceeding to checkout.');
-    redirect('cart.php');
+    redirect(route('cart'));
 }
 
 // Prompt 12: Customer Account & Guest Checkout Enforce
@@ -21,7 +21,7 @@ $guestCheckout = (int)setting('guest_checkout', '1') === 1;
 $currentCustomer = function_exists('customer_current') ? customer_current() : null;
 if (!$guestCheckout && !$currentCustomer) {
     flash('info', 'Please sign in or create an account to proceed to checkout.');
-    header('Location: ' . shop_url('login.php?next=' . urlencode('/checkout.php')));
+    header('Location: ' . route('login', ['next' => route('checkout')]));
     exit;
 }
 
@@ -38,6 +38,9 @@ try {
 // Settings
 $requirePhone = (int)setting('require_phone', '1') === 1;
 $requireEmail = (int)setting('require_email', '0') === 1;
+$bdDistricts = file_exists(__DIR__ . '/../../includes/data/bd_districts.php')
+    ? require __DIR__ . '/../../includes/data/bd_districts.php'
+    : [];
 $codEnabled = (int)setting('cod_enabled', '1') === 1;
 $codFee = (float)setting('cod_fee', '0.00');
 $codMin = (float)setting('cod_min_order', '0');
@@ -428,7 +431,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appKey = defined('APP_KEY') ? APP_KEY : 'secret-key-fallback';
             $signedToken = hash_hmac('sha256', $orderNumber, $appKey);
 
-            redirect('order_confirmation.php?o=' . urlencode($orderNumber) . '&t=' . $signedToken);
+            redirect(route('order_confirmation', ['o' => $orderNumber, 't' => $signedToken]));
 
         } catch (Throwable $ex) {
             if ($pdo->inTransaction()) {
@@ -445,20 +448,30 @@ $_SESSION['checkout_rendered_at'] = time();
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<section class="section">
+<section class="section-py pt-4">
   <div class="container">
 
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= e(shop_url()) ?>">Home</a></li>
-        <li class="breadcrumb-item"><a href="<?= e(shop_url('cart.php')) ?>">Cart</a></li>
-        <li class="breadcrumb-item active">Checkout</li>
-      </ol>
-    </nav>
+    <!-- 3-Step Checkout Visual Progress Indicator -->
+    <div class="checkout-progress">
+      <a href="<?= e(route('cart')) ?>" class="progress-step text-muted text-decoration-none">
+        <span class="step-number">1</span>
+        <span>Cart</span>
+      </a>
+      <div class="progress-line"></div>
+      <div class="progress-step is-active">
+        <span class="step-number">2</span>
+        <span>Details</span>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step">
+        <span class="step-number">3</span>
+        <span>Confirmation</span>
+      </div>
+    </div>
 
-    <div class="section-header mb-4">
-      <h2>Complete Your Order</h2>
-      <p class="text-muted">Fill in your delivery details below. Fast shipping with Cash on Delivery.</p>
+    <div class="section-header mb-4 text-center">
+      <h1 class="display-serif fs-2xl mb-1">Complete Your Order</h1>
+      <p class="text-muted small">Fill in your delivery details below. Fast shipping with Cash on Delivery nationwide.</p>
     </div>
 
     <?php if ($errors): ?>
@@ -496,7 +509,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <i class="bi bi-check-circle-fill text-success me-1"></i> <?= e($currentCustomer['name']) ?>
                 </span>
               <?php else: ?>
-                <a href="<?= e(shop_url('login.php?next=' . urlencode('/checkout.php'))) ?>" class="small text-decoration-underline text-muted">
+                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-decoration-underline text-muted">
                   Already have an account? Sign in
                 </a>
               <?php endif; ?>
@@ -546,7 +559,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <div class="col-12 mb-2">
                     <label class="form-label fw-medium d-flex justify-content-between align-items-center">
                       <span><i class="bi bi-journal-bookmark me-1 text-primary"></i> Saved Delivery Addresses</span>
-                      <a href="<?= e(shop_url('account/addresses.php')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
+                      <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
                     </label>
                     <div class="d-flex flex-column gap-2" id="savedAddressSelector">
                       <?php foreach ($savedAddresses as $idx => $sa): 
@@ -588,18 +601,24 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label fw-medium">City / District <span class="text-danger">*</span></label>
-                  <input type="text" name="shipping_city" id="shippingCityInput" class="form-control"
-                         value="<?= e($old['shipping_city']) ?>" placeholder="e.g. Dhaka" required>
+                  <label class="form-label fw-medium" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
+                  <select name="shipping_city" id="shippingCityInput" class="form-select" required>
+                    <option value="">-- Select District (64 Districts) --</option>
+                    <?php foreach ($bdDistricts as $dist): ?>
+                      <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= ($old['shipping_city'] === $dist['name'] || (empty($old['shipping_city']) && $dist['name'] === 'Dhaka')) ? 'selected' : '' ?>>
+                        <?= e($dist['name']) ?> (<?= $dist['zone'] === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka' ?>)
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
                   <div class="mt-2 d-flex flex-wrap gap-1">
                     <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Dhaka" data-method-keyword="Inside Dhaka" style="font-size: 0.78rem;">
                       <i class="bi bi-geo-alt"></i> Inside Dhaka
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Outside Dhaka" data-method-keyword="Outside Dhaka" style="font-size: 0.78rem;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Chattogram" data-method-keyword="Outside Dhaka" style="font-size: 0.78rem;">
                       <i class="bi bi-truck"></i> Outside Dhaka
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Gazipur / Savar" data-method-keyword="Custom Area" style="font-size: 0.78rem;">
-                      <i class="bi bi-pin-map"></i> Custom Area / Suburbs
+                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Gazipur" data-method-keyword="Custom Area" style="font-size: 0.78rem;">
+                      <i class="bi bi-pin-map"></i> Gazipur / Suburbs
                     </button>
                   </div>
                 </div>
@@ -770,7 +789,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <span id="summaryTotal" class="fs-3 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
+                <button type="submit" id="btnSubmitOrder" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
                   <i class="bi bi-bag-check-fill me-2"></i> Place Order Now
                 </button>
 
@@ -874,13 +893,55 @@ document.addEventListener('DOMContentLoaded', function() {
     shippingRadios.forEach(r => r.addEventListener('change', recalculate));
     paymentRadios.forEach(p => p.addEventListener('change', recalculate));
 
+    // Handle city dropdown changes
+    if (cityInput) {
+        cityInput.addEventListener('change', function() {
+            const selectedOpt = cityInput.options ? cityInput.options[cityInput.selectedIndex] : null;
+            const zone = selectedOpt ? selectedOpt.getAttribute('data-zone') : '';
+            const val = (cityInput.value || '').toLowerCase();
+            for (const radio of shippingRadios) {
+                const name = (radio.getAttribute('data-name') || '').toLowerCase();
+                const rZone = (radio.getAttribute('data-zone') || '').toLowerCase();
+                if (zone === 'inside_dhaka' || val === 'dhaka') {
+                    if (name.includes('inside dhaka') || rZone.includes('inside dhaka') || rZone === 'dhaka') {
+                        radio.checked = true;
+                        break;
+                    }
+                } else if (zone === 'outside_dhaka' || (val !== '' && !val.includes('dhaka'))) {
+                    if (name.includes('outside dhaka') || rZone.includes('outside dhaka') || rZone === 'outside') {
+                        radio.checked = true;
+                        break;
+                    }
+                }
+            }
+            recalculate();
+        });
+    }
+
+    // Double submit prevention
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function() {
+            const btn = document.getElementById('btnSubmitOrder');
+            if (btn && !btn.disabled) {
+                setTimeout(() => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Placing Order...';
+                }, 10);
+            }
+        });
+    }
+
     // Area quick-select chips
     areaChips.forEach(chip => {
         chip.addEventListener('click', function(e) {
             e.preventDefault();
             const city = this.getAttribute('data-city') || '';
             const keyword = (this.getAttribute('data-method-keyword') || '').toLowerCase();
-            if (cityInput) cityInput.value = city;
+            if (cityInput) {
+                cityInput.value = city;
+                cityInput.dispatchEvent(new Event('change'));
+            }
 
             // Match and select shipping radio
             for (const radio of shippingRadios) {

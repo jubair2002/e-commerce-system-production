@@ -429,3 +429,25 @@ function products_attach_card_data(array &$products): void
     unset($p);
 }
 
+/**
+ * Recalculate average rating and review count for a product.
+ */
+function product_recalculate_rating(int $productId): void
+{
+    try {
+        $stmt = db()->prepare("
+            SELECT COUNT(*) as cnt, AVG(rating) as avg_score 
+            FROM product_reviews 
+            WHERE product_id = ? AND status = 'approved'
+        ");
+        $stmt->execute([$productId]);
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        $cnt = (int)($res['cnt'] ?? 0);
+        $avg = $cnt > 0 ? round((float)$res['avg_score'], 2) : 0.00;
+
+        $upd = db()->prepare("UPDATE products SET rating_count = ?, rating_avg = ? WHERE id = ?");
+        $upd->execute([$cnt, $avg, $productId]);
+    } catch (Throwable $e) {}
+}
+
+

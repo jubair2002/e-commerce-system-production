@@ -36,11 +36,11 @@ if ($token !== '') {
         $stmt->execute([':th' => $tokenHash]);
         $sub = $stmt->fetch();
         if ($sub) {
-            if ($sub['status'] === 'subscribed') {
+            if ($sub['status'] === 'active' || $sub['status'] === 'subscribed') {
                 $statusMessage = 'Your newsletter subscription is already confirmed!';
                 $statusType = 'success';
             } else {
-                $pdo->prepare("UPDATE newsletter_subscribers SET status = 'subscribed', confirmed_at = NOW() WHERE id = :id")
+                $pdo->prepare("UPDATE newsletter_subscribers SET status = 'active', confirmed_at = NOW() WHERE id = :id")
                     ->execute([':id' => $sub['id']]);
                 $statusMessage = 'Thank you! Your email has been verified and your subscription is active.';
                 $statusType = 'success';

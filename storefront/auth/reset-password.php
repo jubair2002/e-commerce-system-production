@@ -29,11 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$tokenInvalid) {
 
         if ($res['ok']) {
             flash('success', $res['message']);
-            header('Location: ' . shop_url('login.php'));
+            header('Location: ' . route('login'));
             exit;
         } else {
             $error = $res['error'] ?? 'Failed to reset password. Please try again.';
-            // If token became invalid during consume (e.g. reused concurrently)
             if (str_contains($error, 'invalid') || str_contains($error, 'expired') || str_contains($error, 'already been used')) {
                 $tokenInvalid = true;
             }
@@ -44,31 +43,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$tokenInvalid) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper">
-  <div class="auth-card">
+<div class="auth-page-wrapper py-5">
+  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm" style="max-width: 440px;">
     <?php if ($tokenInvalid): ?>
       <div class="text-center py-3">
         <div class="fs-1 text-warning mb-3">
           <i class="bi bi-shield-exclamation"></i>
         </div>
-        <h1 class="auth-title mb-2">Invalid or Expired Link</h1>
+        <h1 class="h4 fw-bold text-dark mb-2">Invalid or Expired Link</h1>
         <p class="text-muted small mb-4">
           This password reset link is invalid, has expired, or has already been used.
           For your security, reset links are single-use and expire within 60 minutes.
         </p>
         <div class="d-grid gap-2">
-          <a href="<?= e(shop_url('forgot_password.php')) ?>" class="btn btn-editorial-primary">
+          <a href="<?= e(route('forgot_password')) ?>" class="btn btn-primary">
             Request New Reset Link &rarr;
           </a>
-          <a href="<?= e(shop_url('login.php')) ?>" class="btn btn-outline-secondary btn-sm">
+          <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
             Back to Sign In
           </a>
         </div>
       </div>
     <?php else: ?>
-      <div class="auth-header text-center">
-        <h1 class="auth-title">Set New Password</h1>
-        <p class="auth-subtitle">Create a strong, unique password for your account.</p>
+      <div class="auth-header text-center mb-4">
+        <h1 class="h3 fw-bold text-dark mb-2">Set New Password</h1>
+        <p class="text-muted small">Create a strong, unique password for your account.</p>
       </div>
 
       <?php if ($error): ?>
@@ -77,7 +76,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
       <?php endif; ?>
 
-      <form method="post" action="reset_password.php" class="auth-form" novalidate id="resetPasswordForm">
+      <form method="post" action="<?= e(route('reset_password')) ?>" class="auth-form" novalidate id="resetPasswordForm">
         <?= csrf_field() ?>
         <input type="hidden" name="t" value="<?= e($rawToken) ?>">
 
@@ -97,15 +96,10 @@ include __DIR__ . '/../../includes/partials/header.php';
             </button>
           </div>
           <!-- Live password strength meter -->
-          <div class="password-meter-wrapper mt-2">
-            <div class="progress" style="height: 4px;">
-              <div class="progress-bar password-meter-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-              <span class="password-meter-text small text-muted" style="font-size: 0.75rem;">Password strength</span>
-              <span class="password-rules small text-muted" style="font-size: 0.75rem;">Min. 8 chars</span>
-            </div>
+          <div class="password-meter-wrap mt-2">
+            <div class="password-meter-bar" id="pwStrengthBar"></div>
           </div>
+          <div class="form-text small text-muted">Use at least 8 characters with letters and numbers.</div>
         </div>
 
         <!-- Confirm Password -->
@@ -126,13 +120,13 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
 
         <div class="d-grid gap-2 mb-3">
-          <button type="submit" class="btn btn-editorial-primary" id="btnSubmitReset">
+          <button type="submit" class="btn btn-primary py-2 fw-semibold" id="btnSubmitReset">
             Update Password &amp; Sign In
           </button>
         </div>
 
         <div class="text-center pt-2">
-          <a href="<?= e(shop_url('login.php')) ?>" class="btn btn-outline-secondary btn-sm">
+          <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i> Return to Sign In
           </a>
         </div>
@@ -141,6 +135,7 @@ include __DIR__ . '/../../includes/partials/header.php';
   </div>
 </div>
 
-<script src="<?= e(shop_url('assets/js/auth.js')) ?>"></script>
+<script src="<?= e(url('assets/js/auth.js')) ?>"></script>
+
 <?php
 include __DIR__ . '/../../includes/partials/footer.php';

@@ -79,6 +79,44 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
         <i class="bi bi-images"></i><span>Banners</span>
       </a>
 
+      <a href="<?= e(admin_url('reviews.php')) ?>"
+         class="nav-link <?= active_if($current === 'reviews.php') ?>">
+        <i class="bi bi-star"></i><span>Reviews</span>
+        <?php
+          try {
+            $pendingRevCount = (int) db()->query("SELECT COUNT(*) FROM product_reviews WHERE status = 'pending'")->fetchColumn();
+          } catch (Throwable $e) { $pendingRevCount = 0; }
+        ?>
+        <?php if ($pendingRevCount > 0): ?>
+          <span class="badge text-bg-warning ms-auto"><?= $pendingRevCount ?></span>
+        <?php endif; ?>
+      </a>
+
+      <div class="nav-section">Storefront & Content</div>
+
+      <a href="<?= e(admin_url('pages.php')) ?>"
+         class="nav-link <?= active_if($current === 'pages.php' || $current === 'page_form.php') ?>">
+        <i class="bi bi-file-earmark-text"></i><span>Pages (CMS)</span>
+      </a>
+
+      <a href="<?= e(admin_url('messages.php')) ?>"
+         class="nav-link <?= active_if($current === 'messages.php') ?>">
+        <i class="bi bi-chat-left-text"></i><span>Messages</span>
+        <?php
+          try {
+            $newMsgCount = (int) db()->query("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'")->fetchColumn();
+          } catch (Throwable $e) { $newMsgCount = 0; }
+        ?>
+        <?php if ($newMsgCount > 0): ?>
+          <span class="badge text-bg-danger ms-auto"><?= $newMsgCount ?></span>
+        <?php endif; ?>
+      </a>
+
+      <a href="<?= e(admin_url('subscribers.php')) ?>"
+         class="nav-link <?= active_if($current === 'subscribers.php') ?>">
+        <i class="bi bi-envelope-check"></i><span>Subscribers</span>
+      </a>
+
     <?php endif; ?>
 
     <a href="<?= e(admin_url('activity.php')) ?>"

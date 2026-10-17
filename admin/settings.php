@@ -201,6 +201,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Tab 2: Storefront CMS Settings
+    // Clear Image Cache Action
+    if ($action === 'clear_image_cache') {
+        require_once __DIR__ . '/../includes/images.php';
+        $purgedCount = image_pipeline_clear_cache();
+        log_activity('image_cache.clear', "Purged {$purgedCount} cached image variants");
+        flash('success', "Image cache purged ({$purgedCount} files removed).");
+        admin_redirect('settings.php?tab=storefront');
+    }
+
     if ($action === 'save_storefront') {
         $rules = [
             'home_show_hero'           => ['type' => 'bool'],
@@ -208,6 +217,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'home_show_featured'       => ['type' => 'bool'],
             'home_show_new_arrivals'   => ['type' => 'bool'],
             'home_show_best_sellers'   => ['type' => 'bool'],
+            'home_show_reviews'        => ['type' => 'bool'],
+            'home_show_brand_story'    => ['type' => 'bool'],
+            'home_show_newsletter'     => ['type' => 'bool'],
             'home_featured_count'      => ['type' => 'int', 'min' => 1, 'max' => 40],
             'shop_products_per_page'   => ['type' => 'int', 'min' => 4, 'max' => 60],
             'shop_default_sort'        => ['type' => 'enum', 'choices' => ['newest', 'price_asc', 'price_desc', 'name_asc', 'popular']],
@@ -222,11 +234,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'social_whatsapp'          => ['type' => 'text'],
             'theme_accent_color'       => ['type' => 'hex'],
             'maintenance_mode'         => ['type' => 'bool'],
+            'pretty_urls'              => ['type' => 'bool'],
+            'dark_mode_enabled'        => ['type' => 'bool'],
+            'mobile_bottom_nav'        => ['type' => 'bool'],
+            'sticky_add_to_cart'       => ['type' => 'bool'],
+            'image_pipeline_enabled'   => ['type' => 'bool'],
+            'brand_story_title'        => ['type' => 'text'],
+            'brand_story_text'         => ['type' => 'text'],
+            'trust_item_1_title'       => ['type' => 'text'],
+            'trust_item_1_desc'        => ['type' => 'text'],
+            'trust_item_2_title'       => ['type' => 'text'],
+            'trust_item_2_desc'        => ['type' => 'text'],
+            'trust_item_3_title'       => ['type' => 'text'],
+            'trust_item_3_desc'        => ['type' => 'text'],
+            'trust_item_4_title'       => ['type' => 'text'],
+            'trust_item_4_desc'        => ['type' => 'text'],
+            'reviews_enabled'          => ['type' => 'bool'],
+            'reviews_require_login'    => ['type' => 'bool'],
+            'reviews_auto_approve'     => ['type' => 'bool'],
+            'newsletter_enabled'       => ['type' => 'bool'],
+            'newsletter_double_optin'  => ['type' => 'bool'],
+            'size_guide_page_slug'     => ['type' => 'text'],
         ];
 
         $res = settings_save($_POST, $rules, 'storefront');
         if (isset($_POST['theme_accent_color']) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $_POST['theme_accent_color'])) {
             update_setting('theme_accent', $_POST['theme_accent_color']);
+        }
+
+        // Pretty URLs lockfile toggle
+        $lockFile = __DIR__ . '/../storage/pretty_urls.on';
+        if (!empty($_POST['pretty_urls'])) {
+            @file_put_contents($lockFile, date('c'));
+        } else {
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
         }
 
         if ($res['errors']) {
@@ -887,11 +930,140 @@ include __DIR__ . '/includes/header.php';
             </div>
           </div>
 
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Architecture, UI & Image Pipeline</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="pretty_urls" value="1" <?= setting('pretty_urls', '0') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Clean / Pretty URLs (/shop, /product/slug)</label>
+              </div>
+              <div class="small text-muted mb-3">Uses mod_rewrite. Automatically creates/removes storage/pretty_urls.on lockfile.</div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="dark_mode_enabled" value="1" <?= setting('dark_mode_enabled', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Allow Customer Dark Theme Toggle</label>
+              </div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="mobile_bottom_nav" value="1" <?= setting('mobile_bottom_nav', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Mobile Bottom Navigation Bar</label>
+              </div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="sticky_add_to_cart" value="1" <?= setting('sticky_add_to_cart', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Sticky Mobile Add-to-Cart Bar</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="image_pipeline_enabled" value="1" <?= setting('image_pipeline_enabled', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Responsive WebP Image Pipeline</label>
+              </div>
+              <div class="small text-muted mb-3">Generates optimized WebP variants and responsive srcset tags lazily.</div>
+
+              <div class="p-3 bg-light rounded border">
+                <div class="fw-semibold small mb-1">Image Pipeline Cache</div>
+                <div class="text-muted small mb-2">Cached resized variants stored in assets/uploads/cache/.</div>
+                <button type="submit" form="clearCacheForm" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-trash me-1"></i> Clear Image Cache
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Homepage Trust Bar & Brand Story</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 1 (COD)</label>
+              <input type="text" name="trust_item_1_title" class="form-control form-control-sm mb-1" value="<?= e(setting('trust_item_1_title', 'Nationwide COD')) ?>" placeholder="Title">
+              <input type="text" name="trust_item_1_desc" class="form-control form-control-sm" value="<?= e(setting('trust_item_1_desc', 'Cash on delivery across all 64 districts')) ?>" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 2 (Fast Delivery)</label>
+              <input type="text" name="trust_item_2_title" class="form-control form-control-sm mb-1" value="<?= e(setting('trust_item_2_title', 'Fast Dispatch')) ?>" placeholder="Title">
+              <input type="text" name="trust_item_2_desc" class="form-control form-control-sm" value="<?= e(setting('trust_item_2_desc', '24h in Dhaka, 48-72h outside')) ?>" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 3 (Authentic)</label>
+              <input type="text" name="trust_item_3_title" class="form-control form-control-sm mb-1" value="<?= e(setting('trust_item_3_title', '100% Authentic')) ?>" placeholder="Title">
+              <input type="text" name="trust_item_3_desc" class="form-control form-control-sm" value="<?= e(setting('trust_item_3_desc', 'Guaranteed genuine products direct from makers')) ?>" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 4 (Support)</label>
+              <input type="text" name="trust_item_4_title" class="form-control form-control-sm mb-1" value="<?= e(setting('trust_item_4_title', 'Dedicated Support')) ?>" placeholder="Title">
+              <input type="text" name="trust_item_4_desc" class="form-control form-control-sm" value="<?= e(setting('trust_item_4_desc', 'Friendly phone & WhatsApp assistance')) ?>" placeholder="Subtitle">
+            </div>
+
+            <div class="col-12 mt-3">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="home_show_brand_story" value="1" <?= setting('home_show_brand_story', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Show Brand Story Section on Homepage</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Brand Story Headline</label>
+              <input type="text" name="brand_story_title" class="form-control form-control-sm" value="<?= e(setting('brand_story_title', 'Crafted with Intention')) ?>">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold">Brand Story Paragraph</label>
+              <textarea name="brand_story_text" class="form-control form-control-sm" rows="2"><?= e(setting('brand_story_text', 'We believe everyday objects should be both functional and beautiful. Every piece in our collection is curated with care and designed to last.')) ?></textarea>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Reviews, Newsletter & Size Guide</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_enabled" value="1" <?= setting('reviews_enabled', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Enable Customer Reviews</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_require_login" value="1" <?= setting('reviews_require_login', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label small">Require Account Login to Review</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_auto_approve" value="1" <?= setting('reviews_auto_approve', '0') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label small">Auto-Approve Reviews (No Moderation)</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_reviews" value="1" <?= setting('home_show_reviews', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label small">Show Customer Reviews on Homepage</label>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="newsletter_enabled" value="1" <?= setting('newsletter_enabled', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label fw-medium">Enable Newsletter Subscription</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="newsletter_double_optin" value="1" <?= setting('newsletter_double_optin', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label small">Double Opt-in Confirmation Email</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_newsletter" value="1" <?= setting('home_show_newsletter', '1') == '1' ? 'checked' : '' ?>>
+                <label class="form-check-label small">Show Newsletter on Homepage</label>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Size Guide Page Slug</label>
+              <input type="text" name="size_guide_page_slug" class="form-control form-control-sm" value="<?= e(setting('size_guide_page_slug', 'size-guide')) ?>" placeholder="size-guide">
+              <div class="form-text">Slug of the CMS Page to load in the Product Detail modal.</div>
+            </div>
+          </div>
+
           <div class="d-flex align-items-center gap-3">
             <button type="submit" class="btn btn-primary px-4">
               <i class="bi bi-save me-1"></i> Save Storefront Settings
             </button>
           </div>
+        </form>
+
+        <form method="post" id="clearCacheForm" class="d-none">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="clear_image_cache">
         </form>
       </div>
     </div>

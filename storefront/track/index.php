@@ -101,7 +101,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= e(shop_url()) ?>">Home</a></li>
+        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>">Home</a></li>
         <li class="breadcrumb-item active">Track Order</li>
       </ol>
     </nav>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared Breadcrumb Partial.
+ * Shared Breadcrumb Partial (Phase B).
  * Variables:
  *   $breadcrumbs (array of ['label' => string, 'url' => string|null])
  */
@@ -8,28 +8,28 @@ if (empty($breadcrumbs) || !is_array($breadcrumbs)) {
     return;
 }
 ?>
-<nav aria-label="breadcrumb" class="py-2 mb-3">
-  <ol class="breadcrumb small mb-0">
+<nav aria-label="breadcrumb" class="breadcrumb-nav">
+  <ol class="breadcrumb-list">
     <li class="breadcrumb-item">
-      <a href="<?= e(route('home')) ?>" class="text-muted text-decoration-none">
-        <i class="bi bi-house-door me-1"></i>Home
-      </a>
+      <a href="<?= e(route('home')) ?>">Home</a>
     </li>
+    <li class="breadcrumb-separator" aria-hidden="true">/</li>
     <?php
     $lastIndex = count($breadcrumbs) - 1;
     foreach ($breadcrumbs as $idx => $bc):
         $isLast = ($idx === $lastIndex);
     ?>
       <?php if ($isLast || empty($bc['url'])): ?>
-        <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">
+        <li class="breadcrumb-item is-current" aria-current="page">
           <?= e($bc['label']) ?>
         </li>
       <?php else: ?>
         <li class="breadcrumb-item">
-          <a href="<?= e($bc['url']) ?>" class="text-muted text-decoration-none">
+          <a href="<?= e($bc['url']) ?>">
             <?= e($bc['label']) ?>
           </a>
         </li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
       <?php endif; ?>
     <?php endforeach; ?>
   </ol>

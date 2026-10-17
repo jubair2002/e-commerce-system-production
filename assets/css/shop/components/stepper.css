@@ -1,0 +1,214 @@
+/* breadcrumb.css: Semantic Breadcrumb Navigation */
+.breadcrumb-nav {
+  margin-bottom: var(--space-4);
+}
+
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.breadcrumb-item a {
+  color: var(--muted);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--ink);
+}
+
+.breadcrumb-item.is-current {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: var(--line-strong);
+}
+
+/* skeleton.css: Shimmer Loading States */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-soft) 25%, var(--line) 50%, var(--bg-soft) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.skeleton-card {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+/* rating.css: Star Reviews */
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #f59e0b;
+}
+
+.rating-stars svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rating-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.rating-score {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* price.css: Editorial Price Presentation */
+.price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.price-current {
+  font-weight: 600;
+  font-size: var(--fs-base);
+  color: var(--ink);
+}
+
+.price-strike {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.price-discount-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sale);
+}
+
+/* swatch.css: Color & Option Selection */
+.swatch-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.swatch-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease);
+}
+
+.swatch-btn:hover {
+  border-color: var(--ink);
+}
+
+.swatch-btn.is-active {
+  border-color: var(--ink);
+  background-color: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.swatch-btn.is-disabled {
+  opacity: 0.4;
+  text-decoration: line-through;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.swatch-color-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  outline: 1px solid var(--line-strong);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.swatch-color-circle:hover {
+  transform: scale(1.1);
+}
+
+.swatch-color-circle.is-active {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* stepper.css: Quantity Stepper */
+.quantity-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.stepper-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  cursor: pointer;
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.stepper-btn:hover {
+  background-color: var(--bg-soft);
+}
+
+.stepper-input {
+  width: 44px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  -moz-appearance: textfield;
+}
+
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

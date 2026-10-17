@@ -230,7 +230,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <a href="<?= e($chip['url']) ?>" aria-label="Remove filter <?= e($chip['label']) ?>"><i class="bi bi-x"></i></a>
           </span>
         <?php endforeach; ?>
-        <a href="<?= e(shop_url('shop.php')) ?>" class="clear-all-link">Clear all</a>
+        <a href="<?= e(route('shop')) ?>" class="clear-all-link">Clear all</a>
       </div>
     <?php endif; ?>
 
@@ -239,7 +239,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Desktop Filter Sidebar -->
       <aside class="filter-sidebar" aria-label="Product filters">
-        <form method="get" action="<?= e(shop_url('shop.php')) ?>">
+        <form method="get" action="<?= e(route('shop')) ?>">
           <?php if ($search !== ''): ?>
             <input type="hidden" name="q" value="<?= e($search) ?>">
           <?php endif; ?>
@@ -378,7 +378,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="empty-state-icon"><i class="bi bi-search"></i></div>
             <h2>No products found</h2>
             <p>We couldn't find any items matching your selected criteria. Try adjusting your filters or search terms.</p>
-            <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary">
+            <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
               Clear All Filters
             </a>
           </div>
@@ -397,7 +397,7 @@ include __DIR__ . '/../../includes/partials/header.php';
     <button type="button" class="btn-close" data-filter-drawer-close aria-label="Close filters"></button>
   </div>
   <div class="filter-drawer-body">
-    <form method="get" action="<?= e(shop_url('shop.php')) ?>">
+    <form method="get" action="<?= e(route('shop')) ?>">
       <?php if ($search !== ''): ?>
         <input type="hidden" name="q" value="<?= e($search) ?>">
       <?php endif; ?>
@@ -448,7 +448,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <div class="d-flex gap-2 pt-2">
         <button type="submit" class="btn btn-editorial-primary w-100">Apply Filters</button>
-        <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-secondary w-100">Reset</a>
+        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary w-100">Reset</a>
       </div>
     </form>
   </div>

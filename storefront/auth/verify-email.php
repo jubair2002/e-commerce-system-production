@@ -15,7 +15,7 @@ $res = !empty($rawToken) ? customer_verify_email($rawToken) : ['ok' => false, 'e
 
 if ($res['ok']) {
     flash('success', $res['message'] ?? 'Your email address has been verified successfully!');
-    header('Location: ' . shop_url('account/'));
+    header('Location: ' . route('account'));
     exit;
 }
 
@@ -23,21 +23,21 @@ if ($res['ok']) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper">
-  <div class="auth-card text-center py-4">
+<div class="auth-page-wrapper py-5">
+  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm text-center" style="max-width: 440px;">
     <div class="fs-1 text-danger mb-3">
       <i class="bi bi-x-circle"></i>
     </div>
-    <h1 class="auth-title mb-2">Verification Failed</h1>
+    <h1 class="h4 fw-bold text-dark mb-2">Verification Failed</h1>
     <p class="text-muted small mb-4">
       <?= e($res['error'] ?? 'This email verification link is invalid, expired, or has already been used.') ?>
     </p>
 
     <div class="d-grid gap-2">
-      <a href="<?= e(shop_url('resend_verification.php')) ?>" class="btn btn-editorial-primary">
+      <a href="<?= e(route('resend_verification')) ?>" class="btn btn-primary">
         Resend Verification Link &rarr;
       </a>
-      <a href="<?= e(shop_url('login.php')) ?>" class="btn btn-outline-secondary btn-sm">
+      <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
         Go to Sign In
       </a>
     </div>

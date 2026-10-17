@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $slug = trim((string)($_GET['slug'] ?? ''));
 if ($slug === '') {
-    header('Location: ' . shop_url('shop.php'));
+    header('Location: ' . route('shop'));
     exit;
 }
 
@@ -32,7 +32,7 @@ if (!$category) {
           <div class="empty-state-icon"><i class="bi bi-tag"></i></div>
           <h2>Category Not Found</h2>
           <p>The category you're looking for does not exist or has been moved.</p>
-          <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary">
+          <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
             Browse All Products
           </a>
         </div>
@@ -134,8 +134,8 @@ include __DIR__ . '/../../includes/partials/header.php';
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
       <ol class="breadcrumb small" style="background:none; padding:0;">
-        <li class="breadcrumb-item"><a href="<?= e(shop_url()) ?>" class="text-muted">Home</a></li>
-        <li class="breadcrumb-item"><a href="<?= e(shop_url('shop.php')) ?>" class="text-muted">Shop</a></li>
+        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>" class="text-muted">Home</a></li>
+        <li class="breadcrumb-item"><a href="<?= e(route('shop')) ?>" class="text-muted">Shop</a></li>
         <li class="breadcrumb-item active text-dark" aria-current="page"><?= e($category['name']) ?></li>
       </ol>
     </nav>
@@ -171,7 +171,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Desktop Sidebar -->
       <aside class="filter-sidebar" aria-label="Filters">
-        <form method="get" action="<?= e(shop_url('category.php')) ?>">
+        <form method="get" action="<?= e(route('category', ['slug' => $slug])) ?>">
           <input type="hidden" name="slug" value="<?= e($slug) ?>">
 
           <!-- Categories List -->
@@ -179,11 +179,11 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="filter-title">All Categories</div>
             <ul class="filter-list">
               <li>
-                <a href="<?= e(shop_url('shop.php')) ?>" class="text-reset small">All Products</a>
+                <a href="<?= e(route('shop')) ?>" class="text-reset small">All Products</a>
               </li>
               <?php foreach ($categoriesList as $cl): ?>
                 <li>
-                  <a href="<?= e(shop_url('category.php?slug=' . urlencode($cl['slug']))) ?>"
+                  <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>"
                      class="small <?= $cl['slug'] === $slug ? 'fw-bold text-dark' : 'text-muted' ?>">
                     <?= e($cl['name']) ?>
                   </a>
@@ -261,7 +261,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="empty-state-icon"><i class="bi bi-box-seam"></i></div>
             <h2>No products in this category</h2>
             <p>We are currently restocking this category. Check back soon or explore our full collection.</p>
-            <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary">
+            <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
               Browse All Products
             </a>
           </div>

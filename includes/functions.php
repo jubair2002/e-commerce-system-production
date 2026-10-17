@@ -551,3 +551,23 @@ function product_image_url(?string $image): string
         'font-family="sans-serif" font-size="12">No image</text></svg>'
     );
 }
+
+/**
+ * Render an inline SVG icon referencing the central SVG sprite.
+ */
+function icon(string $name, string $class = '', string $title = ''): string
+{
+    $safeName = preg_replace('/[^a-z0-9_-]/i', '', $name);
+    $cls = trim('i ' . $class);
+    $spriteUrl = url('assets/img/icons.svg');
+    
+    $titleHtml = '';
+    $aria = 'aria-hidden="true"';
+    if ($title !== '') {
+        $aria = 'role="img" aria-label="' . e($title) . '"';
+        $titleHtml = '<title>' . e($title) . '</title>';
+    }
+
+    return '<svg class="' . e($cls) . '" ' . $aria . '>' . $titleHtml . '<use href="' . e($spriteUrl) . '#' . $safeName . '"></use></svg>';
+}
+

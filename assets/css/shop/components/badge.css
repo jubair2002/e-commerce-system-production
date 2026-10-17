@@ -1,0 +1,64 @@
+/* badge.css: Badges and Filter Chips */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  line-height: 1.3;
+}
+
+.badge-sale {
+  background-color: var(--sale);
+  color: #ffffff;
+}
+
+.badge-new {
+  background-color: var(--ink);
+  color: var(--bg);
+}
+
+.badge-stock {
+  background-color: rgba(5, 150, 105, 0.12);
+  color: var(--ok);
+}
+
+.badge-low-stock {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: var(--warn);
+}
+
+.badge-outline {
+  background-color: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+}
+
+/* Removable Filter Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  transition: all var(--duration-fast) var(--ease);
+}
+
+.chip-remove {
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+}
+
+.chip-remove:hover {
+  color: var(--ink);
+}

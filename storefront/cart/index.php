@@ -38,14 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($pid <= 0) {
             if ($isAjax) $respondJson(false, 'Invalid product.');
             flash('danger', 'Invalid product.');
-            redirect('cart.php');
+            redirect(route('cart'));
         }
 
         $product = product_get($pid);
         if (!$product || $product['status'] !== 'active') {
             if ($isAjax) $respondJson(false, 'Product not found or inactive.');
             flash('danger', 'This product is no longer available.');
-            redirect('cart.php');
+            redirect(route('cart'));
         }
 
         // Variable product requirement
@@ -53,13 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$vid) {
                 if ($isAjax) $respondJson(false, 'Please select a variant combination before adding to cart.');
                 flash('warning', 'Please select an option before adding to cart.');
-                redirect('product.php?slug=' . urlencode($product['slug']));
+                redirect(route('product', ['slug' => $product['slug']]));
             }
             $variant = variant_get($vid);
             if (!$variant || (int)$variant['product_id'] !== $pid || $variant['status'] !== 'active') {
                 if ($isAjax) $respondJson(false, 'Selected variant is not available.');
                 flash('warning', 'The selected variant is not available.');
-                redirect('product.php?slug=' . urlencode($product['slug']));
+                redirect(route('product', ['slug' => $product['slug']]));
             }
             $avail = variant_available_qty($variant, $product);
             $itemName = $product['name'] . ' (' . $variant['label'] . ')';
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($avail <= 0) {
             if ($isAjax) $respondJson(false, "\"{$itemName}\" is currently out of stock.");
             flash('warning', "\"{$itemName}\" is currently out of stock.");
-            redirect('cart.php');
+            redirect(route('cart'));
         }
 
         $key = cart_key($pid, $vid);
@@ -91,9 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', $msg);
         }
 
-        $return = (($_POST['action_type'] ?? '') === 'buy_now') ? 'checkout.php' : ($_POST['return_to'] ?? 'cart.php');
-        $allowed = ['cart.php', 'checkout.php', 'shop.php', 'index.php'];
-        redirect(in_array($return, $allowed, true) ? $return : 'cart.php');
+        $return = (($_POST['action_type'] ?? '') === 'buy_now') ? route('checkout') : route('cart');
+        redirect($return);
     }
 
     if ($action === 'update') {
@@ -116,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($isAjax) $respondJson(true, 'Cart updated.');
             flash('success', 'Cart updated.');
         }
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 
     if ($action === 'remove') {
@@ -126,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($isAjax) $respondJson(true, 'Item removed.');
         flash('success', 'Item removed from cart.');
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 
     if ($action === 'clear') {
@@ -134,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['applied_coupon']);
         if ($isAjax) $respondJson(true, 'Cart cleared.');
         flash('info', 'Cart cleared.');
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 
     if ($action === 'apply_coupon') {
@@ -151,14 +150,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($isAjax) $respondJson(false, $res['error']);
             flash('danger', $res['error']);
         }
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 
     if ($action === 'remove_coupon') {
         unset($_SESSION['applied_coupon']);
         if ($isAjax) $respondJson(true, 'Coupon removed.');
         flash('info', 'Coupon removed.');
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 
     if ($action === 'set_shipping') {
@@ -167,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['shipping_method_id'] = $smid;
         }
         if ($isAjax) $respondJson(true, 'Shipping method updated.');
-        redirect('cart.php');
+        redirect(route('cart'));
     }
 }
 
@@ -189,6 +188,15 @@ $appliedCouponCode = $_SESSION['applied_coupon'] ?? null;
 
 $totals = cart_totals($cart, $selectedShippingId, $appliedCouponCode, 'cod');
 
+$freeShippingThreshold = null;
+foreach ($shippingMethods as $sm) {
+    if ($sm['free_over'] !== null && (float)$sm['free_over'] > 0) {
+        if ($freeShippingThreshold === null || (float)$sm['free_over'] < $freeShippingThreshold) {
+            $freeShippingThreshold = (float)$sm['free_over'];
+        }
+    }
+}
+
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
@@ -197,15 +205,38 @@ include __DIR__ . '/../../includes/partials/header.php';
 
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= e(shop_url()) ?>">Home</a></li>
+        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>">Home</a></li>
         <li class="breadcrumb-item active">Cart</li>
       </ol>
     </nav>
 
-    <div class="section-header mb-4">
+    <div class="section-header mb-3">
       <h2>Your Cart</h2>
       <p class="text-muted"><?= count($cart['items']) ?> unique item<?= count($cart['items']) === 1 ? '' : 's' ?> (<?= cart_count() ?> total units)</p>
     </div>
+
+    <?php if ($freeShippingThreshold !== null && $freeShippingThreshold > 0 && !empty($cart['items'])): ?>
+      <?php
+        $qualifies = ($totals['discounted_subtotal'] >= $freeShippingThreshold);
+        $diff = max(0, $freeShippingThreshold - $totals['discounted_subtotal']);
+        $pct = min(100, round(($totals['discounted_subtotal'] / $freeShippingThreshold) * 100));
+      ?>
+      <div class="card border-0 bg-light p-3 mb-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
+          <span>
+            <?php if ($qualifies): ?>
+              <i class="bi bi-check-circle-fill text-success me-1"></i> You unlocked <strong>FREE Delivery!</strong>
+            <?php else: ?>
+              <i class="bi bi-truck text-primary me-1"></i> Add <strong><?= e(price($diff)) ?></strong> more to qualify for <strong>FREE Delivery</strong>
+            <?php endif; ?>
+          </span>
+          <span class="text-muted"><?= $pct ?>%</span>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar <?= $qualifies ? 'bg-success' : 'bg-primary' ?>" role="progressbar" style="width: <?= $pct ?>%;" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    <?php endif; ?>
 
     <?php foreach (get_flashes() as $f): ?>
       <div class="alert alert-<?= e($f['type']) ?> alert-dismissible fade show py-2 mb-3">
@@ -231,7 +262,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <i class="bi bi-cart-x fs-1 text-muted d-block mb-3"></i>
         <h3>Your cart is empty</h3>
         <p class="text-muted">Explore our curated collection and add your favorite items.</p>
-        <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-primary mt-2">
+        <a href="<?= e(route('shop')) ?>" class="btn btn-primary mt-2">
           <i class="bi bi-bag"></i> Continue Shopping
         </a>
       </div>
@@ -265,7 +296,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                                  style="object-fit:cover" alt="<?= e($i['product_name']) ?>">
                           </td>
                           <td>
-                            <a href="<?= e(shop_url('product.php?slug=' . urlencode($p['slug']))) ?>"
+                            <a href="<?= e(route('product', ['slug' => $p['slug']])) ?>"
                                class="fw-semibold text-reset text-decoration-none">
                               <?= e($i['product_name']) ?>
                             </a>
@@ -310,7 +341,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <button type="submit" class="btn btn-outline-primary">
                   <i class="bi bi-arrow-clockwise"></i> Update Cart
                 </button>
-                <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-outline-secondary">
+                <a href="<?= e(route('shop')) ?>" class="btn btn-outline-secondary">
                   <i class="bi bi-arrow-left"></i> Continue Shopping
                 </a>
               </div>
@@ -417,7 +448,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <span class="fs-4 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
               </div>
 
-              <a href="<?= e(shop_url('checkout.php')) ?>" class="btn btn-primary btn-lg w-100">
+              <a href="<?= e(route('checkout')) ?>" class="btn btn-primary btn-lg w-100">
                 <i class="bi bi-lock-fill me-1"></i> Proceed to Checkout
               </a>
 

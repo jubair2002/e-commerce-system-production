@@ -1,0 +1,103 @@
+/* 00-tokens.css: Design Tokens & System Properties */
+:root {
+  /* Color Palette - Light Theme */
+  --bg: #ffffff;
+  --bg-soft: #f8f9fa;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --ink: #111827;
+  --ink-2: #4b5563;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --accent: #111827;
+  --accent-contrast: #ffffff;
+  --sale: #dc2626;
+  --ok: #067647;
+  --warn: #d97706;
+  --danger: #ef4444;
+  --focus: #3b82f6;
+
+  /* Typography Scale */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, Cambria, serif;
+  
+  --fs-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
+  --fs-sm: clamp(0.8125rem, 0.78rem + 0.25vw, 0.875rem);
+  --fs-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --fs-md: clamp(1.0625rem, 1rem + 0.35vw, 1.125rem);
+  --fs-lg: clamp(1.1875rem, 1.1rem + 0.5vw, 1.375rem);
+  --fs-xl: clamp(1.4rem, 1.25rem + 0.8vw, 1.75rem);
+  --fs-2xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.25rem);
+  --fs-hero: clamp(2.2rem, 1.8rem + 2vw, 3.25rem);
+
+  /* Spacing Scale (8px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+  /* Layout */
+  --max-w: 1240px;
+  --gutter: 24px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+}
+
+/* Dark Theme Tokens */
+[data-theme="dark"] {
+  --bg: #0f1115;
+  --bg-soft: #17191f;
+  --surface: #1e2129;
+  --surface-raised: #252932;
+  --ink: #f3f4f6;
+  --ink-2: #9ca3af;
+  --muted: #6b7280;
+  --line: #2b303c;
+  --line-strong: #3b4252;
+  --accent: #f3f4f6;
+  --accent-contrast: #0f1115;
+  --sale: #ef4444;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --danger: #f87171;
+  --focus: #60a5fa;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms !important;
+    --duration-normal: 0ms !important;
+    --duration-slow: 0ms !important;
+  }
+}

@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_guest_account'
                 if ($requireVerify) {
                     $verifyHours = (int)setting('customer_verify_token_hours', '48');
                     $token = token_issue($newCid, 'verify_email', max(3600, $verifyHours * 3600));
-                    $verifyUrl = shop_url('verify_email.php?t=' . urlencode($token));
+                    $verifyUrl = route('verify_email', ['t' => $token]);
 
                     mail_queue_template('customer_verify_email', $email, $name, [
                         'customer_name' => $name,
@@ -134,10 +134,10 @@ include __DIR__ . '/../../includes/partials/header.php';
           If you placed this order recently, you can easily look it up on our tracking page.
         </p>
         <div class="mt-3">
-          <a href="<?= e(shop_url('track.php')) ?>" class="btn btn-primary me-2">
+          <a href="<?= e(route('track')) ?>" class="btn btn-primary me-2">
             <i class="bi bi-search"></i> Track Your Order
           </a>
-          <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-outline-secondary">
+          <a href="<?= e(route('shop')) ?>" class="btn btn-outline-secondary">
             Continue Shopping
           </a>
         </div>
@@ -147,7 +147,12 @@ include __DIR__ . '/../../includes/partials/header.php';
       <div class="text-center mb-4">
         <div class="display-3 text-success mb-2"><i class="bi bi-check-circle-fill"></i></div>
         <h2 class="fw-bold">Thank You for Your Order!</h2>
-        <p class="lead text-muted mb-3">Your order <strong><?= e($order['order_number']) ?></strong> has been received and is being processed.</p>
+        <p class="lead text-muted mb-3">
+          Your order <strong id="orderNumberVal"><?= e($order['order_number']) ?></strong> has been received and is being processed.
+          <button type="button" class="btn btn-sm btn-outline-secondary ms-2 py-0 px-2" id="btnCopyOrder" title="Copy Order Number">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </p>
         <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-2 rounded border">
           <span class="text-muted small">Status:</span>
           <span class="badge bg-primary text-uppercase"><?= e($order['status']) ?></span>
@@ -211,7 +216,7 @@ include __DIR__ . '/../../includes/partials/header.php';
               </div>
             <?php endif; ?>
 
-            <form method="post" action="order_confirmation.php?o=<?= urlencode($order['order_number']) ?>&t=<?= urlencode($token) ?>" class="row g-2 align-items-end" novalidate>
+            <form method="post" action="<?= e(route('order_confirmation', ['o' => $order['order_number'], 't' => $token])) ?>" class="row g-2 align-items-end" novalidate>
               <?= csrf_field() ?>
               <input type="hidden" name="create_guest_account" value="1">
               <div class="col-md-7">
@@ -361,11 +366,16 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <!-- Action Buttons -->
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <a href="<?= e(shop_url('track.php?order_number=' . urlencode($order['order_number']) . '&phone=' . urlencode($order['customer_phone']))) ?>"
-           class="btn btn-outline-primary btn-lg">
-          <i class="bi bi-geo-alt me-1"></i> Track Order Status
-        </a>
-        <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-primary btn-lg">
+        <div class="d-flex gap-2">
+          <a href="<?= e(route('track', ['order_number' => $order['order_number'], 'phone' => $order['customer_phone']])) ?>"
+             class="btn btn-outline-primary btn-lg">
+            <i class="bi bi-geo-alt me-1"></i> Track Order Status
+          </a>
+          <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-lg d-none d-sm-inline-flex align-items-center">
+            <i class="bi bi-printer me-1"></i> Print Receipt
+          </button>
+        </div>
+        <a href="<?= e(route('shop')) ?>" class="btn btn-primary btn-lg">
           <i class="bi bi-bag me-1"></i> Continue Shopping
         </a>
       </div>
@@ -375,5 +385,16 @@ include __DIR__ . '/../../includes/partials/header.php';
   </div>
 </section>
 
-<script src="<?= e(shop_url('assets/js/auth.js')) ?>"></script>
+<script>
+document.getElementById('btnCopyOrder')?.addEventListener('click', function() {
+    const num = document.getElementById('orderNumberVal')?.textContent?.trim();
+    if (num && navigator.clipboard) {
+        navigator.clipboard.writeText(num).then(() => {
+            this.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+            setTimeout(() => { this.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+        });
+    }
+});
+</script>
+<script src="<?= e(url('assets/js/auth.js')) ?>"></script>
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

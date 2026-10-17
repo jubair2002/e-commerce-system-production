@@ -11,6 +11,7 @@ require_once __DIR__ . '/catalog.php';
 require_once __DIR__ . '/inventory.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/customer_auth.php';
+require_once __DIR__ . '/images.php';
 
 // Silently restore customer session from remember-me token if present
 if (PHP_SAPI !== 'cli' && function_exists('customer_remember_restore')) {

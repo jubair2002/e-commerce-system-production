@@ -1,6 +1,6 @@
 <?php
 /**
- * Editorial Minimal Product Card (Prompt 04).
+ * Editorial Minimal Product Card (Prompt 04 / Phase B).
  * Expects $p (product row) in scope.
  * 4:5 Aspect Ratio, 2nd Image on Hover, Swatch Dots, Badges, Quick-Add.
  */
@@ -21,23 +21,23 @@ $primaryImg   = product_image_url($p['image'] ?? null);
 $secondImgRaw = array_key_exists('second_image', $p) ? $p['second_image'] : product_second_image($pid);
 $secondImg    = $secondImgRaw ? product_image_url($secondImgRaw) : null;
 $swatches     = array_key_exists('swatches', $p) ? $p['swatches'] : product_color_swatches($pid);
-$productUrl   = shop_url('product.php?slug=' . urlencode($p['slug']));
+$productUrl   = route('product', ['slug' => $p['slug']]);
 ?>
-<div class="product-card" data-product-id="<?= $pid ?>" style="position:relative;">
+<div class="product-card" data-product-id="<?= $pid ?>">
   <!-- Wishlist Heart Button -->
   <button type="button"
-          class="btn-wishlist card-wishlist-btn position-absolute top-0 end-0 m-2"
-          style="z-index: 5;"
+          class="product-card-wishlist"
           data-wishlist-btn="<?= $pid ?>"
           aria-label="Save to wishlist"
           title="Save to wishlist">
-    <i class="bi bi-heart"></i>
+    <?= icon('heart') ?>
   </button>
-  <a href="<?= e($productUrl) ?>" class="product-img-wrap" aria-label="<?= e($p['name']) ?>">
+
+  <a href="<?= e($productUrl) ?>" class="product-card-media" aria-label="<?= e($p['name']) ?>">
     <!-- Primary Image -->
     <img src="<?= e($primaryImg) ?>"
          alt="<?= e($p['name']) ?>"
-         class="product-img-primary"
+         class="product-card-img product-img-primary"
          loading="lazy"
          width="320"
          height="400">
@@ -46,66 +46,68 @@ $productUrl   = shop_url('product.php?slug=' . urlencode($p['slug']));
     <?php if ($secondImg): ?>
       <img src="<?= e($secondImg) ?>"
            alt="<?= e($p['name']) ?> - alternate view"
-           class="product-img-hover"
+           class="product-card-img product-img-hover"
            loading="lazy"
            width="320"
            height="400">
     <?php endif; ?>
 
     <!-- Badges Container -->
-    <div class="card-badge-container">
+    <div class="product-card-badge">
       <?php if ($isSoldOut): ?>
-        <span class="card-badge badge-sold-out">Sold out</span>
+        <span class="badge badge-outline">Sold out</span>
       <?php elseif ($onSale && $showSaleBadge && $discount > 0): ?>
-        <span class="card-badge badge-sale">&minus;<?= $discount ?>%</span>
+        <span class="badge badge-sale">&minus;<?= $discount ?>%</span>
       <?php elseif ($isLowStock && $showLowBadge): ?>
-        <span class="card-badge badge-low-stock">Only <?= $stock ?> left</span>
+        <span class="badge badge-low-stock">Only <?= $stock ?> left</span>
       <?php endif; ?>
 
       <?php if (!empty($p['featured'])): ?>
-        <span class="card-badge badge-featured"><i class="bi bi-star-fill text-warning me-1"></i>Featured</span>
+        <span class="badge badge-new"><?= icon('star') ?> Featured</span>
       <?php endif; ?>
     </div>
-
-    <!-- Quick Add button for simple in-stock products -->
-    <?php if ($isSimple && !$isSoldOut): ?>
-      <button type="button"
-              class="btn btn-editorial-primary btn-sm card-quick-add"
-              data-quick-add="<?= $pid ?>"
-              aria-label="Quick add <?= e($p['name']) ?> to cart">
-        <i class="bi bi-plus-lg me-1"></i> Quick Add
-      </button>
-    <?php endif; ?>
   </a>
 
-  <div class="product-body">
+  <div class="product-card-body">
     <?php if (!empty($p['category_name'])): ?>
-      <div class="product-cat"><?= e($p['category_name']) ?></div>
+      <div class="product-card-category"><?= e($p['category_name']) ?></div>
     <?php endif; ?>
 
-    <h3 class="product-name">
+    <h3 class="product-card-title">
       <a href="<?= e($productUrl) ?>"><?= e($p['name']) ?></a>
     </h3>
 
-    <div class="product-price">
-      <?php if ($onSale): ?>
-        <span class="price-sale"><?= e(price((float)$p['sale_price'])) ?></span>
-        <span class="price-old"><?= e(price((float)$p['price'])) ?></span>
-      <?php else: ?>
-        <span><?= e(price((float)$p['price'])) ?></span>
+    <div class="product-card-footer">
+      <div class="price-wrap">
+        <?php if ($onSale): ?>
+          <span class="price-current text-sale"><?= e(price((float)$p['sale_price'])) ?></span>
+          <span class="price-strike"><?= e(price((float)$p['price'])) ?></span>
+        <?php else: ?>
+          <span class="price-current"><?= e(price((float)$p['price'])) ?></span>
+        <?php endif; ?>
+      </div>
+
+      <!-- Quick Add button for simple in-stock products -->
+      <?php if ($isSimple && !$isSoldOut): ?>
+        <button type="button"
+                class="btn btn-secondary btn-sm"
+                data-quick-add="<?= $pid ?>"
+                aria-label="Quick add <?= e($p['name']) ?> to cart">
+          + Add
+        </button>
       <?php endif; ?>
     </div>
 
     <!-- Swatch Dots -->
     <?php if (!empty($swatches)): ?>
-      <div class="card-swatches" aria-label="Available colors">
+      <div class="swatch-group mt-2" aria-label="Available colors">
         <?php foreach (array_slice($swatches, 0, 5) as $sw): ?>
-          <span class="swatch-dot"
+          <span class="swatch-color-circle"
                 style="background-color: <?= e($sw['swatch_hex'] ?: '#e0e0e0') ?>"
                 title="<?= e($sw['value']) ?>"></span>
         <?php endforeach; ?>
         <?php if (count($swatches) > 5): ?>
-          <span class="swatch-more">&plus;<?= count($swatches) - 5 ?></span>
+          <span class="small text-muted">&plus;<?= count($swatches) - 5 ?></span>
         <?php endif; ?>
       </div>
     <?php endif; ?>

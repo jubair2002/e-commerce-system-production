@@ -1,23 +1,13 @@
 <?php
 /**
- * Product Detail Page (Prompt 04).
- * Editorial, restrained, responsive.
- * Features:
- * - Vertical desktop / horizontal mobile thumbnail gallery
- * - Click-to-zoom vanilla lightbox
- * - Dynamic option pickers (Buttons for size, Swatches for color, Dropdowns for others)
- * - Live real-time availability sync (Prompt 03 availability.js integration)
- * - Quantity stepper + Add to Cart + Buy Now
- * - Delivery estimate from shipping_methods
- * - Accordion tabs (Description, Specifications, Shipping & Returns)
- * - Related products & Recently viewed section
- * - JSON-LD Schema & OpenGraph meta tags
+ * Product Detail Page (Phase C).
+ * Editorial, restrained, modern, responsive.
  */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $slug = trim((string)($_GET['slug'] ?? ''));
 if ($slug === '') {
-    header('Location: ' . shop_url('shop.php'));
+    header('Location: ' . route('shop'));
     exit;
 }
 
@@ -42,16 +32,16 @@ if (!$product) {
     $pageTitle = 'Product Not Found';
     include __DIR__ . '/../../includes/partials/header.php';
     ?>
-    <section class="section">
+    <section class="section-py">
       <div class="container">
-        <div class="empty-state-card">
-          <div class="empty-state-icon"><i class="bi bi-box-seam"></i></div>
-          <h2>Product Not Found</h2>
-          <p>The product you are looking for has been moved or is no longer available.</p>
-          <a href="<?= e(shop_url('shop.php')) ?>" class="btn btn-editorial-primary">
-            Browse All Products
-          </a>
-        </div>
+        <?php
+        $emptyIcon = 'bag';
+        $emptyTitle = 'Product Not Found';
+        $emptyMessage = 'The product you are looking for has been moved or is no longer available.';
+        $emptyActionUrl = route('shop');
+        $emptyActionLabel = 'Browse All Products';
+        include __DIR__ . '/../../includes/partials/empty_state.php';
+        ?>
       </div>
     </section>
     <?php
@@ -88,6 +78,48 @@ $currentStock = product_available_qty($productId);
 $inStock      = $currentStock > 0;
 $deliveryEst  = shipping_delivery_estimate();
 
+// Reviews Data
+$reviews = [];
+$ratingCounts = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+$avgRating = (float)($product['rating_avg'] ?? 0.0);
+$totalReviews = (int)($product['rating_count'] ?? 0);
+
+try {
+    $stmtRev = $pdo->prepare("
+        SELECT * FROM product_reviews 
+        WHERE product_id = ? AND status = 'approved' 
+        ORDER BY id DESC
+    ");
+    $stmtRev->execute([$productId]);
+    $reviews = $stmtRev->fetchAll();
+    foreach ($reviews as $rev) {
+        $rVal = min(5, max(1, (int)$rev['rating']));
+        $ratingCounts[$rVal]++;
+    }
+    if ($totalReviews === 0 && !empty($reviews)) {
+        $totalReviews = count($reviews);
+        $avgRating = array_sum(array_column($reviews, 'rating')) / $totalReviews;
+    }
+} catch (Throwable $e) {}
+
+// Size guide content from pages table
+$sizeGuideSlug = setting('size_guide_page_slug', 'size-guide');
+$sizeGuidePage = null;
+if (!empty($sizeGuideSlug)) {
+    try {
+        $stSg = $pdo->prepare("SELECT title, content FROM pages WHERE slug = ? AND status = 'published' LIMIT 1");
+        $stSg->execute([$sizeGuideSlug]);
+        $sizeGuidePage = $stSg->fetch();
+    } catch (Throwable $e) {}
+}
+
+// BD Districts data
+$bdDistricts = [];
+$bdDistrictsFile = __DIR__ . '/../../includes/data/bd_districts.php';
+if (file_exists($bdDistrictsFile)) {
+    $bdDistricts = require $bdDistrictsFile;
+}
+
 // Related Products (same category)
 $related = [];
 if (!empty($product['category_id'])) {
@@ -110,349 +142,524 @@ if (!empty($product['category_id'])) {
     } catch (Throwable $e) { $related = []; }
 }
 
+// Breadcrumbs
+$breadcrumbs = [
+    ['label' => 'Shop', 'url' => route('shop')],
+];
+if (!empty($product['category_name']) && !empty($product['category_slug'])) {
+    $breadcrumbs[] = ['label' => $product['category_name'], 'url' => route('category', ['slug' => $product['category_slug']])];
+}
+$breadcrumbs[] = ['label' => $product['name'], 'url' => null];
+
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- OpenGraph & SEO JSON-LD Tags -->
-<meta property="og:title" content="<?= e($product['name']) ?> · <?= e($siteName) ?>">
-<meta property="og:description" content="<?= e(strip_tags($product['short_description'] ?: $product['description'] ?: '')) ?>">
-<meta property="og:image" content="<?= e($mainImgUrl) ?>">
-<meta property="og:url" content="<?= e(shop_url('product.php?slug=' . urlencode($product['slug']))) ?>">
-<meta property="og:type" content="product">
-
+<!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org/",
   "@type": "Product",
-  "name": <?= json_encode($product['name'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>,
-  "image": <?= json_encode($mainImgUrl, JSON_UNESCAPED_SLASHES) ?>,
-  "description": <?= json_encode(strip_tags($product['short_description'] ?: $product['description'] ?: ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>,
-  "sku": <?= json_encode($product['sku'] ?? '', JSON_UNESCAPED_SLASHES) ?>,
+  "name": <?= json_encode($product['name']) ?>,
+  "image": <?= json_encode($mainImgUrl) ?>,
+  "description": <?= json_encode(strip_tags($product['short_description'] ?: $product['description'] ?: '')) ?>,
+  "sku": <?= json_encode($product['sku'] ?: (string)$productId) ?>,
   "offers": {
     "@type": "Offer",
-    "priceCurrency": <?= json_encode(setting('currency_code', 'BDT')) ?>,
-    "price": "<?= number_format(product_effective_price($product), 2, '.', '') ?>",
-    "availability": "https://schema.org/<?= $inStock ? 'InStock' : 'OutOfStock' ?>",
-    "url": <?= json_encode(shop_url('product.php?slug=' . urlencode($product['slug'])), JSON_UNESCAPED_SLASHES) ?>
+    "url": <?= json_encode(route('product', ['slug' => $product['slug']])) ?>,
+    "priceCurrency": "BDT",
+    "price": <?= json_encode((float)($onSale ? $product['sale_price'] : $product['price'])) ?>,
+    "availability": "<?= $inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' ?>",
+    "itemCondition": "https://schema.org/NewCondition"
   }
+  <?php if ($totalReviews > 0): ?>,
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "<?= number_format($avgRating, 1) ?>",
+    "reviewCount": "<?= $totalReviews ?>"
+  }
+  <?php endif; ?>
 }
 </script>
 
-<section class="section py-4"
-         data-product-availability
-         data-product-id="<?= $productId ?>"
-         data-currency-symbol="<?= e(setting('currency_symbol', '')) ?>"
-         data-poll-seconds="<?= (int)setting('realtime_poll_seconds', '10') ?>"
-         data-realtime-mode="<?= e(setting('realtime_mode', 'poll')) ?>"
-         data-uploads-url="<?= e(UPLOADS_URL . 'products/') ?>">
+<section class="section-py pt-4">
   <div class="container">
 
-    <!-- Screen Reader Live Announcer -->
-    <div id="availability-announcer" class="visually-hidden" aria-live="polite"></div>
+    <!-- Breadcrumb Navigation -->
+    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
 
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="pdp-breadcrumb">
-      <a href="<?= e(shop_url()) ?>">Home</a> &nbsp;/&nbsp;
-      <a href="<?= e(shop_url('shop.php')) ?>">Shop</a>
-      <?php if (!empty($product['category_name'])): ?>
-        &nbsp;/&nbsp; <a href="<?= e(shop_url('category.php?slug=' . urlencode($product['category_slug']))) ?>"><?= e($product['category_name']) ?></a>
-      <?php endif; ?>
-      &nbsp;/&nbsp; <span class="text-dark"><?= e($product['name']) ?></span>
-    </nav>
+    <div class="row g-6">
 
-    <!-- Main PDP Grid (Gallery + Details) -->
-    <div class="pdp-grid">
-
-      <!-- Left Column: Gallery -->
-      <div class="pdp-gallery-wrap">
-
-        <!-- Thumbnails Column -->
-        <?php if (count($gallery) > 1): ?>
-          <div class="gallery-thumbs-col" role="tablist" aria-label="Product thumbnails">
-            <?php foreach ($gallery as $idx => $gImg): ?>
-              <?php $thumbUrl = product_image_url($gImg['filename']); ?>
-              <button type="button"
-                      class="gallery-thumb-btn <?= $idx === 0 ? 'active' : '' ?>"
-                      data-full-img="<?= e($thumbUrl) ?>"
-                      role="tab"
-                      aria-label="View image <?= $idx + 1 ?>">
-                <img src="<?= e($thumbUrl) ?>" alt="<?= e($gImg['alt_text'] ?: $product['name']) ?>" loading="lazy">
-              </button>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-
-        <!-- Main Image Viewport -->
-        <div class="gallery-main-viewport" id="mainGalleryViewport" title="Click to zoom">
-          <img src="<?= e($mainImgUrl) ?>"
-               id="mainGalleryImg"
-               alt="<?= e($gallery[0]['alt_text'] ?? $product['name']) ?>"
-               loading="eager"
-               width="600"
-               height="750">
-        </div>
-
-      </div>
-
-      <!-- Right Column: Product Info & Purchase Actions -->
-      <div class="pdp-info-col">
-
-        <h1 class="pdp-title"><?= e($product['name']) ?></h1>
-
-        <!-- Price Block -->
-        <div class="pdp-price-row">
-          <span class="pdp-current-price <?= $onSale ? 'is-sale' : '' ?>" id="pdpPrice">
-            <?= e(price(product_effective_price($product))) ?>
-          </span>
-          <span class="pdp-old-price" id="pdpOldPrice" style="<?= $onSale ? '' : 'display:none;' ?>">
-            <?= e(price((float)$product['price'])) ?>
-          </span>
-          <?php if ($onSale && $discount > 0): ?>
-            <span class="pdp-sale-tag" id="pdpSaleBadge">&minus;<?= $discount ?>%</span>
-          <?php endif; ?>
-        </div>
-
-        <!-- Short Description -->
-        <?php if (!empty($product['short_description'])): ?>
-          <div class="pdp-short-desc">
-            <?= nl2br(e($product['short_description'])) ?>
-          </div>
-        <?php endif; ?>
-
-        <!-- Form for Add to Cart / Buy Now -->
-        <form method="post" action="<?= e(shop_url('cart.php')) ?>" id="pdpAddToCartForm">
-          <input type="hidden" name="action" value="add">
-          <input type="hidden" name="product_id" value="<?= $productId ?>">
-          <input type="hidden" name="variant_id" id="selectedVariantId" value="">
-
-          <!-- Option Pickers (Size, Color, etc.) -->
-          <?php if ($isVariable && !empty($options)): ?>
-            <div class="pdp-options-wrap">
-              <?php foreach ($options as $opt): ?>
-                <?php
-                $optName     = $opt['name'];
-                $displayType = $opt['display_type']; // 'button', 'color', 'dropdown'
-                $isColor     = ($displayType === 'color' || strtolower($optName) === 'color' || strtolower($optName) === 'colour');
-                ?>
-                <div class="option-group" data-option-id="<?= (int)$opt['id'] ?>">
-                  <div class="option-group-label">
-                    <span><?= e($optName) ?></span>
-                    <span class="option-selected-val" id="selectedValLabel_<?= (int)$opt['id'] ?>">Select <?= e($optName) ?></span>
-                  </div>
-
-                  <div class="option-values-row">
-                    <?php if ($displayType === 'dropdown'): ?>
-                      <select class="form-select option-dropdown-select option-select"
-                              data-option-id="<?= (int)$opt['id'] ?>"
-                              aria-label="<?= e($optName) ?>">
-                        <option value="">Choose <?= e($optName) ?>...</option>
-                        <?php foreach ($opt['values'] as $val): ?>
-                          <option value="<?= (int)$val['id'] ?>"><?= e($val['value']) ?></option>
-                        <?php endforeach; ?>
-                      </select>
-                    <?php elseif ($isColor): ?>
-                      <?php foreach ($opt['values'] as $val): ?>
-                        <button type="button"
-                                class="opt-swatch option-btn option-picker-btn"
-                                data-option-id="<?= (int)$opt['id'] ?>"
-                                data-value-id="<?= (int)$val['id'] ?>"
-                                data-value-name="<?= e($val['value']) ?>"
-                                style="background-color: <?= e($val['swatch_hex'] ?: '#e0e0e0') ?>"
-                                title="<?= e($val['value']) ?>"
-                                aria-label="<?= e($val['value']) ?>">
-                        </button>
-                      <?php endforeach; ?>
-                    <?php else: ?>
-                      <?php foreach ($opt['values'] as $val): ?>
-                        <button type="button"
-                                class="opt-btn option-btn option-picker-btn"
-                                data-option-id="<?= (int)$opt['id'] ?>"
-                                data-value-id="<?= (int)$val['id'] ?>"
-                                data-value-name="<?= e($val['value']) ?>">
-                          <?= e($val['value']) ?>
-                        </button>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
-                  </div>
-                </div>
+      <!-- Gallery Column -->
+      <div class="col-lg-7">
+        <div class="product-gallery">
+          <!-- Thumbnails -->
+          <?php if (count($gallery) > 1): ?>
+            <div class="gallery-thumbs" aria-label="Product thumbnails">
+              <?php foreach ($gallery as $idx => $img): ?>
+                <?php $thumbUrl = product_image_url($img['filename']); ?>
+                <button type="button"
+                        class="thumb-btn <?= $idx === 0 ? 'is-active' : '' ?>"
+                        data-gallery-thumb="<?= e($thumbUrl) ?>"
+                        data-thumb-index="<?= $idx ?>"
+                        aria-label="View image <?= $idx + 1 ?>">
+                  <img src="<?= e($thumbUrl) ?>" alt="" loading="lazy">
+                </button>
               <?php endforeach; ?>
             </div>
           <?php endif; ?>
 
-          <!-- Live Availability Status Line -->
-          <div class="pdp-stock-status" id="stockStatusContainer">
-            <span class="status-dot in_stock" id="stockStatusDot"></span>
-            <span id="stockStatusText">
-              <?php if ($inStock): ?>
-                In stock &bull; Ready to ship
-              <?php else: ?>
-                Out of stock
-              <?php endif; ?>
-            </span>
+          <!-- Main Hero Image -->
+          <div class="gallery-main" id="mainGalleryContainer">
+            <img src="<?= e($mainImgUrl) ?>"
+                 id="mainProductImage"
+                 alt="<?= e($product['name']) ?>"
+                 loading="eager"
+                 fetchpriority="high"
+                 data-zoom-src="<?= e($mainImgUrl) ?>">
+
+            <?php if ($onSale && $discount > 0): ?>
+              <span class="badge badge-sale position-absolute" style="top: 16px; left: 16px;">
+                &minus;<?= $discount ?>% OFF
+              </span>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buy Box Column -->
+      <div class="col-lg-5">
+        <div class="sticky-buy-box">
+          
+          <?php if (!empty($product['category_name'])): ?>
+            <div class="text-muted small text-uppercase fw-semibold mb-1" style="letter-spacing: 0.05em;">
+              <a href="<?= e(route('category', ['slug' => $product['category_slug']])) ?>" class="text-muted">
+                <?= e($product['category_name']) ?>
+              </a>
+            </div>
+          <?php endif; ?>
+
+          <h1 class="display-serif fs-2xl mb-2"><?= e($product['name']) ?></h1>
+
+          <!-- Rating Stars & Summary -->
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="rating-summary" title="<?= number_format($avgRating, 1) ?> out of 5 stars">
+              <div class="rating-stars" aria-hidden="true">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                  <?= icon($avgRating >= $i ? 'star' : 'star-empty') ?>
+                <?php endfor; ?>
+              </div>
+              <span class="rating-score"><?= number_format($avgRating, 1) ?></span>
+              <a href="#reviewsSection" class="text-muted small text-decoration-underline">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
+            </div>
+            <?php if ($sizeGuidePage): ?>
+              <button type="button" class="btn btn-ghost btn-sm text-decoration-underline p-0" data-modal-open="sizeGuideModal">
+                Size Guide
+              </button>
+            <?php endif; ?>
           </div>
 
-          <!-- Just Sold Out Notice -->
-          <div class="just-sold-out-alert" id="justSoldOutAlert" role="alert">
-            <i class="bi bi-exclamation-circle me-1"></i>
-            This combination just sold out while you were looking.
+          <!-- Price Presentation -->
+          <div class="price-wrap mb-4">
+            <?php if ($onSale): ?>
+              <span class="price-current fs-xl text-sale" id="pdpPrice"><?= e(price((float)$product['sale_price'])) ?></span>
+              <span class="price-strike fs-md" id="pdpOldPrice"><?= e(price((float)$product['price'])) ?></span>
+              <span class="badge badge-sale">&minus;<?= $discount ?>%</span>
+            <?php else: ?>
+              <span class="price-current fs-xl" id="pdpPrice"><?= e(price((float)$product['price'])) ?></span>
+            <?php endif; ?>
           </div>
 
-          <!-- Quantity Stepper & CTA Buttons -->
-          <div class="pdp-purchase-actions">
-            <div class="pdp-qty-row">
-              <div class="pdp-stepper">
-                <button type="button" class="step-btn" id="pdpQtyDec" aria-label="Decrease quantity">&minus;</button>
-                <input type="number"
-                       name="quantity"
-                       id="pdpQtyInput"
-                       class="step-input"
-                       value="1"
-                       min="1"
-                       max="<?= $currentStock > 0 ? $currentStock : 99 ?>"
-                       aria-label="Quantity">
-                <button type="button" class="step-btn" id="pdpQtyInc" aria-label="Increase quantity">&plus;</button>
+          <?php if (!empty($product['short_description'])): ?>
+            <p class="text-ink-2 mb-4 small" style="line-height: 1.6;">
+              <?= e($product['short_description']) ?>
+            </p>
+          <?php endif; ?>
+
+          <!-- Purchase Form -->
+          <form method="post" action="<?= e(route('cart')) ?>" id="pdpForm">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="product_id" value="<?= $productId ?>">
+            <input type="hidden" name="variant_id" id="selectedVariantId" value="">
+
+            <!-- Variable Option Pickers -->
+            <?php if ($isVariable && !empty($options)): ?>
+              <div class="pdp-options-wrapper mb-4">
+                <?php foreach ($options as $opt): ?>
+                  <?php
+                  $optNameLower = strtolower($opt['name']);
+                  $isColor = in_array($optNameLower, ['color', 'colour']) || ($opt['display_type'] ?? '') === 'color';
+                  ?>
+                  <div class="form-group mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                      <span><?= e($opt['name']) ?>: <strong id="selectedLabel_<?= (int)$opt['id'] ?>">—</strong></span>
+                    </label>
+                    <div class="swatch-group">
+                      <?php foreach ($opt['values'] as $val): ?>
+                        <?php if ($isColor): ?>
+                          <button type="button"
+                                  class="swatch-color-circle option-picker-btn"
+                                  data-option-id="<?= (int)$opt['id'] ?>"
+                                  data-value-id="<?= (int)$val['id'] ?>"
+                                  data-value-name="<?= e($val['value']) ?>"
+                                  style="background-color: <?= e($val['swatch_hex'] ?: '#e0e0e0') ?>;"
+                                  title="<?= e($val['value']) ?>"
+                                  aria-label="<?= e($val['value']) ?>">
+                          </button>
+                        <?php else: ?>
+                          <button type="button"
+                                  class="swatch-btn option-picker-btn"
+                                  data-option-id="<?= (int)$opt['id'] ?>"
+                                  data-value-id="<?= (int)$val['id'] ?>"
+                                  data-value-name="<?= e($val['value']) ?>">
+                            <?= e($val['value']) ?>
+                          </button>
+                        <?php endif; ?>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+
+            <!-- Live Availability Status Line -->
+            <div class="d-flex align-items-center gap-2 mb-3 small" id="stockStatusContainer">
+              <span class="badge <?= $inStock ? 'badge-stock' : 'badge-outline' ?>" id="stockStatusBadge">
+                <?= $inStock ? '● In Stock' : 'Out of Stock' ?>
+              </span>
+              <span class="text-muted" id="stockStatusText">
+                <?= $inStock ? 'Ready for fast dispatch' : 'Currently sold out' ?>
+              </span>
+            </div>
+
+            <!-- Actions: Stepper + Add to Cart + Wishlist -->
+            <div class="d-flex gap-2 mb-3">
+              <div class="quantity-stepper">
+                <button type="button" class="stepper-btn" id="pdpQtyDec" aria-label="Decrease quantity">−</button>
+                <input type="number" name="quantity" id="pdpQtyInput" class="stepper-input" value="1" min="1" max="<?= max(1, $currentStock) ?>" aria-label="Quantity">
+                <button type="button" class="stepper-btn" id="pdpQtyInc" aria-label="Increase quantity">+</button>
               </div>
 
-              <!-- Add to Cart -->
-              <button type="submit"
-                      name="action_type"
-                      value="add_to_cart"
-                      class="btn btn-editorial-primary pdp-add-btn flex-grow-1"
-                      id="pdpAddBtn"
-                      <?= !$inStock ? 'disabled' : '' ?>>
-                <i class="bi bi-bag me-1"></i> Add to Cart
+              <button type="submit" name="action_type" value="add_to_cart" class="btn btn-primary flex-grow-1" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
+                <?= icon('bag') ?> Add to Cart
               </button>
 
-              <!-- Wishlist Heart Button -->
-              <button type="button"
-                      class="btn-wishlist pdp-wishlist-btn flex-shrink-0"
-                      data-wishlist-btn="<?= (int)$product['id'] ?>"
-                      style="width: 44px; height: 44px; font-size: 19px;"
-                      aria-label="Save to wishlist"
-                      title="Save to wishlist">
-                <i class="bi bi-heart"></i>
+              <button type="button" class="btn btn-secondary btn-icon" data-wishlist-btn="<?= $productId ?>" aria-label="Save to wishlist" title="Save to wishlist">
+                <?= icon('heart') ?>
               </button>
             </div>
 
-            <!-- Buy Now Button (Direct to Checkout) -->
-            <button type="submit"
-                    name="action_type"
-                    value="buy_now"
-                    class="btn btn-editorial-secondary pdp-buy-now-btn"
-                    id="pdpBuyNowBtn"
-                    <?= !$inStock ? 'disabled' : '' ?>>
+            <button type="submit" name="action_type" value="buy_now" class="btn btn-secondary btn-w-full mb-4" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
               Buy Now with COD
             </button>
+          </form>
+
+          <!-- District Delivery Estimator -->
+          <div class="card p-3 mb-4 bg-soft" style="border: 1px dashed var(--line-strong);">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-semibold d-flex align-items-center gap-1">
+                <?= icon('truck') ?> Delivery Estimate
+              </span>
+              <span class="small text-ok fw-bold" id="districtFee">৳60</span>
+            </div>
+            <div class="d-flex gap-2">
+              <select id="districtSelect" class="form-select form-select-sm">
+                <?php foreach ($bdDistricts as $dist): ?>
+                  <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= $dist['name'] === 'Dhaka' ? 'selected' : '' ?>>
+                    <?= e($dist['name']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="small text-muted mt-2" id="districtEtaText">
+              Estimated delivery: <strong>24–48 hours</strong> inside Dhaka.
+            </div>
           </div>
 
-        </form>
+          <!-- Product Details Accordion -->
+          <div class="accordion-group mb-4">
+            <div class="accordion-item is-open">
+              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="true">
+                <span>Description</span>
+                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
+              </button>
+              <div class="accordion-content" style="max-height: 500px;">
+                <div class="accordion-body">
+                  <?= nl2br(e($product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials.')) ?>
+                </div>
+              </div>
+            </div>
 
-        <!-- Meta Strip: SKU & Delivery -->
-        <div class="pdp-meta-strip">
-          <div class="pdp-meta-item">
-            <i class="bi bi-upc-scan"></i>
-            <span>SKU: <code id="pdpSku"><?= e($product['sku'] ?: '—') ?></code></span>
+            <div class="accordion-item">
+              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="false">
+                <span>Specifications</span>
+                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
+              </button>
+              <div class="accordion-content">
+                <div class="accordion-body">
+                  <ul class="d-flex flex-column gap-2">
+                    <li><strong>Product Type:</strong> <?= ucfirst($product['product_type']) ?></li>
+                    <li><strong>SKU:</strong> <?= e($product['sku'] ?: '—') ?></li>
+                    <li><strong>Origin:</strong> Crafted & Quality Verified in Bangladesh</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-toggle" data-accordion-toggle aria-expanded="false">
+                <span>Shipping &amp; Returns</span>
+                <span class="accordion-icon"><?= icon('chevron-down') ?></span>
+              </button>
+              <div class="accordion-content">
+                <div class="accordion-body">
+                  We offer nationwide Cash on Delivery. Open parcel inspection is permitted upon delivery. Easy 3-day exchanges for sizing or defect issues.
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="pdp-meta-item">
-            <i class="bi bi-truck"></i>
-            <span>Estimated Delivery: <strong><?= e($deliveryEst) ?></strong> nationwide</span>
-          </div>
-          <div class="pdp-meta-item">
-            <i class="bi bi-shield-check"></i>
-            <span>Payment: <strong>Cash on Delivery (COD)</strong> at doorstep</span>
-          </div>
+
         </div>
-
-        <!-- Accordion Tabs -->
-        <div class="pdp-accordions">
-          <!-- Tab 1: Description -->
-          <div class="pdp-accordion-item">
-            <button type="button" class="accordion-trigger" aria-expanded="true">
-              <span>Product Description</span>
-              <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="accordion-panel show">
-              <?= nl2br(e($product['description'] ?: $product['short_description'] ?: 'No detailed description available.')) ?>
-            </div>
-          </div>
-
-          <!-- Tab 2: Specifications -->
-          <div class="pdp-accordion-item">
-            <button type="button" class="accordion-trigger" aria-expanded="false">
-              <span>Details &amp; Specifications</span>
-              <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="accordion-panel">
-              <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
-                <li><strong>Product Type:</strong> <?= ucfirst($product['product_type']) ?></li>
-                <?php if (!empty($product['category_name'])): ?>
-                  <li><strong>Category:</strong> <?= e($product['category_name']) ?></li>
-                <?php endif; ?>
-                <li><strong>Inventory Tracking:</strong> <?= !empty($product['track_inventory']) ? 'Live Database Monitored' : 'Available' ?></li>
-                <li><strong>Country of Origin:</strong> Locally sourced &amp; quality inspected</li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Tab 3: Shipping & Returns -->
-          <div class="pdp-accordion-item">
-            <button type="button" class="accordion-trigger" aria-expanded="false">
-              <span>Shipping &amp; Returns</span>
-              <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="accordion-panel">
-              <p class="small mb-2">
-                We offer seamless Cash on Delivery across the country. You can inspect your package upon delivery before completing payment.
-              </p>
-              <p class="small mb-0">
-                If there are any issues with size, fit, or defects, contact customer service within 3 days for an immediate replacement or return.
-              </p>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div>
 
-    <!-- Related Products Section -->
-    <?php if (!empty($related)): ?>
-      <section class="section pt-5 border-top">
-        <div class="section-header mb-4">
-          <span class="section-eyebrow">Complementary</span>
-          <h2 class="section-title">You Might Also Like</h2>
+    <!-- =================== REVIEWS SECTION =================== -->
+    <section class="section-py border-top mt-6" id="reviewsSection">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-6">
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Customer Feedback</span>
+          <h2 class="display-serif mt-1">Customer Reviews (<?= $totalReviews ?>)</h2>
         </div>
-        <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4">
-          <?php foreach ($related as $p): ?>
-            <div class="col">
-              <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
+        <button type="button" class="btn btn-primary" data-modal-open="writeReviewModal">
+          Write a Review
+        </button>
+      </div>
+
+      <div class="row g-6">
+        <!-- Review Breakdown Column -->
+        <div class="col-lg-4">
+          <div class="card p-6 bg-soft text-center">
+            <div class="fs-hero fw-bold text-ink mb-1"><?= number_format($avgRating, 1) ?></div>
+            <div class="rating-stars justify-content-center mb-2" aria-hidden="true">
+              <?php for ($i = 1; $i <= 5; $i++): ?>
+                <?= icon($avgRating >= $i ? 'star' : 'star-empty') ?>
+              <?php endfor; ?>
             </div>
+            <p class="small text-muted mb-4">Based on <?= $totalReviews ?> verified review<?= $totalReviews === 1 ? '' : 's' ?></p>
+
+            <!-- Star breakdown bars -->
+            <div class="d-flex flex-column gap-2 text-start">
+              <?php for ($s = 5; $s >= 1; $s--): ?>
+                <?php $pct = $totalReviews > 0 ? round(($ratingCounts[$s] / $totalReviews) * 100) : 0; ?>
+                <div class="d-flex align-items-center gap-2 small">
+                  <span style="width: 50px;" class="text-muted"><?= $s ?> star</span>
+                  <div class="flex-grow-1 bg-white rounded-pill overflow-hidden border" style="height: 8px;">
+                    <div class="h-100 bg-dark" style="width: <?= $pct ?>%;"></div>
+                  </div>
+                  <span style="width: 30px;" class="text-end text-muted"><?= $pct ?>%</span>
+                </div>
+              <?php endfor; ?>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews List Column -->
+        <div class="col-lg-8">
+          <?php if (empty($reviews)): ?>
+            <div class="card p-6 text-center text-muted">
+              <?= icon('star') ?>
+              <h4 class="mt-2 mb-1">No reviews yet</h4>
+              <p class="small mb-3">Be the first to share your experience with this item.</p>
+              <button type="button" class="btn btn-secondary btn-sm mx-auto" data-modal-open="writeReviewModal">Write the First Review</button>
+            </div>
+          <?php else: ?>
+            <div class="d-flex flex-column gap-4">
+              <?php foreach ($reviews as $rev): ?>
+                <div class="card p-4">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="fw-semibold text-ink"><?= e($rev['author_name']) ?></span>
+                      <?php if (!empty($rev['order_id'])): ?>
+                        <span class="badge badge-stock">Verified Buyer</span>
+                      <?php endif; ?>
+                    </div>
+                    <span class="text-muted small"><?= e(date('M d, Y', strtotime($rev['created_at']))) ?></span>
+                  </div>
+
+                  <div class="rating-stars mb-2" aria-hidden="true">
+                    <?php for ($i = 1; $i <= (int)$rev['rating']; $i++): ?>
+                      <?= icon('star') ?>
+                    <?php endfor; ?>
+                  </div>
+
+                  <h5 class="fw-semibold mb-2"><?= e($rev['title']) ?></h5>
+                  <p class="small text-ink-2 mb-0" style="line-height: 1.6;"><?= nl2br(e($rev['body'])) ?></p>
+
+                  <?php if (!empty($rev['admin_reply'])): ?>
+                    <div class="p-3 mt-3 bg-soft rounded border-start border-3 border-dark small">
+                      <div class="fw-bold mb-1">Official Response:</div>
+                      <?= nl2br(e($rev['admin_reply'])) ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </section>
+
+    <!-- Related Products -->
+    <?php if (!empty($related)): ?>
+      <section class="section-py pt-0 border-top mt-6">
+        <div class="d-flex justify-content-between align-items-end mb-6">
+          <div>
+            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Complementary</span>
+            <h2 class="display-serif mt-1">You Might Also Like</h2>
+          </div>
+        </div>
+        <div class="product-grid">
+          <?php foreach ($related as $p): ?>
+            <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
           <?php endforeach; ?>
         </div>
       </section>
     <?php endif; ?>
 
-    <!-- Recently Viewed Section (populated dynamically via localStorage + API) -->
-    <section class="recently-viewed-section" id="recentlyViewedSection" style="display:none;">
-      <div class="section-header mb-4">
-        <span class="section-eyebrow">History</span>
-        <h2 class="section-title">Recently Viewed</h2>
-      </div>
-      <div class="row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4" id="recentlyViewedGrid"></div>
-    </section>
-
   </div>
 </section>
 
-<!-- Vanilla Lightbox Modal -->
-<div class="lightbox-modal" id="lightboxModal" role="dialog" aria-modal="true" aria-label="Zoom image">
-  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Close zoom">
-    <i class="bi bi-x-lg"></i>
+<!-- Sticky Mobile Add to Cart Bar -->
+<div class="mobile-sticky-atc" id="mobileStickyBar">
+  <div class="d-flex align-items-center gap-2">
+    <img src="<?= e($mainImgUrl) ?>" alt="" style="width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-sm);">
+    <div>
+      <div class="fw-semibold small text-truncate" style="max-width: 140px;"><?= e($product['name']) ?></div>
+      <div class="fw-bold price-current small"><?= e(price((float)($onSale ? $product['sale_price'] : $product['price']))) ?></div>
+    </div>
+  </div>
+  <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('pdpAddBtn').click();">
+    <?= icon('bag') ?> Add to Cart
   </button>
-  <img src="<?= e($mainImgUrl) ?>" id="lightboxImg" class="lightbox-img" alt="Zoomed product view">
 </div>
 
-<!-- Prompt 03 Real-Time Availability Client Module -->
+<!-- Size Guide Modal -->
+<?php if ($sizeGuidePage): ?>
+  <div class="shop-modal" id="sizeGuideModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title fs-base"><?= e($sizeGuidePage['title']) ?></h3>
+        <button type="button" class="drawer-close" data-modal-close aria-label="Close size guide">
+          <?= icon('x') ?>
+        </button>
+      </div>
+      <div class="modal-body content-readable-column">
+        <?= $sizeGuidePage['content'] ?>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
+<!-- Write Review Modal -->
+<div class="shop-modal" id="writeReviewModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title fs-base">Write a Review for <?= e($product['name']) ?></h3>
+      <button type="button" class="drawer-close" data-modal-close aria-label="Close review modal">
+        <?= icon('x') ?>
+      </button>
+    </div>
+    <form id="writeReviewForm" method="post" action="<?= e(url('api/review.php')) ?>" class="modal-body">
+      <?= csrf_field() ?>
+      <input type="hidden" name="product_id" value="<?= $productId ?>">
+      <input type="hidden" name="form_time" value="<?= time() ?>">
+      <div style="display:none;"><input type="text" name="website_hp" value=""></div>
+
+      <div class="form-group mb-3">
+        <label class="form-label">Overall Rating <span class="text-danger">*</span></label>
+        <div class="d-flex gap-2">
+          <?php for ($s = 5; $s >= 1; $s--): ?>
+            <label class="d-flex align-items-center gap-1 small border p-2 rounded cursor-pointer">
+              <input type="radio" name="rating" value="<?= $s ?>" <?= $s === 5 ? 'checked' : '' ?>>
+              <span><?= $s ?> <?= icon('star') ?></span>
+            </label>
+          <?php endfor; ?>
+        </div>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="reviewAuthor" class="form-label">Your Name</label>
+        <input type="text" name="author_name" id="reviewAuthor" class="form-control" value="<?= e(function_exists('customer_current') && customer_current() ? customer_current()['name'] : '') ?>" placeholder="e.g. John Doe">
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="reviewTitle" class="form-label">Review Headline <span class="text-danger">*</span></label>
+        <input type="text" name="title" id="reviewTitle" class="form-control" placeholder="e.g. Great quality and fits perfectly!" required maxlength="120">
+      </div>
+
+      <div class="form-group mb-4">
+        <label for="reviewBody" class="form-label">Review Description <span class="text-danger">*</span></label>
+        <textarea name="body" id="reviewBody" class="form-control" rows="4" placeholder="What did you like or dislike? How was the fit and material?" required minlength="10" maxlength="2000"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-w-full" id="submitReviewBtn">
+        Submit Review for Moderation
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+// District delivery rate & ETA calculator
+document.getElementById('districtSelect')?.addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  const isDhaka = opt.getAttribute('data-zone') === 'inside_dhaka';
+  const feeEl = document.getElementById('districtFee');
+  const etaEl = document.getElementById('districtEtaText');
+  if (isDhaka) {
+    if (feeEl) feeEl.textContent = '৳60';
+    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>24–48 hours</strong> inside Dhaka.';
+  } else {
+    if (feeEl) feeEl.textContent = '৳120';
+    if (etaEl) etaEl.innerHTML = 'Estimated delivery: <strong>48–72 hours</strong> outside Dhaka.';
+  }
+});
+
+// Review AJAX Submission
+document.getElementById('writeReviewForm')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitReviewBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const formData = new FormData(this);
+  fetch(this.action, {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = 'Submit Review for Moderation';
+    if (data.success) {
+      ShopUI.closeModal('writeReviewModal');
+      ShopUI.toast(data.message, 'success');
+      this.reset();
+    } else {
+      ShopUI.toast(data.error || 'Failed to submit review.', 'error');
+    }
+  })
+  .catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Submit Review for Moderation';
+    ShopUI.toast('Network error. Please try again.', 'error');
+  });
+});
+</script>
+
+<!-- Availability Client Module -->
 <script src="<?= e(url('assets/js/availability.js')) ?>"></script>
 
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

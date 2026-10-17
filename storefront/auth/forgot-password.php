@@ -9,7 +9,7 @@ header('X-Frame-Options: SAMEORIGIN');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 if (customer_current()) {
-    header('Location: ' . shop_url('account/'));
+    header('Location: ' . route('account'));
     exit;
 }
 
@@ -36,11 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="auth-page-wrapper">
-  <div class="auth-card">
-    <div class="auth-header text-center">
-      <h1 class="auth-title">Reset Password</h1>
-      <p class="auth-subtitle">Enter your email address and we will send you a link to reset your password.</p>
+<div class="auth-page-wrapper py-5">
+  <div class="auth-card mx-auto p-4 bg-white rounded-3 shadow-sm" style="max-width: 440px;">
+    <div class="auth-header text-center mb-4">
+      <h1 class="h3 fw-bold text-dark mb-2">Reset Password</h1>
+      <p class="text-muted small">Enter your email address and we will send you a link to reset your password.</p>
     </div>
 
     <?php if ($successMessage): ?>
@@ -50,7 +50,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <p class="small mb-0"><?= e($successMessage) ?></p>
       </div>
       <div class="d-grid gap-2">
-        <a href="<?= e(shop_url('login.php')) ?>" class="btn btn-editorial-primary">
+        <a href="<?= e(route('login')) ?>" class="btn btn-primary">
           Back to Sign In &rarr;
         </a>
       </div>
@@ -61,7 +61,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
       <?php endif; ?>
 
-      <form method="post" action="forgot_password.php" class="auth-form" novalidate id="forgotForm">
+      <form method="post" action="<?= e(route('forgot_password')) ?>" class="auth-form" novalidate id="forgotForm">
         <?= csrf_field() ?>
 
         <div class="form-group mb-3">
@@ -78,14 +78,14 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
 
         <div class="d-grid gap-2 mb-3">
-          <button type="submit" class="btn btn-editorial-primary">
+          <button type="submit" class="btn btn-primary py-2 fw-semibold">
             Send Reset Link
           </button>
         </div>
 
         <div class="text-center pt-2">
           <span class="small text-muted">Remember your password?</span>
-          <a href="<?= e(shop_url('login.php')) ?>" class="small fw-semibold ms-1 text-decoration-none text-dark">
+          <a href="<?= e(route('login')) ?>" class="small fw-semibold ms-1 text-decoration-none text-primary">
             Sign In &rarr;
           </a>
         </div>

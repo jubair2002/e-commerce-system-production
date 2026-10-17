@@ -1,0 +1,87 @@
+/* tabs.css: Navigation Tabs */
+.tabs-nav {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: var(--space-3) 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  position: relative;
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.tab-btn:hover {
+  color: var(--ink);
+}
+
+.tab-btn.is-active {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab-btn.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ink);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.is-active {
+  display: block;
+}
+
+/* accordion.css: Collapsible Accordion Panels */
+.accordion-group {
+  border-top: 1px solid var(--line);
+}
+
+.accordion-item {
+  border-bottom: 1px solid var(--line);
+}
+
+.accordion-toggle {
+  width: 100%;
+  padding: var(--space-4) 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+}
+
+.accordion-icon {
+  transition: transform var(--duration-normal) var(--ease);
+}
+
+.accordion-item.is-open .accordion-icon {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-normal) var(--ease);
+}
+
+.accordion-body {
+  padding-bottom: var(--space-4);
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
