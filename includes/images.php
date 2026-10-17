@@ -109,6 +109,89 @@ function image_get_variant(string $relPath, int $targetWidth, string $format = '
 }
 
 /**
+ * Upload hook that generates WebP responsive variants upon image upload:
+ * - thumbnail: 300w
+ * - card: 600w
+ * - detail: 1200w
+ * - zoom: 1800w
+ * Stored under /uploads/products/{id}/{size}_{filename}.webp
+ */
+function product_generate_responsive_variants(int $productId, string $sourceFilePath, string $baseFilename): array
+{
+    if (!extension_loaded('gd') || !function_exists('imagewebp')) {
+        return [];
+    }
+
+    if (!file_exists($sourceFilePath) || !is_file($sourceFilePath)) {
+        return [];
+    }
+
+    $info = @getimagesize($sourceFilePath);
+    if (!$info) {
+        return [];
+    }
+
+    $origW = $info[0];
+    $origH = $info[1];
+    $mime  = $info['mime'];
+
+    if ($origW <= 0 || $origH <= 0) {
+        return [];
+    }
+
+    $srcImg = null;
+    switch ($mime) {
+        case 'image/jpeg':
+            $srcImg = @imagecreatefromjpeg($sourceFilePath);
+            break;
+        case 'image/png':
+            $srcImg = @imagecreatefrompng($sourceFilePath);
+            break;
+        case 'image/webp':
+            $srcImg = @imagecreatefromwebp($sourceFilePath);
+            break;
+    }
+
+    if (!$srcImg) {
+        return [];
+    }
+
+    $productDir = UPLOADS_PATH . '/products/' . $productId;
+    if (!is_dir($productDir)) {
+        @mkdir($productDir, 0775, true);
+    }
+
+    $baseNameWithoutExt = pathinfo($baseFilename, PATHINFO_FILENAME);
+    $sizes = [
+        'thumbnail' => 300,
+        'card'      => 600,
+        'detail'    => 1200,
+        'zoom'      => 1800,
+    ];
+
+    $generated = [];
+    foreach ($sizes as $label => $targetW) {
+        $actualW = min($targetW, $origW);
+        $actualH = (int)round(($origH / $origW) * $actualW);
+
+        $dstImg = imagecreatetruecolor($actualW, $actualH);
+        imagealphablending($dstImg, false);
+        imagesavealpha($dstImg, true);
+        imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $actualW, $actualH, $origW, $origH);
+
+        $outFilename = "{$label}_{$baseNameWithoutExt}.webp";
+        $outPath = $productDir . '/' . $outFilename;
+        if (@imagewebp($dstImg, $outPath, 82)) {
+            $generated[$label] = "products/{$productId}/{$outFilename}";
+        }
+        imagedestroy($dstImg);
+    }
+
+    imagedestroy($srcImg);
+    return $generated;
+}
+
+/**
  * Generate a responsive <picture> or <img> tag.
  *
  * @param string $src Relative file path (e.g. 'products/abc.jpg') or absolute URL

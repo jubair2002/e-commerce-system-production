@@ -4,6 +4,8 @@
  */
 require_once __DIR__ . '/polyfills.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/FileCache.php';
+require_once __DIR__ . '/images.php';
 
 // ----------------------------------------------------------------
 // Output / escaping
@@ -258,16 +260,25 @@ function clear_old(): void
 // ----------------------------------------------------------------
 // Settings (key/value table)
 // ----------------------------------------------------------------
+// Settings (key/value table cached at boot with 60 min TTL)
+// ----------------------------------------------------------------
 function &setting_cache(): array
 {
     static $cache = null;
     if ($cache === null) {
+        $cached = FileCache::get('settings:all');
+        if (is_array($cached)) {
+            $cache = $cached;
+            return $cache;
+        }
+
         $cache = [];
         try {
             $rows = db()->query('SELECT key_name, value FROM settings')->fetchAll();
             foreach ($rows as $r) {
                 $cache[$r['key_name']] = $r['value'];
             }
+            FileCache::set('settings:all', $cache, 3600); // 60 min TTL
         } catch (Throwable $e) {
             // Settings table may not exist yet during install.
         }
@@ -290,6 +301,7 @@ function update_setting(string $key, string $value): void
     $stmt->execute([':k' => $key, ':v' => $value]);
     $cache = &setting_cache();
     $cache[$key] = $value;
+    FileCache::delete('settings:all');
 }
 
 /**
@@ -556,11 +568,25 @@ function upload_error_message(int $code): string
     return 'Unknown upload error.';
 }
 
-/** Return URL to product image (or a placeholder). */
-function product_image_url(?string $image): string
+/** Return URL to product image (or a placeholder), with support for pre-generated responsive WebP variants. */
+function product_image_url(?string $image, string $size = 'full', ?int $productId = null): string
 {
     if (!empty($image)) {
         $clean = ltrim($image, '/');
+
+        // Check if pre-generated responsive variant exists when a specific size is requested
+        if ($size !== 'full') {
+            $baseName = pathinfo($clean, PATHINFO_FILENAME);
+            // 1. Check /uploads/products/{productId}/{size}_{baseName}.webp
+            if ($productId !== null && file_exists(UPLOADS_PATH . '/products/' . $productId . '/' . $size . '_' . $baseName . '.webp')) {
+                return UPLOADS_URL . 'products/' . $productId . '/' . $size . '_' . $baseName . '.webp';
+            }
+            // 2. Check /uploads/products/{size}_{baseName}.webp
+            if (file_exists(UPLOADS_PATH . '/products/' . $size . '_' . $baseName . '.webp')) {
+                return UPLOADS_URL . 'products/' . $size . '_' . $baseName . '.webp';
+            }
+        }
+
         // 1. In UPLOADS_PATH/products/
         if (file_exists(UPLOADS_PATH . '/products/' . $clean)) {
             return UPLOADS_URL . 'products/' . $clean;
@@ -693,5 +719,139 @@ function icon(string $name, string $class = '', string $title = ''): string
     }
 
     return '<svg class="' . e($cls) . '" ' . $aria . '>' . $titleHtml . '<use href="' . e($spriteUrl) . '#' . $safeName . '"></use></svg>';
+}
+
+/**
+ * Calculate pagination window of pages to display (default up to 15 pages).
+ * Returns array of elements: integers for page numbers, or string '...' for ellipsis.
+ */
+function pagination_window(int $currentPage, int $totalPages, int $maxOptions = 15): array
+{
+    if ($totalPages <= 1) {
+        return [];
+    }
+
+    if ($totalPages <= $maxOptions) {
+        return range(1, $totalPages);
+    }
+
+    $half = (int)floor($maxOptions / 2);
+    $start = max(1, $currentPage - $half);
+    $end = min($totalPages, $start + $maxOptions - 1);
+
+    if ($end - $start + 1 < $maxOptions) {
+        $start = max(1, $end - $maxOptions + 1);
+    }
+
+    $pages = [];
+    if ($start > 1) {
+        $pages[] = 1;
+        if ($start > 2) {
+            $pages[] = '...';
+        }
+    }
+
+    for ($i = $start; $i <= $end; $i++) {
+        if (!in_array($i, $pages, true)) {
+            $pages[] = $i;
+        }
+    }
+
+    if ($end < $totalPages) {
+        if ($end < $totalPages - 1) {
+            $pages[] = '...';
+        }
+        $pages[] = $totalPages;
+    }
+
+    return $pages;
+}
+
+/**
+ * Render Bootstrap pagination HTML with 1-15 windowed page options.
+ */
+function render_admin_pagination(int $currentPage, int $totalPages, array $queryParams = [], int $maxOptions = 15, string $pageParam = 'page'): string
+{
+    if ($totalPages <= 1) {
+        return '';
+    }
+
+    $window = pagination_window($currentPage, $totalPages, $maxOptions);
+    $html = '<nav aria-label="Table pagination"><ul class="pagination pagination-sm justify-content-center mb-0">';
+
+    // First & Prev buttons
+    if ($currentPage > 1) {
+        $firstUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => 1]));
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($firstUrl) . '" title="First Page">&laquo;&laquo;</a></li>';
+        $prevUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage - 1]));
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($prevUrl) . '">&laquo; Prev</a></li>';
+    } else {
+        $html .= '<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>';
+        $html .= '<li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>';
+    }
+
+    foreach ($window as $item) {
+        if ($item === '...') {
+            $html .= '<li class="page-item disabled"><span class="page-link">&hellip;</span></li>';
+        } elseif ((int)$item === $currentPage) {
+            $html .= '<li class="page-item active" aria-current="page"><span class="page-link">' . (int)$item . '</span></li>';
+        } else {
+            $url = '?' . http_build_query(array_merge($queryParams, [$pageParam => (int)$item]));
+            $html .= '<li class="page-item"><a class="page-link" href="' . e($url) . '">' . (int)$item . '</a></li>';
+        }
+    }
+
+    // Next & Last buttons
+    if ($currentPage < $totalPages) {
+        $nextUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage + 1]));
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($nextUrl) . '">Next &raquo;</a></li>';
+        $lastUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $totalPages]));
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($lastUrl) . '" title="Last Page">&raquo;&raquo;</a></li>';
+    } else {
+        $html .= '<li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>';
+        $html .= '<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>';
+    }
+
+    $html .= '</ul></nav>';
+    return $html;
+}
+
+/**
+ * Render storefront editorial pagination HTML with 1-15 windowed page options.
+ */
+function render_editorial_pagination(int $currentPage, int $totalPages, array $queryParams = [], int $maxOptions = 15, string $pageParam = 'page'): string
+{
+    if ($totalPages <= 1) {
+        return '';
+    }
+
+    $window = pagination_window($currentPage, $totalPages, $maxOptions);
+    $html = '<nav aria-label="Page navigation"><ul class="editorial-pagination">';
+
+    // Previous Button
+    if ($currentPage > 1) {
+        $prevUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage - 1]));
+        $html .= '<li><a href="' . e($prevUrl) . '" aria-label="Previous page">' . (function_exists('icon') ? icon('chevron-left') : '&lsaquo;') . '</a></li>';
+    }
+
+    foreach ($window as $item) {
+        if ($item === '...') {
+            $html .= '<li class="pagination-ellipsis"><span class="border-0">&hellip;</span></li>';
+        } elseif ((int)$item === $currentPage) {
+            $html .= '<li class="active"><span aria-current="page">' . (int)$item . '</span></li>';
+        } else {
+            $url = '?' . http_build_query(array_merge($queryParams, [$pageParam => (int)$item]));
+            $html .= '<li><a href="' . e($url) . '">' . (int)$item . '</a></li>';
+        }
+    }
+
+    // Next Button
+    if ($currentPage < $totalPages) {
+        $nextUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage + 1]));
+        $html .= '<li><a href="' . e($nextUrl) . '" aria-label="Next page">' . (function_exists('icon') ? icon('chevron-right') : '&rsaquo;') . '</a></li>';
+    }
+
+    $html .= '</ul></nav>';
+    return $html;
 }
 

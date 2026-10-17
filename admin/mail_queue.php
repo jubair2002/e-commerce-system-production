@@ -254,19 +254,9 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<?php if ($pages > 1): ?>
-  <nav class="mt-4">
-    <ul class="pagination justify-content-center">
-      <?php for ($i = 1; $i <= $pages; $i++): ?>
-        <li class="page-item <?= $page === $i ? 'active' : '' ?>">
-          <a class="page-link" href="<?= e(admin_url('mail_queue.php?' . http_build_query(array_merge($_GET, ['page' => $i])))) ?>">
-            <?= $i ?>
-          </a>
-        </li>
-      <?php endfor; ?>
-    </ul>
-  </nav>
-<?php endif; ?>
+<div class="mt-4">
+  <?= render_admin_pagination($page, $pages, $_GET, 15) ?>
+</div>
 
 <!-- View Rendered Body Modal -->
 <div class="modal fade" id="viewBodyModal" tabindex="-1">

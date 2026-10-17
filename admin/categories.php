@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 // Filters & pagination
 $search  = trim((string)($_GET['q']      ?? ''));
 $status  = trim((string)($_GET['status'] ?? ''));
-$perPage = max(5, (int) setting('items_per_page', '10'));
+$perPage = max(5, min(100, (int)($_GET['per_page'] ?? setting('items_per_page', '15'))));
 $page    = max(1, (int) ($_GET['page'] ?? 1));
 $offset  = ($page - 1) * $perPage;
 
@@ -127,15 +127,9 @@ include __DIR__ . '/includes/header.php';
       </table>
     </div>
 
-    <?php if ($pages > 1): $qs = $_GET; ?>
-      <nav class="mt-3"><ul class="pagination justify-content-end mb-0">
-        <?php for ($p = 1; $p <= $pages; $p++): $qs['page'] = $p; ?>
-          <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-            <a class="page-link" href="?<?= e(http_build_query($qs)) ?>"><?= $p ?></a>
-          </li>
-        <?php endfor; ?>
-      </ul></nav>
-    <?php endif; ?>
+    <div class="mt-3">
+      <?= render_admin_pagination($page, $pages, $_GET, 15) ?>
+    </div>
   </div>
 </div>
 

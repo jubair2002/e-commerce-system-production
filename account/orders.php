@@ -193,29 +193,7 @@ account_layout_start('orders', 'My Orders', $customer);
         <span class="small text-muted">
           Showing page <?= $page ?> of <?= $totalPages ?> (<?= $totalOrders ?> total)
         </span>
-        <nav aria-label="Order pages">
-          <ul class="pagination pagination-sm mb-0">
-            <?php if ($page > 1): ?>
-              <li class="page-item">
-                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . ($page - 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">&laquo; Prev</a>
-              </li>
-            <?php endif; ?>
-
-            <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
-              <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . $p . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">
-                  <?= $p ?>
-                </a>
-              </li>
-            <?php endfor; ?>
-
-            <?php if ($page < $totalPages): ?>
-              <li class="page-item">
-                <a class="page-link" href="<?= e(shop_url('account/orders.php?page=' . ($page + 1) . ($statusFilter ? '&status=' . $statusFilter : '') . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>">Next &raquo;</a>
-              </li>
-            <?php endif; ?>
-          </ul>
-        </nav>
+        <?= render_admin_pagination($page, $totalPages, $_GET, 15) ?>
       </div>
     <?php endif; ?>
   </div>

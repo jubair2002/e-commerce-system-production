@@ -13,9 +13,11 @@ if ($slug === '') {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT * FROM pages WHERE slug = :slug AND status = 'published' LIMIT 1");
-$stmt->execute([':slug' => $slug]);
-$page = $stmt->fetch();
+$page = FileCache::remember("pages:{$slug}", 3600, function () use ($pdo, $slug) {
+    $stmt = $pdo->prepare("SELECT id, title, slug, content, meta_title, meta_description, updated_at FROM pages WHERE slug = :slug AND status = 'published' LIMIT 1");
+    $stmt->execute([':slug' => $slug]);
+    return $stmt->fetch() ?: null;
+});
 
 if (!$page) {
     http_response_code(404);

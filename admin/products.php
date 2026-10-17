@@ -71,7 +71,7 @@ $status      = trim((string)($_GET['status'] ?? ''));
 $typeFilter  = trim((string)($_GET['type'] ?? ''));
 $stockFilter = trim((string)($_GET['stock_status'] ?? ''));
 $featured    = trim((string)($_GET['featured'] ?? ''));
-$perPage     = max(5, (int) setting('items_per_page', '10'));
+$perPage     = max(5, min(100, (int)($_GET['per_page'] ?? setting('items_per_page', '15'))));
 $page        = max(1, (int) ($_GET['page'] ?? 1));
 $offset      = ($page - 1) * $perPage;
 
@@ -109,14 +109,17 @@ if ($stockFilter === 'out') {
 
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-$countSql = "SELECT COUNT(*) FROM products p LEFT JOIN v_product_stock vps ON vps.product_id = p.id $whereSql";
+$countJoins = str_contains($whereSql, 'vps.') ? ' LEFT JOIN v_product_stock vps ON vps.product_id = p.id' : '';
+$countSql = "SELECT COUNT(p.id) FROM products p {$countJoins} {$whereSql}";
 $stmt = db()->prepare($countSql);
 $stmt->execute($params);
 $total = (int) $stmt->fetchColumn();
 $pages = max(1, (int) ceil($total / $perPage));
 
 $selectSql = "
-    SELECT p.*, c.name AS category_name,
+    SELECT p.id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
+           p.status, p.featured, p.product_type, p.low_stock_threshold,
+           c.name AS category_name,
            COALESCE(vps.total_stock, p.stock) AS calculated_stock,
            COALESCE(vps.variant_count, 1) AS variant_count
     FROM products p
@@ -216,6 +219,17 @@ include __DIR__ . '/includes/header.php';
               <?php endif; ?>
             </ul>
           </div>
+
+          <!-- Per-page selector -->
+          <label class="d-flex align-items-center gap-1 ms-3 mb-0 small text-muted">
+            <span>Per page:</span>
+            <select class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="const url = new URL(window.location.href); url.searchParams.set('per_page', this.value); url.searchParams.set('page', 1); window.location.href = url.toString();">
+              <option value="15" <?= $perPage === 15 ? 'selected' : '' ?>>15</option>
+              <option value="25" <?= $perPage === 25 ? 'selected' : '' ?>>25</option>
+              <option value="50" <?= $perPage === 50 ? 'selected' : '' ?>>50</option>
+              <option value="100" <?= $perPage === 100 ? 'selected' : '' ?>>100</option>
+            </select>
+          </label>
         </div>
 
         <a class="btn btn-primary" href="<?= e(admin_url('product_form.php')) ?>">
@@ -252,8 +266,8 @@ include __DIR__ . '/includes/header.php';
                   <input type="checkbox" name="selected_ids[]" value="<?= (int)$p['id'] ?>" class="form-check-input product-check">
                 </td>
                 <td>
-                  <img src="<?= e(product_image_url($p['image'])) ?>"
-                       class="rounded border" width="44" height="44" style="object-fit:cover" alt="">
+                  <img src="<?= e(product_image_url($p['image'], 'thumbnail', (int)$p['id'])) ?>"
+                       class="rounded border" width="44" height="44" style="object-fit:cover" alt="" loading="lazy">
                 </td>
                 <td>
                   <div class="fw-semibold">
@@ -326,15 +340,9 @@ include __DIR__ . '/includes/header.php';
       </div>
     </form>
 
-    <?php if ($pages > 1): $qs = $_GET; ?>
-      <nav class="mt-3"><ul class="pagination justify-content-end mb-0">
-        <?php for ($pn = 1; $pn <= $pages; $pn++): $qs['page'] = $pn; ?>
-          <li class="page-item <?= $pn === $page ? 'active' : '' ?>">
-            <a class="page-link" href="?<?= e(http_build_query($qs)) ?>"><?= $pn ?></a>
-          </li>
-        <?php endfor; ?>
-      </ul></nav>
-    <?php endif; ?>
+    <div class="mt-3">
+      <?= render_admin_pagination($page, $pages, $_GET, 15) ?>
+    </div>
   </div>
 </div>
 

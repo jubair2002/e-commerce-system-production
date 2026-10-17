@@ -303,21 +303,76 @@ function product_color_swatches(int $productId): array
 }
 
 /**
- * Get active storefront banners for a given placement.
+ * Increment product_sales_summary when an order is completed or paid.
+ */
+function product_sales_summary_record_order(int $orderId, ?PDO $pdo = null): void
+{
+    $pdo = $pdo ?: db();
+    try {
+        $stmt = $pdo->prepare(
+            "INSERT INTO product_sales_summary (product_id, variant_id, variant_label, units, revenue, orders_count, last_sale)
+             SELECT oi.product_id, COALESCE(oi.variant_id, 0), MAX(oi.variant_label),
+                    COALESCE(SUM(oi.quantity), 0), COALESCE(SUM(oi.line_total), 0.00), 1, MAX(o.created_at)
+             FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id
+             WHERE oi.order_id = :oid AND oi.product_id IS NOT NULL
+             GROUP BY oi.product_id, COALESCE(oi.variant_id, 0)
+             ON DUPLICATE KEY UPDATE
+                units        = product_sales_summary.units + VALUES(units),
+                revenue      = product_sales_summary.revenue + VALUES(revenue),
+                orders_count = product_sales_summary.orders_count + 1,
+                last_sale    = GREATEST(COALESCE(product_sales_summary.last_sale, '1970-01-01'), VALUES(last_sale))"
+        );
+        $stmt->execute([':oid' => $orderId]);
+    } catch (Throwable $e) {
+        error_log("Failed to record product_sales_summary for order #{$orderId}: " . $e->getMessage());
+    }
+}
+
+/**
+ * Decrement product_sales_summary if a completed order is cancelled.
+ */
+function product_sales_summary_reverse_order(int $orderId, ?PDO $pdo = null): void
+{
+    $pdo = $pdo ?: db();
+    try {
+        $stmt = $pdo->prepare(
+            "UPDATE product_sales_summary pss
+             JOIN (
+                 SELECT product_id, COALESCE(variant_id, 0) AS vid,
+                        SUM(quantity) AS units, SUM(line_total) AS revenue
+                 FROM order_items
+                 WHERE order_id = :oid AND product_id IS NOT NULL
+                 GROUP BY product_id, COALESCE(variant_id, 0)
+             ) oi ON oi.product_id = pss.product_id AND oi.vid = pss.variant_id
+             SET pss.units = GREATEST(0, CAST(pss.units AS SIGNED) - oi.units),
+                 pss.revenue = GREATEST(0.00, pss.revenue - oi.revenue),
+                 pss.orders_count = GREATEST(0, CAST(pss.orders_count AS SIGNED) - 1)"
+        );
+        $stmt->execute([':oid' => $orderId]);
+    } catch (Throwable $e) {
+        error_log("Failed to reverse product_sales_summary for order #{$orderId}: " . $e->getMessage());
+    }
+}
+
+/**
+ * Get active storefront banners for a given placement (cached 15 min).
  */
 function storefront_banners_get(string $placement = 'hero'): array
 {
-    $now = date('Y-m-d H:i:s');
-    $stmt = db()->prepare(
-        "SELECT * FROM storefront_banners
-         WHERE placement = :plc
-           AND status = 'active'
-           AND (starts_at IS NULL OR starts_at <= :n1)
-           AND (ends_at IS NULL OR ends_at >= :n2)
-         ORDER BY position ASC, id ASC"
-    );
-    $stmt->execute([':plc' => $placement, ':n1' => $now, ':n2' => $now]);
-    return $stmt->fetchAll() ?: [];
+    return FileCache::remember("banners:{$placement}", 900, function () use ($placement) {
+        $now = date('Y-m-d H:i:s');
+        $stmt = db()->prepare(
+            "SELECT * FROM storefront_banners
+             WHERE placement = :plc
+               AND status = 'active'
+               AND (starts_at IS NULL OR starts_at <= :n1)
+               AND (ends_at IS NULL OR ends_at >= :n2)
+             ORDER BY position ASC, id ASC"
+        );
+        $stmt->execute([':plc' => $placement, ':n1' => $now, ':n2' => $now]);
+        return $stmt->fetchAll() ?: [];
+    });
 }
 
 /**
@@ -342,41 +397,43 @@ function shipping_delivery_estimate(): ?string
 }
 
 /**
- * Get available option values across all active products for shop filters.
+ * Get available option values across all active products for shop filters (cached 15 min).
  */
 function storefront_filter_options(): array
 {
-    try {
-        $stmt = db()->query(
-            "SELECT po.name AS option_name, po.display_type, pov.id AS value_id, pov.value, pov.swatch_hex
-             FROM product_option_values pov
-             JOIN product_options po ON po.id = pov.option_id
-             JOIN products p ON p.id = po.product_id
-             WHERE p.status = 'active'
-             GROUP BY po.name, pov.value
-             ORDER BY po.name ASC, pov.position ASC, pov.value ASC"
-        );
-        $rows = $stmt->fetchAll() ?: [];
-        $grouped = [];
-        foreach ($rows as $r) {
-            $name = $r['option_name'];
-            if (!isset($grouped[$name])) {
-                $grouped[$name] = [
-                    'name'         => $name,
-                    'display_type' => $r['display_type'],
-                    'values'       => [],
+    return FileCache::remember('filters:options', 900, function () {
+        try {
+            $stmt = db()->query(
+                "SELECT po.name AS option_name, po.display_type, pov.id AS value_id, pov.value, pov.swatch_hex
+                 FROM product_option_values pov
+                 JOIN product_options po ON po.id = pov.option_id
+                 JOIN products p ON p.id = po.product_id
+                 WHERE p.status = 'active'
+                 GROUP BY po.name, pov.value
+                 ORDER BY po.name ASC, pov.position ASC, pov.value ASC"
+            );
+            $rows = $stmt->fetchAll() ?: [];
+            $grouped = [];
+            foreach ($rows as $r) {
+                $name = $r['option_name'];
+                if (!isset($grouped[$name])) {
+                    $grouped[$name] = [
+                        'name'         => $name,
+                        'display_type' => $r['display_type'],
+                        'values'       => [],
+                    ];
+                }
+                $grouped[$name]['values'][] = [
+                    'id'         => (int)$r['value_id'],
+                    'value'      => $r['value'],
+                    'swatch_hex' => $r['swatch_hex'],
                 ];
             }
-            $grouped[$name]['values'][] = [
-                'id'         => (int)$r['value_id'],
-                'value'      => $r['value'],
-                'swatch_hex' => $r['swatch_hex'],
-            ];
+            return $grouped;
+        } catch (Throwable $e) {
+            return [];
         }
-        return $grouped;
-    } catch (Throwable $e) {
-        return [];
-    }
+    });
 }
 
 /**

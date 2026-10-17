@@ -47,70 +47,87 @@ if ($showCategories) {
     } catch (Throwable $e) { $categories = []; }
 }
 
-// 2. New Arrivals
+$productCols = "p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
+                p.status, p.featured, p.product_type, p.low_stock_threshold, p.allow_backorder,
+                p.track_inventory, p.rating_avg, p.rating_count, p.sold_count";
+
+// 2. New Arrivals (cached 5 min)
 $newArrivals = [];
 if ($showNewArrivals) {
     try {
-        $newArrivals = $pdo->query(
-            "SELECT p.*, c.name AS category_name, c.slug AS category_slug
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.status = 'active'
-             ORDER BY p.created_at DESC
-             LIMIT 8"
-        )->fetchAll();
+        $newArrivals = FileCache::remember('home:newarrivals:8', 300, function () use ($pdo, $productCols) {
+            $rows = $pdo->query(
+                "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug
+                 FROM products p
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 WHERE p.status = 'active'
+                 ORDER BY p.created_at DESC
+                 LIMIT 8"
+            )->fetchAll() ?: [];
+            if (!empty($rows)) products_attach_card_data($rows);
+            return $rows;
+        });
     } catch (Throwable $e) { $newArrivals = []; }
 }
 
-// 3. Best Sellers
+// 3. Best Sellers (first 8 from precomputed product_sales_summary, cached 5 min)
 $bestSellers = [];
 if ($showBestSellers) {
     try {
-        $bestSellers = $pdo->query(
-            "SELECT p.*, c.name AS category_name, c.slug AS category_slug
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.status = 'active'
-             ORDER BY p.sold_count DESC, p.created_at DESC
-             LIMIT 8"
-        )->fetchAll();
+        $bestSellers = FileCache::remember('home:bestsellers:8', 300, function () use ($pdo, $productCols) {
+            $rows = $pdo->query(
+                "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug,
+                        COALESCE(SUM(pss.units), 0) AS total_units_sold
+                 FROM products p
+                 JOIN product_sales_summary pss ON pss.product_id = p.id
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 WHERE p.status = 'active'
+                 GROUP BY p.id
+                 ORDER BY total_units_sold DESC, p.created_at DESC
+                 LIMIT 8"
+            )->fetchAll() ?: [];
+            if (!empty($rows)) products_attach_card_data($rows);
+            return $rows;
+        });
     } catch (Throwable $e) { $bestSellers = []; }
 }
 
-// 4. Featured Products
+// 4. Featured Products (first 8, cached 5 min)
 $featured = [];
 if ($showFeatured) {
     try {
-        $featured = $pdo->query(
-            "SELECT p.*, c.name AS category_name, c.slug AS category_slug
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.status = 'active' AND p.featured = 1
-             ORDER BY p.created_at DESC
-             LIMIT 8"
-        )->fetchAll();
+        $featured = FileCache::remember('home:featured:8', 300, function () use ($pdo, $productCols) {
+            $rows = $pdo->query(
+                "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug
+                 FROM products p
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 WHERE p.status = 'active' AND p.featured = 1
+                 ORDER BY p.created_at DESC
+                 LIMIT 8"
+            )->fetchAll() ?: [];
+            if (!empty($rows)) products_attach_card_data($rows);
+            return $rows;
+        });
     } catch (Throwable $e) { $featured = []; }
 }
 
-// 5. Customer Reviews
+// 5. Customer Reviews (cached 5 min)
 $homeReviews = [];
 if ($showReviews) {
     try {
-        $homeReviews = $pdo->query(
-            "SELECT r.*, p.name AS product_name, p.slug AS product_slug, p.image AS product_image
-             FROM product_reviews r
-             JOIN products p ON p.id = r.product_id
-             WHERE r.status = 'approved' AND r.rating >= 4
-             ORDER BY r.id DESC
-             LIMIT 4"
-        )->fetchAll();
+        $homeReviews = FileCache::remember('home:reviews:4', 300, function () use ($pdo) {
+            return $pdo->query(
+                "SELECT r.id, r.product_id, r.author_name, r.rating, r.title, r.body, r.created_at,
+                        p.name AS product_name, p.slug AS product_slug, p.image AS product_image
+                 FROM product_reviews r
+                 JOIN products p ON p.id = r.product_id
+                 WHERE r.status = 'approved' AND r.rating >= 4
+                 ORDER BY r.id DESC
+                 LIMIT 4"
+            )->fetchAll() ?: [];
+        });
     } catch (Throwable $e) { $homeReviews = []; }
 }
-
-// Batch attach hover images and swatches to eliminate N+1 queries
-if (!empty($newArrivals)) products_attach_card_data($newArrivals);
-if (!empty($bestSellers)) products_attach_card_data($bestSellers);
-if (!empty($featured))    products_attach_card_data($featured);
 
 include __DIR__ . '/includes/partials/header.php';
 ?>

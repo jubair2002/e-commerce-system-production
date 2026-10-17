@@ -67,18 +67,21 @@ $products = [];
 if ($wishlistEnabled) {
     try {
         $stmtW = $pdo->prepare(
-            "SELECT p.*, w.created_at AS added_to_wishlist_at
+            "SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
+                    p.status, p.featured, p.product_type, p.low_stock_threshold, p.allow_backorder,
+                    p.track_inventory, p.rating_avg, p.rating_count, p.sold_count,
+                    w.created_at AS added_to_wishlist_at
              FROM wishlists w
              JOIN products p ON p.id = w.product_id
-             WHERE w.customer_id = :cid AND p.deleted_at IS NULL
+             WHERE w.customer_id = :cid
              ORDER BY w.created_at DESC"
         );
         $stmtW->execute([':cid' => $cid]);
-        $products = $stmtW->fetchAll();
+        $products = $stmtW->fetchAll() ?: [];
 
         // Batch pre-fetch all pricing, images, variants, and stock in 1 efficient query
         if (!empty($products) && function_exists('products_attach_card_data')) {
-            $products = products_attach_card_data($products);
+            products_attach_card_data($products);
         }
     } catch (Throwable $e) {
         $products = [];

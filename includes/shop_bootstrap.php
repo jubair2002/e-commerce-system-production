@@ -19,36 +19,8 @@ if (PHP_SAPI !== 'cli' && function_exists('customer_remember_restore')) {
     customer_remember_restore();
 }
 
-// Safe fallback for mail queue processing: runs ONLY when explicitly enabled by admin (mail_poor_cron=1)
-// AND mail_enabled=1 AND pending emails actually exist, strictly after user response has finished.
-if (PHP_SAPI !== 'cli') {
-    register_shutdown_function(function () {
-        if ((int)setting('mail_poor_cron', '0') !== 1 || (int)setting('mail_enabled', '0') !== 1) {
-            return;
-        }
-        $lastRun = (int)setting('mail_last_run', '0');
-        if ((time() - $lastRun) < 120) {
-            return;
-        }
-        try {
-            // Cheap check to see if pending mail is ready
-            $hasPending = (bool)db()->query(
-                "SELECT 1 FROM email_queue WHERE status = 'pending' AND scheduled_at <= NOW() LIMIT 1"
-            )->fetchColumn();
-            if (!$hasPending) {
-                return;
-            }
-
-            if (function_exists('app_finish_response')) {
-                app_finish_response();
-            }
-
-            if (function_exists('mail_process_queue')) {
-                mail_process_queue(5);
-            }
-        } catch (Throwable $e) {}
-    });
-}
+// Mail queue processing is handled asynchronously via CLI cron (cron/process_mail_queue.php).
+// Never runs during a web request to preserve visitor TTFB.
 
 /**
  * Check maintenance mode for storefront.
@@ -127,22 +99,20 @@ function shop_url(string $path = ''): string
     return BASE_URL . $cleanPath;
 }
 
-/** Active category list for the navbar. */
+/** Active category list for the navbar (cached 15 min). */
 function shop_active_categories(): array
 {
-    static $cache = null;
-    if ($cache === null) {
+    return FileCache::remember('categories:tree', 900, function () {
         try {
-            $cache = db()->query(
+            return db()->query(
                 "SELECT id, name, slug FROM categories
                  WHERE status = 'active'
                  ORDER BY name ASC"
-            )->fetchAll();
+            )->fetchAll() ?: [];
         } catch (Throwable $e) {
-            $cache = [];
+            return [];
         }
-    }
-    return $cache;
+    });
 }
 
 /** Effective price for a product (sale_price if set, otherwise price). */

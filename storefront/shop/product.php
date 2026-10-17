@@ -64,17 +64,31 @@ $options    = $isVariable ? product_options_get($productId) : [];
 $variants   = $isVariable ? variants_get($productId, true) : [];
 
 // Gallery Images
-$gallery = product_gallery_images($productId);
-if (empty($gallery) && !empty($product['image'])) {
-    $gallery = [
-        [
-            'filename'   => $product['image'],
-            'alt_text'   => $product['name'],
-            'is_primary' => 1,
-        ]
+$rawGallery = product_gallery_images($productId);
+$gallery = [];
+$seenFiles = [];
+
+// If primary product image exists, ensure it is the first entry
+if (!empty($product['image'])) {
+    $gallery[] = [
+        'filename'   => $product['image'],
+        'alt_text'   => $product['name'],
+        'is_primary' => 1,
     ];
+    $seenFiles[trim((string)$product['image'])] = true;
 }
-$mainImgFile = $gallery[0]['filename'] ?? $product['image'];
+
+// Add additional gallery images from product_images table, deduplicated and non-empty
+foreach ($rawGallery as $gItem) {
+    $fn = trim((string)($gItem['filename'] ?? ''));
+    if ($fn === '' || isset($seenFiles[$fn])) {
+        continue;
+    }
+    $seenFiles[$fn] = true;
+    $gallery[] = $gItem;
+}
+
+$mainImgFile = $gallery[0]['filename'] ?? ($product['image'] ?? null);
 $mainImgUrl  = product_image_url($mainImgFile);
 
 // Stock & Delivery
@@ -129,7 +143,10 @@ $related = [];
 if (!empty($product['category_id'])) {
     try {
         $stmtRel = $pdo->prepare(
-            "SELECT p.*, c.name AS category_name, c.slug AS category_slug
+            "SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
+                    p.status, p.featured, p.product_type, p.low_stock_threshold, p.allow_backorder,
+                    p.track_inventory, p.rating_avg, p.rating_count, p.sold_count,
+                    c.name AS category_name, c.slug AS category_slug
              FROM products p
              LEFT JOIN categories c ON c.id = p.category_id
              WHERE p.category_id = :cid

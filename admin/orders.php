@@ -101,6 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     stock_restore_for_order($oid);
                 }
 
+                // Update product_sales_summary in same transaction
+                if ($targetStatus === 'completed' && $oldStatus !== 'completed') {
+                    product_sales_summary_record_order($oid, $pdo);
+                } elseif ($targetStatus === 'cancelled' && $oldStatus === 'completed') {
+                    product_sales_summary_reverse_order($oid, $pdo);
+                }
+
                 // Order status history
                 $uid = $_SESSION['user']['id'] ?? null;
                 $pdo->prepare(
@@ -143,7 +150,7 @@ $status   = trim((string)($_GET['status'] ?? ''));
 $payStatus = trim((string)($_GET['payment_status'] ?? ''));
 $dateFrom = trim((string)($_GET['from'] ?? ''));
 $dateTo   = trim((string)($_GET['to'] ?? ''));
-$perPage  = max(5, (int) setting('items_per_page', '10'));
+$perPage  = max(5, min(100, (int)($_GET['per_page'] ?? setting('items_per_page', '15'))));
 $page     = max(1, (int)($_GET['page'] ?? 1));
 $offset   = ($page - 1) * $perPage;
 
@@ -243,7 +250,8 @@ $total = (int) $stmt->fetchColumn();
 $pages = max(1, (int) ceil($total / $perPage));
 
 $stmt = db()->prepare(
-    "SELECT o.*, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count
+    "SELECT o.id, o.order_number, o.customer_name, o.customer_email, o.total,
+            o.status, o.payment_status, o.payment_method, o.created_at
      FROM orders o
      $whereSql
      ORDER BY o.created_at DESC
@@ -253,7 +261,22 @@ foreach ($params as $k => $v) $stmt->bindValue($k, $v);
 $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
 $stmt->bindValue(':off', $offset,  PDO::PARAM_INT);
 $stmt->execute();
-$rows = $stmt->fetchAll();
+$rows = $stmt->fetchAll() ?: [];
+
+// Batch load item counts for current page orders (eliminates correlated subquery)
+if (!empty($rows)) {
+    $orderIds = array_column($rows, 'id');
+    $inClause = implode(',', array_map('intval', $orderIds));
+    $cntStmt = db()->query("SELECT order_id, COUNT(*) AS cnt FROM order_items WHERE order_id IN ($inClause) GROUP BY order_id");
+    $counts = [];
+    while ($cRow = $cntStmt->fetch()) {
+        $counts[$cRow['order_id']] = (int)$cRow['cnt'];
+    }
+    foreach ($rows as &$r) {
+        $r['item_count'] = $counts[$r['id']] ?? 0;
+    }
+    unset($r);
+}
 
 // Headline metrics for toolbar
 $stats = db()->query(
@@ -355,8 +378,18 @@ include __DIR__ . '/includes/header.php';
       </div>
     </form>
     <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-      <div class="small text-muted">
-        Showing <?= count($rows) ?> of <?= $total ?> order<?= $total === 1 ? '' : 's' ?>
+      <div class="small text-muted d-flex align-items-center gap-2">
+        <span>Showing <?= count($rows) ?> of <?= number_format($total) ?> order<?= $total === 1 ? '' : 's' ?></span>
+        <span class="text-muted">·</span>
+        <label class="d-flex align-items-center gap-1 mb-0">
+          <span class="text-muted">Per page:</span>
+          <select class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="const url = new URL(window.location.href); url.searchParams.set('per_page', this.value); url.searchParams.set('page', 1); window.location.href = url.toString();">
+            <option value="15" <?= $perPage === 15 ? 'selected' : '' ?>>15</option>
+            <option value="25" <?= $perPage === 25 ? 'selected' : '' ?>>25</option>
+            <option value="50" <?= $perPage === 50 ? 'selected' : '' ?>>50</option>
+            <option value="100" <?= $perPage === 100 ? 'selected' : '' ?>>100</option>
+          </select>
+        </label>
       </div>
       <div class="d-flex gap-2">
         <?php if ($search || $status || $payStatus || $dateFrom || $dateTo): ?>
@@ -479,19 +512,7 @@ include __DIR__ . '/includes/header.php';
   </div>
 </form>
 
-<?php if ($pages > 1): ?>
-  <nav>
-    <ul class="pagination justify-content-center">
-      <?php for ($i = 1; $i <= $pages; $i++): ?>
-        <li class="page-item <?= $page === $i ? 'active' : '' ?>">
-          <a class="page-link" href="<?= e(admin_url('orders.php?' . http_build_query(array_merge($_GET, ['page' => $i])))) ?>">
-            <?= $i ?>
-          </a>
-        </li>
-      <?php endfor; ?>
-    </ul>
-  </nav>
-<?php endif; ?>
+<?= render_admin_pagination($page, $pages, $_GET, 15) ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

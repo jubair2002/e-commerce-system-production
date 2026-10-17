@@ -87,47 +87,75 @@ $total = 0;
 $pages = 1;
 $products = [];
 
-try {
-    $countSql = "
-        SELECT COUNT(DISTINCT p.id)
-        FROM products p
-        LEFT JOIN categories c ON c.id = p.category_id
-        LEFT JOIN v_product_stock vps ON vps.product_id = p.id
-        $whereSql
-    ";
-    $stmtCount = $pdo->prepare($countSql);
-    $stmtCount->execute($params);
-    $total = (int)$stmtCount->fetchColumn();
-    $pages = max(1, (int)ceil($total / $perPage));
+$cacheKey = ($page <= 3 && $search === '') 
+    ? 'shop:list:p' . $page . ':' . md5(serialize($params) . '_' . $sort . '_' . $perPage)
+    : null;
 
-    if ($search !== '' && $page === 1 && function_exists('analytics_log_search')) {
-        analytics_log_search($search, $total);
+if ($cacheKey !== null) {
+    $cachedData = FileCache::get($cacheKey);
+    if (is_array($cachedData)) {
+        $total    = $cachedData['total'] ?? 0;
+        $pages    = $cachedData['pages'] ?? 1;
+        $products = $cachedData['products'] ?? [];
     }
+}
 
-    $selectSql = "
-        SELECT p.*, c.name AS category_name, c.slug AS category_slug,
-               COALESCE(vps.total_stock, p.stock) AS calculated_stock
-        FROM products p
-        LEFT JOIN categories c ON c.id = p.category_id
-        LEFT JOIN v_product_stock vps ON vps.product_id = p.id
-        $whereSql
-        ORDER BY $orderSql
-        LIMIT :lim OFFSET :off
-    ";
-    $stmt = $pdo->prepare($selectSql);
-    foreach ($params as $k => $v) {
-        $stmt->bindValue($k, $v);
+if (empty($products) && $total === 0) {
+    try {
+        // Optimized count query: join vps or c only when required by where clauses
+        $joinVps = str_contains($whereSql, 'vps.');
+        $joinCat = str_contains($whereSql, 'c.');
+
+        $countJoins = '';
+        if ($joinCat) $countJoins .= ' LEFT JOIN categories c ON c.id = p.category_id';
+        if ($joinVps) $countJoins .= ' LEFT JOIN v_product_stock vps ON vps.product_id = p.id';
+
+        $countSql = "SELECT COUNT(p.id) FROM products p {$countJoins} {$whereSql}";
+        $stmtCount = $pdo->prepare($countSql);
+        $stmtCount->execute($params);
+        $total = (int)$stmtCount->fetchColumn();
+        $pages = max(1, (int)ceil($total / $perPage));
+
+        if ($search !== '' && $page === 1 && function_exists('analytics_log_search')) {
+            analytics_log_search($search, $total);
+        }
+
+        $selectSql = "
+            SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
+                   p.status, p.featured, p.product_type, p.low_stock_threshold, p.allow_backorder,
+                   p.track_inventory, p.rating_avg, p.rating_count, p.sold_count,
+                   c.name AS category_name, c.slug AS category_slug,
+                   COALESCE(vps.total_stock, p.stock) AS calculated_stock
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN v_product_stock vps ON vps.product_id = p.id
+            $whereSql
+            ORDER BY $orderSql
+            LIMIT :lim OFFSET :off
+        ";
+        $stmt = $pdo->prepare($selectSql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset,  PDO::PARAM_INT);
+        $stmt->execute();
+        $products = $stmt->fetchAll() ?: [];
+        if (!empty($products)) {
+            products_attach_card_data($products);
+        }
+
+        if ($cacheKey !== null) {
+            FileCache::set($cacheKey, [
+                'total'    => $total,
+                'pages'    => $pages,
+                'products' => $products,
+            ], 300); // 5 min TTL
+        }
+    } catch (Throwable $e) {
+        $products = [];
+        $total = 0;
     }
-    $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
-    $stmt->bindValue(':off', $offset,  PDO::PARAM_INT);
-    $stmt->execute();
-    $products = $stmt->fetchAll();
-    if (!empty($products)) {
-        products_attach_card_data($products);
-    }
-} catch (Throwable $e) {
-    $products = [];
-    $total = 0;
 }
 
 // Sidebar Data
@@ -352,29 +380,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           </div>
 
           <!-- Numbered Pagination -->
-          <?php if ($pages > 1): $qs = $_GET; ?>
-            <nav aria-label="Page navigation">
-              <ul class="editorial-pagination">
-                <?php if ($page > 1): $qs['page'] = $page - 1; ?>
-                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Previous page"><?= icon('chevron-left') ?></a></li>
-                <?php endif; ?>
-
-                <?php for ($pn = 1; $pn <= $pages; $pn++): $qs['page'] = $pn; ?>
-                  <li class="<?= $pn === $page ? 'active' : '' ?>">
-                    <?php if ($pn === $page): ?>
-                      <span aria-current="page"><?= $pn ?></span>
-                    <?php else: ?>
-                      <a href="?<?= e(http_build_query($qs)) ?>"><?= $pn ?></a>
-                    <?php endif; ?>
-                  </li>
-                <?php endfor; ?>
-
-                <?php if ($page < $pages): $qs['page'] = $page + 1; ?>
-                  <li><a href="?<?= e(http_build_query($qs)) ?>" aria-label="Next page"><?= icon('chevron-right') ?></a></li>
-                <?php endif; ?>
-              </ul>
-            </nav>
-          <?php endif; ?>
+          <?= render_editorial_pagination($page, $pages, $_GET, 15) ?>
 
         <?php else: ?>
           <!-- Friendly Empty State -->

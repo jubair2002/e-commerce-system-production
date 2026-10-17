@@ -123,15 +123,17 @@ foreach ($dailyRows as $dr) {
     $chartUnits[]  = (int)$dr['units_sold'];
 }
 
-// 3. Variant Breakdown from v_sales_by_variant
+// 3. Variant Breakdown from precomputed product_sales_summary table
 $variantsSales = [];
 try {
     $stmtV = $pdo->prepare(
-        "SELECT vb.*, pv.stock AS variant_stock, pv.sku AS variant_sku
-         FROM v_sales_by_variant vb
-         LEFT JOIN product_variants pv ON pv.id = vb.variant_id
-         WHERE vb.product_id = :pid
-         ORDER BY vb.revenue DESC"
+        "SELECT pss.product_id, pss.variant_id, pss.variant_label, pss.units, pss.revenue,
+                pss.orders_count, pss.last_sale,
+                pv.stock AS variant_stock, pv.sku AS variant_sku
+         FROM product_sales_summary pss
+         LEFT JOIN product_variants pv ON pv.id = pss.variant_id
+         WHERE pss.product_id = :pid
+         ORDER BY pss.revenue DESC"
     );
     $stmtV->execute([':pid' => $productId]);
     $variantsSales = $stmtV->fetchAll();

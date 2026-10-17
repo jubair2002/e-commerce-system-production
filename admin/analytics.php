@@ -29,6 +29,7 @@ $catId       = !empty($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
 $groupBy     = in_array($_GET['group_by'] ?? '', ['day', 'week', 'month'], true) ? $_GET['group_by'] : 'day';
 $searchQ     = trim((string)($_GET['q'] ?? ''));
 $page        = max(1, (int)($_GET['p'] ?? 1));
+$limit       = max(5, min(100, (int)($_GET['limit'] ?? 15)));
 
 // Calculate dates based on preset
 $today = date('Y-m-d');
@@ -72,7 +73,7 @@ $filters = [
     'group_by'    => $groupBy,
     'search'      => $searchQ,
     'page'        => $page,
-    'limit'       => 25,
+    'limit'       => $limit,
 ];
 
 // CSV Export Handler
@@ -592,21 +593,21 @@ include __DIR__ . '/includes/header.php';
 
       <!-- Pagination -->
       <?php if ($productsTab['pages'] > 1): ?>
-        <div class="p-3 d-flex justify-content-between align-items-center border-top">
-          <small class="text-muted">
-            Showing <?= count($productsTab['items']) ?> of <?= $productsTab['total'] ?> products
-          </small>
-          <nav>
-            <ul class="pagination pagination-sm mb-0">
-              <?php for ($p = 1; $p <= $productsTab['pages']; $p++): ?>
-                <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                  <a class="page-link" href="<?= e(admin_url('analytics.php?' . http_build_query(array_merge($_GET, ['p' => $p])))) ?>">
-                    <?= $p ?>
-                  </a>
-                </li>
-              <?php endfor; ?>
-            </ul>
-          </nav>
+        <div class="p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-top">
+          <div class="small text-muted d-flex align-items-center gap-2">
+            <span>Showing <?= count($productsTab['items']) ?> of <?= number_format($productsTab['total']) ?> products</span>
+            <span class="text-muted">·</span>
+            <label class="d-flex align-items-center gap-1 mb-0">
+              <span class="text-muted">Per page:</span>
+              <select class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="const url = new URL(window.location.href); url.searchParams.set('limit', this.value); url.searchParams.set('p', 1); window.location.href = url.toString();">
+                <option value="15" <?= $limit === 15 ? 'selected' : '' ?>>15</option>
+                <option value="25" <?= $limit === 25 ? 'selected' : '' ?>>25</option>
+                <option value="50" <?= $limit === 50 ? 'selected' : '' ?>>50</option>
+                <option value="100" <?= $limit === 100 ? 'selected' : '' ?>>100</option>
+              </select>
+            </label>
+          </div>
+          <?= render_admin_pagination($page, $productsTab['pages'], $_GET, 15, 'p') ?>
         </div>
       <?php endif; ?>
 

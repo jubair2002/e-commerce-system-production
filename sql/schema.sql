@@ -310,13 +310,17 @@ CREATE OR REPLACE VIEW `v_product_stock` AS
 SELECT p.id AS product_id,
        p.product_type,
        CASE WHEN p.product_type = 'variable'
-            THEN COALESCE((SELECT SUM(v.stock) FROM product_variants v
-                           WHERE v.product_id = p.id AND v.status = 'active'), 0)
+            THEN COALESCE(agg.total_stock, 0)
             ELSE p.stock END AS total_stock,
        CASE WHEN p.product_type = 'variable'
-            THEN (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.id AND v.status = 'active')
+            THEN COALESCE(agg.variant_count, 0)
             ELSE 1 END AS variant_count
-FROM products p;
+FROM products p
+LEFT JOIN (
+  SELECT product_id, SUM(stock) AS total_stock, COUNT(*) AS variant_count
+  FROM product_variants WHERE status = 'active'
+  GROUP BY product_id
+) agg ON agg.product_id = p.id;
 
 -- Starter presets
 INSERT INTO `option_presets` (`name`,`display_type`,`position`) VALUES

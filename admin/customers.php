@@ -766,25 +766,7 @@ include __DIR__ . '/includes/header.php';
         <div class="small text-muted">
           Showing <?= $offset + 1 ?> to <?= min($offset + $perPage, $totalRows) ?> of <?= number_format($totalRows) ?> customers
         </div>
-        <nav aria-label="Customer pagination">
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="<?= e(admin_url('customers.php?' . http_build_query(array_merge($_GET, ['page' => $page - 1])))) ?>">Previous</a>
-            </li>
-            <?php
-            $startP = max(1, $page - 2);
-            $endP = min($totalPages, $page + 2);
-            for ($p = $startP; $p <= $endP; $p++):
-            ?>
-              <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                <a class="page-link" href="<?= e(admin_url('customers.php?' . http_build_query(array_merge($_GET, ['page' => $p])))) ?>"><?= $p ?></a>
-              </li>
-            <?php endfor; ?>
-            <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-              <a class="page-link" href="<?= e(admin_url('customers.php?' . http_build_query(array_merge($_GET, ['page' => $page + 1])))) ?>">Next</a>
-            </li>
-          </ul>
-        </nav>
+        <?= render_admin_pagination($page, $totalPages, $_GET, 15) ?>
       </div>
     <?php endif; ?>
   </div>

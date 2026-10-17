@@ -182,6 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Handle primary image upload if file selected
             $uploadErr = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
+            $uploadedPrimaryFile = null;
             if (!empty($_FILES['image']['name']) && $uploadErr === UPLOAD_ERR_OK) {
                 $tmp  = $_FILES['image']['tmp_name'];
                 $size = (int)$_FILES['image']['size'];
@@ -196,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $okMimes[$mime];
                     if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
                         $primaryImage = $newFileName;
+                        $uploadedPrimaryFile = $dir . '/' . $newFileName;
                     }
                 }
             }
@@ -259,6 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $stmtInsert->execute($productData);
                 $id = (int)$pdo->lastInsertId();
+            }
+
+            // Generate responsive WebP variants for newly uploaded primary image
+            if ($uploadedPrimaryFile && $id) {
+                product_generate_responsive_variants($id, $uploadedPrimaryFile, $primaryImage);
             }
 
             // Simple product stock adjustment ledger entry
@@ -491,6 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isset($okMimes[$mime]) && $size <= 4 * 1024 * 1024) {
                         $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $okMimes[$mime];
                         if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
+                            product_generate_responsive_variants($id, $dir . '/' . $newFileName, $newFileName);
                             $stmtImgIns->execute([
                                 ':pid' => $id,
                                 ':fn'  => $newFileName,

@@ -21,8 +21,11 @@ $q = $queryParams ?? $_GET;
   </a>
 
   <?php
-  $startP = max(1, $currentPage - 2);
-  $endP = min($totalP, $currentPage + 2);
+  $startP = max(1, $currentPage - 7);
+  $endP = min($totalP, $startP + 14);
+  if ($endP - $startP + 1 < 15) {
+      $startP = max(1, $endP - 14);
+  }
   if ($startP > 1): ?>
     <a class="pagination-item" href="?<?= http_build_query(array_merge($q, ['page' => 1])) ?>">1</a>
     <?php if ($startP > 2): ?><span class="pagination-item is-disabled border-0">&hellip;</span><?php endif; ?>

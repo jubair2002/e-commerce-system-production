@@ -4,7 +4,7 @@ require_login();
 
 $pageTitle = 'Activity log';
 
-$perPage = max(5, (int) setting('items_per_page', '10'));
+$perPage = max(5, min(100, (int)($_GET['per_page'] ?? setting('items_per_page', '15'))));
 $page    = max(1, (int) ($_GET['page'] ?? 1));
 $offset  = ($page - 1) * $perPage;
 
@@ -12,7 +12,7 @@ $total = (int) db()->query('SELECT COUNT(*) FROM activity_log')->fetchColumn();
 $pages = max(1, (int) ceil($total / $perPage));
 
 $stmt = db()->prepare(
-    'SELECT a.*, u.name AS user_name
+    'SELECT a.id, a.user_id, a.action, a.ip_address, a.created_at, u.name AS user_name
      FROM activity_log a
      LEFT JOIN users u ON u.id = a.user_id
      ORDER BY a.created_at DESC
@@ -35,7 +35,7 @@ include __DIR__ . '/includes/header.php';
       <table class="table align-middle">
         <thead>
           <tr>
-            <th>User</th><th>Action</th><th>Description</th>
+            <th>User</th><th>Action</th>
             <th>IP</th><th>When</th>
           </tr>
         </thead>
@@ -44,8 +44,7 @@ include __DIR__ . '/includes/header.php';
             <tr>
               <td><?= e($a['user_name'] ?? '—') ?></td>
               <td><span class="badge text-bg-secondary"><?= e($a['action']) ?></span></td>
-              <td><?= e($a['description']) ?></td>
-              <td><code><?= e($a['ip_address'] ?? '') ?></code></td>
+              <td><code><?= e($a['ip_address'] ?? '—') ?></code></td>
               <td class="text-muted"><?= e(format_date($a['created_at'])) ?></td>
             </tr>
           <?php endforeach; ?>
@@ -56,15 +55,9 @@ include __DIR__ . '/includes/header.php';
       </table>
     </div>
 
-    <?php if ($pages > 1): ?>
-      <nav class="mt-3"><ul class="pagination justify-content-end mb-0">
-        <?php for ($p = 1; $p <= $pages; $p++): ?>
-          <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-            <a class="page-link" href="?page=<?= $p ?>"><?= $p ?></a>
-          </li>
-        <?php endfor; ?>
-      </ul></nav>
-    <?php endif; ?>
+    <div class="mt-3">
+      <?= render_admin_pagination($page, $pages, $_GET, 15) ?>
+    </div>
   </div>
 </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

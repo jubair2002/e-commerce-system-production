@@ -60,6 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     stock_restore_for_order($id);
                 }
 
+                // Update product_sales_summary in same transaction
+                if ($newStatus === 'completed' && $oldStatus !== 'completed') {
+                    product_sales_summary_record_order($id, $pdo);
+                } elseif ($newStatus === 'cancelled' && $oldStatus === 'completed') {
+                    product_sales_summary_reverse_order($id, $pdo);
+                }
+
                 // Insert into order_status_history
                 $uid = $_SESSION['user']['id'] ?? null;
                 $historyNote = $note ?: ('Status changed from ' . ucfirst($oldStatus) . ' to ' . ucfirst($newStatus));
