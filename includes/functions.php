@@ -467,8 +467,27 @@ function format_date(?string $datetime, string $format = 'M j, Y H:i'): string
 
 function avatar_url(?string $avatar, ?string $name = ''): string
 {
-    if (!empty($avatar) && file_exists(UPLOADS_PATH . '/' . $avatar)) {
-        return UPLOADS_URL . $avatar;
+    if (!empty($avatar)) {
+        $clean = ltrim($avatar, '/');
+        // 1. Direct file in UPLOADS_PATH
+        if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+            return UPLOADS_URL . $clean;
+        }
+        // 2. In UPLOADS_PATH/avatars/
+        if (file_exists(UPLOADS_PATH . '/avatars/' . $clean)) {
+            return UPLOADS_URL . 'avatars/' . $clean;
+        }
+        // 3. If $avatar already has 'avatars/' prefix, check without it
+        if (str_starts_with($clean, 'avatars/') && file_exists(UPLOADS_PATH . '/' . substr($clean, 8))) {
+            return UPLOADS_URL . substr($clean, 8);
+        }
+        // 4. In-repo fallbacks
+        if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+            return BASE_URL . 'assets/uploads/' . $clean;
+        }
+        if (file_exists(ROOT_PATH . '/assets/uploads/avatars/' . $clean)) {
+            return BASE_URL . 'assets/uploads/avatars/' . $clean;
+        }
     }
     // Fallback: use ui-avatars.com (no key required).
     $initials = urlencode($name ? $name : 'User');
@@ -540,8 +559,24 @@ function upload_error_message(int $code): string
 /** Return URL to product image (or a placeholder). */
 function product_image_url(?string $image): string
 {
-    if (!empty($image) && file_exists(UPLOADS_PATH . '/products/' . $image)) {
-        return UPLOADS_URL . 'products/' . $image;
+    if (!empty($image)) {
+        $clean = ltrim($image, '/');
+        // 1. In UPLOADS_PATH/products/
+        if (file_exists(UPLOADS_PATH . '/products/' . $clean)) {
+            return UPLOADS_URL . 'products/' . $clean;
+        }
+        // 2. Direct in UPLOADS_PATH
+        if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+            return UPLOADS_URL . $clean;
+        }
+        // 3. Fallback in ROOT_PATH/assets/uploads/products/
+        if (file_exists(ROOT_PATH . '/assets/uploads/products/' . $clean)) {
+            return BASE_URL . 'assets/uploads/products/' . $clean;
+        }
+        // 4. Fallback in ROOT_PATH/assets/uploads/
+        if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+            return BASE_URL . 'assets/uploads/' . $clean;
+        }
     }
     // Clean, subtle editorial placeholder SVG
     return 'data:image/svg+xml;utf8,' . rawurlencode(
@@ -551,6 +586,94 @@ function product_image_url(?string $image): string
         '<path d="M85 105 C85 90 115 90 115 105" fill="none" stroke="#d4d4d8" stroke-width="2.5"/>' .
         '</svg>'
     );
+}
+
+/** Return URL to store logo (or null if none exists). */
+function store_logo_url(?string $logo = null): ?string
+{
+    $logo = $logo ?? (function_exists('setting') ? setting('store_logo') : null);
+    if (empty($logo)) return null;
+    $clean = ltrim($logo, '/');
+    if (file_exists(UPLOADS_PATH . '/branding/' . $clean)) {
+        return UPLOADS_URL . 'branding/' . $clean;
+    }
+    if (file_exists(UPLOADS_PATH . '/store/' . $clean)) {
+        return UPLOADS_URL . 'store/' . $clean;
+    }
+    if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+        return UPLOADS_URL . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/branding/' . $clean)) {
+        return BASE_URL . 'assets/uploads/branding/' . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/store/' . $clean)) {
+        return BASE_URL . 'assets/uploads/store/' . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+        return BASE_URL . 'assets/uploads/' . $clean;
+    }
+    return null;
+}
+
+/** Return URL to store favicon (or null if none exists). */
+function store_favicon_url(?string $fav = null): ?string
+{
+    $fav = $fav ?? (function_exists('setting') ? setting('store_favicon') : null);
+    if (empty($fav)) return null;
+    $clean = ltrim($fav, '/');
+    if (file_exists(UPLOADS_PATH . '/branding/' . $clean)) {
+        return UPLOADS_URL . 'branding/' . $clean;
+    }
+    if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+        return UPLOADS_URL . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/branding/' . $clean)) {
+        return BASE_URL . 'assets/uploads/branding/' . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+        return BASE_URL . 'assets/uploads/' . $clean;
+    }
+    return null;
+}
+
+/** Return URL to banner image (or null if none exists). */
+function banner_image_url(?string $image): ?string
+{
+    if (empty($image)) return null;
+    $clean = ltrim($image, '/');
+    if (file_exists(UPLOADS_PATH . '/banners/' . $clean)) {
+        return UPLOADS_URL . 'banners/' . $clean;
+    }
+    if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+        return UPLOADS_URL . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/banners/' . $clean)) {
+        return BASE_URL . 'assets/uploads/banners/' . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+        return BASE_URL . 'assets/uploads/' . $clean;
+    }
+    return null;
+}
+
+/** Return URL to category image (or null if none exists). */
+function category_image_url(?string $image): ?string
+{
+    if (empty($image)) return null;
+    $clean = ltrim($image, '/');
+    if (file_exists(UPLOADS_PATH . '/categories/' . $clean)) {
+        return UPLOADS_URL . 'categories/' . $clean;
+    }
+    if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+        return UPLOADS_URL . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/categories/' . $clean)) {
+        return BASE_URL . 'assets/uploads/categories/' . $clean;
+    }
+    if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+        return BASE_URL . 'assets/uploads/' . $clean;
+    }
+    return null;
 }
 
 /**

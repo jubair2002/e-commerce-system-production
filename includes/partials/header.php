@@ -37,8 +37,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e($fullTitle) ?></title>
   <meta name="description" content="<?= e(setting('seo_default_description', setting('site_about', 'Quality essentials delivered to your door.'))) ?>">
-  <?php if (!empty($storeFavicon)): ?>
-    <link rel="icon" href="<?= e(UPLOADS_URL . 'branding/' . $storeFavicon) ?>">
+  <?php $favUrl = store_favicon_url($storeFavicon ?? null); ?>
+  <?php if ($favUrl): ?>
+    <link rel="icon" href="<?= e($favUrl) ?>">
   <?php endif; ?>
 
   <!-- Theme Flash Prevention -->
@@ -90,9 +91,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
 
       <!-- Left: Brand / Logo -->
       <a href="<?= e(shop_url()) ?>" class="header-brand" aria-label="<?= e($siteName) ?>">
-        <?php $storeLogo = setting('store_logo'); ?>
-        <?php if (!empty($storeLogo) && (file_exists(UPLOADS_PATH . '/branding/' . $storeLogo) || file_exists(UPLOADS_PATH . '/store/' . $storeLogo))): ?>
-          <img src="<?= e(file_exists(UPLOADS_PATH . '/branding/' . $storeLogo) ? UPLOADS_URL . 'branding/' . $storeLogo : UPLOADS_URL . 'store/' . $storeLogo) ?>" alt="<?= e($siteName) ?>" style="max-height: 40px;">
+        <?php $storeLogoUrl = store_logo_url(); ?>
+        <?php if ($storeLogoUrl): ?>
+          <img src="<?= e($storeLogoUrl) ?>" alt="<?= e($siteName) ?>" style="max-height: 40px;">
         <?php else: ?>
           <span><?= e($siteName) ?></span>
         <?php endif; ?>

@@ -56,3 +56,6 @@ assets/uploads/cache/*
 !assets/uploads/cache/.gitkeep
 !assets/uploads/cache/.htaccess
 
+# Root storage symlink
+/uploads
+

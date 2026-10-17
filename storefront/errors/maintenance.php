@@ -22,8 +22,9 @@ if ($isMaintActive) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Under Scheduled Maintenance · <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></title>
-  <?php if (!empty($storeFavicon)): ?>
-    <link rel="icon" href="<?= e(UPLOADS_URL . 'branding/' . $storeFavicon) ?>">
+  <?php $favUrl = store_favicon_url($storeFavicon ?? null); ?>
+  <?php if ($favUrl): ?>
+    <link rel="icon" href="<?= e($favUrl) ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="<?= e(url('assets/vendor/fonts/inter.css')) ?>">
   <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>">

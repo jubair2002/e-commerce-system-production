@@ -76,8 +76,9 @@ include __DIR__ . '/includes/header.php';
           <?php foreach ($banners as $b): ?>
             <tr>
               <td>
-                <?php if (!empty($b['image'])): ?>
-                  <img src="<?= e(UPLOADS_URL . 'banners/' . $b['image']) ?>" alt="<?= e($b['title']) ?>"
+                <?php $bannerUrl = !empty($b['image']) ? banner_image_url($b['image']) : null; ?>
+                <?php if ($bannerUrl): ?>
+                  <img src="<?= e($bannerUrl) ?>" alt="<?= e($b['title']) ?>"
                        class="rounded border" style="width: 100px; height: 50px; object-fit: cover;">
                 <?php else: ?>
                   <div class="bg-light rounded border text-muted d-flex align-items-center justify-content-center" style="width: 100px; height: 50px; font-size: 11px;">

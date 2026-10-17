@@ -112,8 +112,9 @@ $storeLogo    = setting('store_logo', '');
     <!-- Header -->
     <div class="row align-items-center mb-4 pb-3 border-bottom">
       <div class="col-7">
-        <?php if (!empty($storeLogo)): ?>
-          <img src="<?= e(UPLOADS_URL . 'branding/' . $storeLogo) ?>" alt="<?= e($siteName) ?>" style="max-height: 50px; margin-bottom: 8px;">
+        <?php $storeLogoUrl = store_logo_url($storeLogo ?? null); ?>
+        <?php if ($storeLogoUrl): ?>
+          <img src="<?= e($storeLogoUrl) ?>" alt="<?= e($siteName) ?>" style="max-height: 50px; margin-bottom: 8px;">
         <?php else: ?>
           <h3 class="fw-bold mb-1"><?= e($siteName) ?></h3>
         <?php endif; ?>

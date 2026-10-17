@@ -170,8 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $avatarUrl = null;
-if (!empty($freshCustomer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'])) {
-    $avatarUrl = UPLOADS_URL . 'avatars/' . $freshCustomer['avatar'];
+if (!empty($freshCustomer['avatar'])) {
+    $res = avatar_url($freshCustomer['avatar'], $freshCustomer['name']);
+    if (!str_contains($res, 'ui-avatars.com')) {
+        $avatarUrl = $res;
+    }
 }
 $initials = strtoupper(mb_substr($freshCustomer['name'], 0, 1));
 

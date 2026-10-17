@@ -642,8 +642,13 @@ include __DIR__ . '/includes/header.php';
             <?php foreach ($customers as $c): ?>
               <?php
               $initials = strtoupper(mb_substr(trim($c['name']), 0, 1));
-              $avatarPath = !empty($c['avatar']) ? UPLOADS_PATH . '/avatars/' . $c['avatar'] : null;
-              $avatarUrl = ($avatarPath && file_exists($avatarPath)) ? UPLOADS_URL . 'avatars/' . $c['avatar'] : null;
+              $avatarUrl = null;
+              if (!empty($c['avatar'])) {
+                  $resolvedUrl = avatar_url($c['avatar'], $c['name']);
+                  if (!str_contains($resolvedUrl, 'ui-avatars.com')) {
+                      $avatarUrl = $resolvedUrl;
+                  }
+              }
 
               $statusBadge = 'bg-secondary';
               if ($c['status'] === 'active') $statusBadge = 'bg-success';

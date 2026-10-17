@@ -8,3 +8,10 @@
         Deny from all
     </IfModule>
 </FilesMatch>
+
+# Fallback to uploads.php if requested media file is not physically on disk in assets/uploads/
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.+)$ ../../uploads.php?file=$1 [L,QSA]
+</IfModule>

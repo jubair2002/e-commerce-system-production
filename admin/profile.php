@@ -56,10 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'profile
                     $errors[] = 'Upload folder is not writable by the web server: '
                               . e(UPLOADS_PATH) . ' — try: chmod 775 (or 777) on that folder.';
                 } else {
+                    $avatarsDir = UPLOADS_PATH . '/avatars';
+                    if (!is_dir($avatarsDir)) {
+                        @mkdir($avatarsDir, 0775, true);
+                    }
+                    $targetDir = (is_dir($avatarsDir) && is_writable($avatarsDir)) ? $avatarsDir : UPLOADS_PATH;
                     $newName = 'avatar_' . $user['id'] . '_' . time() . '.' . $ok[$mime];
-                    if (move_uploaded_file($tmp, UPLOADS_PATH . '/' . $newName)) {
-                        if ($user['avatar'] && file_exists(UPLOADS_PATH . '/' . $user['avatar'])) {
-                            @unlink(UPLOADS_PATH . '/' . $user['avatar']);
+                    if (move_uploaded_file($tmp, $targetDir . '/' . $newName)) {
+                        if ($user['avatar']) {
+                            if (file_exists($avatarsDir . '/' . $user['avatar'])) @unlink($avatarsDir . '/' . $user['avatar']);
+                            if (file_exists(UPLOADS_PATH . '/' . $user['avatar'])) @unlink(UPLOADS_PATH . '/' . $user['avatar']);
                         }
                         $avatarFile = $newName;
                     } else {

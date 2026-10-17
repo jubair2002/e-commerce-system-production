@@ -309,8 +309,13 @@ try {
 } catch (Throwable $e) {}
 
 $initials = strtoupper(mb_substr(trim($customer['name']), 0, 1));
-$avatarPath = !empty($customer['avatar']) ? UPLOADS_PATH . '/avatars/' . $customer['avatar'] : null;
-$avatarUrl = ($avatarPath && file_exists($avatarPath)) ? UPLOADS_URL . 'avatars/' . $customer['avatar'] : null;
+$avatarUrl = null;
+if (!empty($customer['avatar'])) {
+    $resolvedUrl = avatar_url($customer['avatar'], $customer['name']);
+    if (!str_contains($resolvedUrl, 'ui-avatars.com')) {
+        $avatarUrl = $resolvedUrl;
+    }
+}
 
 $pageTitle = 'Customer: ' . $customer['name'];
 include __DIR__ . '/includes/header.php';
@@ -663,7 +668,7 @@ include __DIR__ . '/includes/header.php';
               <tr>
                 <td>
                   <?php if (!empty($w['image'])): ?>
-                    <img src="<?= e(UPLOADS_URL . 'products/' . $w['image']) ?>" alt="" class="rounded" style="width: 44px; height: 44px; object-fit: cover;">
+                    <img src="<?= e(product_image_url($w['image'])) ?>" alt="" class="rounded" style="width: 44px; height: 44px; object-fit: cover;">
                   <?php else: ?>
                     <div class="rounded bg-light d-flex align-items-center justify-content-center text-muted" style="width: 44px; height: 44px;">
                       <i class="bi bi-image"></i>

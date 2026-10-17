@@ -35,7 +35,12 @@ function image_get_variant(string $relPath, int $targetWidth, string $format = '
 
     $sourceFull = UPLOADS_PATH . '/' . ltrim($relPath, '/');
     if (!file_exists($sourceFull) || !is_file($sourceFull)) {
-        return null;
+        $fallback = ROOT_PATH . '/assets/uploads/' . ltrim($relPath, '/');
+        if (file_exists($fallback) && is_file($fallback)) {
+            $sourceFull = $fallback;
+        } else {
+            return null;
+        }
     }
 
     image_pipeline_init_cache();

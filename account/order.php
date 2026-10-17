@@ -268,8 +268,12 @@ account_layout_start('orders', 'Order ' . $order['order_number'], $customer);
               <tr>
                 <td class="ps-3">
                   <div class="d-flex align-items-center gap-3">
-                    <?php if (!empty($it['product_image']) && file_exists(UPLOADS_PATH . '/products/' . $it['product_image'])): ?>
-                      <img src="<?= e(UPLOADS_URL . 'products/' . $it['product_image']) ?>" alt="<?= e($it['product_name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">
+                    <?php 
+                    $orderItemImg = product_image_url($it['product_image'] ?? null); 
+                    $hasImg = !empty($it['product_image']) && !str_starts_with($orderItemImg, 'data:image/svg+xml');
+                    ?>
+                    <?php if ($hasImg): ?>
+                      <img src="<?= e($orderItemImg) ?>" alt="<?= e($it['product_name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">
                     <?php else: ?>
                       <div class="border rounded bg-light d-flex align-items-center justify-content-center text-muted" style="width: 50px; height: 50px;">
                         <?= icon('box', 'i-sm text-muted') ?>

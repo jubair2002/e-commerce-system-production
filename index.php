@@ -1,7 +1,7 @@
 <?php
 // Handle direct media delivery if requested through built-in PHP server fallback
 $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-if ($requestUri !== null && preg_match('#^/(?:assets/)?uploads/(.+)$#', $requestUri, $matches)) {
+if ($requestUri !== null && preg_match('#(?:^|/)(?:assets/)?uploads/(.+)$#', $requestUri, $matches)) {
     $_GET['file'] = $matches[1];
     require __DIR__ . '/uploads.php';
     exit;
@@ -118,9 +118,12 @@ include __DIR__ . '/includes/partials/header.php';
 <!-- =================== HERO SECTION =================== -->
 <?php if ($showHero): ?>
   <div class="container">
-    <?php if ($heroBanner && !empty($heroBanner['image'])): ?>
+    <?php 
+    $heroBannerImg = ($heroBanner && !empty($heroBanner['image'])) ? banner_image_url($heroBanner['image']) : null;
+    ?>
+    <?php if ($heroBanner && $heroBannerImg): ?>
       <section class="hero-section hero-editorial" aria-label="Featured Promotion">
-        <div class="hero-slide" style="background-image: linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%), url('<?= e(UPLOADS_URL . 'banners/' . $heroBanner['image']) ?>'); background-size: cover; background-position: center; border-radius: var(--radius-lg);">
+        <div class="hero-slide" style="background-image: linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%), url('<?= e($heroBannerImg) ?>'); background-size: cover; background-position: center; border-radius: var(--radius-lg);">
           <div class="hero-content text-white">
             <span class="badge badge-new mb-3">Curated Collection</span>
             <h1 class="hero-headline display-serif text-white"><?= e($heroBanner['title']) ?></h1>
@@ -220,8 +223,9 @@ include __DIR__ . '/includes/partials/header.php';
         <?php foreach ($categories as $cat): ?>
           <div class="col-6 col-lg-3">
             <a href="<?= e(route('category', ['slug' => $cat['slug']])) ?>" class="category-tile">
-              <?php if (!empty($cat['image']) && file_exists(UPLOADS_PATH . '/categories/' . $cat['image'])): ?>
-                <img src="<?= e(UPLOADS_URL . 'categories/' . $cat['image']) ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
+              <?php $catImg = !empty($cat['image']) ? category_image_url($cat['image']) : null; ?>
+              <?php if ($catImg): ?>
+                <img src="<?= e($catImg) ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
               <?php else: ?>
                 <div class="w-100 h-100" style="background: linear-gradient(135deg, var(--bg-soft) 0%, var(--line) 100%);"></div>
               <?php endif; ?>

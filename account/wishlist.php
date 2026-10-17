@@ -119,8 +119,7 @@ account_layout_start('wishlist', 'Saved Wishlist', $customer);
       <?php
       $isVariable = (($p['product_type'] ?? '') === 'variable');
       $cardData = $p['card_data'] ?? [];
-      $stock = $cardData['stock'] ?? ($p['stock_quantity'] ?? 0);
-      $imageUrl = $cardData['image_url'] ?? (!empty($p['featured_image']) ? UPLOADS_URL . 'products/' . $p['featured_image'] : '');
+      $imageUrl = $cardData['image_url'] ?? (!empty($p['featured_image']) ? product_image_url($p['featured_image']) : (!empty($p['image']) ? product_image_url($p['image']) : ''));
       $priceHtml = $cardData['price_html'] ?? price($p['price']);
 
       // Live availability status badge

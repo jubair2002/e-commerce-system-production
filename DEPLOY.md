@@ -104,3 +104,72 @@ You can view this breakdown in Chrome/Firefox DevTools:
 1. Open **DevTools** (`F12`) &rarr; **Network** tab.
 2. Click on the main document request &rarr; **Timing** tab.
 3. Inspect the **Server Timing** breakdown (`app`, `db`, and total query count).
+
+---
+
+## 6. Production Media Storage & Uploads Configuration
+
+When deploying on a Linux VPS / AWS EC2 / DigitalOcean server with external uploads storage (`UPLOADS_PATH` in `.env`):
+
+### A. Set Correct Directory Permissions
+Ensure the web server process user (`www-data` or `nginx`) owns and can write to your external uploads directory:
+
+```bash
+# Example if UPLOADS_PATH=/var/www/uploads
+sudo mkdir -p /var/www/uploads
+sudo chown -R www-data:www-data /var/www/uploads
+sudo chmod -R 775 /var/www/uploads
+```
+
+### B. Create Static Web Server Storage Symlink (Recommended)
+Creating a symbolic link from your project root to `UPLOADS_PATH` enables Apache and Nginx to serve images directly from disk with sub-millisecond static file speeds:
+
+```bash
+# Automatic link provisioner:
+php storage_link.php
+
+# Or manually via shell:
+ln -s /var/www/uploads /var/www/html/uploads
+```
+*(You can also click **Regenerate Storage Symlink** in Admin Panel &rarr; Settings &rarr; General).*
+
+### C. Apache Server Configuration
+If running Apache, ensure `mod_rewrite` is enabled and `.htaccess` overrides are allowed:
+
+```bash
+sudo a2enmod rewrite
+```
+
+In `/etc/apache2/apache2.conf` (or your VirtualHost configuration):
+```apache
+<Directory /var/www/html/>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+Restart Apache:
+```bash
+sudo systemctl restart apache2
+```
+
+### D. NGINX Server Configuration
+If running Nginx, either:
+1. Use the storage symlink (Nginx automatically follows symlinks by default), OR
+2. Add an explicit alias location in your server block `/etc/nginx/sites-available/default`:
+
+```nginx
+# Direct static media delivery from UPLOADS_PATH
+location /uploads/ {
+    alias /var/www/uploads/;
+    try_files $uri $uri/ /uploads.php?file=$1;
+    access_log off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000, immutable";
+}
+```
+Reload Nginx:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+

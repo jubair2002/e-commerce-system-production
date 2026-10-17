@@ -46,7 +46,7 @@ if (!empty($envBaseUrl)) {
         $base = $scriptDir;
     }
 
-    define('BASE_URL', ($base === '' || $base === '/') ? '/' : (rtrim($base, '/') . '/'));
+    define('BASE_URL', ($base === '' || $base === '/' || $base === '.') ? '/' : (rtrim($base, '/') . '/'));
 }
 define('ADMIN_URL', BASE_URL . 'admin/');
 
@@ -69,7 +69,32 @@ define('INCLUDES_PATH', ROOT_PATH . '/includes');
 $envUploadsPath = env('UPLOADS_PATH');
 $envUploadsUrl  = env('UPLOADS_URL');
 define('UPLOADS_PATH',  !empty($envUploadsPath) ? rtrim($envUploadsPath, '/') : ROOT_PATH . '/assets/uploads');
-define('UPLOADS_URL',   !empty($envUploadsUrl) ? rtrim($envUploadsUrl, '/') . '/' : BASE_URL . 'assets/uploads/');
+
+if (!empty($envUploadsUrl)) {
+    $rawUrl = (string)$envUploadsUrl;
+    if (preg_match('#^https?://#i', $rawUrl)) {
+        define('UPLOADS_URL', rtrim($rawUrl, '/') . '/');
+    } else {
+        $trimmed = trim($rawUrl, '/');
+        define('UPLOADS_URL', BASE_URL . ($trimmed !== '' ? $trimmed . '/' : ''));
+    }
+} else {
+    define('UPLOADS_URL', BASE_URL . 'assets/uploads/');
+}
+
+// Automatically ensure uploads subdirectories and storage symlink exist if custom UPLOADS_PATH is used
+if (UPLOADS_PATH !== ROOT_PATH . '/assets/uploads' && is_dir(UPLOADS_PATH)) {
+    foreach (['products', 'avatars', 'banners', 'branding', 'categories', 'cache'] as $subDir) {
+        $targetSub = UPLOADS_PATH . '/' . $subDir;
+        if (!is_dir($targetSub)) {
+            @mkdir($targetSub, 0775, true);
+        }
+    }
+    $symlinkTarget = ROOT_PATH . '/uploads';
+    if (!file_exists($symlinkTarget) && function_exists('symlink')) {
+        @symlink(UPLOADS_PATH, $symlinkTarget);
+    }
+}
 
 // ----- Error handling -----
 if (APP_ENV === 'development') {

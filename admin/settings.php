@@ -124,6 +124,26 @@ if (!function_exists('settings_save')) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
     $action = $_POST['action'] ?? '';
+    // Action: Link Storage Symlink
+    if ($action === 'link_storage') {
+        $link = ROOT_PATH . '/uploads';
+        if (UPLOADS_PATH === ROOT_PATH . '/assets/uploads') {
+            flash('info', 'Your application is configured to use the default repository folder: assets/uploads.');
+        } else {
+            if (!is_dir(UPLOADS_PATH)) {
+                @mkdir(UPLOADS_PATH, 0775, true);
+            }
+            if (file_exists($link) || is_link($link)) {
+                @unlink($link);
+            }
+            if (function_exists('symlink') && @symlink(UPLOADS_PATH, $link)) {
+                flash('success', 'Storage link created successfully: [uploads] -> [' . UPLOADS_PATH . ']');
+            } else {
+                flash('warning', 'Unable to create symlink automatically. Run on server: ln -s ' . escapeshellarg(UPLOADS_PATH) . ' ' . escapeshellarg($link));
+            }
+        }
+        admin_redirect('settings.php?tab=general');
+    }
 
     // Tab 1: General Settings
     if ($action === 'save_general') {
@@ -712,10 +732,10 @@ include __DIR__ . '/includes/header.php';
               <label class="form-label fw-semibold">Store Logo</label>
               <input type="file" name="store_logo" class="form-control" accept="image/png,image/jpeg,image/svg+xml,image/webp">
               <div class="form-text">Max 2MB (PNG, JPG, SVG, WebP).</div>
-              <?php $logo = setting('store_logo'); ?>
-              <?php if ($logo && (file_exists(UPLOADS_PATH . '/branding/' . $logo) || file_exists(UPLOADS_PATH . '/store/' . $logo))): ?>
+              <?php $logo = setting('store_logo'); $logoUrl = store_logo_url($logo); ?>
+              <?php if ($logo && $logoUrl): ?>
                 <div class="mt-2 p-2 bg-light rounded border d-inline-block">
-                  <img src="<?= e(file_exists(UPLOADS_PATH . '/branding/' . $logo) ? UPLOADS_URL . 'branding/' . $logo : UPLOADS_URL . 'store/' . $logo) ?>" alt="Logo" style="max-height: 40px;">
+                  <img src="<?= e($logoUrl) ?>" alt="Logo" style="max-height: 40px;">
                   <span class="text-muted small ms-2"><?= e($logo) ?></span>
                 </div>
               <?php endif; ?>
@@ -725,10 +745,10 @@ include __DIR__ . '/includes/header.php';
               <label class="form-label fw-semibold">Favicon</label>
               <input type="file" name="store_favicon" class="form-control" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml">
               <div class="form-text">Max 1MB (ICO, PNG, SVG).</div>
-              <?php $fav = setting('store_favicon'); ?>
-              <?php if ($fav && file_exists(UPLOADS_PATH . '/branding/' . $fav)): ?>
+              <?php $fav = setting('store_favicon'); $favUrl = store_favicon_url($fav); ?>
+              <?php if ($fav && $favUrl): ?>
                 <div class="mt-2 p-2 bg-light rounded border d-inline-block">
-                  <img src="<?= e(UPLOADS_URL . 'branding/' . $fav) ?>" alt="Favicon" style="max-height: 24px;">
+                  <img src="<?= e($favUrl) ?>" alt="Favicon" style="max-height: 24px;">
                   <span class="text-muted small ms-2"><?= e($fav) ?></span>
                 </div>
               <?php endif; ?>
@@ -764,6 +784,73 @@ include __DIR__ . '/includes/header.php';
             <i class="bi bi-save me-1"></i> Save General Settings
           </button>
         </form>
+
+        <!-- Storage & Media Diagnostics -->
+        <div class="mt-4 pt-4 border-top">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+              <h6 class="fw-bold mb-1"><i class="bi bi-hdd-network me-1"></i> Media Storage & Uploads Status</h6>
+              <p class="text-muted small mb-0">Production storage paths, write permissions, and web server delivery symlinks.</p>
+            </div>
+            <form method="post" class="d-inline">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="link_storage">
+              <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-link-45deg me-1"></i> Regenerate Storage Symlink
+              </button>
+            </form>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border">
+                <div class="text-muted small fw-semibold">UPLOADS_PATH (Disk)</div>
+                <div class="text-truncate small mt-1 font-monospace" title="<?= e(UPLOADS_PATH) ?>">
+                  <?= e(UPLOADS_PATH) ?>
+                </div>
+                <div class="mt-2">
+                  <?php if (is_writable(UPLOADS_PATH)): ?>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Writable (OK)</span>
+                  <?php else: ?>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Not Writable</span>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border">
+                <div class="text-muted small fw-semibold">UPLOADS_URL (Web)</div>
+                <div class="text-truncate small mt-1 font-monospace" title="<?= e(UPLOADS_URL) ?>">
+                  <?= e(UPLOADS_URL) ?>
+                </div>
+                <div class="mt-2">
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Active Base URL</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border">
+                <div class="text-muted small fw-semibold">Web Server Symlink</div>
+                <?php
+                $linkExists = is_link(ROOT_PATH . '/uploads');
+                $linkTarget = $linkExists ? @readlink(ROOT_PATH . '/uploads') : null;
+                ?>
+                <div class="text-truncate small mt-1 font-monospace" title="<?= e($linkTarget ?: '') ?>">
+                  <?= $linkExists ? e($linkTarget) : 'Dynamic Delivery via uploads.php' ?>
+                </div>
+                <div class="mt-2">
+                  <?php if ($linkExists): ?>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Direct Static Serving</span>
+                  <?php else: ?>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-arrow-repeat me-1"></i>uploads.php Dynamic Serving</span>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   <?php endif; ?>

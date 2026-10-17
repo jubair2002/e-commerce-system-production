@@ -21,8 +21,11 @@ function account_layout_start(string $activeTab, string $title, ?array $customer
     $initials = strtoupper(mb_substr($name, 0, 1));
 
     $avatarUrl = null;
-    if (!empty($customer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $customer['avatar'])) {
-        $avatarUrl = UPLOADS_URL . 'avatars/' . $customer['avatar'];
+    if (!empty($customer['avatar'])) {
+        $res = avatar_url($customer['avatar'], $name);
+        if (!str_contains($res, 'ui-avatars.com')) {
+            $avatarUrl = $res;
+        }
     }
 
     include __DIR__ . '/../includes/partials/header.php';

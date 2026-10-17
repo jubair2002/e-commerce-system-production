@@ -183,9 +183,10 @@ include __DIR__ . '/includes/header.php';
             <label class="form-label fw-semibold">Banner Background Image</label>
             <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/webp">
             <div class="form-text">Recommended size: 1600 &times; 600 px (hero) or 1200 &times; 400 px (promo). Max 4MB.</div>
-            <?php if (!empty($banner['image'])): ?>
+            <?php $bannerUrl = !empty($banner['image']) ? banner_image_url($banner['image']) : null; ?>
+            <?php if ($bannerUrl): ?>
               <div class="mt-2 p-2 bg-light rounded border d-inline-block">
-                <img src="<?= e(UPLOADS_URL . 'banners/' . $banner['image']) ?>" alt="Current image" style="max-height: 80px;" class="rounded">
+                <img src="<?= e($bannerUrl) ?>" alt="Current image" style="max-height: 80px;" class="rounded">
                 <span class="small text-muted ms-2"><?= e($banner['image']) ?></span>
               </div>
             <?php endif; ?>

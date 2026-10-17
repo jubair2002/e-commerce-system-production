@@ -533,8 +533,12 @@ include __DIR__ . '/includes/header.php';
                 <tr>
                   <td class="ps-3">
                     <div class="d-flex align-items-center gap-2">
-                      <?php if (!empty($item['image']) && file_exists(UPLOADS_PATH . '/products/' . $item['image'])): ?>
-                        <img src="<?= e(UPLOADS_URL . 'products/' . $item['image']) ?>" alt="" style="width: 36px; height: 36px; object-fit: cover;" class="rounded border">
+                      <?php 
+                      $pImg = product_image_url($item['image'] ?? null);
+                      $hasImg = !empty($item['image']) && !str_starts_with($pImg, 'data:image/svg+xml');
+                      ?>
+                      <?php if ($hasImg): ?>
+                        <img src="<?= e($pImg) ?>" alt="" style="width: 36px; height: 36px; object-fit: cover;" class="rounded border">
                       <?php else: ?>
                         <div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 36px; height: 36px;">
                           <i class="bi bi-box"></i>

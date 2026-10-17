@@ -12,7 +12,7 @@ if ($uri !== '/' && file_exists($file) && !is_dir($file)) {
 }
 
 // Uploads delivery: serve from UPLOADS_PATH if requested via /uploads/ or /assets/uploads/
-if (preg_match('#^/(?:assets/)?uploads/(.+)$#', $uri, $m)) {
+if (preg_match('#(?:^|/)(?:assets/)?uploads/(.+)$#', $uri, $m)) {
     $_GET['file'] = $m[1];
     require __DIR__ . '/uploads.php';
     exit;

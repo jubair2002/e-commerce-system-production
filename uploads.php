@@ -6,16 +6,31 @@
  */
 require_once __DIR__ . '/config/config.php';
 
+// Release session lock immediately if opened by config.php to avoid stalling concurrent image requests
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
+// Clean any pre-existing output buffering to prevent corrupting binary media bytes
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
 $requested = $_GET['file'] ?? '';
 if (empty($requested)) {
-    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-    if (preg_match('#^/(?:assets/)?uploads/(.+)$#', $uri, $matches)) {
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+    // Strip query string if any
+    if (strpos($uri, '?') !== false) {
+        $uri = substr($uri, 0, strpos($uri, '?'));
+    }
+    // Match any /uploads/ or /assets/uploads/ pattern even with subfolder installs
+    if (preg_match('#(?:^|/)(?:assets/)?uploads/(.+)$#', $uri, $matches)) {
         $requested = $matches[1];
     }
 }
 
 // Security: strip null bytes and directory traversal sequences
-$requested = str_replace(["\0", '../', '..\\'], '', $requested);
+$requested = str_replace(["\0", '../', '..\\'], '', (string)$requested);
 $requested = ltrim($requested, '/');
 
 if (empty($requested)) {
@@ -29,18 +44,54 @@ if (preg_match('/\.(php[0-9]?|phtml|phar|sh|pl|cgi|py|exe|bat|htaccess|env)$/i',
     exit('Access denied.');
 }
 
-// 1. Check primary UPLOADS_PATH
-$filePath = UPLOADS_PATH . '/' . $requested;
+// Build list of candidate file paths to inspect
+$candidatePaths = [
+    // 1. Primary custom UPLOADS_PATH
+    UPLOADS_PATH . '/' . $requested,
+    // 2. In-repo assets/uploads
+    ROOT_PATH . '/assets/uploads/' . $requested,
+];
 
-// 2. Fallback to default in-repo assets/uploads if not found in custom UPLOADS_PATH
-if (!file_exists($filePath) || !is_file($filePath)) {
-    $fallback = ROOT_PATH . '/assets/uploads/' . $requested;
-    if (file_exists($fallback) && is_file($fallback)) {
-        $filePath = $fallback;
-    } else {
-        http_response_code(404);
-        exit('File not found.');
+// Profile picture path flexibility (checks both root and avatars/ folder)
+if (str_starts_with($requested, 'avatars/')) {
+    $bare = substr($requested, 8);
+    $candidatePaths[] = UPLOADS_PATH . '/' . $bare;
+    $candidatePaths[] = ROOT_PATH . '/assets/uploads/' . $bare;
+} else {
+    $candidatePaths[] = UPLOADS_PATH . '/avatars/' . $requested;
+    $candidatePaths[] = ROOT_PATH . '/assets/uploads/avatars/' . $requested;
+}
+
+// Product image path flexibility (checks both root and products/ folder)
+if (str_starts_with($requested, 'products/')) {
+    $bare = substr($requested, 9);
+    $candidatePaths[] = UPLOADS_PATH . '/' . $bare;
+    $candidatePaths[] = ROOT_PATH . '/assets/uploads/' . $bare;
+} else {
+    $candidatePaths[] = UPLOADS_PATH . '/products/' . $requested;
+    $candidatePaths[] = ROOT_PATH . '/assets/uploads/products/' . $requested;
+}
+
+// Branding / banner / category flexibility
+foreach (['banners', 'branding', 'categories', 'store'] as $folder) {
+    if (str_starts_with($requested, $folder . '/')) {
+        $bare = substr($requested, strlen($folder) + 1);
+        $candidatePaths[] = UPLOADS_PATH . '/' . $bare;
+        $candidatePaths[] = ROOT_PATH . '/assets/uploads/' . $bare;
     }
+}
+
+$filePath = null;
+foreach ($candidatePaths as $candidate) {
+    if (!empty($candidate) && file_exists($candidate) && is_file($candidate)) {
+        $filePath = $candidate;
+        break;
+    }
+}
+
+if (!$filePath) {
+    http_response_code(404);
+    exit('File not found.');
 }
 
 // MIME type detection
@@ -54,15 +105,18 @@ $mimeTypes = [
     'svg'  => 'image/svg+xml',
     'ico'  => 'image/x-icon',
     'pdf'  => 'application/pdf',
+    'mp4'  => 'video/mp4',
+    'webm' => 'video/webm',
 ];
-$contentType = $mimeTypes[$ext] ?? mime_content_type($filePath) ?: 'application/octet-stream';
+$contentType = $mimeTypes[$ext] ?? (function_exists('mime_content_type') ? mime_content_type($filePath) : 'application/octet-stream');
 
 // HTTP Caching (304 Not Modified support for sub-millisecond responses)
 $mtime = filemtime($filePath);
-$etag  = '"' . md5($filePath . $mtime . filesize($filePath)) . '"';
+$fsize = filesize($filePath);
+$etag  = '"' . md5($filePath . $mtime . $fsize) . '"';
 
 header('Content-Type: ' . $contentType);
-header('Content-Length: ' . filesize($filePath));
+header('Content-Length: ' . $fsize);
 header('Cache-Control: public, max-age=31536000, immutable');
 header('ETag: ' . $etag);
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
