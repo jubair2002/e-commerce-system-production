@@ -168,6 +168,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // -------------------------------------------------------------
+    // Image Upload Pre-Validation
+    // -------------------------------------------------------------
+    $hasPrimaryUpload = !empty($_FILES['image']['name']);
+    $resolvedPrimaryExt = null;
+    $okMimes = [
+        'image/jpeg' => 'jpg', 'image/pjpeg' => 'jpg',
+        'image/png'  => 'png', 'image/x-png' => 'png',
+        'image/gif'  => 'gif',
+        'image/webp' => 'webp',
+    ];
+
+    if ($hasPrimaryUpload) {
+        $uploadErr = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($uploadErr !== UPLOAD_ERR_OK) {
+            $errors[] = 'Primary image upload failed: ' . upload_error_message($uploadErr);
+        } else {
+            $tmp  = $_FILES['image']['tmp_name'];
+            $size = (int)$_FILES['image']['size'];
+            $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
+            $ext  = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $resolvedPrimaryExt = $okMimes[$mime] ?? ($ext === 'jpeg' ? 'jpg' : (in_array($ext, ['jpg', 'png', 'gif', 'webp'], true) ? $ext : null));
+
+            if (!$resolvedPrimaryExt) {
+                $errors[] = 'Primary image must be a JPG, PNG, GIF or WEBP image (detected: ' . e((string)$mime) . ').';
+            } elseif ($size > 10 * 1024 * 1024) {
+                $errors[] = 'Primary image exceeds 10 MB limit (file size: ' . round($size / 1048576, 2) . ' MB).';
+            } else {
+                $dir = UPLOADS_PATH . '/products';
+                if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
+                    $errors[] = 'Uploads folder could not be created at ' . e($dir) . '. Please check filesystem permissions.';
+                } elseif (!is_writable($dir)) {
+                    $errors[] = 'Upload directory is not writable by web server (www-data): ' . e($dir) . '. Please run: sudo chown -R www-data:www-data ' . escapeshellarg(UPLOADS_PATH) . ' && sudo chmod -R 775 ' . escapeshellarg(UPLOADS_PATH);
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
     // Save in Database Transaction
     // -------------------------------------------------------------
     if (!$errors) {
@@ -179,26 +217,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $finalSlug = unique_slug($finalSlug, 'products', $id);
 
             $primaryImage = $product['image'] ?? null;
-
-            // Handle primary image upload if file selected
-            $uploadErr = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
             $uploadedPrimaryFile = null;
-            if (!empty($_FILES['image']['name']) && $uploadErr === UPLOAD_ERR_OK) {
-                $tmp  = $_FILES['image']['tmp_name'];
-                $size = (int)$_FILES['image']['size'];
-                $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
-                $okMimes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
 
-                if (isset($okMimes[$mime]) && $size <= 4 * 1024 * 1024) {
-                    $dir = UPLOADS_PATH . '/products';
-                    if (!is_dir($dir)) {
-                        @mkdir($dir, 0775, true);
-                    }
-                    $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $okMimes[$mime];
-                    if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
-                        $primaryImage = $newFileName;
-                        $uploadedPrimaryFile = $dir . '/' . $newFileName;
-                    }
+            // Handle primary image upload if file selected and validated
+            if ($hasPrimaryUpload && $resolvedPrimaryExt) {
+                $tmp = $_FILES['image']['tmp_name'];
+                $dir = UPLOADS_PATH . '/products';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0775, true);
+                }
+                $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $resolvedPrimaryExt;
+                if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
+                    $primaryImage = $newFileName;
+                    $uploadedPrimaryFile = $dir . '/' . $newFileName;
+                } else {
+                    throw new RuntimeException('Failed to move uploaded file to ' . $dir . '/' . $newFileName . '. Check folder write permissions.');
                 }
             }
 
@@ -484,7 +517,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $curPosStmt = $pdo->prepare("SELECT COALESCE(MAX(position), 0) FROM product_images WHERE product_id = :pid");
                 $curPosStmt->execute([':pid' => $id]);
-                $nextImgPos = (int)$curPosStmt->fetchColumn() + 1;
+                $dir = UPLOADS_PATH . '/products';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0775, true);
+                }
 
                 foreach ($_FILES['gallery_images']['name'] as $k => $fName) {
                     if (empty($fName) || ($_FILES['gallery_images']['error'][$k] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -493,10 +529,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tmp  = $_FILES['gallery_images']['tmp_name'][$k];
                     $size = (int)$_FILES['gallery_images']['size'][$k];
                     $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
-                    $okMimes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                    $ext  = strtolower(pathinfo($fName, PATHINFO_EXTENSION));
+                    $galExt = $okMimes[$mime] ?? ($ext === 'jpeg' ? 'jpg' : (in_array($ext, ['jpg', 'png', 'gif', 'webp'], true) ? $ext : null));
 
-                    if (isset($okMimes[$mime]) && $size <= 4 * 1024 * 1024) {
-                        $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $okMimes[$mime];
+                    if ($galExt && $size <= 10 * 1024 * 1024) {
+                        $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $galExt;
                         if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
                             product_generate_responsive_variants($id, $dir . '/' . $newFileName, $newFileName);
                             $stmtImgIns->execute([
