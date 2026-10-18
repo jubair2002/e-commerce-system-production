@@ -54,6 +54,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
 
   <!-- Preload Typography & Core Styles -->
   <link rel="preload" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= $cssVersion ?>" as="style">
+  <link rel="preload" href="<?= e(url('assets/vendor/fonts/inter-400.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="<?= e(url('assets/vendor/fonts/inter-600.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="<?= e(url('assets/img/icons.svg')) ?>" as="image" type="image/svg+xml">
   <link rel="stylesheet" href="<?= e(url('assets/vendor/fonts/inter.css')) ?>">
   <link rel="stylesheet" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= $cssVersion ?>">
 
@@ -68,6 +71,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
   <script>
     window.SHOP_BASE_URL = "<?= e(BASE_URL) ?>";
     window.SHOP_CSRF_TOKEN = "<?= e(csrf_token()) ?>";
+    window.CUSTOMER_LOGGED_IN = <?= !empty($headerCustomer) ? 'true' : 'false' ?>;
   </script>
 </head>
 <body>

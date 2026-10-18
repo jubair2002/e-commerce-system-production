@@ -492,8 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 8. Wishlist Heart Button & State Sync (Prompt 13)
   // -------------------------------------------------------------
   const wishlistButtons = document.querySelectorAll('[data-wishlist-btn]');
-  if (wishlistButtons.length > 0) {
-    // Initial fetch to mark saved items as active
+  if (wishlistButtons.length > 0 && window.CUSTOMER_LOGGED_IN) {
+    // Initial fetch to mark saved items as active (only for logged-in customers)
     fetch(`${baseUrl}api/wishlist.php?action=list_ids`)
       .then(r => r.json())
       .then(data => {
@@ -555,5 +555,27 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // -------------------------------------------------------------
+  // 9. Instant Page Prefetching on Hover/Touch (Eliminates Navigation Lag)
+  // -------------------------------------------------------------
+  const prefetchedUrls = new Set();
+  const prefetchUrl = (url) => {
+    if (!url || prefetchedUrls.has(url) || url.includes('/admin/') || url.includes('/auth/logout') || url.includes('#') || url.startsWith('javascript:')) return;
+    prefetchedUrls.add(url);
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    document.head.appendChild(link);
+  };
+
+  document.addEventListener('pointerover', (e) => {
+    const anchor = e.target.closest('a[href]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (href && (href.startsWith('/') || href.startsWith(window.location.origin)) && !href.startsWith('//')) {
+      prefetchUrl(anchor.href);
+    }
+  }, { passive: true });
 });
 

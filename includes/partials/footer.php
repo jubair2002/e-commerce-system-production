@@ -167,3 +167,4 @@ $mobileNavEnabled  = (int)setting('mobile_bottom_nav', '1') === 1;
 
 </body>
 </html>
+<?php if (function_exists('app_finish_response')) app_finish_response(); ?>

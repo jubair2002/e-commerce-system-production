@@ -458,14 +458,18 @@
   }
 
   // -------------------------------------------------------------
-  // Initial Boot
+  // Initial Boot (Non-blocking during initial render)
   // -------------------------------------------------------------
-  fetchAvailability();
-
-  if (realtimeMode === 'sse') {
-    initSSE();
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => {
+      fetchAvailability();
+      if (realtimeMode === 'sse') initSSE(); else scheduleNextPoll();
+    }, { timeout: 1500 });
   } else {
-    scheduleNextPoll();
+    setTimeout(() => {
+      fetchAvailability();
+      if (realtimeMode === 'sse') initSSE(); else scheduleNextPoll();
+    }, 300);
   }
 
 })();

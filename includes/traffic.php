@@ -53,11 +53,10 @@ function app_finish_response(): void
         return;
     }
 
-    // Apache mod_php / XAMPP: close the connection manually
+    // Apache mod_php / XAMPP: flush response buffer without closing the TCP connection
     ignore_user_abort(true);
     if (!headers_sent() && ob_get_level() > 0) {
         header('Content-Length: ' . (int)ob_get_length());
-        header('Connection: close');
     }
     while (ob_get_level() > 0) {
         @ob_end_flush();
