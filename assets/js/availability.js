@@ -61,13 +61,20 @@
     variants = data.variants || [];
 
     if (productType === 'variable') {
-      // Ensure initial selection if none selected yet
+      // Ensure initial selection matches a valid existing variant
       if (Object.keys(selectedValues).length === 0 && options.length > 0) {
-        options.forEach(opt => {
-          if (opt.values && opt.values.length > 0) {
-            selectedValues[opt.id] = opt.values[0].id;
-          }
-        });
+        if (variants.length > 0 && variants[0].key) {
+          const parts = variants[0].key.split('-');
+          options.forEach((opt, idx) => {
+            if (parts[idx]) selectedValues[opt.id] = parseInt(parts[idx], 10);
+          });
+        } else {
+          options.forEach(opt => {
+            if (opt.values && opt.values.length > 0) {
+              selectedValues[opt.id] = opt.values[0].id;
+            }
+          });
+        }
         syncOptionSelectorsUI();
       }
 

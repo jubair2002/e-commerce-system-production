@@ -89,14 +89,30 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
         <?php endif; ?>
       </div>
 
-      <!-- Quick Add button for simple in-stock products -->
-      <?php if ($isSimple && !$isSoldOut): ?>
-        <button type="button"
-                class="btn btn-secondary btn-sm"
-                data-quick-add="<?= $pid ?>"
-                aria-label="Quick add <?= e($p['name']) ?> to cart">
-          + Add
-        </button>
+      <!-- Quick Add & Buy Now action buttons -->
+      <?php if (!$isSoldOut): ?>
+        <div class="product-card-actions">
+          <?php if ($isSimple): ?>
+            <button type="button"
+                    class="btn btn-secondary btn-sm product-card-btn-add"
+                    data-quick-add="<?= $pid ?>"
+                    aria-label="Add <?= e($p['name']) ?> to cart">
+              + Add
+            </button>
+            <button type="button"
+                    class="btn btn-primary btn-sm product-card-btn-buy"
+                    data-buy-now="<?= $pid ?>"
+                    aria-label="Buy <?= e($p['name']) ?> now">
+              Buy Now
+            </button>
+          <?php else: ?>
+            <a href="<?= e($productUrl) ?>"
+               class="btn btn-primary btn-sm product-card-btn-buy w-100"
+               aria-label="Buy <?= e($p['name']) ?> now">
+              Buy Now
+            </a>
+          <?php endif; ?>
+        </div>
       <?php endif; ?>
     </div>
 

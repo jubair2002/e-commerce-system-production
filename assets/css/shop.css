@@ -1856,10 +1856,55 @@ svg.icon {
 .product-card-footer {
   margin-top: auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
 }
+
+.product-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.product-card-actions .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease);
+}
+
+.product-card-btn-add {
+  flex: 1 1 0;
+  background-color: var(--surface-alt, #f8fafc);
+  color: var(--ink, #0f172a);
+  border: 1px solid var(--line, #e2e8f0);
+}
+
+.product-card-btn-add:hover {
+  background-color: var(--line, #e2e8f0);
+  color: var(--ink, #0f172a);
+}
+
+.product-card-btn-buy {
+  flex: 1.2 1 0;
+  background-color: var(--primary, #0f172a);
+  color: #ffffff !important;
+  border: 1px solid var(--primary, #0f172a);
+  font-weight: 600;
+}
+
+.product-card-btn-buy:hover {
+  filter: brightness(1.15);
+  color: #ffffff !important;
+}
+
 
 
 /* --- assets/css/shop/components/drawer.css --- */

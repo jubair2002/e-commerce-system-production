@@ -70,6 +70,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
 
   <script>
     window.SHOP_BASE_URL = "<?= e(BASE_URL) ?>";
+    window.SHOP_CHECKOUT_URL = "<?= e(route('checkout')) ?>";
     window.SHOP_CSRF_TOKEN = "<?= e(csrf_token()) ?>";
     window.CUSTOMER_LOGGED_IN = <?= !empty($headerCustomer) ? 'true' : 'false' ?>;
   </script>

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add') {
         $pid = (int)($_POST['product_id'] ?? 0);
         $vid = !empty($_POST['variant_id']) ? (int)$_POST['variant_id'] : null;
-        $qty = (int)($_POST['qty'] ?? 1);
+        $qty = (int)($_POST['quantity'] ?? $_POST['qty'] ?? 1);
 
         if ($qty < 1) $qty = 1;
         if ($qty > 99) $qty = 99;

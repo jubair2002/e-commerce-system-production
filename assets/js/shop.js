@@ -273,16 +273,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------
-  // 4. Quick-Add on Product Cards
+  // 4. Quick-Add and Buy Now on Product Cards
   // -------------------------------------------------------------
-  document.querySelectorAll('[data-quick-add]').forEach(btn => {
-    btn.addEventListener('click', function (e) {
+  document.addEventListener('click', function (e) {
+    const quickAddBtn = e.target.closest('[data-quick-add]');
+    if (quickAddBtn) {
       e.preventDefault();
       e.stopPropagation();
-      const pid = this.dataset.quickAdd;
-      const originalText = this.innerHTML;
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Adding...';
+      const pid = quickAddBtn.dataset.quickAdd;
+      const originalText = quickAddBtn.innerHTML;
+      quickAddBtn.disabled = true;
+      quickAddBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
       const fd = new FormData();
       fd.append('action', 'add');
@@ -292,8 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
-          this.disabled = false;
-          this.innerHTML = originalText;
+          quickAddBtn.disabled = false;
+          quickAddBtn.innerHTML = originalText;
           if (data.ok) {
             saveCartCache(data);
             updateCartBadge(data.cart_count);
@@ -303,10 +304,56 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })
         .catch(() => {
-          this.disabled = false;
-          this.innerHTML = originalText;
+          quickAddBtn.disabled = false;
+          quickAddBtn.innerHTML = originalText;
         });
-    });
+      return;
+    }
+
+    const buyNowBtn = e.target.closest('[data-buy-now]');
+    if (buyNowBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pid = buyNowBtn.dataset.buyNow;
+      const originalText = buyNowBtn.innerHTML;
+      buyNowBtn.disabled = true;
+      buyNowBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+      const fd = new FormData();
+      fd.append('action', 'add');
+      fd.append('product_id', pid);
+      fd.append('quantity', 1);
+
+      const checkoutUrl = window.SHOP_CHECKOUT_URL || `${baseUrl}checkout`;
+
+      fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            window.location.href = checkoutUrl;
+          } else {
+            buyNowBtn.disabled = false;
+            buyNowBtn.innerHTML = originalText;
+            alert(data.error || 'Unable to proceed to checkout.');
+          }
+        })
+        .catch(() => {
+          // Fallback form submit
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `${baseUrl}cart`;
+          form.innerHTML = `
+            <input type="hidden" name="csrf_token" value="${window.SHOP_CSRF_TOKEN || ''}">
+            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="product_id" value="${pid}">
+            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="action_type" value="buy_now">
+          `;
+          document.body.appendChild(form);
+          form.submit();
+        });
+      return;
+    }
   });
 
   // -------------------------------------------------------------
@@ -393,15 +440,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // PDP AJAX Add-to-Cart
+  // PDP AJAX Add-to-Cart & Buy Now
   const pdpForm = document.getElementById('pdpAddToCartForm');
   if (pdpForm) {
+    let pdpSubmitter = null;
+    pdpForm.querySelectorAll('button[type="submit"]').forEach(btn => {
+      btn.addEventListener('click', function () {
+        pdpSubmitter = this;
+      });
+    });
+
     pdpForm.addEventListener('submit', function (e) {
-      const submitBtn = e.submitter;
-      const isBuyNow = submitBtn && submitBtn.value === 'buy_now';
+      const submitBtn = e.submitter || pdpSubmitter;
+      const isBuyNow = submitBtn && (submitBtn.value === 'buy_now' || submitBtn.id === 'pdpBuyNowBtn');
 
       if (isBuyNow) {
-        // Let buy now submit normally to redirect straight to checkout
+        // Ensure action_type input exists and is set to buy_now for direct checkout redirect
+        let actionTypeInput = pdpForm.querySelector('input[name="action_type"]');
+        if (!actionTypeInput) {
+          actionTypeInput = document.createElement('input');
+          actionTypeInput.type = 'hidden';
+          actionTypeInput.name = 'action_type';
+          pdpForm.appendChild(actionTypeInput);
+        }
+        actionTypeInput.value = 'buy_now';
         return;
       }
 
