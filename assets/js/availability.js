@@ -14,6 +14,7 @@
 
   const pollIntervalSeconds = parseInt(container.dataset.pollSeconds, 10) || 10;
   const realtimeMode = container.dataset.realtimeMode || 'poll'; // 'poll' or 'sse'
+  const baseUrl = (typeof window !== 'undefined' && window.SHOP_BASE_URL ? window.SHOP_BASE_URL : '/').replace(/\/?$/, '/');
 
   // DOM Elements
   const priceDisplay = document.getElementById('product-price-display') || document.getElementById('pdpPrice');
@@ -87,16 +88,20 @@
     const label = data.label_text || (isOut ? 'Out of stock' : 'In stock');
 
     if (stockBadge) {
-      stockBadge.className = 'badge ' + (isOut ? 'bg-danger' : (status === 'low_stock' ? 'bg-warning text-dark' : 'bg-success'));
+      stockBadge.className = 'badge ' + (isOut ? 'badge-outline' : (status === 'low_stock' ? 'badge-low-stock' : 'badge-stock'));
       stockBadge.textContent = label;
     }
     if (stockText) {
-      stockText.textContent = data.stock !== null && data.stock !== undefined ? `${data.stock} available` : '';
+      stockText.textContent = data.stock !== null && data.stock !== undefined ? `${data.stock} available` : 'Ready for fast dispatch';
     }
 
     if (addToCartBtn) {
       addToCartBtn.disabled = isOut;
-      addToCartBtn.innerHTML = isOut ? '<i class="bi bi-x-circle"></i> Out of stock' : '<i class="bi bi-bag-plus"></i> Add to cart';
+      if (isOut) {
+        addToCartBtn.innerHTML = `<svg class="i me-1" aria-hidden="true"><use href="${baseUrl}assets/img/icons.svg#x"></use></svg> Out of stock`;
+      } else {
+        addToCartBtn.innerHTML = `<svg class="i me-1" aria-hidden="true"><use href="${baseUrl}assets/img/icons.svg#bag"></use></svg> Add to Cart`;
+      }
     }
     if (buyNowBtn) {
       buyNowBtn.disabled = isOut;
@@ -188,17 +193,17 @@
 
     if (stockBadge) {
       if (isOutOfStock) {
-        stockBadge.className = 'badge bg-danger';
+        stockBadge.className = 'badge badge-outline';
         stockBadge.textContent = 'Out of stock';
       } else if (isBackorder) {
-        stockBadge.className = 'badge bg-info text-dark';
+        stockBadge.className = 'badge badge-low-stock';
         stockBadge.textContent = matched.label_text || 'Backorder';
       } else if (isLow) {
-        stockBadge.className = 'badge bg-warning text-dark';
+        stockBadge.className = 'badge badge-low-stock';
         stockBadge.textContent = matched.label_text || 'Low stock';
       } else {
-        stockBadge.className = 'badge bg-success';
-        stockBadge.textContent = matched.label_text || 'In stock';
+        stockBadge.className = 'badge badge-stock';
+        stockBadge.textContent = matched.label_text || '● In Stock';
       }
     }
 
@@ -210,13 +215,13 @@
     if (addToCartBtn) {
       if (isOutOfStock) {
         addToCartBtn.disabled = true;
-        addToCartBtn.innerHTML = '<i class="bi bi-x-circle"></i> Out of stock';
+        addToCartBtn.innerHTML = `<svg class="i me-1" aria-hidden="true"><use href="${baseUrl}assets/img/icons.svg#x"></use></svg> Out of stock`;
       } else if (isBackorder) {
         addToCartBtn.disabled = false;
-        addToCartBtn.innerHTML = '<i class="bi bi-bag-plus"></i> Pre-order';
+        addToCartBtn.innerHTML = `<svg class="i me-1" aria-hidden="true"><use href="${baseUrl}assets/img/icons.svg#bag"></use></svg> Pre-order`;
       } else {
         addToCartBtn.disabled = false;
-        addToCartBtn.innerHTML = '<i class="bi bi-bag-plus"></i> Add to cart';
+        addToCartBtn.innerHTML = `<svg class="i me-1" aria-hidden="true"><use href="${baseUrl}assets/img/icons.svg#bag"></use></svg> Add to Cart`;
       }
     }
 
@@ -342,7 +347,7 @@
       headers['If-None-Match'] = lastEtag;
     }
 
-    const apiUrl = `api/availability.php?product_id=${productId}&_t=${Date.now()}`;
+    const apiUrl = `${baseUrl}api/availability.php?product_id=${productId}&_t=${Date.now()}`;
 
     fetch(apiUrl, { headers })
       .then(response => {
@@ -356,17 +361,20 @@
         if (etag) lastEtag = etag;
 
         if (response.status === 404) {
-          // Product was disabled/deleted
-          if (liveNotice) {
-            liveNotice.innerHTML = `
-              <div class="alert alert-danger py-2 mb-3">
-                <i class="bi bi-x-octagon-fill me-1"></i> This product is no longer available.
-              </div>
-            `;
+          // Check if it is JSON response from API vs accidental HTML 404
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.includes('application/json')) {
+            if (liveNotice) {
+              liveNotice.innerHTML = `
+                <div class="alert alert-danger py-2 mb-3">
+                  This product is no longer available.
+                </div>
+              `;
+            }
+            if (addToCartBtn) addToCartBtn.disabled = true;
+            if (buyNowBtn) buyNowBtn.disabled = true;
+            stopPolling();
           }
-          if (addToCartBtn) addToCartBtn.disabled = true;
-          if (buyNowBtn) buyNowBtn.disabled = true;
-          stopPolling();
           return null;
         }
 
@@ -424,7 +432,7 @@
       return;
     }
 
-    eventSource = new EventSource(`api/availability_stream.php?product_id=${productId}`);
+    eventSource = new EventSource(`${baseUrl}api/availability_stream.php?product_id=${productId}`);
 
     eventSource.addEventListener('stock', function (e) {
       try {

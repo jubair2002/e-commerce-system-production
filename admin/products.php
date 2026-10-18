@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 @unlink(UPLOADS_PATH . '/products/' . $p['image']);
             }
             db()->prepare('DELETE FROM products WHERE id = :id')->execute([':id' => $id]);
+            if (class_exists('FileCache')) {
+                FileCache::deletePattern('products:*');
+                FileCache::deletePattern('home:*');
+                FileCache::deletePattern('shop:*');
+            }
             log_activity('product.delete', 'Deleted product ' . $p['name']);
             flash('success', 'Product deleted.');
         } else {
@@ -56,6 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db()->exec("DELETE FROM products WHERE id IN ($inClause)");
                 log_activity('product.bulk_delete', 'Deleted ' . count($selectedIds) . ' products');
                 flash('success', count($selectedIds) . ' products deleted.');
+            }
+            if (class_exists('FileCache')) {
+                FileCache::deletePattern('products:*');
+                FileCache::deletePattern('home:*');
+                FileCache::deletePattern('shop:*');
             }
         }
         admin_redirect('products.php');

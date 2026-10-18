@@ -14,6 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     $stmt->execute([':id' => $id]);
     if ($c = $stmt->fetch()) {
         db()->prepare('DELETE FROM categories WHERE id = :id')->execute([':id' => $id]);
+        if (class_exists('FileCache')) {
+            FileCache::delete('categories:tree');
+            FileCache::deletePattern('categories:*');
+            FileCache::deletePattern('shop:*');
+            FileCache::deletePattern('home:*');
+        }
         log_activity('category.delete', 'Deleted category ' . $c['name']);
         flash('success', 'Category deleted.');
     } else {

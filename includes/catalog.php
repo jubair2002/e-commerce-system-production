@@ -448,16 +448,21 @@ function products_attach_card_data(array &$products): void
     $in  = implode(',', array_fill(0, count($ids), '?'));
 
     $second = [];
+    $primaryGallery = [];
     try {
         $st = db()->prepare(
-            "SELECT product_id, filename FROM product_images
-             WHERE product_id IN ($in) AND is_primary = 0
-             ORDER BY product_id, position, id"
+            "SELECT product_id, filename, is_primary FROM product_images
+             WHERE product_id IN ($in)
+             ORDER BY product_id, is_primary DESC, position, id"
         );
         $st->execute($ids);
         foreach ($st->fetchAll() as $r) {
-            if (!isset($second[$r['product_id']])) {
-                $second[$r['product_id']] = $r['filename'];
+            $pId = (int)$r['product_id'];
+            if (!empty($r['is_primary']) && !isset($primaryGallery[$pId])) {
+                $primaryGallery[$pId] = $r['filename'];
+            }
+            if (empty($r['is_primary']) && !isset($second[$pId])) {
+                $second[$pId] = $r['filename'];
             }
         }
     } catch (Throwable $e) {}
@@ -480,6 +485,9 @@ function products_attach_card_data(array &$products): void
 
     foreach ($products as &$p) {
         $pid = (int)$p['id'];
+        if (empty($p['image']) && !empty($primaryGallery[$pid])) {
+            $p['image'] = $primaryGallery[$pid];
+        }
         $p['second_image'] = $second[$pid] ?? ''; // '' (not null) so the card won't re-query
         $p['swatches']     = $sw[$pid] ?? [];
     }

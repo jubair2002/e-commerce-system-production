@@ -40,7 +40,7 @@
 final class FileCache
 {
     /** Version prefix prepended to all keys. Bump to bust all cache instantly. */
-    public const VERSION = 'v1:';
+    public const VERSION = 'v2:';
 
     /** Root directory for cache files */
     private static ?string $storageDir = null;

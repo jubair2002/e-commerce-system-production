@@ -561,6 +561,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
+            if (class_exists('FileCache')) {
+                FileCache::deletePattern('products:*');
+                FileCache::deletePattern('home:*');
+                FileCache::deletePattern('shop:*');
+            }
+
             log_activity('product.save', "Saved product {$name} (type: {$productType}, variants: " . count($postedVariants) . ")");
             flash('success', $id ? 'Product saved successfully.' : 'Product created successfully.');
             admin_redirect('products.php');

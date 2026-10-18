@@ -50,6 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             log_activity('category.create', 'Created category ' . $name);
             flash('success', 'Category created.');
         }
+        if (class_exists('FileCache')) {
+            FileCache::delete('categories:tree');
+            FileCache::deletePattern('categories:*');
+            FileCache::deletePattern('shop:*');
+            FileCache::deletePattern('home:*');
+        }
         admin_redirect('categories.php');
     }
 

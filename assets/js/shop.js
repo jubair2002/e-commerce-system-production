@@ -4,6 +4,7 @@
  * Quick-add, Gallery thumbnails & Lightbox zoom, PDP Accordions, and Recently Viewed.
  */
 document.addEventListener('DOMContentLoaded', () => {
+  const baseUrl = (typeof window !== 'undefined' && window.SHOP_BASE_URL ? window.SHOP_BASE_URL : '/').replace(/\/?$/, '/');
 
   // -------------------------------------------------------------
   // 1. Announcement Bar Dismissal
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       searchTimeout = setTimeout(() => {
-        fetch(`${window.SHOP_BASE_URL || ''}api/search_suggest.php?q=${encodeURIComponent(query)}`)
+        fetch(`${baseUrl}api/search_suggest.php?q=${encodeURIComponent(query)}`)
           .then(res => res.json())
           .then(data => {
             if (!searchDropdown) return;
@@ -200,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
     }
 
-    fetch(`${window.SHOP_BASE_URL || ''}api/cart_ajax.php?action=get`)
+    fetch(`${baseUrl}api/cart_ajax.php?action=get`)
       .then(r => r.json())
       .then(data => {
         if (data.ok) {
@@ -234,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('cart_key', key);
         fd.append('quantity', newQty);
 
-        fetch(`${window.SHOP_BASE_URL || ''}api/cart_ajax.php`, { method: 'POST', body: fd })
+        fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
           .then(r => r.json())
           .then(data => {
             if (data.ok) {
@@ -256,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('action', 'remove');
         fd.append('cart_key', key);
 
-        fetch(`${window.SHOP_BASE_URL || ''}api/cart_ajax.php`, { method: 'POST', body: fd })
+        fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
           .then(r => r.json())
           .then(data => {
             if (data.ok) {
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('product_id', pid);
       fd.append('quantity', 1);
 
-      fetch(`${window.SHOP_BASE_URL || ''}api/cart_ajax.php`, { method: 'POST', body: fd })
+      fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
           this.disabled = false;
@@ -411,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const fd = new FormData(pdpForm);
       fd.append('action', 'add');
 
-      fetch(`${window.SHOP_BASE_URL || ''}api/cart_ajax.php`, { method: 'POST', body: fd })
+      fetch(`${baseUrl}api/cart_ajax.php`, { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
           if (addBtn) addBtn.disabled = false;
@@ -453,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const otherPids = viewed.filter(id => id !== currentPid).slice(0, 4);
       const rvContainer = document.getElementById('recentlyViewedGrid');
       if (rvContainer && otherPids.length > 0) {
-        fetch(`${window.SHOP_BASE_URL || ''}api/availability.php?ids=${otherPids.join(',')}`)
+        fetch(`${baseUrl}api/availability.php?ids=${otherPids.join(',')}`)
           .then(r => r.json())
           .then(data => {
             // Container can show them if available
@@ -493,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const wishlistButtons = document.querySelectorAll('[data-wishlist-btn]');
   if (wishlistButtons.length > 0) {
     // Initial fetch to mark saved items as active
-    fetch(`${window.SHOP_BASE_URL || ''}api/wishlist.php?action=list_ids`)
+    fetch(`${baseUrl}api/wishlist.php?action=list_ids`)
       .then(r => r.json())
       .then(data => {
         if (data.ok && Array.isArray(data.ids)) {
@@ -523,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.toggle('active');
 
       const csrf = window.SHOP_CSRF_TOKEN || '';
-      fetch(`${window.SHOP_BASE_URL || ''}api/wishlist.php`, {
+      fetch(`${baseUrl}api/wishlist.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

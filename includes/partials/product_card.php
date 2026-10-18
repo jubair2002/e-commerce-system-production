@@ -18,6 +18,7 @@ $showSaleBadge = (int)setting('shop_show_sale_badge', '1') === 1;
 $showLowBadge  = (int)setting('shop_show_low_stock_badge', '1') === 1;
 
 $primaryImg   = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
+$fullImg      = product_image_url($p['image'] ?? null, 'full', $pid);
 $secondImgRaw = array_key_exists('second_image', $p) ? $p['second_image'] : product_second_image($pid);
 $secondImg    = $secondImgRaw ? product_image_url($secondImgRaw, 'thumbnail', $pid) : null;
 $swatches     = array_key_exists('swatches', $p) ? $p['swatches'] : product_color_swatches($pid);
@@ -40,7 +41,8 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
          class="product-card-img product-img-primary"
          loading="lazy"
          width="320"
-         height="400">
+         height="400"
+         onerror="if (!this.dataset.fallback && this.src !== '<?= e($fullImg) ?>') { this.dataset.fallback = '1'; this.src = '<?= e($fullImg) ?>'; }">
 
     <!-- Secondary Hover Image -->
     <?php if ($secondImg): ?>

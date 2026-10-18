@@ -309,7 +309,7 @@ include __DIR__ . '/../../includes/partials/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add">
             <input type="hidden" name="product_id" value="<?= $productId ?>">
-            <input type="hidden" name="variant_id" id="selectedVariantId" value="">
+            <input type="hidden" name="variant_id" id="selectedVariantId" value="<?= ($isVariable && !empty($variants[0]['id'])) ? (int)$variants[0]['id'] : '' ?>">
 
             <!-- Variable Option Pickers -->
             <?php if ($isVariable && !empty($options)): ?>
@@ -789,6 +789,6 @@ document.getElementById('writeReviewForm')?.addEventListener('submit', function(
 </script>
 
 <!-- Availability Client Module -->
-<script src="<?= e(url('assets/js/availability.js')) ?>"></script>
+<script src="<?= e(url('assets/js/availability.js')) ?>?v=<?= file_exists(__DIR__ . '/../../assets/js/availability.js') ? filemtime(__DIR__ . '/../../assets/js/availability.js') : time() ?>"></script>
 
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

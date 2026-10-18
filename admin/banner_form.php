@@ -113,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             log_activity('banner.create', "Created banner: {$title}");
             flash('success', 'Banner created successfully.');
         }
+        if (class_exists('FileCache')) {
+            FileCache::deletePattern('banners:*');
+            FileCache::deletePattern('home:*');
+        }
         admin_redirect('banners.php');
     }
 }

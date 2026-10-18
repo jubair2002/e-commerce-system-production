@@ -21,6 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
             }
         }
         db()->prepare("DELETE FROM storefront_banners WHERE id = :id")->execute([':id' => $id]);
+        if (class_exists('FileCache')) {
+            FileCache::deletePattern('banners:*');
+            FileCache::deletePattern('home:*');
+        }
         log_activity('banner.delete', "Deleted banner #{$id}: {$banner['title']}");
         flash('success', "Banner \"{$banner['title']}\" deleted.");
     }
