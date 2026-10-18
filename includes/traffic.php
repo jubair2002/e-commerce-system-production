@@ -10,7 +10,11 @@ if (!defined('APP_INIT_TIME')) {
 }
 
 if (!isset($GLOBALS['_t0'])) {
-    $GLOBALS['_t0'] = APP_INIT_TIME;
+    $GLOBALS['_t0'] = defined('APP_INIT_TIME') ? APP_INIT_TIME : microtime(true);
+}
+
+if (!isset($GLOBALS['_bytes_out'])) {
+    $GLOBALS['_bytes_out'] = 0;
 }
 
 // Start output buffering to capture response bytes if not already started
@@ -113,9 +117,19 @@ if (!function_exists('traffic_record')) {
                 $area = 'api';
             }
 
-            $bytesOut = ($GLOBALS['_bytes_out'] ?? (int)(ob_get_length() ?: 0)) + 320; // Include estimated HTTP headers
-            $bytesIn = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
-            $durationMs = (int)max(1, round((microtime(true) - ($GLOBALS['_t0'] ?? APP_INIT_TIME)) * 1000));
+            $rawBytes = (int)($GLOBALS['_bytes_out'] ?? 0);
+            if ($rawBytes <= 0 && ob_get_level() > 0) {
+                $rawBytes = (int)(ob_get_length() ?: 0);
+            }
+            // Fallback baseline estimate for HTTP response headers + payload if buffer was flushed
+            if ($rawBytes <= 0) {
+                $rawBytes = 512;
+            }
+
+            $bytesOut = $rawBytes + 320; // Include estimated HTTP headers
+            $bytesIn = max(0, (int)($_SERVER['CONTENT_LENGTH'] ?? 0));
+            $t0 = $GLOBALS['_t0'] ?? (defined('APP_INIT_TIME') ? APP_INIT_TIME : microtime(true));
+            $durationMs = (int)max(1, round((microtime(true) - $t0) * 1000));
             $peakMem = function_exists('memory_get_peak_usage') ? memory_get_peak_usage(true) : null;
 
             $s2xx = ($statusCode >= 200 && $statusCode < 300) ? 1 : 0;
@@ -184,7 +198,15 @@ if (!function_exists('traffic_record')) {
                 }
             }
         } catch (Throwable $e) {
-            // Silent — traffic monitoring must NEVER break application responses.
+            // Log silently to monitor_error.log so traffic recording never breaks responses
+            $logDir = __DIR__ . '/../storage';
+            if (is_dir($logDir) && is_writable($logDir)) {
+                @file_put_contents(
+                    $logDir . '/monitor_error.log',
+                    "[" . date('Y-m-d H:i:s') . "] Traffic record error: " . $e->getMessage() . "\n",
+                    FILE_APPEND
+                );
+            }
         }
     }
 }

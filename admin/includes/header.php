@@ -53,24 +53,42 @@ $siteName  = setting('site_name', APP_NAME);
         ?>
 
         <?php
-          // Server Health Dot (Must show green indicator)
-          $serverHealthColor = 'success';
-          $serverHealthTitle = 'System Health: Good (Operational)';
+          // Server Health Dot (Must show operational indicator)
+          $serverHealthColor = 'secondary';
+          $serverHealthTitle = 'System Health: Initializing (Collector starting up...)';
           try {
               $stmtH = db()->query("SELECT collected_at, cpu_percent, mem_used, mem_total, disk_used, disk_total FROM system_metrics ORDER BY id DESC LIMIT 1");
-              $smRow = $stmtH->fetch();
-              if ($smRow) {
-                  $cpu = (float)$smRow['cpu_percent'];
-                  $ram = ((float)$smRow['mem_total'] > 0) ? ((float)$smRow['mem_used'] / (float)$smRow['mem_total']) * 100 : 0;
-                  $disk = ((float)$smRow['disk_total'] > 0) ? ((float)$smRow['disk_used'] / (float)$smRow['disk_total']) * 100 : 0;
-                  $serverHealthTitle = "System Health: Good (CPU " . round($cpu) . "%, RAM " . round($ram) . "%, Disk " . round($disk) . "%)";
+              $smRow = $stmtH ? $stmtH->fetch(PDO::FETCH_ASSOC) : false;
+              if ($smRow && !empty($smRow['collected_at'])) {
+                  $cpu = (float)($smRow['cpu_percent'] ?? 0);
+                  $memTotal = (float)($smRow['mem_total'] ?? 0);
+                  $memUsed = (float)($smRow['mem_used'] ?? 0);
+                  $ram = ($memTotal > 0) ? ($memUsed / $memTotal) * 100 : 0;
+                  $diskTotal = (float)($smRow['disk_total'] ?? 0);
+                  $diskUsed = (float)($smRow['disk_used'] ?? 0);
+                  $disk = ($diskTotal > 0) ? ($diskUsed / $diskTotal) * 100 : 0;
+
+                  $lag = time() - strtotime($smRow['collected_at']);
+                  if ($lag > 300) {
+                      $serverHealthColor = 'warning';
+                      $serverHealthTitle = "System Health: Stale Data (Last collected " . round($lag / 60) . "m ago)";
+                  } elseif ($cpu >= 90 || $ram >= 90 || $disk >= 95) {
+                      $serverHealthColor = 'danger';
+                      $serverHealthTitle = "System Health: Warning (CPU " . round($cpu) . "%, RAM " . round($ram) . "%, Disk " . round($disk) . "%)";
+                  } elseif ($cpu >= 75 || $ram >= 75 || $disk >= 85) {
+                      $serverHealthColor = 'warning';
+                      $serverHealthTitle = "System Health: Elevated Load (CPU " . round($cpu) . "%, RAM " . round($ram) . "%, Disk " . round($disk) . "%)";
+                  } else {
+                      $serverHealthColor = 'success';
+                      $serverHealthTitle = "System Health: Good (CPU " . round($cpu) . "%, RAM " . round($ram) . "%, Disk " . round($disk) . "%)";
+                  }
               }
           } catch (Throwable $e) {}
         ?>
 
         <!-- Health Badge -->
         <a href="<?= e(admin_url('monitoring.php')) ?>" class="btn btn-light btn-sm d-flex align-items-center gap-1 text-decoration-none" title="<?= e($serverHealthTitle) ?>">
-          <span class="rounded-circle bg-success shadow-sm" style="width: 8px; height: 8px; display: inline-block;"></span>
+          <span class="rounded-circle bg-<?= e($serverHealthColor) ?> shadow-sm" style="width: 8px; height: 8px; display: inline-block;"></span>
           <span class="small d-none d-md-inline text-muted">Health</span>
         </a>
 

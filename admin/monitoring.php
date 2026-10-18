@@ -107,7 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Check collector status
-$latestSample = $pdo->query("SELECT * FROM system_metrics ORDER BY id DESC LIMIT 1")->fetch() ?: [];
+$latestSample = [];
+try {
+    $latestSample = $pdo->query("SELECT * FROM system_metrics ORDER BY id DESC LIMIT 1")->fetch() ?: [];
+} catch (Throwable $e) {}
 $lastRunTs = !empty($latestSample['collected_at']) ? strtotime($latestSample['collected_at']) : 0;
 $collectorLag = time() - $lastRunTs;
 $isCollectorRunning = ($lastRunTs > 0 && $collectorLag <= 180);
