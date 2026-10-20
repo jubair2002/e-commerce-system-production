@@ -415,7 +415,7 @@ function sendTestEmail() {
   debugCont.style.display = 'none';
 
   const formData = new FormData();
-  formData.append('csrf_token', '<?= csrf_token() ?>');
+      formData.append('_csrf', '<?= csrf_token() ?>');
   formData.append('action', 'send_test_email');
   formData.append('recipient', recipient);
 
