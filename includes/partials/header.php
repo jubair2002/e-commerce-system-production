@@ -98,9 +98,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
       <a href="<?= e(shop_url()) ?>" class="header-brand" aria-label="<?= e($siteName) ?>">
         <?php $storeLogoUrl = store_logo_url(); ?>
         <?php if ($storeLogoUrl): ?>
-          <img src="<?= e($storeLogoUrl) ?>" alt="<?= e($siteName) ?>" style="max-height: 40px;">
+          <img src="<?= e($storeLogoUrl) ?>" alt="<?= e($siteName) ?>" style="max-height: 38px;">
         <?php else: ?>
-          <span><?= e($siteName) ?></span>
+          <span><?= e($siteName) ?></span><span style="color: var(--accent); margin-left: -2px;">.</span>
         <?php endif; ?>
       </a>
 
@@ -110,16 +110,17 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
           <li>
             <a href="<?= e(route('home')) ?>" class="nav-link <?= route_is('home') ? 'is-active' : '' ?>">Home</a>
           </li>
-          <li>
-            <a href="<?= e(route('shop')) ?>" class="nav-link <?= route_is('shop') ? 'is-active' : '' ?>">Shop</a>
-          </li>
           <?php if (!empty($cats)): ?>
             <li class="shop-dropdown">
-              <button type="button" class="nav-link d-inline-flex align-items-center gap-1" data-dropdown-toggle aria-expanded="false">
+              <button type="button" class="nav-link d-inline-flex align-items-center gap-1 border-0 bg-transparent" data-dropdown-toggle aria-expanded="false">
                 <span>Categories</span>
                 <?= icon('chevron-down') ?>
               </button>
               <div class="dropdown-menu">
+                <a class="dropdown-item fw-semibold" href="<?= e(route('shop')) ?>">
+                  All Categories
+                </a>
+                <div class="dropdown-divider"></div>
                 <?php foreach ($cats as $c): ?>
                   <a class="dropdown-item" href="<?= e(route('category', ['slug' => $c['slug']])) ?>">
                     <?= e($c['name']) ?>
@@ -152,6 +153,7 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
                      placeholder="Search products..."
                      autocomplete="off"
                      value="<?= e($_GET['q'] ?? '') ?>">
+              <button type="button" class="btn-close flex-shrink-0" data-search-close aria-label="Close search"></button>
             </form>
             <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown"></div>
           </div>
@@ -201,10 +203,11 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
           </a>
         <?php endif; ?>
 
-        <!-- Cart Trigger -->
-        <button type="button" class="header-btn" data-cart-drawer-trigger data-drawer-open="miniCartDrawer" aria-label="View shopping cart">
+        <!-- Webflow Shop Signature Cart Pill Button -->
+        <button type="button" class="header-cart-btn" data-cart-drawer-trigger data-drawer-open="miniCartDrawer" aria-label="View shopping cart">
           <?= icon('bag') ?>
-          <span class="badge-count cart-badge-count" style="<?= $cartCnt > 0 ? '' : 'display:none;' ?>"><?= $cartCnt ?></span>
+          <span class="d-none d-sm-inline">Cart</span>
+          <span class="header-cart-count cart-badge-count" style="<?= $cartCnt > 0 ? '' : 'display:none;' ?>"><?= $cartCnt ?></span>
         </button>
 
         <!-- Mobile Menu Toggle -->

@@ -8,19 +8,19 @@ $mobileNavEnabled  = (int)setting('mobile_bottom_nav', '1') === 1;
 <footer class="site-footer" role="contentinfo">
   <div class="container">
 
-    <!-- Newsletter Strip -->
+    <!-- Newsletter Strip (Webflow Shop Style) -->
     <?php if ($newsletterEnabled): ?>
-      <div class="card mb-8 p-6" style="background-color: var(--surface);">
+      <div class="card mb-8 p-6 p-md-8" style="background-color: var(--surface-card); border: 1px solid var(--line); border-radius: var(--radius-xl);">
         <div class="row align-items-center g-4">
           <div class="col-lg-6">
-            <h3 class="mb-1">Join our newsletter</h3>
+            <h3 class="mb-1" style="font-weight: 700; letter-spacing: -0.02em;">Join our newsletter</h3>
             <p class="text-muted mb-0 small">Get updates on new collections, exclusive drops, and insider stories.</p>
           </div>
           <div class="col-lg-6">
-            <form action="<?= e(route('newsletter')) ?>" method="post" class="d-flex gap-2">
+            <form action="<?= e(route('newsletter')) ?>" method="post" class="d-flex flex-wrap gap-2 justify-content-lg-end">
               <?= csrf_field() ?>
-              <input type="email" name="email" class="form-control" placeholder="Enter your email address" required style="max-width: 320px;">
-              <button type="submit" class="btn btn-primary">Subscribe</button>
+              <input type="email" name="email" class="form-control" placeholder="Enter your email address" required style="max-width: 320px; border-radius: var(--radius-pill); padding: 12px 20px;">
+              <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Subscribe</button>
             </form>
           </div>
         </div>

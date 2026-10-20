@@ -122,3 +122,47 @@
   opacity: 0.4;
   pointer-events: none;
 }
+
+/* Standard Pagination Fallback */
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.page-item {
+  display: inline-flex;
+}
+.page-link {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface);
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease);
+}
+.page-link:hover {
+  background: var(--bg-soft);
+  border-color: var(--ink);
+}
+.page-item.active .page-link {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.page-item.disabled .page-link {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}

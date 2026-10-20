@@ -32,7 +32,7 @@ if ($searchQuery !== '') {
 
 $whereClause = implode(' AND ', $where);
 
-// Total count
+// Total count (filtered)
 $totalOrders = 0;
 try {
     $stmtCnt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE {$whereClause}");
@@ -40,6 +40,16 @@ try {
     $totalOrders = (int)$stmtCnt->fetchColumn();
 } catch (Throwable $e) {
     $totalOrders = 0;
+}
+
+// Unfiltered total for "All" tab count
+$allOrdersCount = 0;
+try {
+    $stmtAll = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE customer_id = :cid");
+    $stmtAll->execute([':cid' => $cid]);
+    $allOrdersCount = (int)$stmtAll->fetchColumn();
+} catch (Throwable $e) {
+    $allOrdersCount = $totalOrders;
 }
 
 $totalPages = max(1, (int)ceil($totalOrders / $perPage));
@@ -88,7 +98,7 @@ account_layout_start('orders', 'My Orders', $customer);
       <div class="d-flex flex-wrap gap-1">
         <a href="<?= e(shop_url('account/orders.php' . ($searchQuery ? '?q=' . urlencode($searchQuery) : ''))) ?>"
            class="btn btn-sm <?= empty($statusFilter) ? 'btn-editorial-primary' : 'btn-editorial-secondary' ?>">
-          All (<?= $totalOrders ?>)
+          All (<?= $allOrdersCount ?>)
         </a>
         <?php foreach ($allowedStatuses as $st): ?>
           <a href="<?= e(shop_url('account/orders.php?status=' . $st . ($searchQuery ? '&q=' . urlencode($searchQuery) : ''))) ?>"
@@ -99,7 +109,7 @@ account_layout_start('orders', 'My Orders', $customer);
       </div>
     </div>
     <div class="col-md-5">
-      <form method="get" action="orders.php" class="d-flex gap-2">
+      <form method="get" action="<?= e(shop_url('account/orders.php')) ?>" class="d-flex gap-2">
         <?php if ($statusFilter): ?>
           <input type="hidden" name="status" value="<?= e($statusFilter) ?>">
         <?php endif; ?>
@@ -188,14 +198,20 @@ account_layout_start('orders', 'My Orders', $customer);
     </div>
 
     <!-- Pagination -->
-    <?php if ($totalPages > 1): ?>
-      <div class="p-3 border-top d-flex justify-content-between align-items-center">
-        <span class="small text-muted">
-          Showing page <?= $page ?> of <?= $totalPages ?> (<?= $totalOrders ?> total)
-        </span>
-        <?= render_admin_pagination($page, $totalPages, $_GET, 15) ?>
-      </div>
-    <?php endif; ?>
+    <div class="account-orders-pagination d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 border-top">
+      <span class="small text-muted">
+        <?php if ($totalOrders > 0): ?>
+          Showing page <?= $page ?> of <?= $totalPages ?> (<?= $totalOrders ?> total <?= $totalOrders === 1 ? 'order' : 'orders' ?>)
+        <?php else: ?>
+          No orders
+        <?php endif; ?>
+      </span>
+      <?php if ($totalPages > 1): ?>
+        <div class="account-pagination-box">
+          <?= render_editorial_pagination($page, $totalPages, $_GET, 7) ?>
+        </div>
+      <?php endif; ?>
+    </div>
   </div>
 <?php endif; ?>
 

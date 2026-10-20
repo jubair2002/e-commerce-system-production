@@ -1,8 +1,8 @@
 <?php
 /**
- * Editorial Minimal Product Card (Prompt 04 / Phase B).
+ * Webflow Shop Style Product Card
  * Expects $p (product row) in scope.
- * 4:5 Aspect Ratio, 2nd Image on Hover, Swatch Dots, Badges, Quick-Add.
+ * 1:1 Aspect Ratio, Dual Image Swap, Webflow Blue Hover, Swatch Dots, Badges, Quick-Add & Buy Now.
  */
 $pid         = (int)$p['id'];
 $onSale      = product_is_on_sale($p);
@@ -41,17 +41,17 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
          class="product-card-img product-img-primary"
          loading="lazy"
          width="320"
-         height="400"
+         height="320"
          onerror="if (!this.dataset.fallback && this.src !== '<?= e($fullImg) ?>') { this.dataset.fallback = '1'; this.src = '<?= e($fullImg) ?>'; }">
 
-    <!-- Secondary Hover Image -->
+    <!-- Secondary Hover Image (if present) -->
     <?php if ($secondImg): ?>
       <img src="<?= e($secondImg) ?>"
            alt="<?= e($p['name']) ?> - alternate view"
            class="product-card-img product-img-hover"
            loading="lazy"
            width="320"
-           height="400">
+           height="320">
     <?php endif; ?>
 
     <!-- Badges Container -->
@@ -71,15 +71,12 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
   </a>
 
   <div class="product-card-body">
-    <?php if (!empty($p['category_name'])): ?>
-      <div class="product-card-category"><?= e($p['category_name']) ?></div>
-    <?php endif; ?>
-
     <h3 class="product-card-title">
       <a href="<?= e($productUrl) ?>"><?= e($p['name']) ?></a>
     </h3>
 
-    <div class="product-card-footer">
+    <!-- Webflow Shop Metadata Row ($Price • Category • Badge) -->
+    <div class="product-card-meta">
       <div class="price-wrap">
         <?php if ($onSale): ?>
           <span class="price-current text-sale"><?= e(price((float)$p['sale_price'])) ?></span>
@@ -89,7 +86,36 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
         <?php endif; ?>
       </div>
 
-      <!-- Quick Add & Buy Now action buttons -->
+      <?php if (!empty($p['category_name'])): ?>
+        <span class="meta-dot">&bull;</span>
+        <span class="meta-tag"><?= e($p['category_name']) ?></span>
+      <?php endif; ?>
+
+      <?php if (!empty($p['featured'])): ?>
+        <span class="meta-dot">&bull;</span>
+        <span class="meta-tag">Popular</span>
+      <?php elseif ($onSale): ?>
+        <span class="meta-dot">&bull;</span>
+        <span class="meta-tag">Sale</span>
+      <?php endif; ?>
+    </div>
+
+    <!-- Swatch Dots -->
+    <?php if (!empty($swatches)): ?>
+      <div class="swatch-group mb-3" aria-label="Available colors">
+        <?php foreach (array_slice($swatches, 0, 5) as $sw): ?>
+          <span class="swatch-color-circle"
+                style="background-color: <?= e($sw['swatch_hex'] ?: '#e0e0e0') ?>"
+                title="<?= e($sw['value']) ?>"></span>
+        <?php endforeach; ?>
+        <?php if (count($swatches) > 5): ?>
+          <span class="small opacity-75" style="font-size: 11px;">&plus;<?= count($swatches) - 5 ?></span>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
+
+    <!-- Action Buttons & Circular Arrow -->
+    <div class="product-card-footer">
       <?php if (!$isSoldOut): ?>
         <div class="product-card-actions">
           <?php if ($isSimple): ?>
@@ -107,27 +133,22 @@ $productUrl   = route('product', ['slug' => $p['slug']]);
             </button>
           <?php else: ?>
             <a href="<?= e($productUrl) ?>"
-               class="btn btn-primary btn-sm product-card-btn-buy w-100"
-               aria-label="Buy <?= e($p['name']) ?> now">
-              Buy Now
+               class="btn btn-primary btn-sm product-card-btn-buy"
+               aria-label="Select options for <?= e($p['name']) ?>">
+              Options
             </a>
           <?php endif; ?>
         </div>
+      <?php else: ?>
+        <div class="product-card-actions">
+          <span class="badge badge-outline py-2 px-3">Sold Out</span>
+        </div>
       <?php endif; ?>
-    </div>
 
-    <!-- Swatch Dots -->
-    <?php if (!empty($swatches)): ?>
-      <div class="swatch-group mt-2" aria-label="Available colors">
-        <?php foreach (array_slice($swatches, 0, 5) as $sw): ?>
-          <span class="swatch-color-circle"
-                style="background-color: <?= e($sw['swatch_hex'] ?: '#e0e0e0') ?>"
-                title="<?= e($sw['value']) ?>"></span>
-        <?php endforeach; ?>
-        <?php if (count($swatches) > 5): ?>
-          <span class="small text-muted">&plus;<?= count($swatches) - 5 ?></span>
-        <?php endif; ?>
-      </div>
-    <?php endif; ?>
+      <a href="<?= e($productUrl) ?>" class="circle-btn" title="View details" aria-label="View <?= e($p['name']) ?>">
+        <span class="circle-btn-arrow">&#x2197;</span>
+      </a>
+    </div>
   </div>
 </div>
+

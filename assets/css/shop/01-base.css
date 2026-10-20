@@ -7,7 +7,6 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
 }
@@ -25,7 +24,6 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color var(--duration-normal) var(--ease), color var(--duration-normal) var(--ease);
 }
 
 body.overflow-hidden {
@@ -51,13 +49,14 @@ h5 { font-size: var(--fs-base); }
 h6 { font-size: var(--fs-sm); }
 
 .display-serif {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 p {
   color: var(--ink-2);
+
   margin-bottom: var(--space-3);
 }
 

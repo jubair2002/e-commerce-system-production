@@ -485,6 +485,15 @@ SET @s = (SELECT IF(COUNT(*) = 0,
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'tracking_number');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Add index for tracking_number if not exists
+SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `orders` ADD INDEX `idx_orders_tracking_number` (`tracking_number`)',
+  'SELECT ''orders.idx_orders_tracking_number exists'' AS info')
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND INDEX_NAME = 'idx_orders_tracking_number');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
 SET @s = (SELECT IF(COUNT(*) = 0,
   'ALTER TABLE `orders` ADD COLUMN `stock_restored` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''set when a cancelled order returned its stock''',
   'SELECT ''orders.stock_restored exists'' AS info')

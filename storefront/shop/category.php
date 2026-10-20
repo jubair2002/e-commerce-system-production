@@ -83,6 +83,10 @@ $orderSql = match ($sort) {
 
 $whereSql = 'WHERE ' . implode(' AND ', $where);
 
+$total = 0;
+$pages = 1;
+$products = [];
+
 $cacheKey = ($page <= 3) 
     ? 'shop:cat:' . $slug . ':p' . $page . ':' . md5(serialize($params) . '_' . $sort . '_' . $perPage)
     : null;
@@ -165,10 +169,22 @@ include __DIR__ . '/../../includes/partials/header.php';
     </nav>
 
     <!-- Category Header -->
-    <div class="section-header mb-4">
+    <div class="section-header mb-3">
       <h1 class="section-title"><?= e($category['name']) ?></h1>
       <p class="section-sub text-muted">Showing <?= count($products) ?> of <?= $total ?> product<?= $total === 1 ? '' : 's' ?></p>
     </div>
+
+    <!-- Category Filter Pills Bar (Webflow Shop Style) -->
+    <?php if (!empty($categoriesList)): ?>
+      <div class="category-pills-wrap mb-4">
+        <a href="<?= e(route('shop')) ?>" class="category-pill">All Products</a>
+        <?php foreach ($categoriesList as $cl): ?>
+          <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>" class="category-pill <?= ($cl['slug'] === $slug) ? 'is-active' : '' ?>">
+            <?= e($cl['name']) ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
 
     <!-- Top Toolbar -->
     <div class="catalog-toolbar">

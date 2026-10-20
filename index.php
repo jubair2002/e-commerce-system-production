@@ -129,57 +129,147 @@ if ($showReviews) {
     } catch (Throwable $e) { $homeReviews = []; }
 }
 
+// 6. Hero Marquee Ticker Products (deduplicated)
+$heroTickerProducts = array_merge($featured, $newArrivals, $bestSellers);
+$tickerSeen = [];
+$tickerUnique = [];
+foreach ($heroTickerProducts as $tp) {
+    if (!isset($tickerSeen[$tp['id']])) {
+        $tickerSeen[$tp['id']] = true;
+        $tickerUnique[] = $tp;
+        if (count($tickerUnique) >= 8) break;
+    }
+}
+$tickerTrack = !empty($tickerUnique) ? array_merge($tickerUnique, $tickerUnique) : [];
+
 include __DIR__ . '/includes/partials/header.php';
 ?>
 
-<!-- =================== HERO SECTION =================== -->
+<!-- =================== WEBFLOW SHOP HERO =================== -->
 <?php if ($showHero): ?>
-  <div class="container">
-    <?php 
-    $heroBannerImg = ($heroBanner && !empty($heroBanner['image'])) ? banner_image_url($heroBanner['image']) : null;
-    ?>
-    <?php if ($heroBanner && $heroBannerImg): ?>
-      <section class="hero-section hero-editorial" aria-label="Featured Promotion">
-        <div class="hero-slide" style="background-image: linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%), url('<?= e($heroBannerImg) ?>'); background-size: cover; background-position: center; border-radius: var(--radius-lg);">
-          <div class="hero-content text-white">
-            <span class="badge badge-new mb-3">Curated Collection</span>
-            <h1 class="hero-headline display-serif text-white"><?= e($heroBanner['title']) ?></h1>
-            <?php if (!empty($heroBanner['subtitle'])): ?>
-              <p class="hero-text text-white opacity-75"><?= e($heroBanner['subtitle']) ?></p>
-            <?php endif; ?>
-            <?php if (!empty($heroBanner['button_text']) && !empty($heroBanner['button_url'])): ?>
-              <a href="<?= e($heroBanner['button_url']) ?>" class="btn btn-primary btn-lg">
-                <?= e($heroBanner['button_text']) ?> <?= icon('arrow-right') ?>
-              </a>
-            <?php endif; ?>
-          </div>
-        </div>
-      </section>
-    <?php else: ?>
-      <!-- Minimalist Fallback Hero -->
-      <section class="hero-section p-6 p-md-8 text-center" aria-label="Store Welcome">
-        <div class="hero-content mx-auto" style="max-width: 680px;">
-          <span class="badge badge-new mb-3">Everyday Essentials</span>
-          <h1 class="hero-headline display-serif mb-3">Thoughtfully made. Delivered nationwide.</h1>
-          <p class="hero-text mb-6">
-            Curated essentials designed with enduring materials, honest pricing, and transparent Cash on Delivery.
-          </p>
-          <div class="d-flex justify-content-center gap-3">
-            <a href="<?= e(route('shop')) ?>" class="btn btn-primary btn-lg">
-              Explore Shop <?= icon('arrow-right') ?>
+  <section class="hero-webflow" aria-label="Store Welcome">
+    <div class="hero-webflow-glow"></div>
+    <div class="container">
+      <?php
+      $heroTitle = ($heroBanner && !empty($heroBanner['title']))
+          ? $heroBanner['title']
+          : "Made by {$siteName}. Inspired by you.";
+      $heroDesc = ($heroBanner && !empty($heroBanner['subtitle']))
+          ? $heroBanner['subtitle']
+          : setting('store_tagline', 'Curated designer apparel, technical gear, and everyday essentials crafted with intention.');
+      $heroBtnText = ($heroBanner && !empty($heroBanner['button_text'])) ? $heroBanner['button_text'] : 'Shop all products';
+      $heroBtnUrl = ($heroBanner && !empty($heroBanner['button_url'])) ? $heroBanner['button_url'] : route('shop');
+      ?>
+      <h1 class="hero-webflow-title"><?= e($heroTitle) ?></h1>
+      <p class="hero-webflow-desc"><?= e($heroDesc) ?></p>
+      <a href="<?= e($heroBtnUrl) ?>" class="hero-webflow-btn">
+        <?= e($heroBtnText) ?> <?= icon('arrow-right') ?>
+      </a>
+    </div>
+
+    <!-- Continuous Marquee Product Ticker -->
+    <?php if (!empty($tickerTrack)): ?>
+      <div class="hero-marquee-wrap" aria-hidden="true">
+        <div class="hero-marquee-track">
+          <?php foreach ($tickerTrack as $tp): ?>
+            <a href="<?= e(route('product', ['slug' => $tp['slug']])) ?>" class="hero-marquee-item">
+              <img src="<?= e(product_image_url($tp['image'], 'thumbnail', (int)$tp['id'])) ?>" alt="<?= e($tp['name']) ?>" class="hero-marquee-img" loading="lazy">
+              <div class="hero-marquee-name"><?= e($tp['name']) ?></div>
+              <div class="hero-marquee-price"><?= e(price((float)($tp['sale_price'] ?: $tp['price']))) ?></div>
             </a>
-            <a href="<?= e(route('shop', ['featured' => '1'])) ?>" class="btn btn-secondary btn-lg">
-              Featured Items
-            </a>
-          </div>
+          <?php endforeach; ?>
         </div>
-      </section>
+      </div>
     <?php endif; ?>
+  </section>
+<?php endif; ?>
+
+<!-- =================== CATEGORY PILLS BAR =================== -->
+<?php if ($showCategories && !empty($categories)): ?>
+  <div class="container mb-4">
+    <div class="category-pills-wrap">
+      <a href="<?= e(route('shop')) ?>" class="category-pill is-active">
+        All Products
+      </a>
+      <?php foreach ($categories as $cat): ?>
+        <a href="<?= e(route('category', ['slug' => $cat['slug']])) ?>" class="category-pill">
+          <?= e($cat['name']) ?>
+        </a>
+      <?php endforeach; ?>
+    </div>
   </div>
 <?php endif; ?>
 
+<!-- =================== FEATURED BENTO GRID =================== -->
+<?php if ($showFeatured && !empty($featured)): ?>
+  <section class="section-py pt-2" aria-label="Featured Highlights">
+    <div class="container">
+      <div class="section-header-wrap">
+        <div>
+          <h2 class="section-header-title">Featured</h2>
+        </div>
+        <a href="<?= e(route('shop', ['featured' => '1'])) ?>" class="section-header-link">
+          View all <?= icon('arrow-right') ?>
+        </a>
+      </div>
+
+      <div class="bento-grid">
+        <?php foreach ($featured as $idx => $p): ?>
+          <div class="<?= $idx === 0 ? 'bento-span-2' : '' ?>">
+            <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+<?php endif; ?>
+
+<!-- =================== NEW ARRIVALS =================== -->
+<?php if ($showNewArrivals && !empty($newArrivals)): ?>
+  <section class="section-py pt-4" aria-label="New Arrivals">
+    <div class="container">
+      <div class="section-header-wrap">
+        <div>
+          <h2 class="section-header-title">New Arrivals</h2>
+        </div>
+        <a href="<?= e(route('shop', ['sort' => 'newest'])) ?>" class="section-header-link">
+          View all <?= icon('arrow-right') ?>
+        </a>
+      </div>
+
+      <div class="product-grid">
+        <?php foreach ($newArrivals as $p): ?>
+          <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+<?php endif; ?>
+
+<!-- =================== BEST SELLERS =================== -->
+<?php if ($showBestSellers && !empty($bestSellers)): ?>
+  <section class="section-py pt-4" aria-label="Best Sellers">
+    <div class="container">
+      <div class="section-header-wrap">
+        <div>
+          <h2 class="section-header-title">Best Sellers</h2>
+        </div>
+        <a href="<?= e(route('shop', ['sort' => 'best_selling'])) ?>" class="section-header-link">
+          View all <?= icon('arrow-right') ?>
+        </a>
+      </div>
+
+      <div class="product-grid">
+        <?php foreach ($bestSellers as $p): ?>
+          <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+<?php endif; ?>
+
 <!-- =================== TRUST BAR =================== -->
-<section class="trust-bar" aria-label="Customer Commitments">
+<section class="trust-bar my-6" aria-label="Customer Commitments">
   <div class="container">
     <div class="row g-4">
       <div class="col-6 col-lg-3">
@@ -222,134 +312,27 @@ include __DIR__ . '/includes/partials/header.php';
   </div>
 </section>
 
-<!-- =================== CATEGORIES TILES =================== -->
-<?php if ($showCategories && !empty($categories)): ?>
-  <section class="section-py" aria-label="Categories">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-6">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Curated Collections</span>
-          <h2 class="display-serif mt-1">Shop by Category</h2>
-        </div>
-        <a href="<?= e(route('shop')) ?>" class="btn btn-secondary btn-sm">
-          Browse All <?= icon('arrow-right') ?>
-        </a>
-      </div>
-
-      <div class="row g-4">
-        <?php foreach ($categories as $cat): ?>
-          <div class="col-6 col-lg-3">
-            <a href="<?= e(route('category', ['slug' => $cat['slug']])) ?>" class="category-tile">
-              <?php $catImg = !empty($cat['image']) ? category_image_url($cat['image']) : null; ?>
-              <?php if ($catImg): ?>
-                <img src="<?= e($catImg) ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
-              <?php else: ?>
-                <div class="w-100 h-100" style="background: linear-gradient(135deg, var(--bg-soft) 0%, var(--line) 100%);"></div>
-              <?php endif; ?>
-              <div class="category-tile-overlay"></div>
-              <div class="category-tile-title">
-                <?= e($cat['name']) ?>
-                <div class="small fw-normal opacity-75" style="font-size: 11px;"><?= (int)$cat['product_count'] ?> products</div>
-              </div>
-            </a>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </section>
-<?php endif; ?>
-
-<!-- =================== NEW ARRIVALS =================== -->
-<?php if ($showNewArrivals && !empty($newArrivals)): ?>
-  <section class="section-py pt-0" aria-label="New Arrivals">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-6">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Just Landed</span>
-          <h2 class="display-serif mt-1">New Arrivals</h2>
-        </div>
-        <a href="<?= e(route('shop', ['sort' => 'newest'])) ?>" class="btn btn-secondary btn-sm">
-          See All New <?= icon('arrow-right') ?>
-        </a>
-      </div>
-
-      <div class="product-grid">
-        <?php foreach ($newArrivals as $p): ?>
-          <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </section>
-<?php endif; ?>
-
-<!-- =================== BEST SELLERS =================== -->
-<?php if ($showBestSellers && !empty($bestSellers)): ?>
-  <section class="section-py pt-0" aria-label="Best Sellers">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-6">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Customer Favorites</span>
-          <h2 class="display-serif mt-1">Best Sellers</h2>
-        </div>
-        <a href="<?= e(route('shop', ['sort' => 'best_selling'])) ?>" class="btn btn-secondary btn-sm">
-          View All <?= icon('arrow-right') ?>
-        </a>
-      </div>
-
-      <div class="product-grid">
-        <?php foreach ($bestSellers as $p): ?>
-          <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </section>
-<?php endif; ?>
-
-<!-- =================== FEATURED PRODUCTS =================== -->
-<?php if ($showFeatured && !empty($featured)): ?>
-  <section class="section-py pt-0" aria-label="Featured Highlights">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-6">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Hand Picked</span>
-          <h2 class="display-serif mt-1">Featured Highlights</h2>
-        </div>
-        <a href="<?= e(route('shop', ['featured' => '1'])) ?>" class="btn btn-secondary btn-sm">
-          View All Featured <?= icon('arrow-right') ?>
-        </a>
-      </div>
-
-      <div class="product-grid">
-        <?php foreach ($featured as $p): ?>
-          <?php include __DIR__ . '/includes/partials/product_card.php'; ?>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </section>
-<?php endif; ?>
-
 <!-- =================== CUSTOMER REVIEWS STRIP =================== -->
 <?php if ($showReviews && !empty($homeReviews)): ?>
   <section class="section-py pt-0" aria-label="Customer Reviews">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-6">
+      <div class="section-header-wrap">
         <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Real Feedback</span>
-          <h2 class="display-serif mt-1">Loved by Our Customers</h2>
+          <h2 class="section-header-title">Loved by Our Community</h2>
         </div>
       </div>
 
       <div class="row g-4">
         <?php foreach ($homeReviews as $hr): ?>
           <div class="col-12 col-md-6 col-lg-3">
-            <div class="card card-raised h-100">
-              <div class="rating-stars mb-2" aria-hidden="true">
+            <div class="card card-raised h-100 p-5" style="border-radius: var(--radius-lg); background-color: var(--surface-card);">
+              <div class="rating-stars mb-3" aria-hidden="true" style="color: #f59e0b;">
                 <?php for ($i = 1; $i <= (int)$hr['rating']; $i++): ?>
                   <?= icon('star') ?>
                 <?php endfor; ?>
               </div>
-              <h4 class="fs-base mb-2 fw-semibold">"<?= e($hr['title']) ?>"</h4>
-              <p class="small text-muted mb-4" style="line-height: 1.5;">
+              <h4 class="fs-base mb-2 fw-semibold" style="letter-spacing: -0.01em;">"<?= e($hr['title']) ?>"</h4>
+              <p class="small text-muted mb-4" style="line-height: 1.55;">
                 <?= e(mb_substr($hr['body'], 0, 110)) ?><?= mb_strlen($hr['body']) > 110 ? '...' : '' ?>
               </p>
               <div class="mt-auto d-flex align-items-center justify-content-between border-top pt-3">
@@ -367,4 +350,5 @@ include __DIR__ . '/includes/partials/header.php';
 <?php endif; ?>
 
 <?php include __DIR__ . '/includes/partials/footer.php'; ?>
+
 

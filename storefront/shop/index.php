@@ -220,6 +220,18 @@ include __DIR__ . '/../../includes/partials/header.php';
 <section class="section">
   <div class="container">
 
+    <!-- Category Filter Pills Bar (Webflow Shop Style) -->
+    <?php if (!empty($categoriesList)): ?>
+      <div class="category-pills-wrap mb-4">
+        <a href="<?= e(route('shop')) ?>" class="category-pill <?= empty($catSlug) ? 'is-active' : '' ?>">All Products</a>
+        <?php foreach ($categoriesList as $cl): ?>
+          <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>" class="category-pill <?= ($cl['slug'] === $catSlug) ? 'is-active' : '' ?>">
+            <?= e($cl['name']) ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+
     <!-- Top Toolbar -->
     <div class="catalog-toolbar">
       <div>

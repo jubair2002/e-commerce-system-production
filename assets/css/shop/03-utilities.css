@@ -155,6 +155,16 @@
 .bg-soft { background: var(--bg-soft) !important; }
 .bg-surface { background: var(--surface) !important; }
 .bg-white { background: #ffffff !important; }
+.bg-light { background: var(--bg-soft) !important; }
+.bg-primary { background-color: var(--accent) !important; color: #ffffff !important; }
+.bg-secondary { background-color: var(--surface-muted) !important; color: var(--ink-2) !important; }
+.bg-success { background-color: var(--ok) !important; color: #ffffff !important; }
+.bg-danger { background-color: var(--danger) !important; color: #ffffff !important; }
+.bg-warning { background-color: var(--warn) !important; color: #111827 !important; }
+.bg-info { background-color: var(--focus) !important; color: #ffffff !important; }
+.bg-dark { background-color: var(--surface-card) !important; color: var(--ink) !important; }
+
+.text-primary { color: var(--accent) !important; }
 
 .position-relative { position: relative !important; }
 .position-absolute { position: absolute !important; }

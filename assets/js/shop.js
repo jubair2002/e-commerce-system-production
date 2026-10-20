@@ -135,20 +135,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openCartDrawer() {
-    if (cartDrawer && cartBackdrop) {
-      cartDrawer.classList.add('open');
-      cartBackdrop.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      refreshCartDrawer();
+    if (cartDrawer) {
+      cartDrawer.classList.add('open', 'is-open');
+      cartDrawer.setAttribute('aria-hidden', 'false');
     }
+    document.querySelectorAll('.mini-cart-backdrop, .drawer-backdrop').forEach(b => {
+      b.classList.add('open', 'is-open');
+    });
+    document.body.style.overflow = 'hidden';
+    refreshCartDrawer();
   }
 
   function closeCartDrawer() {
-    if (cartDrawer && cartBackdrop) {
-      cartDrawer.classList.remove('open');
-      cartBackdrop.classList.remove('open');
-      document.body.style.overflow = '';
+    if (cartDrawer) {
+      cartDrawer.classList.remove('open', 'is-open');
+      cartDrawer.setAttribute('aria-hidden', 'true');
     }
+    document.querySelectorAll('.mini-cart-backdrop, .drawer-backdrop').forEach(b => {
+      b.classList.remove('open', 'is-open');
+    });
+    document.querySelectorAll('.shop-drawer').forEach(d => {
+      d.classList.remove('open', 'is-open');
+    });
+    document.body.style.overflow = '';
   }
 
   cartTriggers.forEach(btn => btn.addEventListener('click', (e) => {
@@ -156,10 +165,14 @@ document.addEventListener('DOMContentLoaded', () => {
     openCartDrawer();
   }));
 
-  cartCloseBtns.forEach(btn => btn.addEventListener('click', closeCartDrawer));
-  if (cartBackdrop) {
-    cartBackdrop.addEventListener('click', closeCartDrawer);
-  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-cart-drawer-close], [data-drawer-close]')) {
+      closeCartDrawer();
+    }
+    if (e.target.matches('.mini-cart-backdrop, .drawer-backdrop')) {
+      closeCartDrawer();
+    }
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeCartDrawer();

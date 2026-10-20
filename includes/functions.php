@@ -848,9 +848,12 @@ function render_editorial_pagination(int $currentPage, int $totalPages, array $q
     $html = '<nav aria-label="Page navigation"><ul class="editorial-pagination">';
 
     // Previous Button
+    $leftIcon = function_exists('icon') ? icon('chevron-left') : '&lsaquo;';
     if ($currentPage > 1) {
         $prevUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage - 1]));
-        $html .= '<li><a href="' . e($prevUrl) . '" aria-label="Previous page">' . (function_exists('icon') ? icon('chevron-left') : '&lsaquo;') . '</a></li>';
+        $html .= '<li class="pagination-prev"><a href="' . e($prevUrl) . '" aria-label="Previous page">' . $leftIcon . '</a></li>';
+    } else {
+        $html .= '<li class="pagination-prev disabled"><span class="is-disabled" aria-hidden="true">' . $leftIcon . '</span></li>';
     }
 
     foreach ($window as $item) {
@@ -865,9 +868,12 @@ function render_editorial_pagination(int $currentPage, int $totalPages, array $q
     }
 
     // Next Button
+    $rightIcon = function_exists('icon') ? icon('chevron-right') : '&rsaquo;';
     if ($currentPage < $totalPages) {
         $nextUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage + 1]));
-        $html .= '<li><a href="' . e($nextUrl) . '" aria-label="Next page">' . (function_exists('icon') ? icon('chevron-right') : '&rsaquo;') . '</a></li>';
+        $html .= '<li class="pagination-next"><a href="' . e($nextUrl) . '" aria-label="Next page">' . $rightIcon . '</a></li>';
+    } else {
+        $html .= '<li class="pagination-next disabled"><span class="is-disabled" aria-hidden="true">' . $rightIcon . '</span></li>';
     }
 
     $html .= '</ul></nav>';

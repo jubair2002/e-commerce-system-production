@@ -76,19 +76,20 @@
   const openDrawer = (drawerId) => {
     const drawer = document.getElementById(drawerId);
     if (!drawer) return;
-    drawer.classList.add('is-open');
+    drawer.classList.add('is-open', 'open');
     drawer.setAttribute('aria-hidden', 'false');
     lockScroll();
 
-    let backdrop = document.querySelector(`.drawer-backdrop[data-drawer="${drawerId}"]`);
-    if (!backdrop) {
+    let backdrop = document.querySelector(`.drawer-backdrop[data-drawer="${drawerId}"]`) || document.getElementById('miniCartBackdrop');
+    if (backdrop) {
+      backdrop.classList.add('is-open', 'open');
+      backdrop.onclick = () => closeDrawer(drawerId);
+    } else {
       backdrop = document.createElement('div');
-      backdrop.className = 'drawer-backdrop is-open';
+      backdrop.className = 'drawer-backdrop is-open open';
       backdrop.setAttribute('data-drawer', drawerId);
       document.body.appendChild(backdrop);
       backdrop.addEventListener('click', () => closeDrawer(drawerId));
-    } else {
-      backdrop.classList.add('is-open');
     }
 
     const firstFocusable = drawer.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -97,15 +98,25 @@
   };
 
   const closeDrawer = (drawerId) => {
-    const drawer = document.getElementById(drawerId);
-    if (!drawer) return;
-    drawer.classList.remove('is-open');
-    drawer.setAttribute('aria-hidden', 'true');
+    const drawer = drawerId ? document.getElementById(drawerId) : document.querySelector('.shop-drawer.is-open, .shop-drawer.open');
+    if (drawer) {
+      drawer.classList.remove('is-open', 'open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+
+    // Always clean up all backdrops and drawer elements
+    document.querySelectorAll('.shop-drawer').forEach(d => {
+      d.classList.remove('is-open', 'open');
+      d.setAttribute('aria-hidden', 'true');
+    });
+    document.querySelectorAll('.drawer-backdrop, .mini-cart-backdrop').forEach(b => {
+      b.classList.remove('is-open', 'open');
+    });
     unlockScroll();
 
-    const backdrop = document.querySelector(`.drawer-backdrop[data-drawer="${drawerId}"]`);
-    if (backdrop) backdrop.classList.remove('is-open');
-    drawer.dispatchEvent(new CustomEvent('drawer:closed', { detail: { id: drawerId } }));
+    if (drawer) {
+      drawer.dispatchEvent(new CustomEvent('drawer:closed', { detail: { id: drawer.id } }));
+    }
   };
 
   // -------------------------------------------------------------
@@ -184,22 +195,46 @@
   // Global Event Delegation (Clicks, ESC Key, Outside Clicks)
   // -------------------------------------------------------------
   document.addEventListener('click', (e) => {
+    // Alert / Banner dismiss buttons (handles [data-bs-dismiss="alert"], .btn-close, .alert-close)
+    const alertCloseBtn = e.target.closest('[data-bs-dismiss="alert"], .btn-close, .alert-close');
+    if (alertCloseBtn) {
+      const alertBox = alertCloseBtn.closest('.alert, .announcement-bar, [role="alert"]');
+      if (alertBox) {
+        e.preventDefault();
+        alertBox.style.transition = 'opacity 0.15s ease, max-height 0.15s ease, margin 0.15s ease, padding 0.15s ease';
+        alertBox.style.opacity = '0';
+        setTimeout(() => alertBox.remove(), 150);
+        return;
+      }
+    }
+
+    // Search bar close trigger
+    const searchCloseBtn = e.target.closest('[data-search-close]');
+    if (searchCloseBtn) {
+      e.preventDefault();
+      const sBar = document.getElementById('searchExpandBar');
+      if (sBar) sBar.classList.remove('active', 'is-open');
+      return;
+    }
+
     // Drawer open triggers
-    const drawerOpenBtn = e.target.closest('[data-drawer-open]');
+    const drawerOpenBtn = e.target.closest('[data-drawer-open], [data-cart-drawer-trigger]');
     if (drawerOpenBtn) {
       e.preventDefault();
-      const target = drawerOpenBtn.getAttribute('data-drawer-open');
+      const target = drawerOpenBtn.getAttribute('data-drawer-open') || 'miniCartDrawer';
       openDrawer(target);
       return;
     }
 
     // Drawer close triggers
-    const drawerCloseBtn = e.target.closest('[data-drawer-close]');
+    const drawerCloseBtn = e.target.closest('[data-drawer-close], [data-cart-drawer-close], .drawer-close');
     if (drawerCloseBtn) {
       e.preventDefault();
       const drawer = drawerCloseBtn.closest('.shop-drawer') || drawerCloseBtn.closest('[data-drawer-id]');
       if (drawer) {
         closeDrawer(drawer.id);
+      } else {
+        closeDrawer();
       }
       return;
     }
@@ -214,10 +249,10 @@
     }
 
     // Modal close triggers
-    const modalCloseBtn = e.target.closest('[data-modal-close]');
+    const modalCloseBtn = e.target.closest('[data-modal-close], [data-bs-dismiss="modal"]');
     if (modalCloseBtn) {
       e.preventDefault();
-      const modal = modalCloseBtn.closest('.shop-modal');
+      const modal = modalCloseBtn.closest('.shop-modal, .modal');
       if (modal) {
         closeModal(modal.id);
       }
@@ -225,9 +260,16 @@
     }
 
     // Click on modal backdrop
-    const modalBackdrop = e.target.closest('.shop-modal');
+    const modalBackdrop = e.target.closest('.shop-modal, .modal');
     if (modalBackdrop && e.target === modalBackdrop) {
       closeModal(modalBackdrop.id);
+      return;
+    }
+
+    // Click on drawer backdrop
+    const drawerBackdrop = e.target.closest('.drawer-backdrop, .mini-cart-backdrop');
+    if (drawerBackdrop && e.target === drawerBackdrop) {
+      closeDrawer();
       return;
     }
 

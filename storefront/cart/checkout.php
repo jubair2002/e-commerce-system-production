@@ -134,6 +134,28 @@ if ($currentCustomer && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
 
+    // Handle coupon apply or remove on checkout
+    if (!empty($_POST['checkout_action'])) {
+        if ($_POST['checkout_action'] === 'apply_coupon') {
+            $code = strtoupper(trim((string)($_POST['coupon_code'] ?? '')));
+            if ($code !== '') {
+                $cRes = coupon_validate($code, $cart['subtotal']);
+                if ($cRes['valid']) {
+                    $_SESSION['applied_coupon'] = $code;
+                    flash('success', 'Coupon "' . $code . '" applied successfully!');
+                } else {
+                    flash('danger', $cRes['error'] ?: 'Invalid coupon code.');
+                }
+            }
+            redirect(route('checkout'));
+        }
+        if ($_POST['checkout_action'] === 'remove_coupon') {
+            unset($_SESSION['applied_coupon']);
+            flash('info', 'Coupon removed.');
+            redirect(route('checkout'));
+        }
+    }
+
     foreach (array_keys($old) as $k) {
         if (isset($_POST[$k])) {
             $old[$k] = trim((string)$_POST[$k]);
@@ -508,226 +530,218 @@ include __DIR__ . '/../../includes/partials/header.php';
         <!-- Left: Customer and Delivery Details -->
         <div class="col-lg-7">
 
-          <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header py-3 border-bottom d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-semibold"><?= icon('user', 'text-primary me-2') ?> Contact Information</h5>
+          <!-- 1. Contact & Delivery Information -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-badge">1</span>
+                <span>Delivery &amp; Contact Information</span>
+              </h2>
               <?php if ($currentCustomer): ?>
                 <span class="badge bg-light text-dark border">
                   <?= icon('check-circle', 'text-success me-1') ?> <?= e($currentCustomer['name']) ?>
                 </span>
               <?php else: ?>
-                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-decoration-underline text-muted">
-                  Already have an account? Sign in
+                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-decoration-none text-muted">
+                  Have an account? <span class="text-primary text-decoration-underline">Sign in</span>
                 </a>
               <?php endif; ?>
             </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>
-                  <input type="text" name="customer_name" class="form-control"
-                         value="<?= e($old['customer_name']) ?>" placeholder="e.g. Tanvir Ahmed" required>
-                </div>
 
-                <div class="col-md-6">
-                  <label class="form-label fw-medium">
-                    Phone Number <?= $requirePhone ? '<span class="text-danger">*</span>' : '' ?>
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text"><?= icon('phone') ?></span>
-                    <input type="tel" name="customer_phone" class="form-control"
-                           value="<?= e($old['customer_phone']) ?>" placeholder="01712345678" <?= $requirePhone ? 'required' : '' ?>>
-                  </div>
-                  <div class="form-text">Used for delivery confirmation and tracking.</div>
-                </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="customer_name" class="form-control"
+                       value="<?= e($old['customer_name']) ?>" placeholder="e.g. Tanvir Ahmed" required>
+              </div>
 
-                <div class="col-md-6">
-                  <label class="form-label fw-medium">
-                    Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted">(Optional)</span>' ?>
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text"><?= icon('mail') ?></span>
-                    <input type="email" name="customer_email" class="form-control"
-                           value="<?= e($old['customer_email']) ?>" placeholder="tanvir@example.com" <?= $requireEmail ? 'required' : '' ?>>
-                  </div>
-                  <div class="form-text">Invoice copy will be sent here.</div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">
+                  Phone Number <?= $requirePhone ? '<span class="text-danger">*</span>' : '' ?>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-end-0"><?= icon('phone') ?></span>
+                  <input type="tel" name="customer_phone" class="form-control border-start-0 ps-0"
+                         value="<?= e($old['customer_phone']) ?>" placeholder="01712345678" <?= $requirePhone ? 'required' : '' ?>>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header py-3 border-bottom">
-              <h5 class="mb-0 fw-semibold"><?= icon('map-pin', 'text-primary me-2') ?> Delivery Address</h5>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <?php if (!empty($savedAddresses)): ?>
-                  <div class="col-12 mb-2">
-                    <label class="form-label fw-medium d-flex justify-content-between align-items-center">
-                      <span><?= icon('map-pin', 'me-1 text-primary') ?> Saved Delivery Addresses</span>
-                      <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
-                    </label>
-                    <div class="d-flex flex-column gap-2" id="savedAddressSelector">
-                      <?php foreach ($savedAddresses as $idx => $sa): 
-                        $isSelected = ($idx === 0);
-                      ?>
-                        <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item <?= $isSelected ? 'border-primary bg-primary-subtle' : '' ?>" style="cursor:pointer;">
-                          <input type="radio" name="saved_address_id" value="<?= (int)$sa['id'] ?>" class="form-check-input mt-1" <?= $isSelected ? 'checked' : '' ?>
-                            data-name="<?= e($sa['full_name']) ?>"
-                            data-phone="<?= e($sa['phone']) ?>"
-                            data-addr="<?= e($sa['address']) ?>"
-                            data-city="<?= e($sa['city']) ?>"
-                            data-zip="<?= e($sa['zip'] ?? '') ?>"
-                          >
-                          <div class="small flex-grow-1">
-                            <div class="d-flex align-items-center gap-1 mb-1">
-                              <span class="badge bg-secondary"><?= e($sa['label']) ?></span>
-                              <?php if (!empty($sa['is_default'])): ?>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">Default</span>
-                              <?php endif; ?>
-                              <strong class="ms-1"><?= e($sa['full_name']) ?></strong>
-                              <span class="text-muted ms-1">(<?= e($sa['phone']) ?>)</span>
-                            </div>
-                            <div class="text-secondary"><?= e($sa['address']) ?>, <?= e($sa['city']) ?><?= !empty($sa['zip']) ? ' - ' . e($sa['zip']) : '' ?></div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small">
+                  Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted fw-normal">(Optional - for digital receipt)</span>' ?>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-end-0"><?= icon('mail') ?></span>
+                  <input type="email" name="customer_email" class="form-control border-start-0 ps-0"
+                         value="<?= e($old['customer_email']) ?>" placeholder="tanvir@example.com" <?= $requireEmail ? 'required' : '' ?>>
+                </div>
+              </div>
+
+              <?php if (!empty($savedAddresses)): ?>
+                <div class="col-12 mb-2">
+                  <label class="form-label fw-semibold small d-flex justify-content-between align-items-center">
+                    <span><?= icon('map-pin', 'me-1 text-primary') ?> Saved Delivery Addresses</span>
+                    <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
+                  </label>
+                  <div class="d-flex flex-column gap-2" id="savedAddressSelector">
+                    <?php foreach ($savedAddresses as $idx => $sa): 
+                      $isSelected = ($idx === 0);
+                    ?>
+                      <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item <?= $isSelected ? 'border-primary bg-primary-subtle' : '' ?>" style="cursor:pointer;">
+                        <input type="radio" name="saved_address_id" value="<?= (int)$sa['id'] ?>" class="form-check-input mt-1" <?= $isSelected ? 'checked' : '' ?>
+                          data-name="<?= e($sa['full_name']) ?>"
+                          data-phone="<?= e($sa['phone']) ?>"
+                          data-addr="<?= e($sa['address']) ?>"
+                          data-city="<?= e($sa['city']) ?>"
+                          data-zip="<?= e($sa['zip'] ?? '') ?>"
+                        >
+                        <div class="small flex-grow-1">
+                          <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="badge bg-secondary"><?= e($sa['label']) ?></span>
+                            <?php if (!empty($sa['is_default'])): ?>
+                              <span class="badge bg-success-subtle text-success border border-success-subtle">Default</span>
+                            <?php endif; ?>
+                            <strong class="ms-1"><?= e($sa['full_name']) ?></strong>
+                            <span class="text-muted ms-1">(<?= e($sa['phone']) ?>)</span>
                           </div>
-                        </label>
-                      <?php endforeach; ?>
-                      <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer;">
-                        <input type="radio" name="saved_address_id" value="new" class="form-check-input">
-                        <span class="small fw-semibold text-primary"><?= icon('map-pin', 'me-1') ?> Add new delivery address</span>
+                          <div class="text-secondary"><?= e($sa['address']) ?>, <?= e($sa['city']) ?><?= !empty($sa['zip']) ? ' - ' . e($sa['zip']) : '' ?></div>
+                        </div>
                       </label>
-                    </div>
-                  </div>
-                <?php endif; ?>
-
-                <div class="col-12" id="addressInputWrap">
-                  <label class="form-label fw-medium">Street Address / House / Flat <span class="text-danger">*</span></label>
-                  <textarea name="shipping_address" id="shippingAddressInput" class="form-control" rows="2"
-                            placeholder="House #, Road #, Area / Thana" required><?= e($old['shipping_address']) ?></textarea>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-medium" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
-                  <select name="shipping_city" id="shippingCityInput" class="form-select" required>
-                    <option value="">-- Select District (64 Districts) --</option>
-                    <?php foreach ($bdDistricts as $dist): ?>
-                      <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= ($old['shipping_city'] === $dist['name'] || (empty($old['shipping_city']) && $dist['name'] === 'Dhaka')) ? 'selected' : '' ?>>
-                        <?= e($dist['name']) ?> (<?= $dist['zone'] === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka' ?>)
-                      </option>
                     <?php endforeach; ?>
-                  </select>
-                  <div class="mt-2 d-flex flex-wrap gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Dhaka" data-method-keyword="Inside Dhaka" style="font-size: 0.78rem;">
-                      <?= icon('map-pin', 'me-1') ?> Inside Dhaka
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Chattogram" data-method-keyword="Outside Dhaka" style="font-size: 0.78rem;">
-                      <?= icon('truck', 'me-1') ?> Outside Dhaka
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Gazipur" data-method-keyword="Custom Area" style="font-size: 0.78rem;">
-                      <?= icon('map-pin', 'me-1') ?> Gazipur / Suburbs
-                    </button>
+                    <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer;">
+                      <input type="radio" name="saved_address_id" value="new" class="form-check-input">
+                      <span class="small fw-semibold text-primary"><?= icon('map-pin', 'me-1') ?> Add new delivery address</span>
+                    </label>
                   </div>
                 </div>
+              <?php endif; ?>
 
-                <div class="col-md-6">
-                  <label class="form-label fw-medium">Area / Postal Code</label>
-                  <input type="text" name="shipping_zip" id="shippingZipInput" class="form-control"
-                         value="<?= e($old['shipping_zip']) ?>" placeholder="e.g. 1205">
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label fw-medium">Order Notes <span class="text-muted">(Optional)</span></label>
-                  <input type="text" name="notes" class="form-control"
-                         value="<?= e($old['notes']) ?>" placeholder="Special instructions for delivery (e.g. call before arriving)">
-                </div>
-
-                <?php if ($currentCustomer): ?>
-                  <div class="col-12 mt-2" id="saveAddressCheckWrap" style="<?= !empty($savedAddresses) ? 'display:none;' : '' ?>">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="save_address" value="1" id="saveAddressCheck" <?= empty($savedAddresses) ? 'checked' : '' ?>>
-                      <label class="form-check-label small" for="saveAddressCheck">
-                        Save this address to my account for future orders
-                      </label>
-                    </div>
-                  </div>
-                <?php endif; ?>
+              <div class="col-12" id="addressInputWrap">
+                <label class="form-label fw-semibold small">Street Address / House / Flat <span class="text-danger">*</span></label>
+                <textarea name="shipping_address" id="shippingAddressInput" class="form-control" rows="2"
+                          placeholder="House #, Road #, Area / Thana" required><?= e($old['shipping_address']) ?></textarea>
               </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
+                <select name="shipping_city" id="shippingCityInput" class="form-select" required>
+                  <option value="">-- Select District (64 Districts) --</option>
+                  <?php foreach ($bdDistricts as $dist): ?>
+                    <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= ($old['shipping_city'] === $dist['name'] || (empty($old['shipping_city']) && $dist['name'] === 'Dhaka')) ? 'selected' : '' ?>>
+                      <?= e($dist['name']) ?> (<?= $dist['zone'] === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka' ?>)
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                  <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Dhaka" data-method-keyword="Inside Dhaka" style="font-size: 0.76rem;">
+                    <?= icon('map-pin', 'me-1') ?> Inside Dhaka
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Chattogram" data-method-keyword="Outside Dhaka" style="font-size: 0.76rem;">
+                    <?= icon('truck', 'me-1') ?> Outside Dhaka
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Postal Code</label>
+                <input type="text" name="shipping_zip" id="shippingZipInput" class="form-control"
+                       value="<?= e($old['shipping_zip']) ?>" placeholder="e.g. 1205">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold small">Delivery Instructions <span class="text-muted fw-normal">(Optional)</span></label>
+                <input type="text" name="notes" class="form-control"
+                       value="<?= e($old['notes']) ?>" placeholder="e.g. Call before delivery, ring doorbell">
+              </div>
+
+              <?php if ($currentCustomer): ?>
+                <div class="col-12 mt-1" id="saveAddressCheckWrap" style="<?= !empty($savedAddresses) ? 'display:none;' : '' ?>">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="save_address" value="1" id="saveAddressCheck" <?= empty($savedAddresses) ? 'checked' : '' ?>>
+                    <label class="form-check-label small" for="saveAddressCheck">
+                      Save this address to my account for future orders
+                    </label>
+                  </div>
+                </div>
+              <?php endif; ?>
             </div>
           </div>
 
-          <!-- Shipping Method Selection -->
-          <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header py-3 border-bottom d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-semibold"><?= icon('truck', 'text-primary me-2') ?> Delivery Area &amp; Shipping Rate</h5>
-              <span class="badge text-bg-light border text-muted">Select your delivery zone</span>
+          <!-- 2. Shipping Method Selection -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-badge">2</span>
+                <span>Shipping Method</span>
+              </h2>
             </div>
-            <div class="card-body p-0">
-              <div class="list-group list-group-flush" id="shippingMethodsList">
-                <?php foreach ($shippingMethods as $idx => $sm): ?>
-                  <?php
-                    $isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
-                    $cost = $isFree ? 0.0 : (float)$sm['cost'];
-                    $isChecked = ((int)$sm['id'] === (int)$selectedShippingId) || ($idx === 0 && !$selectedShippingId);
-                  ?>
-                  <label class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 shipping-method-card <?= $isChecked ? 'border-primary bg-light' : '' ?>" style="cursor: pointer;">
-                    <div class="d-flex align-items-center">
-                      <input class="form-check-input me-3 mt-0 shipping-radio" type="radio" name="shipping_method_id"
-                             value="<?= (int)$sm['id'] ?>"
-                             data-cost="<?= $cost ?>"
-                             data-is-free="<?= $isFree ? '1' : '0' ?>"
-                             data-name="<?= e($sm['name']) ?>"
-                             data-zone="<?= e($sm['zone']) ?>"
-                             data-cod-allowed="<?= (int)$sm['cod_allowed'] ?>"
-                             <?= $isChecked ? 'checked' : '' ?>>
-                      <div>
-                        <div class="fw-semibold shipping-name"><?= e($sm['name']) ?></div>
-                        <div class="small text-muted">
-                          <?= e($sm['zone']) ?> · Estimated <?= e($sm['min_days'] ?: 1) ?>-<?= e($sm['max_days'] ?: 3) ?> business days
-                        </div>
+            <div id="shippingMethodsList">
+              <?php foreach ($shippingMethods as $idx => $sm): ?>
+                <?php
+                  $isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
+                  $cost = $isFree ? 0.0 : (float)$sm['cost'];
+                  $isChecked = ((int)$sm['id'] === (int)$selectedShippingId) || ($idx === 0 && !$selectedShippingId);
+                ?>
+                <label class="p-3 d-flex justify-content-between align-items-center shipping-method-card <?= $isChecked ? 'border-primary' : '' ?>" style="cursor: pointer;">
+                  <div class="d-flex align-items-center">
+                    <input class="form-check-input me-3 mt-0 shipping-radio" type="radio" name="shipping_method_id"
+                           value="<?= (int)$sm['id'] ?>"
+                           data-cost="<?= $cost ?>"
+                           data-is-free="<?= $isFree ? '1' : '0' ?>"
+                           data-name="<?= e($sm['name']) ?>"
+                           data-zone="<?= e($sm['zone']) ?>"
+                           data-cod-allowed="<?= (int)$sm['cod_allowed'] ?>"
+                           <?= $isChecked ? 'checked' : '' ?>>
+                    <div>
+                      <div class="fw-semibold shipping-name small"><?= e($sm['name']) ?></div>
+                      <div class="text-muted" style="font-size: 12px;">
+                        <?= e($sm['zone']) ?> · Estimated <?= e($sm['min_days'] ?: 1) ?>–<?= e($sm['max_days'] ?: 3) ?> business days
                       </div>
                     </div>
-                    <div class="text-end">
-                      <span class="fw-bold fs-6 <?= $isFree ? 'text-success' : 'text-ink' ?>">
-                        <?= $isFree ? 'FREE' : price($cost) ?>
-                      </span>
-                    </div>
-                  </label>
-                <?php endforeach; ?>
-              </div>
+                  </div>
+                  <div class="text-end">
+                    <span class="fw-bold small <?= $isFree ? 'text-success' : 'text-ink' ?>">
+                      <?= $isFree ? 'FREE' : price($cost) ?>
+                    </span>
+                  </div>
+                </label>
+              <?php endforeach; ?>
             </div>
           </div>
 
-          <!-- Payment Method Selection -->
-          <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header py-3 border-bottom">
-              <h5 class="mb-0 fw-semibold"><?= icon('lock', 'text-primary me-2') ?> Payment Method</h5>
+          <!-- 3. Payment Method Selection -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-badge">3</span>
+                <span>Payment Method</span>
+              </h2>
             </div>
-            <div class="card-body">
+            <div>
               <?php if ($codEnabled): ?>
-                <div class="form-check p-3 border rounded mb-3 bg-light" id="codOptionWrapper">
+                <div class="form-check p-3 border rounded-3 mb-3 bg-light" id="codOptionWrapper">
                   <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_cod"
                          value="cod" <?= $old['payment_method'] === 'cod' ? 'checked' : '' ?>>
-                  <label class="form-check-label fw-semibold d-block" for="pay_cod" style="cursor: pointer;">
+                  <label class="form-check-label fw-semibold d-block small" for="pay_cod" style="cursor: pointer;">
                     <?= icon('check', 'text-success me-1') ?> Cash on Delivery (COD)
                     <?php if ($codFee > 0): ?>
                       <span class="badge bg-secondary ms-2" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
                     <?php endif; ?>
                   </label>
-                  <div class="text-muted small mt-1">
-                    Pay with cash when your shipment arrives at your doorstep.
+                  <div class="text-muted mt-1" style="font-size: 12px;">
+                    Pay in cash directly to courier upon receiving your parcel at your doorstep.
                   </div>
                 </div>
               <?php endif; ?>
 
               <?php if ($bankEnabled): ?>
-                <div class="form-check p-3 border rounded mb-3">
+                <div class="form-check p-3 border rounded-3 mb-2">
                   <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_bank"
                          value="bank_transfer" <?= $old['payment_method'] === 'bank_transfer' ? 'checked' : '' ?>>
-                  <label class="form-check-label fw-semibold d-block" for="pay_bank">
+                  <label class="form-check-label fw-semibold d-block small" for="pay_bank">
                     <?= icon('shield', 'text-primary me-1') ?> Direct Bank Transfer
                   </label>
-                  <div class="text-muted small mt-1">
+                  <div class="text-muted mt-1" style="font-size: 12px;">
                     <?= nl2br(e($bankInstructions ?: 'Bank account details will be shown upon placing the order.')) ?>
                   </div>
                 </div>
@@ -737,72 +751,90 @@ include __DIR__ . '/../../includes/partials/header.php';
 
         </div>
 
-        <!-- Right: Order Summary Sidebar -->
+        <!-- Right: Clean Order Summary Sidebar -->
         <div class="col-lg-5">
-          <div class="card shadow-sm border-0 sticky-top" style="top: 90px;">
-            <div class="card-header py-3 border-bottom">
-              <h5 class="mb-0 fw-semibold">Order Summary (<?= cart_count() ?>)</h5>
+          <div class="checkout-summary-box">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+              <h3 class="fw-bold mb-0 fs-6">Order Summary</h3>
+              <span class="badge bg-soft text-ink small border px-2 py-1"><?= cart_count() ?> item<?= cart_count() === 1 ? '' : 's' ?></span>
             </div>
-            <div class="card-body p-0">
-              <div class="p-3 border-bottom" style="max-height: 280px; overflow-y: auto;">
-                <?php foreach ($cart['items'] as $item): ?>
-                  <div class="d-flex align-items-center mb-3">
-                    <img src="<?= e(product_image_url($item['image'])) ?>"
-                         class="rounded border me-3 flex-shrink-0" width="54" height="54"
-                         style="object-fit:cover" alt="">
-                    <div class="flex-grow-1 min-w-0">
-                      <div class="fw-semibold text-truncate small"><?= e($item['product_name']) ?></div>
-                      <?php if (!empty($item['variant_label'])): ?>
-                        <div class="text-muted" style="font-size: 11px;"><?= e($item['variant_label']) ?></div>
-                      <?php endif; ?>
-                      <div class="text-muted small"><?= (int)$item['qty'] ?> &times; <?= e(price($item['unit_price'])) ?></div>
-                    </div>
-                    <div class="text-end fw-semibold small ps-2">
-                      <?= e(price($item['line_total'])) ?>
-                    </div>
+
+            <!-- Scrollable Items List -->
+            <div class="mb-3" style="max-height: 260px; overflow-y: auto; padding-right: 4px;">
+              <?php foreach ($cart['items'] as $item): ?>
+                <div class="d-flex align-items-center mb-3">
+                  <img src="<?= e(product_image_url($item['image'])) ?>"
+                       class="rounded-3 border me-3 flex-shrink-0" width="50" height="50"
+                       style="object-fit:cover" alt="">
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate small"><?= e($item['product_name']) ?></div>
+                    <?php if (!empty($item['variant_label'])): ?>
+                      <div class="text-muted" style="font-size: 11px;"><?= e($item['variant_label']) ?></div>
+                    <?php endif; ?>
+                    <div class="text-muted small"><?= (int)$item['qty'] ?> &times; <?= e(price($item['unit_price'])) ?></div>
                   </div>
-                <?php endforeach; ?>
+                  <div class="text-end fw-semibold small ps-2" style="font-family: var(--font-mono);">
+                    <?= e(price($item['line_total'])) ?>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+
+            <div class="border-top pt-3">
+              <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">Subtotal</span>
+                <strong style="font-family: var(--font-mono);"><?= e(price($totals['subtotal'])) ?></strong>
               </div>
 
-              <div class="p-3">
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted">Subtotal</span>
-                  <strong><?= e(price($totals['subtotal'])) ?></strong>
-                </div>
-
-                <?php if ($totals['discount'] > 0): ?>
-                  <div class="d-flex justify-content-between mb-2 text-success">
-                    <span>Coupon Discount (<code><?= e($totals['coupon']['code']) ?></code>)</span>
-                    <strong>-<?= e(price($totals['discount'])) ?></strong>
+              <?php if (!empty($totals['discount']) && $totals['discount'] > 0): ?>
+                <div class="d-flex justify-content-between align-items-center mb-2 small text-success p-2 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+                  <span class="d-flex align-items-center gap-1">
+                    <?= icon('tag') ?> Coupon (<code><?= e($totals['coupon']['code']) ?></code>)
+                  </span>
+                  <div class="d-flex align-items-center gap-2">
+                    <strong style="font-family: var(--font-mono);">-<?= e(price($totals['discount'])) ?></strong>
+                    <button type="submit" name="checkout_action" value="remove_coupon" class="btn-close" style="font-size: 0.65rem;" title="Remove coupon" aria-label="Remove coupon" formnovalidate></button>
                   </div>
-                <?php endif; ?>
-
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted">Shipping</span>
-                  <strong id="summaryShipping">
-                    <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
-                  </strong>
                 </div>
-
-                <div id="summaryCodRow" class="d-flex justify-content-between mb-2 <?= $totals['cod_fee'] > 0 ? '' : 'd-none' ?>">
-                  <span class="text-muted">Cash on Delivery Fee</span>
-                  <strong id="summaryCodFee"><?= e(price($totals['cod_fee'])) ?></strong>
+              <?php else: ?>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary d-flex align-items-center gap-1" id="toggleCouponBtn">
+                    <?= icon('tag') ?> <span>Have a promo or coupon code?</span>
+                  </button>
+                  <div id="checkoutCouponRow" class="mt-2 d-none">
+                    <div class="input-group input-group-sm">
+                      <input type="text" name="coupon_code" id="checkoutCouponInput" class="form-control" placeholder="Enter coupon code" style="text-transform: uppercase;">
+                      <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-editorial-secondary" formnovalidate>Apply</button>
+                    </div>
+                  </div>
                 </div>
+              <?php endif; ?>
 
-                <hr>
+              <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">Shipping</span>
+                <strong id="summaryShipping" style="font-family: var(--font-mono);">
+                  <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
+                </strong>
+              </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                  <span class="fs-5 fw-bold">Total to Pay</span>
-                  <span id="summaryTotal" class="fs-3 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
-                </div>
+              <div id="summaryCodRow" class="d-flex justify-content-between mb-2 small <?= $totals['cod_fee'] > 0 ? '' : 'd-none' ?>">
+                <span class="text-muted">Cash on Delivery Fee</span>
+                <strong id="summaryCodFee" style="font-family: var(--font-mono);"><?= e(price($totals['cod_fee'])) ?></strong>
+              </div>
 
-                <button type="submit" id="btnSubmitOrder" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
-                  <?= icon('bag', 'me-2') ?> Place Order Now
-                </button>
+              <hr class="my-3">
 
-                <div class="text-center mt-3 text-muted small">
-                  <?= icon('shield', 'text-success me-1') ?> 100% Secure Checkout · No account needed
-                </div>
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <span class="fs-6 fw-bold">Total</span>
+                <span id="summaryTotal" class="fs-4 fw-bold text-primary" style="font-family: var(--font-mono);"><?= e(price($totals['total'])) ?></span>
+              </div>
+
+              <button type="submit" id="btnSubmitOrder" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
+                <?= icon('bag', 'me-2') ?> Place Order Now
+              </button>
+
+              <div class="text-center mt-3 text-muted" style="font-size: 12px;">
+                <?= icon('shield', 'text-success me-1') ?> 100% Cash on Delivery · Zero prepayment required
               </div>
             </div>
           </div>
@@ -928,13 +960,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Double submit prevention
     const checkoutForm = document.getElementById('checkoutForm');
     if (checkoutForm) {
-        checkoutForm.addEventListener('submit', function() {
+        checkoutForm.addEventListener('submit', function(e) {
+            const submitter = e.submitter;
+            if (submitter && submitter.name === 'checkout_action') {
+                return;
+            }
             const btn = document.getElementById('btnSubmitOrder');
             if (btn && !btn.disabled) {
                 setTimeout(() => {
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Placing Order...';
                 }, 10);
+            }
+        });
+    }
+
+    // Toggle coupon input
+    const toggleCouponBtn = document.getElementById('toggleCouponBtn');
+    const couponRow = document.getElementById('checkoutCouponRow');
+    if (toggleCouponBtn && couponRow) {
+        toggleCouponBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            couponRow.classList.toggle('d-none');
+            if (!couponRow.classList.contains('d-none')) {
+                const inp = document.getElementById('checkoutCouponInput');
+                if (inp) inp.focus();
             }
         });
     }

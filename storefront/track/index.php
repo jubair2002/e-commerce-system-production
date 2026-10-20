@@ -3,6 +3,9 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 
 $pageTitle = 'Track Your Order';
@@ -27,67 +30,96 @@ $_SESSION['track_attempts'] = array_filter($_SESSION['track_attempts'], function
 if ($orderNumber !== '' || $contact !== '') {
     $searched = true;
 
-    if (count($_SESSION['track_attempts']) >= 15) {
+    if (count($_SESSION['track_attempts']) >= 30) {
         $errors[] = 'Too many tracking lookups. Please wait a minute before trying again.';
     } else {
         $_SESSION['track_attempts'][] = $now;
 
-        if ($orderNumber === '') {
-            $errors[] = 'Please enter your order reference number.';
-        }
-        if ($contact === '') {
-            $errors[] = 'Please enter the phone number or email address used at checkout.';
-        }
+        $cleanOrder = ltrim(trim($orderNumber), '#');
+        $contactTrim = trim($contact);
 
-        if (!$errors) {
-            // Check matching order number AND (customer_phone = contact OR customer_email = contact)
-            // For phone, normalize digits if needed
-            $contactDigits = preg_replace('/\D/', '', $contact);
+        if ($cleanOrder === '' && $contactTrim === '') {
+            $errors[] = 'Please enter your order reference or tracking number.';
+        } else {
+            try {
+                if ($cleanOrder !== '' && $contactTrim !== '') {
+                    $contactDigits = preg_replace('/\D/', '', $contactTrim);
+                    $phoneSuffix = strlen($contactDigits) >= 7 ? substr($contactDigits, -8) : $contactDigits;
 
-            $stmt = db()->prepare(
-                "SELECT * FROM orders
-                 WHERE order_number = :num
-                   AND (
-                     customer_email = :contact
-                     OR customer_phone = :contact
-                     OR REPLACE(REPLACE(REPLACE(customer_phone, ' ', ''), '-', ''), '+', '') LIKE :phone_sub
-                   )
-                 LIMIT 1"
-            );
-            $stmt->execute([
-                ':num'       => $orderNumber,
-                ':contact'   => $contact,
-                ':phone_sub' => '%' . ($contactDigits ?: $contact),
-            ]);
-            $order = $stmt->fetch();
+                    $stmt = db()->prepare(
+                        "SELECT * FROM orders
+                         WHERE (order_number = :num OR order_number = :clean_num OR tracking_number = :track_num)
+                           AND (
+                             customer_email = :c_email
+                             OR customer_phone = :c_phone
+                             OR REPLACE(REPLACE(REPLACE(customer_phone, ' ', ''), '-', ''), '+', '') LIKE :phone_sub
+                           )
+                         LIMIT 1"
+                    );
+                    $stmt->execute([
+                        ':num'        => $orderNumber,
+                        ':clean_num'  => $cleanOrder,
+                        ':track_num'  => $cleanOrder,
+                        ':c_email'    => $contactTrim,
+                        ':c_phone'    => $contactTrim,
+                        ':phone_sub'  => '%' . ($phoneSuffix ?: $contactTrim),
+                    ]);
+                    $order = $stmt->fetch();
+                } elseif ($cleanOrder !== '') {
+                    $stmt = db()->prepare(
+                        "SELECT * FROM orders
+                         WHERE order_number = :num OR order_number = :clean_num OR tracking_number = :track_num
+                         LIMIT 1"
+                    );
+                    $stmt->execute([
+                        ':num'       => $orderNumber,
+                        ':clean_num' => $cleanOrder,
+                        ':track_num' => $cleanOrder,
+                    ]);
+                    $order = $stmt->fetch();
+                } else {
+                    $stmt = db()->prepare(
+                        "SELECT * FROM orders
+                         WHERE customer_email = :c_email OR customer_phone = :c_phone
+                         ORDER BY id DESC LIMIT 1"
+                    );
+                    $stmt->execute([
+                        ':c_email' => $contactTrim,
+                        ':c_phone' => $contactTrim,
+                    ]);
+                    $order = $stmt->fetch();
+                }
 
-            if (!$order) {
-                $errors[] = 'No matching order was found. Please check your order number and phone or email address.';
-            } else {
-                // Fetch items with variant labels
-                $stmtItems = db()->prepare(
-                    "SELECT * FROM order_items WHERE order_id = :oid ORDER BY id ASC"
-                );
-                $stmtItems->execute([':oid' => $order['id']]);
-                $items = $stmtItems->fetchAll();
+                if (!$order) {
+                    $errors[] = 'No matching order was found. Please check your order number or contact details.';
+                } else {
+                    // Fetch items with variant labels
+                    $stmtItems = db()->prepare(
+                        "SELECT * FROM order_items WHERE order_id = :oid ORDER BY id ASC"
+                    );
+                    $stmtItems->execute([':oid' => $order['id']]);
+                    $items = $stmtItems->fetchAll() ?: [];
 
-                // Fetch status history timeline
-                $stmtHist = db()->prepare(
-                    "SELECT * FROM order_status_history WHERE order_id = :oid ORDER BY created_at ASC"
-                );
-                $stmtHist->execute([':oid' => $order['id']]);
-                $history = $stmtHist->fetchAll();
+                    // Fetch status history timeline
+                    $stmtHist = db()->prepare(
+                        "SELECT * FROM order_status_history WHERE order_id = :oid ORDER BY created_at ASC"
+                    );
+                    $stmtHist->execute([':oid' => $order['id']]);
+                    $history = $stmtHist->fetchAll() ?: [];
+                }
+            } catch (Throwable $ex) {
+                $errors[] = 'An error occurred while retrieving order status. Please try again.';
             }
         }
     }
 }
 
 $statusBadge = [
-    'pending'    => 'bg-warning text-dark',
-    'processing' => 'bg-info text-white',
-    'shipped'    => 'bg-primary text-white',
-    'completed'  => 'bg-success text-white',
-    'cancelled'  => 'bg-danger text-white',
+    'pending'    => 'bg-warning',
+    'processing' => 'bg-info',
+    'shipped'    => 'bg-primary',
+    'completed'  => 'bg-success',
+    'cancelled'  => 'bg-danger',
 ];
 
 $timelineSteps = [
@@ -101,7 +133,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
 <section class="section py-5">
-  <div class="container" style="max-width: 860px;">
+  <div class="container" style="max-width: 960px;">
 
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -111,35 +143,35 @@ include __DIR__ . '/../../includes/partials/header.php';
     </nav>
 
     <div class="section-header text-center mb-4">
-      <h2 class="fw-bold"><?= icon('map-pin', 'text-primary me-2') ?> Track Your Order</h2>
-      <p class="text-muted">Enter your order number and the phone number or email you used when placing the order.</p>
+      <h2 class="display-serif fs-2xl mb-2"><?= icon('map-pin', 'text-primary me-2') ?> Track Your Order</h2>
+      <p class="text-muted">Enter your order reference number or tracking ID below to check live delivery progress.</p>
     </div>
 
     <!-- Search Form -->
-    <div class="card shadow-sm border-0 mb-4">
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: var(--radius-lg);">
       <div class="card-body p-4">
         <form method="get" class="row g-3">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Order Number <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold small">Order or Tracking Number <span class="text-danger">*</span></label>
             <div class="input-group">
-              <span class="input-group-text"><?= icon('bag') ?></span>
-              <input type="text" name="order_number" class="form-control"
+              <span class="input-group-text bg-transparent border-end-0"><?= icon('bag', 'text-muted') ?></span>
+              <input type="text" name="order_number" class="form-control border-start-0 ps-0"
                      value="<?= e($orderNumber) ?>"
-                     placeholder="e.g. ORD-202610-0001" required>
+                     placeholder="e.g. ORD-20261017-05000" required>
             </div>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Phone Number or Email <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold small">Phone or Email <span class="text-muted fw-normal">(Optional)</span></label>
             <div class="input-group">
-              <span class="input-group-text"><?= icon('user') ?></span>
-              <input type="text" name="contact" class="form-control"
+              <span class="input-group-text bg-transparent border-end-0"><?= icon('user', 'text-muted') ?></span>
+              <input type="text" name="contact" class="form-control border-start-0 ps-0"
                      value="<?= e($contact) ?>"
-                     placeholder="01712345678 or you@example.com" required>
+                     placeholder="01712345678 or you@example.com">
             </div>
           </div>
-          <div class="col-12 mt-3">
+          <div class="col-12 mt-4">
             <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
-              <?= icon('search', 'me-1') ?> Track Order Status
+              <?= icon('search', 'me-2') ?> Track Order Status
             </button>
           </div>
         </form>
@@ -193,9 +225,9 @@ include __DIR__ . '/../../includes/partials/header.php';
             <!-- Visual Timeline Progress -->
             <div class="py-3">
               <div class="d-flex justify-content-between position-relative">
-                <div class="position-absolute top-50 start-0 translate-middle-y w-100 bg-light" style="height: 4px; z-index: 1;"></div>
-                <div class="position-absolute top-50 start-0 translate-middle-y bg-primary"
-                     style="height: 4px; z-index: 1; width: <?= max(0, min(100, ($currentIdx / (count($statusKeys) - 1)) * 100)) ?>%;"></div>
+                <div class="position-absolute top-50 start-0 translate-middle-y w-100" style="height: 4px; z-index: 1; background-color: var(--line);"></div>
+                <div class="position-absolute top-50 start-0 translate-middle-y"
+                     style="height: 4px; z-index: 1; background-color: var(--accent); width: <?= max(0, min(100, ($currentIdx / (count($statusKeys) - 1)) * 100)) ?>%; transition: width var(--duration-normal) var(--ease);"></div>
 
                 <?php foreach ($statusKeys as $idx => $sKey): ?>
                   <?php
@@ -204,11 +236,11 @@ include __DIR__ . '/../../includes/partials/header.php';
                     $isCur = ($idx === $currentIdx);
                   ?>
                   <div class="text-center position-relative" style="z-index: 2;">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white <?= $isDone ? 'bg-primary' : 'bg-secondary' ?>"
-                         style="width: 40px; height: 40px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm);">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                         style="width: 44px; height: 44px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm); <?= $isDone ? 'background-color: var(--accent); color: #ffffff;' : 'background-color: var(--surface-muted); color: var(--muted); border: 2px solid var(--line);' ?> <?= $isCur ? 'box-shadow: 0 0 0 4px var(--accent-light);' : '' ?>">
                       <?= icon($step['icon']) ?>
                     </div>
-                    <div class="small fw-semibold <?= $isCur ? 'text-primary' : 'text-muted' ?>">
+                    <div class="small fw-semibold <?= $isCur ? 'text-primary' : ($isDone ? 'text-body' : 'text-muted') ?>">
                       <?= e($step['title']) ?>
                     </div>
                   </div>
@@ -252,8 +284,8 @@ include __DIR__ . '/../../includes/partials/header.php';
             <ul class="list-unstyled mb-0 position-relative ps-3" style="border-left: 2px solid var(--line);">
               <?php foreach ($history as $h): ?>
                 <li class="mb-3 position-relative ps-3">
-                  <div class="position-absolute rounded-circle bg-primary"
-                       style="width: 10px; height: 10px; left: -18px; top: 6px;"></div>
+                  <div class="position-absolute rounded-circle"
+                       style="width: 10px; height: 10px; left: -18px; top: 6px; background-color: var(--accent);"></div>
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="badge <?= e($statusBadge[$h['status']] ?? 'bg-secondary') ?> text-uppercase">
                       <?= e($h['status']) ?>
