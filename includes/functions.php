@@ -222,6 +222,25 @@ function require_csrf(): void
 // ----------------------------------------------------------------
 // Flash messages
 // ----------------------------------------------------------------
+
+/**
+ * Returns the client IP address, handling direct and proxy headers.
+ */
+function get_client_ip(): string
+{
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return trim($_SERVER['HTTP_CLIENT_IP']);
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $list = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        return trim($list[0]);
+    }
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        return trim($_SERVER['HTTP_X_REAL_IP']);
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '';
+}
+
 function flash(string $type, string $message): void
 {
     $_SESSION['_flash'][] = ['type' => $type, 'message' => $message];

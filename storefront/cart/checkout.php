@@ -386,7 +386,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 // Atomic stock decrement
-                $adjusted = stock_adjust(-$qty, 'order', $orderId, "Order {$orderNumber} placed");
+                                $adjusted = stock_adjust($pid, $vid, -$qty, 'order', $orderId, "Order {$orderNumber} placed");
                 if (!$adjusted) {
                     throw new Exception("Unable to reserve stock for \"{$line['product_name']}\". It may have just sold out.");
                 }
