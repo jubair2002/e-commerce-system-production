@@ -2,8 +2,7 @@
 
     <footer class="app-footer">
       <small>
-        &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?> ·
-        Built with PHP &amp; Bootstrap.
+        &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>.
       </small>
     </footer>
   </main><!-- /.app-main -->

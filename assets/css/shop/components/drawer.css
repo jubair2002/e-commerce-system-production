@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-drawer);
-  transition: transform var(--duration-normal) var(--ease);
+  transition: none !important;
 }
 
 .drawer-right {
@@ -66,12 +66,13 @@
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   z-index: 999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-normal) var(--ease);
+  transition: none !important;
 }
 
 .drawer-backdrop.is-open, .drawer-backdrop.open {
@@ -250,11 +251,12 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-normal) var(--ease);
+  transition: none !important;
 }
 
 .shop-modal.is-open {
@@ -270,12 +272,12 @@
   max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
-  transform: scale(0.95);
-  transition: transform var(--duration-normal) var(--ease);
+  transform: none !important;
+  transition: none !important;
 }
 
 .shop-modal.is-open .modal-dialog {
-  transform: scale(1);
+  transform: none !important;
 }
 
 .modal-header {

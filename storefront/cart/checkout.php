@@ -628,18 +628,10 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <option value="">-- Select District (64 Districts) --</option>
                   <?php foreach ($bdDistricts as $dist): ?>
                     <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= ($old['shipping_city'] === $dist['name'] || (empty($old['shipping_city']) && $dist['name'] === 'Dhaka')) ? 'selected' : '' ?>>
-                      <?= e($dist['name']) ?> (<?= $dist['zone'] === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka' ?>)
+                      <?= e($dist['name']) ?>
                     </option>
                   <?php endforeach; ?>
                 </select>
-                <div class="mt-2 d-flex flex-wrap gap-1">
-                  <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Dhaka" data-method-keyword="Inside Dhaka" style="font-size: 0.76rem;">
-                    <?= icon('map-pin', 'me-1') ?> Inside Dhaka
-                  </button>
-                  <button type="button" class="btn btn-outline-secondary btn-sm area-chip py-0 px-2" data-city="Chattogram" data-method-keyword="Outside Dhaka" style="font-size: 0.76rem;">
-                    <?= icon('truck', 'me-1') ?> Outside Dhaka
-                  </button>
-                </div>
               </div>
 
               <div class="col-md-6">
@@ -855,7 +847,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const shippingRadios = document.querySelectorAll('.shipping-radio');
     const paymentRadios = document.querySelectorAll('.payment-radio');
     const cityInput = document.getElementById('shippingCityInput');
-    const areaChips = document.querySelectorAll('.area-chip');
     const summaryShipping = document.getElementById('summaryShipping');
     const summaryCodRow = document.getElementById('summaryCodRow');
     const summaryCodFee = document.getElementById('summaryCodFee');
@@ -988,30 +979,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Area quick-select chips
-    areaChips.forEach(chip => {
-        chip.addEventListener('click', function(e) {
-            e.preventDefault();
-            const city = this.getAttribute('data-city') || '';
-            const keyword = (this.getAttribute('data-method-keyword') || '').toLowerCase();
-            if (cityInput) {
-                cityInput.value = city;
-                cityInput.dispatchEvent(new Event('change'));
-            }
-
-            // Match and select shipping radio
-            for (const radio of shippingRadios) {
-                const name = (radio.getAttribute('data-name') || '').toLowerCase();
-                const zone = (radio.getAttribute('data-zone') || '').toLowerCase();
-                if (name.includes(keyword) || zone.includes(keyword)) {
-                    radio.checked = true;
-                    break;
-                }
-            }
-            recalculate();
-        });
-    });
 
     // Saved address selection handling
     const savedAddressRadios = document.querySelectorAll('input[name="saved_address_id"]');

@@ -182,7 +182,7 @@
 
     const dismiss = () => {
       toast.classList.remove('is-visible');
-      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+      toast.remove();
     };
 
     toast.querySelector('.toast-close').addEventListener('click', dismiss);
@@ -201,9 +201,7 @@
       const alertBox = alertCloseBtn.closest('.alert, .announcement-bar, [role="alert"]');
       if (alertBox) {
         e.preventDefault();
-        alertBox.style.transition = 'opacity 0.15s ease, max-height 0.15s ease, margin 0.15s ease, padding 0.15s ease';
-        alertBox.style.opacity = '0';
-        setTimeout(() => alertBox.remove(), 150);
+        alertBox.remove();
         return;
       }
     }

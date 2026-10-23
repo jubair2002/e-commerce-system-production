@@ -32,12 +32,18 @@ $mobileNavEnabled  = (int)setting('mobile_bottom_nav', '1') === 1;
       <!-- Col 1: About & Tagline -->
       <div class="col-lg-4 col-md-6">
         <h4 class="footer-col-title"><?= e(setting('site_name', APP_NAME)) ?></h4>
-        <p class="small text-muted mb-3" style="line-height: 1.6;">
-          <?= e(setting('store_tagline', 'Curated everyday essentials, made with intention and delivered straight to your door.')) ?>
-        </p>
-        <p class="small text-muted mb-0">
-          <?= e(setting('site_about', '')) ?>
-        </p>
+        <?php $storeTagline = trim((string)setting('store_tagline', '')); if ($storeTagline !== ''): ?>
+          <p class="small text-muted mb-3" style="line-height: 1.6;">
+            <?= e($storeTagline) ?>
+          </p>
+        <?php endif; ?>
+        <?php 
+        $siteAbout = trim((string)setting('site_about', ''));
+        if ($siteAbout !== '' && stripos($siteAbout, 'admin panel') === false): ?>
+          <p class="small text-muted mb-0">
+            <?= e($siteAbout) ?>
+          </p>
+        <?php endif; ?>
       </div>
 
       <!-- Col 2: Shop Links -->
@@ -126,7 +132,8 @@ $mobileNavEnabled  = (int)setting('mobile_bottom_nav', '1') === 1;
         <button type="button" class="btn btn-ghost btn-sm" data-back-to-top>
           <?= icon('chevron-up') ?> Back to top
         </button>
-        <span>&copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>.</span>
+        <?php $customFooter = trim((string)setting('footer_text', '')); ?>
+        <span>&copy; <?= date('Y') ?> <?= e($customFooter !== '' ? $customFooter : setting('site_name', APP_NAME)) ?>.</span>
       </div>
     </div>
   </div>

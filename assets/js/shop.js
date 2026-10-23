@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchDropdown.classList.add('visible');
           })
           .catch(() => {});
-      }, 250);
+      }, 100);
     });
   }
 
@@ -284,6 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // Initialize mini-cart events immediately for pre-rendered elements
+  attachMiniCartEvents();
 
   // -------------------------------------------------------------
   // 4. Quick-Add and Buy Now on Product Cards
@@ -652,5 +655,46 @@ document.addEventListener('DOMContentLoaded', () => {
       prefetchUrl(anchor.href);
     }
   }, { passive: true });
+
+  // -------------------------------------------------------------
+  // 10. Hero Product Showcase Carousel Navigation (< and >)
+  // -------------------------------------------------------------
+  const heroCarousel = document.getElementById('heroProductCarousel');
+  const heroPrevBtn = document.getElementById('heroCarouselPrev');
+  const heroNextBtn = document.getElementById('heroCarouselNext');
+
+  if (heroCarousel && (heroPrevBtn || heroNextBtn)) {
+    const getScrollStep = () => {
+      const item = heroCarousel.querySelector('.hero-marquee-item');
+      const itemWidth = item ? item.offsetWidth + 16 : 226;
+      const viewportStep = Math.floor(heroCarousel.clientWidth * 0.7);
+      return Math.max(itemWidth, viewportStep);
+    };
+
+    if (heroPrevBtn) {
+      heroPrevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const step = getScrollStep();
+        if (heroCarousel.scrollLeft <= 10) {
+          heroCarousel.scrollTo({ left: heroCarousel.scrollWidth, behavior: 'smooth' });
+        } else {
+          heroCarousel.scrollBy({ left: -step, behavior: 'smooth' });
+        }
+      });
+    }
+
+    if (heroNextBtn) {
+      heroNextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const step = getScrollStep();
+        const maxScroll = heroCarousel.scrollWidth - heroCarousel.clientWidth;
+        if (heroCarousel.scrollLeft >= maxScroll - 10) {
+          heroCarousel.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          heroCarousel.scrollBy({ left: step, behavior: 'smooth' });
+        }
+      });
+    }
+  }
 });
 

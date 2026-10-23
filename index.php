@@ -167,18 +167,26 @@ include __DIR__ . '/includes/partials/header.php';
       </a>
     </div>
 
-    <!-- Continuous Marquee Product Ticker -->
+    <!-- Product Showcase Carousel with Clickable Controls -->
     <?php if (!empty($tickerTrack)): ?>
-      <div class="hero-marquee-wrap" aria-hidden="true">
-        <div class="hero-marquee-track">
-          <?php foreach ($tickerTrack as $tp): ?>
-            <a href="<?= e(route('product', ['slug' => $tp['slug']])) ?>" class="hero-marquee-item">
-              <img src="<?= e(product_image_url($tp['image'], 'thumbnail', (int)$tp['id'])) ?>" alt="<?= e($tp['name']) ?>" class="hero-marquee-img" loading="lazy">
-              <div class="hero-marquee-name"><?= e($tp['name']) ?></div>
-              <div class="hero-marquee-price"><?= e(price((float)($tp['sale_price'] ?: $tp['price']))) ?></div>
-            </a>
-          <?php endforeach; ?>
+      <div class="hero-carousel-wrapper position-relative">
+        <button type="button" class="hero-carousel-nav hero-carousel-prev" id="heroCarouselPrev" aria-label="Previous products" title="Previous products">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="hero-marquee-wrap" id="heroProductCarousel" tabindex="0" role="region" aria-label="Featured Products Carousel">
+          <div class="hero-marquee-track">
+            <?php foreach ($tickerTrack as $tp): ?>
+              <a href="<?= e(route('product', ['slug' => $tp['slug']])) ?>" class="hero-marquee-item">
+                <img src="<?= e(product_image_url($tp['image'], 'thumbnail', (int)$tp['id'])) ?>" alt="<?= e($tp['name']) ?>" class="hero-marquee-img" loading="lazy">
+                <div class="hero-marquee-name"><?= e($tp['name']) ?></div>
+                <div class="hero-marquee-price"><?= e(price((float)($tp['sale_price'] ?: $tp['price']))) ?></div>
+              </a>
+            <?php endforeach; ?>
+          </div>
         </div>
+        <button type="button" class="hero-carousel-nav hero-carousel-next" id="heroCarouselNext" aria-label="Next products" title="Next products">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
       </div>
     <?php endif; ?>
   </section>

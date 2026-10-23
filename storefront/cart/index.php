@@ -9,15 +9,36 @@ $isAjax = (!empty($_GET['ajax']) || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &
 $respondJson = function (bool $ok, string $message = '', array $extra = []) {
     header('Content-Type: application/json; charset=utf-8');
     $cart = cart_load();
-    $totals = cart_totals($cart, $_SESSION['shipping_method_id'] ?? null, $_SESSION['applied_coupon'] ?? null);
+    $totals = cart_totals($cart, $_SESSION['shipping_method_id'] ?? null, $_SESSION['applied_coupon'] ?? null, 'cod');
+    
+    $lines = [];
+    foreach ($cart['items'] as $item) {
+        $lines[] = [
+            'cart_key'       => $item['cart_key'],
+            'qty'            => (int)$item['qty'],
+            'unit_price'     => (float)$item['unit_price'],
+            'unit_price_fmt' => price($item['unit_price']),
+            'line_total'     => (float)$item['line_total'],
+            'line_total_fmt' => price($item['line_total']),
+            'available_qty'  => (int)$item['available_qty'],
+        ];
+    }
+
     echo json_encode(array_merge([
-        'ok'       => $ok,
-        'message'  => $message,
-        'count'    => cart_count(),
-        'subtotal' => $cart['subtotal'],
-        'totals'   => $totals,
-        'lines'    => $cart['items'],
-        'alerts'   => $cart['alerts'],
+        'ok'           => $ok,
+        'message'      => $message,
+        'count'        => cart_count(),
+        'subtotal'     => $cart['subtotal'],
+        'subtotal_fmt' => price($totals['subtotal']),
+        'total'        => $totals['total'],
+        'total_fmt'    => price($totals['total']),
+        'discount'     => $totals['discount'],
+        'discount_fmt' => price($totals['discount']),
+        'shipping_fee' => $totals['shipping_fee'],
+        'shipping_fee_fmt' => $totals['shipping_fee'] > 0 ? price($totals['shipping_fee']) : 'Free',
+        'totals'       => $totals,
+        'lines'        => $lines,
+        'alerts'       => $cart['alerts'],
     ], $extra));
     exit;
 };
@@ -212,9 +233,16 @@ include __DIR__ . '/../../includes/partials/header.php';
       </ol>
     </nav>
 
-    <div class="section-header mb-3">
-      <h2>Your Cart</h2>
-      <p class="text-muted"><?= count($cart['items']) ?> unique item<?= count($cart['items']) === 1 ? '' : 's' ?> (<?= cart_count() ?> total units)</p>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+      <div>
+        <h2 class="mb-1">Your Cart</h2>
+        <p class="text-muted small mb-0"><?= count($cart['items']) ?> unique item<?= count($cart['items']) === 1 ? '' : 's' ?> (<?= cart_count() ?> total units)</p>
+      </div>
+      <div>
+        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary">
+          <?= icon('arrow-left', 'me-1') ?> Continue Shopping
+        </a>
+      </div>
     </div>
 
     <?php if ($freeShippingThreshold !== null && $freeShippingThreshold > 0 && !empty($cart['items'])): ?>
@@ -325,7 +353,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                             </div>
                             <div class="text-muted" style="font-size: 11px; margin-top: 4px;"><?= (int)$i['available_qty'] ?> in stock</div>
                           </td>
-                          <td class="text-end fw-semibold"><?= e(price($i['line_total'])) ?></td>
+                          <td class="text-end fw-semibold" data-line-total-key="<?= e($i['cart_key']) ?>"><?= e(price($i['line_total'])) ?></td>
                           <td class="text-end">
                             <button type="submit" class="btn btn-sm btn-outline-danger"
                                     name="remove_key" value="<?= e($i['cart_key']) ?>"
@@ -369,10 +397,10 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <?= icon('bag') ?> Have a Coupon Code?
                 </h6>
                 <?php if (!empty($totals['coupon'])): ?>
-                  <div class="d-flex align-items-center justify-content-between p-2 bg-success bg-opacity-10 rounded border border-success">
-                    <div>
-                      <span class="badge bg-success me-1"><?= e($totals['coupon']['code']) ?></span>
-                      <span class="text-success small fw-medium">-<?= e(price($totals['discount'])) ?></span>
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: var(--bg-soft); border: 1px solid var(--line);">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge" style="background-color: var(--accent); color: #ffffff; letter-spacing: 0.05em; font-weight: 600; font-size: 11px; padding: 4px 8px;"><?= e($totals['coupon']['code']) ?></span>
+                      <span class="small fw-bold" style="color: var(--ok);">-<?= e(price($totals['discount'])) ?></span>
                     </div>
                     <form method="post" class="d-inline m-0">
                       <?= csrf_field() ?>
@@ -399,13 +427,13 @@ include __DIR__ . '/../../includes/partials/header.php';
 
                 <div class="d-flex justify-content-between mb-2">
                   <span class="text-muted">Subtotal</span>
-                  <strong><?= e(price($totals['subtotal'])) ?></strong>
+                  <strong id="cartSummarySubtotal"><?= e(price($totals['subtotal'])) ?></strong>
                 </div>
 
                 <?php if ($totals['discount'] > 0): ?>
-                  <div class="d-flex justify-content-between mb-2 text-success">
-                    <span>Coupon Discount</span>
-                    <strong>-<?= e(price($totals['discount'])) ?></strong>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Coupon Discount</span>
+                    <strong style="color: var(--ok);">-<?= e(price($totals['discount'])) ?></strong>
                   </div>
                 <?php endif; ?>
 
@@ -433,7 +461,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
                 <div class="d-flex justify-content-between mb-2">
                   <span class="text-muted">Estimated Shipping</span>
-                  <strong>
+                  <strong id="cartSummaryShipping">
                     <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
                   </strong>
                 </div>
@@ -449,7 +477,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <span class="fs-5 fw-bold">Total</span>
-                  <span class="fs-4 fw-bold text-primary"><?= e(price($totals['total'])) ?></span>
+                  <span class="fs-4 fw-bold text-primary" id="cartSummaryTotal"><?= e(price($totals['total'])) ?></span>
                 </div>
 
                 <a href="<?= e(route('checkout')) ?>" class="btn btn-editorial-primary btn-lg w-100">
@@ -474,27 +502,90 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartForm = document.getElementById('cartForm');
     if (!cartForm) return;
 
-    // Restore scroll position after auto update
-    const savedScroll = sessionStorage.getItem('cart_scroll_y');
-    if (savedScroll !== null) {
-        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
-        sessionStorage.removeItem('cart_scroll_y');
-    }
-
+    let isUpdating = false;
+    let pendingUpdate = false;
     let debounceTimer = null;
-    function submitCartUpdate() {
-        sessionStorage.setItem('cart_scroll_y', String(window.scrollY));
-        if (!cartForm.querySelector('input[name="auto_update"]')) {
-            const h = document.createElement('input');
-            h.type = 'hidden';
-            h.name = 'auto_update';
-            h.value = '1';
-            cartForm.appendChild(h);
+
+    function applyCartUpdate(data) {
+        if (!data || !data.ok) {
+            cartForm.submit();
+            return;
         }
-        cartForm.submit();
+
+        // 1. Update line totals and stepper states
+        if (Array.isArray(data.lines)) {
+            data.lines.forEach(item => {
+                const rowTotalEl = document.querySelector(`[data-line-total-key="${item.cart_key}"]`);
+                if (rowTotalEl && item.line_total_fmt) {
+                    rowTotalEl.textContent = item.line_total_fmt;
+                }
+                const stepper = document.querySelector(`.cart-qty-stepper[data-cart-key="${item.cart_key}"]`);
+                if (stepper) {
+                    const input = stepper.querySelector('.cart-qty-input');
+                    const minusBtn = stepper.querySelector('.cart-qty-minus');
+                    const plusBtn = stepper.querySelector('.cart-qty-plus');
+                    if (input) input.value = item.qty;
+                    if (minusBtn) minusBtn.disabled = (item.qty <= 1);
+                    if (plusBtn) plusBtn.disabled = (item.qty >= item.available_qty);
+                }
+            });
+        }
+
+        // 2. Update summary totals
+        const subtotalEl = document.getElementById('cartSummarySubtotal');
+        if (subtotalEl && data.subtotal_fmt) {
+            subtotalEl.textContent = data.subtotal_fmt;
+        }
+
+        const totalEl = document.getElementById('cartSummaryTotal');
+        if (totalEl && data.total_fmt) {
+            totalEl.textContent = data.total_fmt;
+        }
+
+        const shippingEl = document.getElementById('cartSummaryShipping');
+        if (shippingEl && data.shipping_fee_fmt) {
+            shippingEl.textContent = data.shipping_fee_fmt;
+        }
+
+        // 3. Update header cart badges
+        document.querySelectorAll('.cart-badge-count').forEach(b => {
+            b.textContent = data.count;
+            b.style.display = data.count > 0 ? 'inline-block' : 'none';
+        });
     }
 
-    // Handle plus and minus stepper clicks
+    function doAjaxUpdate() {
+        if (isUpdating) {
+            pendingUpdate = true;
+            return;
+        }
+        isUpdating = true;
+        const fd = new FormData(cartForm);
+        fd.set('action', 'update');
+
+        fetch(window.location.pathname + '?ajax=1', {
+            method: 'POST',
+            body: fd,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            isUpdating = false;
+            applyCartUpdate(data);
+            if (pendingUpdate) {
+                pendingUpdate = false;
+                doAjaxUpdate();
+            }
+        })
+        .catch(() => {
+            isUpdating = false;
+            cartForm.submit();
+        });
+    }
+
+    // Handle plus and minus stepper clicks instantly
     cartForm.addEventListener('click', function(e) {
         const plusBtn = e.target.closest('.cart-qty-plus');
         const minusBtn = e.target.closest('.cart-qty-minus');
@@ -508,7 +599,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cur = parseInt(input.value || '1', 10);
                 if (cur < max) {
                     input.value = cur + 1;
-                    submitCartUpdate();
+                    if (minusBtn) minusBtn.disabled = false;
+                    if (cur + 1 >= max) plusBtn.disabled = true;
+                    doAjaxUpdate();
                 }
             }
         } else if (minusBtn) {
@@ -520,7 +613,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cur = parseInt(input.value || '1', 10);
                 if (cur > min) {
                     input.value = cur - 1;
-                    submitCartUpdate();
+                    if (cur - 1 <= min) minusBtn.disabled = true;
+                    const plus = stepper.querySelector('.cart-qty-plus');
+                    if (plus) plus.disabled = false;
+                    doAjaxUpdate();
                 }
             }
         }
@@ -529,15 +625,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle manual input change
     cartForm.addEventListener('change', function(e) {
         if (e.target.classList.contains('cart-qty-input')) {
-            submitCartUpdate();
+            doAjaxUpdate();
         }
     });
 
-    // Debounce typing in quantity input
+    // Rapid input typing with short 100ms debounce
     cartForm.addEventListener('input', function(e) {
         if (e.target.classList.contains('cart-qty-input')) {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(submitCartUpdate, 600);
+            debounceTimer = setTimeout(doAjaxUpdate, 120);
         }
     });
 });

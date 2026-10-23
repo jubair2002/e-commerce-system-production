@@ -268,19 +268,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $oldProdRow = $stmtOldStock->fetch();
                 $oldStock = (int)($oldProdRow['stock'] ?? 0);
 
-                $productData[':id'] = $id;
+                $updateData = $productData;
+                unset($updateData[':stock']);
+                $updateData[':id'] = $id;
+
                 $stmtUpdate = $pdo->prepare(
                     "UPDATE products SET
                         category_id = :cid, name = :name, slug = :slug, product_type = :ptype, sku = :sku,
                         short_description = :sd, description = :d, price = :price, sale_price = :sp,
-                        stock = :stock, image = :img, status = :st, featured = :feat,
+                        image = :img, status = :st, featured = :feat,
                         track_inventory = :ti, allow_backorder = :ab, low_stock_threshold = :lst,
                         show_stock_count = :ssc, weight_g = :wg, brand = :brand, tags = :tags,
                         meta_title = :mt, meta_description = :md
                      WHERE id = :id"
                 );
-                $stmtUpdate->execute($productData);
+                $stmtUpdate->execute($updateData);
             } else {
+                $insertData = $productData;
+                $insertData[':stock'] = 0;
                 $stmtInsert = $pdo->prepare(
                     "INSERT INTO products
                         (category_id, name, slug, product_type, sku, short_description, description,
@@ -292,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                          :price, :sp, :stock, :img, :st, :feat,
                          :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md)"
                 );
-                $stmtInsert->execute($productData);
+                $stmtInsert->execute($insertData);
                 $id = (int)$pdo->lastInsertId();
             }
 
@@ -305,10 +310,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($productType === 'simple') {
                 $delta = $stock - $oldStock;
                 if ($delta !== 0) {
-                    stock_adjust($id, null, $delta, 'manual_adjust', null, 'Product edit form stock update');
+                    $reason = ($oldStock === 0) ? 'restock' : 'manual_adjust';
+                    stock_adjust($id, null, $delta, $reason, null, 'Product edit form stock update');
                 }
                 // If switching from variable -> simple, keep existing variants inactive
                 $pdo->prepare("UPDATE product_variants SET status = 'inactive' WHERE product_id = :pid")->execute([':pid' => $id]);
+            } elseif ($productType === 'variable') {
+                // For variable product, parent product stock is 0; variants manage inventory
+                $pdo->prepare("UPDATE products SET stock = 0 WHERE id = :id")->execute([':id' => $id]);
             }
 
             // ---------------------------------------------------------

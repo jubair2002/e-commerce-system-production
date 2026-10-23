@@ -1006,7 +1006,7 @@ include __DIR__ . '/includes/header.php';
                       Enable Maintenance Mode <?= setting('maintenance_mode', '0') == '1' ? '<span class="badge bg-danger ms-2">Active (Store Closed)</span>' : '<span class="badge bg-success ms-2">Live (Store Open)</span>' ?>
                     </label>
                   </div>
-                  <a href="<?= e(shop_url('maintenance.php')) ?>" target="_blank" class="btn btn-sm btn-outline-dark">
+                  <a href="<?= e(route('maintenance')) ?>" target="_blank" class="btn btn-sm btn-outline-dark">
                     <i class="bi bi-eye me-1"></i> Preview Maintenance Window
                   </a>
                 </div>

@@ -174,7 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch Order Items with product image and slug
 $stmtItems = $pdo->prepare(
     "SELECT oi.*, p.slug AS product_slug,
-            (SELECT file_path FROM product_images WHERE product_id = oi.product_id ORDER BY is_featured DESC, sort_order ASC, id ASC LIMIT 1) AS product_image
+            COALESCE(
+                p.image,
+                (SELECT filename FROM product_images WHERE product_id = oi.product_id ORDER BY is_primary DESC, position ASC, id ASC LIMIT 1)
+            ) AS product_image
      FROM order_items oi
      LEFT JOIN products p ON p.id = oi.product_id
      WHERE oi.order_id = :oid

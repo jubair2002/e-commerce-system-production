@@ -47,17 +47,16 @@
   margin-right: var(--space-2);
 }
 
-/* skeleton.css: Shimmer Loading States */
+/* skeleton.css: Static Loading States */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-soft) 25%, var(--line) 50%, var(--bg-soft) 75%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.5s infinite;
+  background: var(--surface-muted);
+  animation: none !important;
   border-radius: var(--radius-sm);
 }
 
 @keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% { opacity: 1; }
+  100% { opacity: 1; }
 }
 
 .skeleton-text {

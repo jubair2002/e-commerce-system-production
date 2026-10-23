@@ -76,11 +76,11 @@
   --max-w: 1440px;
   --gutter: clamp(16px, 2.5vw, 32px);
 
-  /* Transitions - snappy, high performance */
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --duration-fast: 70ms;
-  --duration-normal: 120ms;
-  --duration-slow: 160ms;
+  /* Transitions & Animations - Zero delay for instant superfast storefront */
+  --ease: linear;
+  --duration-fast: 0s;
+  --duration-normal: 0s;
+  --duration-slow: 0s;
 }
 
 /* Dark Theme Tokens (Deep Tech Dark) */

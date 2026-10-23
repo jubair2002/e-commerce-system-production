@@ -362,36 +362,32 @@ include __DIR__ . '/../../includes/partials/header.php';
             </button>
           </form>
 
-          <!-- Clean Reassurance Perks Row -->
-          <div class="pdp-perks-row">
-            <div class="pdp-perk-item">
-              <?= icon('truck', 'text-primary') ?>
-              <span>Fast Shipping</span>
-            </div>
-            <div class="pdp-perk-item">
-              <?= icon('shield', 'text-primary') ?>
-              <span>Cash on Delivery</span>
-            </div>
-            <div class="pdp-perk-item">
-              <?= icon('check-circle', 'text-primary') ?>
-              <span>100% Genuine</span>
+
+
+          <!-- Product Description Box (Filling bottom buybox space) -->
+          <div class="pdp-description-box">
+            <h4 class="pdp-desc-heading">Product Description</h4>
+            <div class="pdp-desc-body">
+              <?php
+                $descContent = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
+                if (strip_tags($descContent) !== $descContent) {
+                    echo strip_tags($descContent, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
+                } else {
+                    echo nl2br(e($descContent));
+                }
+              ?>
             </div>
           </div>
-
-
 
         </div>
       </div>
 
     </div>
 
-    <!-- Product Details Tabs (Description, Specifications, Shipping) -->
+    <!-- Product Details Tabs (Specifications, Shipping) -->
     <div class="pdp-tabs-wrap">
       <div class="pdp-tab-nav" role="tablist">
-        <button type="button" class="pdp-tab-btn is-active" data-pdp-tab="tab-desc" role="tab" aria-selected="true">
-          Description
-        </button>
-        <button type="button" class="pdp-tab-btn" data-pdp-tab="tab-specs" role="tab" aria-selected="false">
+        <button type="button" class="pdp-tab-btn is-active" data-pdp-tab="tab-specs" role="tab" aria-selected="true">
           Specifications
         </button>
         <button type="button" class="pdp-tab-btn" data-pdp-tab="tab-shipping" role="tab" aria-selected="false">
@@ -399,20 +395,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </button>
       </div>
 
-      <div class="pdp-tab-content is-active" id="tab-desc" role="tabpanel">
-        <div class="card p-6" style="line-height: 1.8; max-width: 840px;">
-          <?php
-            $descContent = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
-            if (strip_tags($descContent) !== $descContent) {
-                echo strip_tags($descContent, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
-            } else {
-                echo nl2br(e($descContent));
-            }
-          ?>
-        </div>
-      </div>
-
-      <div class="pdp-tab-content" id="tab-specs" role="tabpanel">
+      <div class="pdp-tab-content is-active" id="tab-specs" role="tabpanel">
         <div class="card p-4" style="max-width: 840px;">
           <table class="pdp-specs-table">
             <tbody>

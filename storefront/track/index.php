@@ -227,7 +227,7 @@ include __DIR__ . '/../../includes/partials/header.php';
               <div class="d-flex justify-content-between position-relative">
                 <div class="position-absolute top-50 start-0 translate-middle-y w-100" style="height: 4px; z-index: 1; background-color: var(--line);"></div>
                 <div class="position-absolute top-50 start-0 translate-middle-y"
-                     style="height: 4px; z-index: 1; background-color: var(--accent); width: <?= max(0, min(100, ($currentIdx / (count($statusKeys) - 1)) * 100)) ?>%; transition: width var(--duration-normal) var(--ease);"></div>
+                     style="height: 4px; z-index: 1; background-color: var(--accent); width: <?= max(0, min(100, ($currentIdx / (count($statusKeys) - 1)) * 100)) ?>%;"></div>
 
                 <?php foreach ($statusKeys as $idx => $sKey): ?>
                   <?php

@@ -402,12 +402,12 @@
   box-shadow: var(--shadow-lg);
   padding: 12px;
   z-index: 1050;
-  animation: searchDrop 0.2s var(--ease);
+  animation: none !important;
 }
 
 @keyframes searchDrop {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 1; transform: none; }
+  to { opacity: 1; transform: none; }
 }
 
 .search-expand-bar.active, .search-expand-bar.is-open {

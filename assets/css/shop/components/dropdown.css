@@ -17,15 +17,15 @@
   padding: 6px 0;
   margin-top: 6px;
   display: none;
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+  opacity: 1;
+  transform: none !important;
+  transition: none !important;
 }
 
 .shop-dropdown.is-open .dropdown-menu {
   display: block;
   opacity: 1;
-  transform: translateY(0);
+  transform: none !important;
 }
 
 .dropdown-item {
