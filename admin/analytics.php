@@ -249,7 +249,7 @@ include __DIR__ . '/includes/header.php';
               </p>
               <?php if (!empty($ins['link'])): ?>
                 <a href="<?= e($ins['link']) ?>" class="btn btn-link btn-sm p-0 text-decoration-none" style="font-size: 0.78rem;">
-                  View Details &rarr;
+                  View Details
                 </a>
               <?php endif; ?>
             </div>
@@ -512,7 +512,7 @@ include __DIR__ . '/includes/header.php';
               <th>Category</th>
               <th class="text-end">Views</th>
               <th class="text-end">Add to Cart</th>
-              <th class="text-end">View&rarr;Cart</th>
+              <th class="text-end">View to Cart</th>
               <th class="text-end">Orders</th>
               <th class="text-end">Units</th>
               <th class="text-end">Revenue</th>
@@ -581,7 +581,7 @@ include __DIR__ . '/includes/header.php';
                   </td>
                   <td class="text-center pe-3">
                     <a href="<?= e(admin_url('analytics_product.php?id=' . $item['id'])) ?>" class="btn btn-outline-primary btn-sm py-0 px-2" title="Product Analytics Deep Dive">
-                      Deep Dive &rarr;
+                      Deep Dive
                     </a>
                   </td>
                 </tr>

@@ -132,7 +132,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <?php if ($guestCheckout && str_contains($next, 'checkout')): ?>
           <div class="text-center mt-3">
             <a href="<?= e(route('checkout')) ?>" class="small text-muted text-decoration-underline">
-              Continue as Guest &rarr;
+              Continue as Guest
             </a>
           </div>
         <?php endif; ?>
@@ -141,7 +141,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       <div class="auth-footer text-center mt-4 pt-3 border-top">
         <span class="small text-muted">Don't have an account?</span>
         <a href="<?= e(route('register', ($next !== 'account/' && $next !== '') ? ['next' => $next] : [])) ?>" class="small fw-semibold text-primary ms-1">
-          Create Account &rarr;
+          Create Account
         </a>
       </div>
     </div>

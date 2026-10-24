@@ -581,7 +581,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <div class="col-12 mb-2">
                   <label class="form-label fw-semibold small d-flex justify-content-between align-items-center">
                     <span><?= icon('map-pin', 'me-1 text-primary') ?> Saved Delivery Addresses</span>
-                    <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses &rarr;</a>
+                    <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses</a>
                   </label>
                   <div class="d-flex flex-column gap-2" id="savedAddressSelector">
                     <?php foreach ($savedAddresses as $idx => $sa): 

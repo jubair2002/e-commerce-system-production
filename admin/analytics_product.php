@@ -246,7 +246,7 @@ include __DIR__ . '/includes/header.php';
         <div class="card-body p-3">
           <div class="text-muted small fw-semibold mb-1">Views &amp; Cart Adds</div>
           <div class="fs-4 fw-bold text-primary"><?= number_format($views) ?> <span class="fs-6 text-muted fw-normal">(<?= number_format($cart) ?> in cart)</span></div>
-          <div class="small text-muted" style="font-size: 0.75rem;">View&rarr;Cart: <strong><?= $viewToCart ?>%</strong></div>
+          <div class="small text-muted" style="font-size: 0.75rem;">View to Cart: <strong><?= $viewToCart ?>%</strong></div>
         </div>
       </div>
     </div>
@@ -256,7 +256,7 @@ include __DIR__ . '/includes/header.php';
         <div class="card-body p-3">
           <div class="text-muted small fw-semibold mb-1">Current Stock</div>
           <div class="fs-4 fw-bold <?= $stock <= 5 ? 'text-danger' : 'text-dark' ?>"><?= number_format($stock) ?> units</div>
-          <div class="small text-muted" style="font-size: 0.75rem;">Cart&rarr;Buy: <strong><?= $cartToBuy ?>%</strong></div>
+          <div class="small text-muted" style="font-size: 0.75rem;">Cart to Buy: <strong><?= $cartToBuy ?>%</strong></div>
         </div>
       </div>
     </div>

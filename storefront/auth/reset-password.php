@@ -58,7 +58,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           </p>
           <div class="d-grid gap-2">
             <a href="<?= e(route('forgot_password')) ?>" class="btn btn-primary">
-              Request New Reset Link &rarr;
+              Request New Reset Link
             </a>
             <a href="<?= e(route('login')) ?>" class="btn btn-outline-secondary btn-sm">
               Back to Sign In

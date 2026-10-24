@@ -36,7 +36,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <div class="d-grid gap-2">
         <a href="<?= e(route('resend_verification')) ?>" class="btn btn-editorial-primary">
-          Resend Verification Link &rarr;
+          Resend Verification Link
         </a>
         <a href="<?= e(route('login')) ?>" class="btn btn-editorial-secondary btn-sm">
           Go to Sign In

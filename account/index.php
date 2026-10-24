@@ -138,7 +138,7 @@ account_layout_start('overview', 'Overview', $customer);
       <?= icon('box', 'text-primary') ?> Recent Orders
     </h2>
     <a href="<?= e(shop_url('account/orders.php')) ?>" class="small text-decoration-none fw-semibold">
-      View All Orders &rarr;
+      View All Orders
     </a>
   </div>
 
@@ -190,7 +190,7 @@ account_layout_start('overview', 'Overview', $customer);
               <td class="fw-semibold"><?= e(price($o['total'])) ?></td>
               <td class="text-end">
                 <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="btn btn-editorial-secondary btn-sm py-1 px-2" style="font-size: 0.8rem;">
-                  Details &rarr;
+                  Details
                 </a>
               </td>
             </tr>
@@ -210,7 +210,7 @@ account_layout_start('overview', 'Overview', $customer);
           <?= icon('map-pin', 'text-primary') ?> Shipping Address
         </h2>
         <a href="<?= e(shop_url('account/addresses.php')) ?>" class="small text-decoration-none fw-semibold">
-          Manage &rarr;
+          Manage
         </a>
       </div>
       <?php if ($defaultAddress): ?>
@@ -242,7 +242,7 @@ account_layout_start('overview', 'Overview', $customer);
           <?= icon('shield', 'text-primary') ?> Security &amp; Access
         </h2>
         <a href="<?= e(shop_url('account/security.php')) ?>" class="small text-decoration-none fw-semibold">
-          Settings &rarr;
+          Settings
         </a>
       </div>
       <p class="text-muted small mb-3">Keep your customer profile secure and manage authentication credentials.</p>
@@ -252,14 +252,14 @@ account_layout_start('overview', 'Overview', $customer);
             <?= icon('lock', 'text-muted') ?>
             <span>Update Password</span>
           </span>
-          <span class="text-muted small">&rarr;</span>
+          <i class="bi bi-chevron-right text-muted small"></i>
         </a>
         <a href="<?= e(shop_url('account/security.php#email')) ?>" class="account-quick-action">
           <span class="d-flex align-items-center gap-2">
             <?= icon('mail', 'text-muted') ?>
             <span>Email Preferences</span>
           </span>
-          <span class="text-muted small">&rarr;</span>
+          <i class="bi bi-chevron-right text-muted small"></i>
         </a>
       </div>
     </div>

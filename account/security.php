@@ -374,7 +374,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
         </div>
         <div>
           <a href="<?= e(shop_url('account/export.php')) ?>" class="btn btn-editorial-secondary btn-sm">
-            Export Data (JSON) &rarr;
+            Export Data (JSON)
           </a>
         </div>
       </div>
@@ -389,7 +389,7 @@ account_layout_start('security', 'Account Security', $freshCustomer);
           </div>
           <div>
             <a href="<?= e(shop_url('account/delete.php')) ?>" class="btn btn-danger btn-sm">
-              Delete Account &rarr;
+              Delete Account
             </a>
           </div>
         </div>

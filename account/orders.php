@@ -188,7 +188,7 @@ account_layout_start('orders', 'My Orders', $customer);
               <td class="fw-bold"><?= e(price($o['total'])) ?></td>
               <td class="pe-3 text-end">
                 <a href="<?= e(shop_url('account/order.php?o=' . urlencode($o['order_number']))) ?>" class="btn btn-editorial-secondary btn-sm py-1 px-3" style="font-size: 0.8rem;">
-                  View &rarr;
+                  View
                 </a>
               </td>
             </tr>

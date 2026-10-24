@@ -55,7 +55,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       </div>
       <div class="d-grid gap-2">
         <a href="<?= e(route('login')) ?>" class="btn btn-editorial-primary">
-          Back to Sign In &rarr;
+          Back to Sign In
         </a>
       </div>
     <?php else: ?>

@@ -11,7 +11,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $statusFilter = $_GET['status'] ?? 'all';
     $where = [];
     $params = [];
-    if ($statusFilter !== 'all' && in_array($statusFilter, ['active', 'pending', 'unsubscribed'])) {
+    if ($statusFilter === 'active' || $statusFilter === 'subscribed') {
+        $where[] = "status IN ('active', 'subscribed')";
+    } elseif ($statusFilter !== 'all' && in_array($statusFilter, ['pending', 'unsubscribed'], true)) {
         $where[] = 'status = ?';
         $params[] = $statusFilter;
     }
@@ -38,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'set_status') {
         $id = (int)($_POST['id'] ?? 0);
-        $status = in_array($_POST['status'] ?? '', ['active', 'pending', 'unsubscribed']) ? $_POST['status'] : 'active';
+        $rawStatus = $_POST['status'] ?? '';
+        $status = in_array($rawStatus, ['active', 'subscribed', 'pending', 'unsubscribed'], true) ? $rawStatus : 'subscribed';
         $pdo->prepare("UPDATE newsletter_subscribers SET status = ? WHERE id = ?")->execute([$status, $id]);
         flash('success', "Subscriber #{$id} status set to {$status}.");
         admin_redirect('subscribers.php');
@@ -61,7 +64,9 @@ $search = trim((string)($_GET['q'] ?? ''));
 $where = [];
 $params = [];
 
-if ($statusFilter !== 'all' && in_array($statusFilter, ['active', 'pending', 'unsubscribed'])) {
+if ($statusFilter === 'active' || $statusFilter === 'subscribed') {
+    $where[] = "status IN ('active', 'subscribed')";
+} elseif ($statusFilter !== 'all' && in_array($statusFilter, ['pending', 'unsubscribed'], true)) {
     $where[] = 'status = ?';
     $params[] = $statusFilter;
 }
@@ -76,7 +81,7 @@ if ($search !== '') {
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 // Counts
-$countActive   = (int)$pdo->query("SELECT COUNT(*) FROM newsletter_subscribers WHERE status = 'active'")->fetchColumn();
+$countActive   = (int)$pdo->query("SELECT COUNT(*) FROM newsletter_subscribers WHERE status IN ('active', 'subscribed')")->fetchColumn();
 $countPending  = (int)$pdo->query("SELECT COUNT(*) FROM newsletter_subscribers WHERE status = 'pending'")->fetchColumn();
 $countUnsub    = (int)$pdo->query("SELECT COUNT(*) FROM newsletter_subscribers WHERE status = 'unsubscribed'")->fetchColumn();
 $countTotal    = (int)$pdo->query("SELECT COUNT(*) FROM newsletter_subscribers")->fetchColumn();
@@ -160,8 +165,8 @@ require_once __DIR__ . '/includes/header.php';
                 <span class="badge bg-light text-dark border"><?= e($s['source'] ?: 'web') ?></span>
               </td>
               <td>
-                <?php if ($s['status'] === 'active'): ?>
-                  <span class="badge text-bg-success">Active</span>
+                <?php if ($s['status'] === 'active' || $s['status'] === 'subscribed'): ?>
+                  <span class="badge text-bg-success">Subscribed</span>
                 <?php elseif ($s['status'] === 'pending'): ?>
                   <span class="badge text-bg-warning">Pending</span>
                 <?php else: ?>
@@ -179,11 +184,11 @@ require_once __DIR__ . '/includes/header.php';
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="set_status">
                   <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
-                  <?php if ($s['status'] === 'active'): ?>
+                  <?php if ($s['status'] === 'active' || $s['status'] === 'subscribed'): ?>
                     <input type="hidden" name="status" value="unsubscribed">
                     <button type="submit" class="btn btn-sm btn-outline-warning" title="Unsubscribe this user">Unsubscribe</button>
                   <?php else: ?>
-                    <input type="hidden" name="status" value="active">
+                    <input type="hidden" name="status" value="subscribed">
                     <button type="submit" class="btn btn-sm btn-outline-success" title="Activate subscription">Activate</button>
                   <?php endif; ?>
                 </form>

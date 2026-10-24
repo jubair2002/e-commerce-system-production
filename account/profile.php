@@ -261,7 +261,7 @@ account_layout_start('profile', 'Edit Profile', $freshCustomer);
       <div class="input-group">
         <input type="email" class="form-control bg-light" value="<?= e($freshCustomer['email']) ?>" readonly>
         <a href="<?= e(shop_url('account/security.php#email')) ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-          Change Email &rarr;
+          Change Email
         </a>
       </div>
       <div class="form-text" style="font-size: 0.75rem;">

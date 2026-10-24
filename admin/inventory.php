@@ -83,7 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'previ
                     $varRow = $vStmt->fetch();
 
                     if ($varRow) {
-                        $found = $varRow['product_name'] . ' (' . ($varRow['label'] ?? 'Variant') . ')';
+                        $fullVar = function_exists('variant_get') ? variant_get((int)$varRow['id']) : null;
+                        $found = $varRow['product_name'] . ' (' . ($fullVar['label'] ?? 'Variant') . ')';
                         $currentStock = (int)$varRow['stock'];
                         $itemType = 'variant';
                         $pid = (int)$varRow['product_id'];
@@ -155,55 +156,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'commi
 // -----------------------------------------------------------------
 $stockFilter = trim((string)($_GET['filter'] ?? 'all'));
 $search      = trim((string)($_GET['q'] ?? ''));
+$page        = max(1, (int)($_GET['page'] ?? 1));
+$perPage     = 50;
 
-// Fetch inventory rows (combining simple products and variable product variants)
 $inventoryItems = [];
+$totalItems     = 0;
+$totalPages    = 1;
+
 try {
-    // 1. Simple products
-    $simpleSql = "SELECT p.id as product_id, NULL as variant_id, p.name as product_name,
-                         '' as variant_label, p.sku, p.stock, p.low_stock_threshold, p.status,
-                         'simple' as item_type
-                  FROM products p
-                  WHERE p.product_type = 'simple'";
+    $whereParts = [];
+    $params = [];
+
     if ($search !== '') {
-        $simpleSql .= " AND (p.name LIKE " . db()->quote("%$search%") . " OR p.sku LIKE " . db()->quote("%$search%") . ")";
+        $whereParts[] = "(product_name LIKE :q OR sku LIKE :q OR variant_label LIKE :q)";
+        $params[':q'] = "%$search%";
     }
-    $simpleRows = db()->query($simpleSql)->fetchAll();
-
-    // 2. Variable product variants
-    $variantSql = "SELECT v.product_id, v.id as variant_id, p.name as product_name,
-                          v.label as variant_label, COALESCE(v.sku, p.sku) as sku, v.stock,
-                          p.low_stock_threshold, v.status, 'variant' as item_type
-                   FROM product_variants v
-                   JOIN products p ON p.id = v.product_id";
-    if ($search !== '') {
-        $variantSql .= " WHERE (p.name LIKE " . db()->quote("%$search%") . " OR v.sku LIKE " . db()->quote("%$search%") . " OR v.label LIKE " . db()->quote("%$search%") . ")";
+    if ($stockFilter === 'low') {
+        $whereParts[] = "stock_condition = 'low'";
+    } elseif ($stockFilter === 'out') {
+        $whereParts[] = "stock_condition = 'out'";
     }
-    $variantRows = db()->query($variantSql)->fetchAll();
 
-    $merged = array_merge($simpleRows, $variantRows);
+    $whereSql = $whereParts ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
 
-    foreach ($merged as $row) {
-        $st = (int)$row['stock'];
-        $thresh = (int)($row['low_stock_threshold'] ?: 5);
+    $baseSubquery = "
+        SELECT p.id as product_id, NULL as variant_id, p.name as product_name,
+               '' as variant_label, p.sku, p.stock, COALESCE(p.low_stock_threshold, 5) as low_stock_threshold,
+               p.status, 'simple' as item_type,
+               CASE
+                   WHEN p.stock <= 0 THEN 'out'
+                   WHEN p.stock <= COALESCE(p.low_stock_threshold, 5) THEN 'low'
+                   ELSE 'in'
+               END as stock_condition
+        FROM products p
+        WHERE p.product_type = 'simple'
 
-        if ($st <= 0) {
-            $condition = 'out';
-        } elseif ($st <= $thresh) {
-            $condition = 'low';
-        } else {
-            $condition = 'in';
-        }
+        UNION ALL
 
-        $row['condition'] = $condition;
+        SELECT v.product_id, v.id as variant_id, p.name as product_name,
+               COALESCE(
+                   (SELECT GROUP_CONCAT(CONCAT(po.name, ': ', pov.value) ORDER BY po.position SEPARATOR ' / ')
+                    FROM product_variant_values pvv
+                    JOIN product_options po ON po.id = pvv.option_id
+                    JOIN product_option_values pov ON pov.id = pvv.option_value_id
+                    WHERE pvv.variant_id = v.id),
+                   'Variant'
+               ) as variant_label,
+               COALESCE(v.sku, p.sku) as sku, v.stock,
+               COALESCE(p.low_stock_threshold, 5) as low_stock_threshold,
+               v.status, 'variant' as item_type,
+               CASE
+                   WHEN v.stock <= 0 THEN 'out'
+                   WHEN v.stock <= COALESCE(p.low_stock_threshold, 5) THEN 'low'
+                   ELSE 'in'
+               END as stock_condition
+        FROM product_variants v
+        JOIN products p ON p.id = v.product_id
+    ";
 
-        if ($stockFilter === 'low' && $condition !== 'low') continue;
-        if ($stockFilter === 'out' && $condition !== 'out') continue;
+    $countStmt = db()->prepare("SELECT COUNT(*) FROM ($baseSubquery) inv $whereSql");
+    $countStmt->execute($params);
+    $totalItems = (int)$countStmt->fetchColumn();
+    $totalPages = max(1, (int)ceil($totalItems / $perPage));
+    if ($page > $totalPages) $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
 
+    $itemsStmt = db()->prepare("SELECT * FROM ($baseSubquery) inv $whereSql ORDER BY product_id DESC, variant_id ASC LIMIT $perPage OFFSET $offset");
+    $itemsStmt->execute($params);
+    $rawItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($rawItems as $row) {
+        $row['condition'] = $row['stock_condition'];
         $inventoryItems[] = $row;
     }
 } catch (Throwable $e) {
     $inventoryItems = [];
+    $totalItems     = 0;
 }
 
 // -----------------------------------------------------------------
@@ -222,10 +250,15 @@ $ledgerWhereSql = $ledgerWhere ? ('WHERE ' . implode(' AND ', $ledgerWhere)) : '
 // CSV Export for Ledger
 if ($subTab === 'ledger' && isset($_GET['export']) && $_GET['export'] === 'csv') {
     $stmt = db()->prepare(
-        "SELECT m.*, p.name as product_name, v.label as variant_label, o.order_number, u.name as user_name
+        "SELECT m.*, p.name as product_name,
+                (SELECT GROUP_CONCAT(CONCAT(po.name, ': ', pov.value) ORDER BY po.position SEPARATOR ' / ')
+                 FROM product_variant_values pvv
+                 JOIN product_options po ON po.id = pvv.option_id
+                 JOIN product_option_values pov ON pov.id = pvv.option_value_id
+                 WHERE pvv.variant_id = m.variant_id) as variant_label,
+                o.order_number, u.name as user_name
          FROM inventory_movements m
          LEFT JOIN products p ON p.id = m.product_id
-         LEFT JOIN product_variants v ON v.id = m.variant_id
          LEFT JOIN orders o ON o.id = m.order_id
          LEFT JOIN users u ON u.id = m.user_id
          $ledgerWhereSql
@@ -235,7 +268,7 @@ if ($subTab === 'ledger' && isset($_GET['export']) && $_GET['export'] === 'csv')
     $ledgerExport = $stmt->fetchAll();
 
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="inventory_ledger_' . date('Ymd_His') . '.csv"');
+    header('Content-Disposition: attachment; filename=\"inventory_ledger_' . date('Ymd_His') . '.csv\"');
     echo "\xEF\xBB\xBF";
     $out = fopen('php://output', 'w');
     fputcsv($out, ['ID', 'Date', 'Product', 'Variant', 'Change Qty', 'Stock After', 'Reason', 'Order Number', 'User', 'Note']);
@@ -261,10 +294,15 @@ $ledgerRows = [];
 if ($subTab === 'ledger') {
     try {
         $stmt = db()->prepare(
-            "SELECT m.*, p.name as product_name, v.label as variant_label, o.order_number, u.name as user_name
+            "SELECT m.*, p.name as product_name,
+                    (SELECT GROUP_CONCAT(CONCAT(po.name, ': ', pov.value) ORDER BY po.position SEPARATOR ' / ')
+                     FROM product_variant_values pvv
+                     JOIN product_options po ON po.id = pvv.option_id
+                     JOIN product_option_values pov ON pov.id = pvv.option_value_id
+                     WHERE pvv.variant_id = m.variant_id) as variant_label,
+                    o.order_number, u.name as user_name
              FROM inventory_movements m
              LEFT JOIN products p ON p.id = m.product_id
-             LEFT JOIN product_variants v ON v.id = m.variant_id
              LEFT JOIN orders o ON o.id = m.order_id
              LEFT JOIN users u ON u.id = m.user_id
              $ledgerWhereSql
@@ -292,7 +330,7 @@ include __DIR__ . '/includes/header.php';
 <ul class="nav nav-pills mb-4">
   <li class="nav-item">
     <a class="nav-link <?= $subTab === 'overview' ? 'active' : '' ?>" href="<?= e(admin_url('inventory.php?tab=overview')) ?>">
-      <i class="bi bi-grid-3x3 me-1"></i> Stock Overview (<?= count($inventoryItems) ?>)
+      <i class="bi bi-grid-3x3 me-1"></i> Stock Overview (<?= number_format($totalItems) ?>)
     </a>
   </li>
   <li class="nav-item">
@@ -403,6 +441,34 @@ include __DIR__ . '/includes/header.php';
         </tbody>
       </table>
     </div>
+    <?php if ($totalPages > 1): ?>
+      <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="small text-muted">
+          Showing <strong><?= number_format($offset + 1) ?></strong> to <strong><?= number_format(min($offset + $perPage, $totalItems)) ?></strong> of <strong><?= number_format($totalItems) ?></strong> items
+        </div>
+        <nav aria-label="Inventory navigation">
+          <ul class="pagination pagination-sm mb-0">
+            <?php
+            $queryBase = 'inventory.php?tab=overview' . ($search !== '' ? '&q=' . urlencode($search) : '') . ($stockFilter !== 'all' ? '&filter=' . urlencode($stockFilter) : '');
+            ?>
+            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+              <a class="page-link" href="<?= e(admin_url($queryBase . '&page=' . ($page - 1))) ?>">&laquo; Prev</a>
+            </li>
+            <?php
+            $startP = max(1, $page - 2);
+            $endP = min($totalPages, $page + 2);
+            for ($p = $startP; $p <= $endP; $p++): ?>
+              <li class="page-item <?= $p === $page ? 'active' : '' ?>">
+                <a class="page-link" href="<?= e(admin_url($queryBase . '&page=' . $p)) ?>"><?= $p ?></a>
+              </li>
+            <?php endfor; ?>
+            <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+              <a class="page-link" href="<?= e(admin_url($queryBase . '&page=' . ($page + 1))) ?>">Next &raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    <?php endif; ?>
   </div>
 
   <!-- Adjustment Modal -->

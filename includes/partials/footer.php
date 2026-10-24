@@ -165,6 +165,39 @@ $mobileNavEnabled  = (int)setting('mobile_bottom_nav', '1') === 1;
   </nav>
 <?php endif; ?>
 
+<!-- Floating Message / Support Launcher -->
+<a href="<?= e(route('contact')) ?>" class="storefront-floating-msg-btn shadow-lg d-inline-flex align-items-center gap-2" id="storefrontMsgBtn" aria-label="Send us a message" title="Need help? Send us a message">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <span class="d-none d-sm-inline fw-semibold small">Message Us</span>
+</a>
+<style>
+.storefront-floating-msg-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 990;
+  background: var(--accent, #0f172a);
+  color: #ffffff !important;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+.storefront-floating-msg-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.35);
+  color: #ffffff !important;
+}
+@media (max-width: 768px) {
+  .storefront-floating-msg-btn {
+    bottom: 74px; /* above mobile bottom nav */
+    right: 16px;
+    padding: 12px;
+  }
+}
+</style>
+
 <!-- Central Storefront Toast Container -->
 <div id="shopToastContainer" class="toast-container" role="region" aria-live="polite"></div>
 

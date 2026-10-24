@@ -126,7 +126,10 @@ $siteName = setting('site_name', APP_NAME);
           <label class="form-label fw-medium text-secondary small">Password</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-key"></i></span>
-            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+            <input type="password" name="password" id="adminPasswordInput" class="form-control" required placeholder="••••••••">
+            <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" aria-label="Toggle password visibility" title="Toggle password visibility">
+              <i class="bi bi-eye" id="togglePasswordIcon"></i>
+            </button>
           </div>
         </div>
         <button class="btn btn-admin-submit w-100 mt-2">
@@ -143,6 +146,27 @@ $siteName = setting('site_name', APP_NAME);
     </div>
   </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const pwdInput = document.getElementById('adminPasswordInput');
+  const toggleIcon = document.getElementById('togglePasswordIcon');
+  if (toggleBtn && pwdInput && toggleIcon) {
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+      } else {
+        pwdInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+      }
+    });
+  }
+});
+</script>
 <?php clear_old(); ?>
 </body>
 </html>

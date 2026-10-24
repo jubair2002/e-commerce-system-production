@@ -52,7 +52,7 @@ include __DIR__ . '/../../includes/partials/header.php';
       </div>
       <div class="d-grid gap-2">
         <a href="<?= e(route('login')) ?>" class="btn btn-editorial-primary">
-          Back to Sign In &rarr;
+          Back to Sign In
         </a>
       </div>
     <?php else: ?>
@@ -87,7 +87,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="text-center pt-2">
           <span class="small text-muted">Remember your password?</span>
           <a href="<?= e(route('login')) ?>" class="small fw-semibold ms-1 text-decoration-none text-primary">
-            Sign In &rarr;
+            Sign In
           </a>
         </div>
       </form>

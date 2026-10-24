@@ -57,6 +57,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
   <link rel="preload" href="<?= e(url('assets/vendor/fonts/inter-400.woff2')) ?>" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="<?= e(url('assets/vendor/fonts/inter-600.woff2')) ?>" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="<?= e(url('assets/img/icons.svg')) ?>" as="image" type="image/svg+xml">
+  <?php if (!empty($heroPreloadUrl)): ?>
+    <link rel="preload" href="<?= e($heroPreloadUrl) ?>" as="image" fetchpriority="high">
+  <?php endif; ?>
   <link rel="stylesheet" href="<?= e(url('assets/vendor/fonts/inter.css')) ?>">
   <link rel="stylesheet" href="<?= e(url('assets/css/shop.css')) ?>?v=<?= $cssVersion ?>">
 
@@ -129,6 +132,9 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
               </div>
             </li>
           <?php endif; ?>
+          <li>
+            <a href="<?= e(route('shop')) ?>" class="nav-link <?= route_is('shop') ? 'is-active' : '' ?>">Shop</a>
+          </li>
           <li>
             <a href="<?= e(route('track')) ?>" class="nav-link <?= route_is('track') ? 'is-active' : '' ?>">Track Order</a>
           </li>

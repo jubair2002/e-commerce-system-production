@@ -82,7 +82,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         </div>
         <div class="d-grid gap-2">
           <a href="<?= e(route('login')) ?>" class="btn btn-primary">
-            Proceed to Sign In &rarr;
+            Proceed to Sign In
           </a>
         </div>
       <?php else: ?>
@@ -229,7 +229,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <div class="auth-footer text-center mt-4 pt-3 border-top">
           <span class="small text-muted">Already have an account?</span>
           <a href="<?= e(route('login', ($next !== 'account/' && $next !== '') ? ['next' => $next] : [])) ?>" class="small fw-semibold text-primary ms-1">
-            Sign In &rarr;
+            Sign In
           </a>
         </div>
       <?php endif; ?>

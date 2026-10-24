@@ -97,7 +97,7 @@ include __DIR__ . '/includes/header.php';
                 <?php endif; ?>
                 <?php if (!empty($b['button_text'])): ?>
                   <div class="small text-primary mt-1">
-                    <i class="bi bi-link-45deg"></i> <?= e($b['button_text']) ?> &rarr; <code><?= e($b['button_url'] ?: '#') ?></code>
+                    <i class="bi bi-link-45deg"></i> <?= e($b['button_text']) ?> <span class="text-muted mx-1">&bull;</span> <code><?= e($b['button_url'] ?: '#') ?></code>
                   </div>
                 <?php endif; ?>
               </td>

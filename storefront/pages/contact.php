@@ -117,10 +117,10 @@ include __DIR__ . '/../../includes/partials/header.php';
       </div>
     <?php endif; ?>
 
-    <div class="row g-4 g-lg-5">
+    <div class="row justify-content-center">
       <!-- Contact Form -->
-      <div class="col-lg-7">
-        <div class="card border-0 shadow-sm p-4 rounded-3">
+      <div class="col-lg-8 col-xl-7">
+        <div class="card border shadow-sm p-4 p-md-5 rounded-4">
           <form method="post" action="<?= e(route('contact')) ?>" novalidate>
             <?= csrf_field() ?>
 
@@ -167,51 +167,6 @@ include __DIR__ . '/../../includes/partials/header.php';
               </div>
             </div>
           </form>
-        </div>
-      </div>
-
-      <!-- Information Column -->
-      <div class="col-lg-5">
-        <div class="card p-4 rounded-3 h-100 border">
-          <h3 class="h6 fw-bold text-uppercase tracking-wide text-secondary mb-3">Customer Support</h3>
-
-          <div class="d-flex align-items-start gap-3 mb-4">
-            <div class="fs-4 text-primary"><?= icon('mail') ?></div>
-            <div>
-              <div class="fw-semibold">Email Support</div>
-              <a href="mailto:<?= e($storeEmail) ?>" class="text-muted text-decoration-none small"><?= e($storeEmail) ?></a>
-              <div class="small text-muted mt-1">Typical reply time: 2–6 hours</div>
-            </div>
-          </div>
-
-          <?php if (!empty($storePhone)): ?>
-            <div class="d-flex align-items-start gap-3 mb-4">
-              <div class="fs-4 text-success"><?= icon('phone') ?></div>
-              <div>
-                <div class="fw-semibold">Phone &amp; WhatsApp</div>
-                <a href="tel:<?= e($storePhone) ?>" class="text-muted text-decoration-none small"><?= e($storePhone) ?></a>
-                <div class="small text-muted mt-1">Sat &ndash; Thu: 10:00 AM &ndash; 8:00 PM</div>
-              </div>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($storeAddress)): ?>
-            <div class="d-flex align-items-start gap-3 mb-4">
-              <div class="fs-4 text-secondary"><?= icon('map-pin') ?></div>
-              <div>
-                <div class="fw-semibold">Location</div>
-                <div class="small text-muted"><?= nl2br(e($storeAddress)) ?></div>
-              </div>
-            </div>
-          <?php endif; ?>
-
-          <hr class="my-4">
-
-          <h3 class="h6 fw-bold text-uppercase tracking-wide text-secondary mb-2">Need quick answers?</h3>
-          <p class="small text-muted mb-3">Check out our frequently asked questions for immediate help with orders, tracking and returns.</p>
-          <a href="<?= e(route('page', ['slug' => 'faq'])) ?>" class="btn btn-outline-dark btn-sm">
-            <?= icon('info', 'me-1') ?> View FAQ
-          </a>
         </div>
       </div>
     </div>
