@@ -131,7 +131,7 @@ if ($showReviews) {
     } catch (Throwable $e) { $homeReviews = []; }
 }
 
-// 6. Hero Marquee Ticker Products (deduplicated)
+// 6. Hero Marquee Ticker Products (deduplicated, single appearance per product)
 $heroTickerProducts = array_merge($featured, $newArrivals, $bestSellers);
 $tickerSeen = [];
 $tickerUnique = [];
@@ -139,10 +139,10 @@ foreach ($heroTickerProducts as $tp) {
     if (!isset($tickerSeen[$tp['id']])) {
         $tickerSeen[$tp['id']] = true;
         $tickerUnique[] = $tp;
-        if (count($tickerUnique) >= 8) break;
+        if (count($tickerUnique) >= 16) break;
     }
 }
-$tickerTrack = !empty($tickerUnique) ? array_merge($tickerUnique, $tickerUnique) : [];
+$tickerTrack = $tickerUnique;
 
 include __DIR__ . '/includes/partials/header.php';
 ?>

@@ -205,6 +205,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Gallery multi-upload pre-validation
+    if (!empty($_FILES['gallery_images']['name']) && is_array($_FILES['gallery_images']['name'])) {
+        foreach ($_FILES['gallery_images']['name'] as $gk => $gName) {
+            if (empty($gName)) continue;
+            $gErr = $_FILES['gallery_images']['error'][$gk] ?? UPLOAD_ERR_NO_FILE;
+            if ($gErr === UPLOAD_ERR_NO_FILE) continue;
+            if ($gErr !== UPLOAD_ERR_OK) {
+                $errors[] = "Gallery image '{$gName}' failed to upload: " . upload_error_message($gErr);
+                continue;
+            }
+            $gTmp = $_FILES['gallery_images']['tmp_name'][$gk];
+            $gSize = (int)$_FILES['gallery_images']['size'][$gk];
+            $gMime = function_exists('mime_content_type') ? mime_content_type($gTmp) : null;
+            $gExt = strtolower(pathinfo($gName, PATHINFO_EXTENSION));
+            $resolvedGExt = $okMimes[$gMime] ?? ($gExt === 'jpeg' ? 'jpg' : (in_array($gExt, ['jpg', 'png', 'gif', 'webp'], true) ? $gExt : null));
+            if (!$resolvedGExt) {
+                $errors[] = "Gallery image '{$gName}' must be a JPG, PNG, GIF or WEBP image.";
+            } elseif ($gSize > 10 * 1024 * 1024) {
+                $errors[] = "Gallery image '{$gName}' exceeds 10 MB limit.";
+            }
+        }
+    }
+
     // -------------------------------------------------------------
     // Save in Database Transaction
     // -------------------------------------------------------------
@@ -304,6 +327,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate responsive WebP variants for newly uploaded primary image
             if ($uploadedPrimaryFile && $id) {
                 product_generate_responsive_variants($id, $uploadedPrimaryFile, $primaryImage);
+
+                // Ensure primary image exists in product_images gallery table as well
+                $chkPrimary = $pdo->prepare("SELECT id FROM product_images WHERE product_id = :pid AND filename = :fn");
+                $chkPrimary->execute([':pid' => $id, ':fn' => $primaryImage]);
+                if (!$chkPrimary->fetchColumn()) {
+                    $pdo->prepare("UPDATE product_images SET is_primary = 0 WHERE product_id = :pid")->execute([':pid' => $id]);
+                    $pdo->prepare(
+                        "INSERT INTO product_images (product_id, filename, alt_text, position, is_primary)
+                         VALUES (:pid, :fn, :alt, 0, 1)"
+                    )->execute([
+                        ':pid' => $id,
+                        ':fn'  => $primaryImage,
+                        ':alt' => $name,
+                    ]);
+                }
             }
 
             // Simple product stock adjustment ledger entry
@@ -511,8 +549,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // ---------------------------------------------------------
-            // Product Images Gallery Multi-Upload
+            // Product Images Gallery Multi-Upload & Management
             // ---------------------------------------------------------
+            // 1. Delete selected gallery images
+            if (!empty($_POST['delete_gallery_images']) && is_array($_POST['delete_gallery_images'])) {
+                $delStmt = $pdo->prepare("SELECT filename FROM product_images WHERE id = :img_id AND product_id = :pid");
+                $delExec = $pdo->prepare("DELETE FROM product_images WHERE id = :img_id AND product_id = :pid");
+                foreach ($_POST['delete_gallery_images'] as $delId) {
+                    $delId = (int)$delId;
+                    if ($delId <= 0) continue;
+                    $delStmt->execute([':img_id' => $delId, ':pid' => $id]);
+                    $delFn = $delStmt->fetchColumn();
+                    if ($delFn) {
+                        $delExec->execute([':img_id' => $delId, ':pid' => $id]);
+                        // If deleted image was primary, pick next available
+                        if ($primaryImage === $delFn) {
+                            $nextPrimeStmt = $pdo->prepare("SELECT filename FROM product_images WHERE product_id = :pid ORDER BY is_primary DESC, position ASC LIMIT 1");
+                            $nextPrimeStmt->execute([':pid' => $id]);
+                            $newPrimary = $nextPrimeStmt->fetchColumn() ?: null;
+                            $primaryImage = $newPrimary;
+                            $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $newPrimary, ':id' => $id]);
+                            if ($newPrimary) {
+                                $pdo->prepare("UPDATE product_images SET is_primary = 1 WHERE product_id = :pid AND filename = :fn")->execute([':pid' => $id, ':fn' => $newPrimary]);
+                            }
+                        }
+                        // Delete files from disk if not referenced by other products
+                        $refCountStmt = $pdo->prepare("SELECT COUNT(*) FROM product_images WHERE filename = :fn");
+                        $refCountStmt->execute([':fn' => $delFn]);
+                        if ((int)$refCountStmt->fetchColumn() === 0) {
+                            $filePath = UPLOADS_PATH . '/products/' . $delFn;
+                            if (is_file($filePath)) {
+                                @unlink($filePath);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Upload multiple gallery images
             if (!empty($_FILES['gallery_images']['name']) && is_array($_FILES['gallery_images']['name'])) {
                 $dir = UPLOADS_PATH . '/products';
                 if (!is_dir($dir)) {
@@ -526,10 +600,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $curPosStmt = $pdo->prepare("SELECT COALESCE(MAX(position), 0) FROM product_images WHERE product_id = :pid");
                 $curPosStmt->execute([':pid' => $id]);
-                $dir = UPLOADS_PATH . '/products';
-                if (!is_dir($dir)) {
-                    @mkdir($dir, 0775, true);
-                }
+                $nextImgPos = (int)$curPosStmt->fetchColumn() + 1;
 
                 foreach ($_FILES['gallery_images']['name'] as $k => $fName) {
                     if (empty($fName) || ($_FILES['gallery_images']['error'][$k] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -545,23 +616,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $galExt;
                         if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
                             product_generate_responsive_variants($id, $dir . '/' . $newFileName, $newFileName);
+                            $isPrimaryFlag = 0;
+                            if (empty($primaryImage)) {
+                                $primaryImage = $newFileName;
+                                $isPrimaryFlag = 1;
+                                $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $newFileName, ':id' => $id]);
+                            }
                             $stmtImgIns->execute([
                                 ':pid' => $id,
                                 ':fn'  => $newFileName,
                                 ':alt' => $name,
                                 ':pos' => $nextImgPos++,
-                                ':ip'  => 0,
+                                ':ip'  => $isPrimaryFlag,
                             ]);
-                            if (empty($primaryImage)) {
-                                $primaryImage = $newFileName;
-                                $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $newFileName, ':id' => $id]);
-                            }
                         }
                     }
                 }
             }
 
-            // Update primary image selection from gallery if chosen
+            // 3. Update primary image selection from gallery if chosen
             if (!empty($_POST['selected_primary_image'])) {
                 $selImg = trim($_POST['selected_primary_image']);
                 $pdo->prepare("UPDATE product_images SET is_primary = IF(filename = :fn, 1, 0) WHERE product_id = :pid")->execute([':fn' => $selImg, ':pid' => $id]);
@@ -903,23 +976,34 @@ include __DIR__ . '/includes/header.php';
       <div class="card mb-3 shadow-sm">
         <div class="card-body">
           <h6 class="card-title mb-2">Product Gallery</h6>
-          <p class="text-muted small">Upload multiple images. Used by variant image pickers.</p>
+          <p class="text-muted small mb-2">Upload multiple images. Hold Ctrl/Cmd to select multiple files.</p>
           <input type="file" name="gallery_images[]" class="form-control mb-3" multiple accept="image/*">
 
           <?php if (!empty($existingImages)): ?>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-semibold text-muted">Gallery Images (<?= count($existingImages) ?>)</span>
+              <span class="small text-muted" style="font-size:11px;">Radio = Primary | Checkbox = Delete</span>
+            </div>
             <div class="row g-2">
               <?php foreach ($existingImages as $img): ?>
                 <div class="col-4 text-center">
-                  <div class="border rounded p-1 position-relative">
+                  <div class="border rounded p-1 position-relative bg-light">
                     <img src="<?= e(product_image_url($img['filename'])) ?>" class="img-fluid rounded" style="height:60px; object-fit:cover;" alt="">
-                    <div class="form-check mt-1">
-                      <input type="radio" name="selected_primary_image" value="<?= e($img['filename']) ?>"
-                             class="form-check-input" <?= ($product['image'] === $img['filename']) ? 'checked' : '' ?> title="Set as primary">
+                    <div class="d-flex align-items-center justify-content-between mt-1 px-1">
+                      <div class="form-check mb-0" title="Set as primary image">
+                        <input type="radio" name="selected_primary_image" value="<?= e($img['filename']) ?>"
+                               class="form-check-input" <?= ($product['image'] === $img['filename']) ? 'checked' : '' ?>>
+                      </div>
+                      <div class="form-check mb-0" title="Delete image on save">
+                        <input type="checkbox" name="delete_gallery_images[]" value="<?= (int)$img['id'] ?>" class="form-check-input border-danger">
+                        <label class="form-check-label text-danger" style="font-size:11px;"><i class="bi bi-trash"></i></label>
+                      </div>
                     </div>
                   </div>
                 </div>
               <?php endforeach; ?>
             </div>
+            <small class="text-muted d-block mt-2" style="font-size:11px;">Select radio to set as primary, check trash to delete on save.</small>
           <?php endif; ?>
         </div>
       </div>
