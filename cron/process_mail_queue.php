@@ -30,7 +30,7 @@ $limit = 50;
 $start = microtime(true);
 echo "[" . date('Y-m-d H:i:s') . "] Starting mail queue processor (batch limit {$limit})...\n";
 
-if ((int)setting('mail_enabled', '0') !== 1) {
+if ((int)setting('mail_enabled', '0') !== 1 && (empty(setting('mail_host')) || empty(setting('mail_username')))) {
     echo "Mail sending is currently disabled in settings (mail_enabled=0). Exiting.\n";
     exit(0);
 }

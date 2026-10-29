@@ -582,7 +582,7 @@ CREATE TABLE IF NOT EXISTS `email_queue` (
 -- Mail settings live in the existing `settings` table (key/value).
 -- mail_password is stored ENCRYPTED by the app (openssl, key from config) - never plain text.
 INSERT INTO `settings` (`key_name`,`value`) VALUES
-  ('mail_enabled','0'),
+  ('mail_enabled','1'),
   ('mail_driver','smtp'),               -- smtp | phpmail | log (log = write to DB only, for dev)
   ('mail_host',''),
   ('mail_port','587'),
@@ -596,7 +596,7 @@ INSERT INTO `settings` (`key_name`,`value`) VALUES
   ('mail_admin_recipients',''),         -- comma separated
   ('mail_timeout','15'),
   ('mail_max_attempts','3'),
-  ('mail_send_mode','queue'),           -- queue (cron) | instant
+  ('mail_send_mode','instant'),         -- instant | queue (cron)
   ('mail_notify_low_stock','1'),
   ('mail_footer_text','')
 ON DUPLICATE KEY UPDATE `key_name` = `key_name`;

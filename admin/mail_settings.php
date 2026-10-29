@@ -60,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
 
     log_activity('mail.test', "Triggered test email to {$recipient} (result: " . ($res['ok'] ? 'success' : 'failed') . ")");
 
+    $res['mail_enabled'] = $cfg['enabled'];
     echo json_encode($res);
     exit;
 }
@@ -67,6 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
 // Handle Process Queue Now
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'process_queue_now') {
     require_csrf();
+    if (!$cfg['enabled']) {
+        update_setting('mail_enabled', '1');
+    }
     $res = mail_process_queue(50);
     flash('info', "Queue processed: {$res['processed']} attempted, {$res['sent']} sent, {$res['failed']} failed.");
     admin_redirect('mail_settings.php');
@@ -96,9 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         'mail_footer_text'      => ['type' => 'text'],
     ];
 
-    if (!function_exists('fastcgi_finish_request') && ($_POST['mail_send_mode'] ?? '') === 'instant') {
-        $_POST['mail_send_mode'] = 'queue';
-        flash('info', 'Instant mode is only supported on PHP-FPM / Nginx. On Apache mod_php/XAMPP, Queue mode is enforced to ensure web responses remain ultra-fast.');
+    if (empty($_POST['mail_enabled']) && ($_POST['mail_driver'] ?? '') === 'smtp') {
+        flash('warning', 'Notice: "Enable Mail System" is turned OFF. Order notifications will not be sent until enabled.');
     }
 
     $res = settings_save($_POST, $rules, 'mail');
@@ -138,6 +141,16 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Warning Badges -->
+<?php if (!$cfg['enabled']): ?>
+  <div class="alert alert-warning mb-4 d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+    <div>
+      <h6 class="alert-heading mb-1 fw-bold">Mail System is Currently Disabled</h6>
+      <span class="small">Outgoing emails (including customer order confirmations) are currently turned OFF. Toggle the <strong>"Enable Mail System"</strong> switch in the SMTP card header and save settings to start sending emails.</span>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php if (defined('APP_KEY') && APP_KEY === 'CHANGE_ME_TO_64_RANDOM_CHARS'): ?>
   <div class="alert alert-danger mb-4">
     <i class="bi bi-shield-exclamation me-1"></i>
@@ -240,8 +253,8 @@ include __DIR__ . '/includes/header.php';
             <div class="col-md-6">
               <label class="form-label fw-semibold">Send Mode</label>
               <select name="mail_send_mode" class="form-select">
-                <option value="queue" <?= $cfg['send_mode'] === 'queue' ? 'selected' : '' ?>>Queue (Background cron runner - recommended)</option>
-                <option value="instant" <?= $cfg['send_mode'] === 'instant' ? 'selected' : '' ?>>Instant (Send in shutdown handler)</option>
+                <option value="instant" <?= $cfg['send_mode'] === 'instant' ? 'selected' : '' ?>>Instant (Send immediately on checkout / shutdown - recommended)</option>
+                <option value="queue" <?= $cfg['send_mode'] === 'queue' ? 'selected' : '' ?>>Queue (Background cron runner - requires server crontab)</option>
               </select>
             </div>
 
@@ -431,7 +444,11 @@ function sendTestEmail() {
 
     if (data.ok) {
       resBox.className = 'alert alert-success py-2 small mb-0';
-      resBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Test email successfully dispatched!';
+      let html = '<i class="bi bi-check-circle-fill me-1"></i> Test email successfully dispatched!';
+      if (data.mail_enabled === false) {
+        html += '<div class="mt-2 text-warning fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i> <strong>Important:</strong> "Enable Mail System" switch is currently turned OFF. Please turn it ON and click "Save Mail Configuration" so customers receive order emails.</div>';
+      }
+      resBox.innerHTML = html;
     } else {
       resBox.className = 'alert alert-danger py-2 small mb-0';
       resBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Failed:</strong> ' + (data.error || 'Unknown error');

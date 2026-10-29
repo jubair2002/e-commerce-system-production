@@ -46,7 +46,7 @@ function mail_config(): array
         'admin_recipients' => setting('mail_admin_recipients', ''),
         'timeout'          => min(max(2, (int)setting('mail_timeout', '8')), 8),
         'max_attempts'     => max(1, (int)setting('mail_max_attempts', '3')),
-        'send_mode'        => (function_exists('fastcgi_finish_request') && setting('mail_send_mode', 'queue') === 'instant') ? 'instant' : 'queue',
+        'send_mode'        => setting('mail_send_mode', 'instant'),
         'notify_low_stock' => (int)setting('mail_notify_low_stock', '1') === 1,
         'footer_text'      => setting('mail_footer_text', ''),
     ];
@@ -189,14 +189,27 @@ function mail_queue(
 
     $queueId = (int)db()->lastInsertId();
 
-    // Instant send mode: process in shutdown handler
-    if ($cfg['send_mode'] === 'instant') {
-        register_shutdown_function(function () use ($queueId) {
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request();
-            }
-            mail_process_queue_item($queueId);
-        });
+    // Determine whether to send immediately via shutdown handler:
+    // 1. If send_mode is 'instant'
+    // 2. OR if send_mode is 'queue' but no background cron runner has executed in the last 10 minutes
+    //    (automatic fallback so emails are never lost when server crontab is not configured)
+    $lastCron = (int)setting('mail_last_run', '0');
+    $cronActive = ($lastCron > 0 && (time() - $lastCron) < 600);
+    $shouldSendNow = ($cfg['send_mode'] === 'instant' || !$cronActive);
+
+    // Dispatch if mail system is enabled or if SMTP server is configured
+    if ($cfg['enabled'] || (!empty($cfg['host']) && !empty($cfg['username']))) {
+        if ($shouldSendNow) {
+            register_shutdown_function(function () use ($queueId) {
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    @session_write_close();
+                }
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                }
+                mail_process_queue_item($queueId);
+            });
+        }
     }
 
     return $queueId;
@@ -367,8 +380,9 @@ function mail_process_queue_item(int $id): bool
  */
 function mail_process_queue(int $limit = 20): array
 {
-    // Return immediately if mail system is disabled
-    if ((int)setting('mail_enabled', '0') !== 1) {
+    $cfg = mail_config();
+    // Return immediately if mail system is disabled and no SMTP is configured
+    if (!$cfg['enabled'] && (empty($cfg['host']) || empty($cfg['username']))) {
         return ['processed' => 0, 'sent' => 0, 'failed' => 0];
     }
 
