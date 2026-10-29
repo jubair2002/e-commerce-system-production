@@ -250,7 +250,7 @@ $total = (int) $stmt->fetchColumn();
 $pages = max(1, (int) ceil($total / $perPage));
 
 $stmt = db()->prepare(
-    "SELECT o.id, o.order_number, o.customer_name, o.customer_email, o.total,
+    "SELECT o.id, o.order_number, o.customer_name, o.customer_email, o.customer_phone, o.total,
             o.status, o.payment_status, o.payment_method, o.created_at
      FROM orders o
      $whereSql
@@ -474,7 +474,11 @@ include __DIR__ . '/includes/header.php';
                 </td>
                 <td>
                   <div class="fw-semibold"><?= e($r['customer_name']) ?></div>
-                  <div class="small text-muted"><?= e($r['customer_phone']) ?></div>
+                  <?php if (!empty($r['customer_phone'])): ?>
+                    <div class="small text-muted"><?= e($r['customer_phone']) ?></div>
+                  <?php elseif (!empty($r['customer_email'])): ?>
+                    <div class="small text-muted"><?= e($r['customer_email']) ?></div>
+                  <?php endif; ?>
                 </td>
                 <td><span class="badge bg-light text-dark border"><?= (int)$r['item_count'] ?> item(s)</span></td>
                 <td class="fw-semibold"><?= e(price($r['total'])) ?></td>
