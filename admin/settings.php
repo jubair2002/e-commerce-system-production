@@ -134,14 +134,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $keyId    = trim($_POST['key_id'] ?? '');
             $secret   = trim($_POST['secret'] ?? '');
 
-            // Fallback to saved or env if empty or masked
-            if (empty($secret) || $secret === '********') {
-                $dbEnc = setting('storage_aws_secret_access_key');
-                $secret = (!empty($dbEnc) && function_exists('app_decrypt')) ? app_decrypt($dbEnc) : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+            // If user left both Key ID and Secret blank on the form,
+            // they want to use EC2 IAM Instance Role. Do NOT inject fallback keys.
+            $useIamRole = ($keyId === '' && ($secret === '' || $secret === '********'));
+
+            if (!$useIamRole) {
+                if ($secret === '********' || $secret === '') {
+                    $dbEnc = setting('storage_aws_secret_access_key');
+                    $secret = (!empty($dbEnc) && function_exists('app_decrypt')) ? app_decrypt($dbEnc) : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+                }
+                if (empty($keyId)) {
+                    $keyId = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+                }
+            } else {
+                $keyId  = '';
+                $secret = '';
             }
-            if (empty($keyId)) {
-                $keyId = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
-            }
+
             if (empty($region)) {
                 $region = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
             }
@@ -188,10 +197,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 3. Delete
             $s3->delete($testKey);
 
-            echo json_encode(['ok' => true, 'message' => "Success! Connected to bucket '{$bucket}', uploaded a test object, verified its integrity, and deleted the test object."]);
+            $authUsed = ($keyId === '') ? 'EC2 IAM Instance Role / Container Metadata' : "IAM Access Key ({$keyId})";
+            echo json_encode(['ok' => true, 'message' => "Success! Connected to bucket '{$bucket}' using {$authUsed}. PutObject, GetObject, and DeleteObject verified."]);
             exit;
         } catch (Throwable $e) {
-            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+            $msg = $e->getMessage();
+            if (strpos($msg, 'InvalidAccessKeyId') !== false) {
+                $msg .= " -> (The AWS Access Key ID entered does not exist in AWS IAM. Check for typos, verify that the key is Active under AWS Console -> IAM -> Users -> Security credentials, or leave Key and Secret blank if using an EC2 IAM Instance Role).";
+            } elseif (strpos($msg, 'SignatureDoesNotMatch') !== false) {
+                $msg .= " -> (The Secret Access Key does not match the Access Key ID. Re-enter the Secret Key or generate a new key pair).";
+            } elseif (strpos($msg, 'AccessDenied') !== false) {
+                $msg .= " -> (IAM User/Role lacks s3:PutObject, s3:GetObject, or s3:DeleteObject permission on bucket '{$bucket}').";
+            }
+            echo json_encode(['ok' => false, 'error' => $msg]);
             exit;
         }
     }
@@ -205,14 +223,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_redirect('settings.php?tab=storage');
         }
 
+        $keyId = trim($_POST['storage_aws_access_key_id'] ?? '');
+        $rawSecret = trim($_POST['storage_aws_secret_access_key'] ?? '');
+
         update_setting('storage_primary', $primary);
         update_setting('storage_fallback', $fallback);
         update_setting('storage_aws_region', trim($_POST['storage_aws_region'] ?? 'us-east-1'));
         update_setting('storage_s3_bucket', trim($_POST['storage_s3_bucket'] ?? ''));
-        update_setting('storage_aws_access_key_id', trim($_POST['storage_aws_access_key_id'] ?? ''));
+        update_setting('storage_aws_access_key_id', $keyId);
 
-        $rawSecret = trim($_POST['storage_aws_secret_access_key'] ?? '');
-        if ($rawSecret !== '' && $rawSecret !== '********') {
+        if ($keyId === '') {
+            // If key ID is cleared to use IAM Role, clear the saved secret too
+            update_setting('storage_aws_secret_access_key', '');
+        } elseif ($rawSecret !== '' && $rawSecret !== '********') {
             update_setting('storage_aws_secret_access_key', app_encrypt($rawSecret));
         }
 
