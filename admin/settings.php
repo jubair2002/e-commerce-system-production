@@ -129,14 +129,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'test_s3_connection') {
         header('Content-Type: application/json; charset=utf-8');
         try {
-            $region   = trim($_POST['region'] ?? '');
-            $bucket   = trim($_POST['bucket'] ?? '');
-            $keyId    = trim($_POST['key_id'] ?? '');
-            $secret   = trim($_POST['secret'] ?? '');
-
-            // If user left both Key ID and Secret blank on the form,
-            // they want to use EC2 IAM Instance Role. Do NOT inject fallback keys.
-            $useIamRole = ($keyId === '' && ($secret === '' || $secret === '********'));
+            $region     = trim($_POST['region'] ?? '');
+            $bucket     = trim($_POST['bucket'] ?? '');
+            $useIamRole = !empty($_POST['use_iam_role']);
+            $keyId      = $useIamRole ? '' : trim($_POST['key_id'] ?? '');
+            $secret     = $useIamRole ? '' : trim($_POST['secret'] ?? '');
 
             if (!$useIamRole) {
                 if ($secret === '********' || $secret === '') {
@@ -203,7 +200,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $e) {
             $msg = $e->getMessage();
             if (strpos($msg, 'InvalidAccessKeyId') !== false) {
-                $msg .= " -> (The AWS Access Key ID entered does not exist in AWS IAM. Check for typos, verify that the key is Active under AWS Console -> IAM -> Users -> Security credentials, or leave Key and Secret blank if using an EC2 IAM Instance Role).";
+                $msg .= " -> (The AWS Access Key ID entered does not exist in AWS IAM. Check for typos or ensure 'Use EC2 IAM Instance Role' is checked).";
+            } elseif (strpos($msg, 'instance profile metadata service') !== false || strpos($msg, 'cURL error 28') !== false) {
+                $msg .= " -> (Docker on EC2 cannot reach the Instance Metadata Service because IMDS hop limit is 1. On your EC2 host, run: aws ec2 modify-instance-metadata-options --instance-id $(curl -s http://169.254.169.254/latest/meta-data/instance-id) --http-put-response-hop-limit 2).";
             } elseif (strpos($msg, 'SignatureDoesNotMatch') !== false) {
                 $msg .= " -> (The Secret Access Key does not match the Access Key ID. Re-enter the Secret Key or generate a new key pair).";
             } elseif (strpos($msg, 'AccessDenied') !== false) {
@@ -223,8 +222,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_redirect('settings.php?tab=storage');
         }
 
-        $keyId = trim($_POST['storage_aws_access_key_id'] ?? '');
-        $rawSecret = trim($_POST['storage_aws_secret_access_key'] ?? '');
+        $useIamRole = !empty($_POST['use_iam_role']);
+        $keyId = $useIamRole ? '' : trim($_POST['storage_aws_access_key_id'] ?? '');
+        $rawSecret = $useIamRole ? '' : trim($_POST['storage_aws_secret_access_key'] ?? '');
 
         update_setting('storage_primary', $primary);
         update_setting('storage_fallback', $fallback);
@@ -232,8 +232,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         update_setting('storage_s3_bucket', trim($_POST['storage_s3_bucket'] ?? ''));
         update_setting('storage_aws_access_key_id', $keyId);
 
-        if ($keyId === '') {
-            // If key ID is cleared to use IAM Role, clear the saved secret too
+        if ($keyId === '' || $useIamRole) {
+            // User cleared key or enabled IAM Role: clear saved secret too
             update_setting('storage_aws_secret_access_key', '');
         } elseif ($rawSecret !== '' && $rawSecret !== '********') {
             update_setting('storage_aws_secret_access_key', app_encrypt($rawSecret));
@@ -2104,13 +2104,25 @@ include __DIR__ . '/includes/header.php';
                   <div class="form-text small">Target S3 bucket configured with ACLs disabled.</div>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold">AWS Access Key ID (Optional)</label>
-                  <input type="text" name="storage_aws_access_key_id" id="storage_aws_access_key_id" class="form-control" value="<?= e($curKeyId) ?>" placeholder="AKIA..." autocomplete="off">
-                  <div class="form-text small">Leave blank to use EC2 IAM Instance Role.</div>
+                <div class="col-12">
+                  <div class="form-check form-switch p-3 bg-light rounded border">
+                    <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="use_iam_role_toggle" name="use_iam_role" value="1" <?= empty($curKeyId) ? 'checked' : '' ?>>
+                    <label class="form-check-label fw-semibold" for="use_iam_role_toggle">
+                      <i class="bi bi-shield-check text-success me-1"></i> Use EC2 IAM Instance Role (Recommended on EC2)
+                    </label>
+                    <div class="form-text small mt-1 ms-0">
+                      When enabled, the app queries the EC2 Instance Profile directly. Static Access Key ID and Secret are bypassed and not required.
+                    </div>
+                  </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" id="wrap_key_id">
+                  <label class="form-label small fw-semibold">AWS Access Key ID (Optional)</label>
+                  <input type="text" name="storage_aws_access_key_id" id="storage_aws_access_key_id" class="form-control" value="<?= e($curKeyId) ?>" placeholder="AKIA..." autocomplete="off">
+                  <div class="form-text small">Leave blank or toggle switch above to use EC2 IAM Role.</div>
+                </div>
+
+                <div class="col-md-6" id="wrap_secret">
                   <label class="form-label small fw-semibold">AWS Secret Access Key (Optional)</label>
                   <input type="password" name="storage_aws_secret_access_key" id="storage_aws_secret_access_key" class="form-control" value="<?= $curSecretSet ? '********' : '' ?>" placeholder="Leave blank to use IAM Role or keep existing" autocomplete="new-password">
                   <div class="form-text small">Stored encrypted using AES-256-CBC. Never echoed back plain.</div>
@@ -2143,6 +2155,34 @@ include __DIR__ . '/includes/header.php';
 
         <script>
         (function() {
+          var iamToggle = document.getElementById('use_iam_role_toggle');
+          var keyInput = document.getElementById('storage_aws_access_key_id');
+          var secretInput = document.getElementById('storage_aws_secret_access_key');
+          var wrapKey = document.getElementById('wrap_key_id');
+          var wrapSec = document.getElementById('wrap_secret');
+
+          function updateIamState() {
+            if (iamToggle && iamToggle.checked) {
+              if (wrapKey) wrapKey.style.opacity = '0.5';
+              if (wrapSec) wrapSec.style.opacity = '0.5';
+              keyInput.disabled = true;
+              secretInput.disabled = true;
+              keyInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
+              secretInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
+            } else {
+              if (wrapKey) wrapKey.style.opacity = '1';
+              if (wrapSec) wrapSec.style.opacity = '1';
+              keyInput.disabled = false;
+              secretInput.disabled = false;
+              keyInput.placeholder = "AKIA...";
+              secretInput.placeholder = "Leave blank to keep existing";
+            }
+          }
+          if (iamToggle) {
+            iamToggle.addEventListener('change', updateIamState);
+            updateIamState();
+          }
+
           function runS3Test() {
             var btn = document.getElementById('btnTestS3');
             var btnFoot = document.getElementById('btnTestS3Footer');
@@ -2162,8 +2202,14 @@ include __DIR__ . '/includes/header.php';
             formData.append('action', 'test_s3_connection');
             formData.append('region', document.getElementById('storage_aws_region').value);
             formData.append('bucket', document.getElementById('storage_s3_bucket').value);
-            formData.append('key_id', document.getElementById('storage_aws_access_key_id').value);
-            formData.append('secret', document.getElementById('storage_aws_secret_access_key').value);
+            if (iamToggle && iamToggle.checked) {
+              formData.append('use_iam_role', '1');
+              formData.append('key_id', '');
+              formData.append('secret', '');
+            } else {
+              formData.append('key_id', keyInput.value);
+              formData.append('secret', secretInput.value);
+            }
 
             fetch('settings.php', {
               method: 'POST',

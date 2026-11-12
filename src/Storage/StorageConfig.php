@@ -55,19 +55,30 @@ class StorageConfig
         $dbKey       = function_exists('setting') ? setting('storage_aws_access_key_id') : null;
         $dbSecretEnc = function_exists('setting') ? setting('storage_aws_secret_access_key') : null;
         $dbSecret    = null;
-        if (!empty($dbSecretEnc) && function_exists('app_decrypt')) {
-            $dbSecret = app_decrypt($dbSecretEnc);
+        if ($dbSecretEnc !== null && $dbSecretEnc !== '') {
+            $dbSecret = function_exists('app_decrypt') ? (string)app_decrypt($dbSecretEnc) : '';
+        } elseif ($dbSecretEnc === '') {
+            $dbSecret = '';
         }
         $dbPublicBaseUrl = function_exists('setting') ? setting('storage_s3_public_base_url') : null;
         $dbPrefix        = function_exists('setting') ? setting('storage_s3_key_prefix') : null;
 
+        $resolvedKey = (string)($overrides['s3']['key'] ?? ($dbKey !== null ? $dbKey : (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '')));
+        $resolvedSecret = (string)($overrides['s3']['secret'] ?? ($dbSecret !== null ? $dbSecret : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '')));
+
+        // Strip placeholders
+        if (str_starts_with($resolvedKey, 'your-aws-') || str_starts_with($resolvedKey, 'AKIA_PLACEHOLDER')) {
+            $resolvedKey = '';
+            $resolvedSecret = '';
+        }
+
         $this->s3Config = [
-            'region'                   => (string)($overrides['s3']['region'] ?? $dbRegion ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1')),
-            'bucket'                   => (string)($overrides['s3']['bucket'] ?? $dbBucket ?: (function_exists('env') ? env('S3_BUCKET', '') : '')),
-            'key'                      => (string)($overrides['s3']['key'] ?? $dbKey ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '')),
-            'secret'                   => (string)($overrides['s3']['secret'] ?? $dbSecret ?: (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '')),
-            'public_base_url'          => (string)($overrides['s3']['public_base_url'] ?? $dbPublicBaseUrl ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : '')),
-            'prefix'                   => (string)($overrides['s3']['prefix'] ?? $dbPrefix ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : '')),
+            'region'                   => (string)($overrides['s3']['region'] ?? ($dbRegion ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1'))),
+            'bucket'                   => (string)($overrides['s3']['bucket'] ?? ($dbBucket ?: (function_exists('env') ? env('S3_BUCKET', '') : ''))),
+            'key'                      => $resolvedKey,
+            'secret'                   => $resolvedSecret,
+            'public_base_url'          => (string)($overrides['s3']['public_base_url'] ?? ($dbPublicBaseUrl ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : ''))),
+            'prefix'                   => (string)($overrides['s3']['prefix'] ?? ($dbPrefix ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : ''))),
             'endpoint'                 => function_exists('env') ? env('S3_ENDPOINT', null) : null,
             'use_path_style_endpoint'  => function_exists('env') ? (bool)env('S3_USE_PATH_STYLE_ENDPOINT', false) : false,
         ];

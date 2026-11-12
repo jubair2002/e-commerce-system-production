@@ -43,10 +43,12 @@ class S3Storage implements StorageInterface
         }
 
         // Authentication: If static credentials are provided, use them;
-        // otherwise omit 'credentials' so AWS SDK automatically resolves EC2 IAM Instance Profile / ECS task role
+        // otherwise use EC2 IAM Instance Profile directly (bypassing dummy environment variables)
         $key    = trim((string)($config['key'] ?? ''));
         $secret = trim((string)($config['secret'] ?? ''));
-        if ($key !== '' && $secret !== '') {
+        $isPlaceholder = str_starts_with($key, 'your-aws-') || str_starts_with($key, 'AKIA_PLACEHOLDER');
+
+        if ($key !== '' && $secret !== '' && !$isPlaceholder) {
             $clientOptions['credentials'] = [
                 'key'    => $key,
                 'secret' => $secret,
@@ -54,6 +56,18 @@ class S3Storage implements StorageInterface
             if (!empty($config['token'])) {
                 $clientOptions['credentials']['token'] = (string)$config['token'];
             }
+        } else {
+            // Strip any dummy/empty environment variables that could hijack IAM provider
+            if (isset($_SERVER['AWS_ACCESS_KEY_ID']) && (empty($_SERVER['AWS_ACCESS_KEY_ID']) || str_starts_with($_SERVER['AWS_ACCESS_KEY_ID'], 'your-aws-'))) {
+                unset($_SERVER['AWS_ACCESS_KEY_ID'], $_ENV['AWS_ACCESS_KEY_ID']);
+                putenv('AWS_ACCESS_KEY_ID');
+            }
+            if (isset($_SERVER['AWS_SECRET_ACCESS_KEY']) && (empty($_SERVER['AWS_SECRET_ACCESS_KEY']) || str_starts_with($_SERVER['AWS_SECRET_ACCESS_KEY'], 'your-aws-'))) {
+                unset($_SERVER['AWS_SECRET_ACCESS_KEY'], $_ENV['AWS_SECRET_ACCESS_KEY']);
+                putenv('AWS_SECRET_ACCESS_KEY');
+            }
+            // Explicitly use EC2 Instance Profile provider
+            $clientOptions['credentials'] = \Aws\Credentials\CredentialProvider::instanceProfile();
         }
 
         $this->client = new S3Client($clientOptions);
