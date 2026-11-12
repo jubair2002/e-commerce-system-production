@@ -14,6 +14,7 @@ class S3Storage implements StorageInterface
     private string $bucket;
     private string $prefix;
     private ?string $publicBaseUrl;
+    private ?string $lastError = null;
 
     public function __construct(array $config)
     {
@@ -162,9 +163,15 @@ class S3Storage implements StorageInterface
             $res = $this->client->putObject($params);
             return ($res['@metadata']['statusCode'] ?? 0) === 200;
         } catch (Throwable $e) {
+            $this->lastError = $e->getMessage();
             error_log("[S3Storage::put] Upload error for key '{$fullKey}': " . $e->getMessage());
             return false;
         }
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 
     public function getStream(string $key)

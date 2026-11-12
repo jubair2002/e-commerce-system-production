@@ -148,6 +148,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $secret = '';
             }
 
+            // Treat placeholder text as empty
+            if (str_starts_with((string)$keyId, 'your-aws-') || str_starts_with((string)$keyId, 'AKIA_PLACEHOLDER')) {
+                $keyId = '';
+            }
+            if (str_starts_with((string)$secret, 'your-aws-')) {
+                $secret = '';
+            }
+
             if (empty($region)) {
                 $region = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
             }
@@ -174,7 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // 1. Put
             if (!$s3->put($testKey, $testPayload, ['mime_type' => 'text/plain'])) {
-                throw new RuntimeException("PutObject failed on test file.");
+                $err = (method_exists($s3, 'getLastError') && $s3->getLastError()) ? $s3->getLastError() : "PutObject failed on test file.";
+                throw new RuntimeException($err);
             }
 
             // 2. Exists & Get
@@ -225,6 +234,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $useIamRole = !empty($_POST['use_iam_role']);
         $keyId = $useIamRole ? '' : trim($_POST['storage_aws_access_key_id'] ?? '');
         $rawSecret = $useIamRole ? '' : trim($_POST['storage_aws_secret_access_key'] ?? '');
+
+        // Treat placeholders as empty
+        if (str_starts_with((string)$keyId, 'your-aws-') || str_starts_with((string)$keyId, 'AKIA_PLACEHOLDER')) {
+            $keyId = '';
+        }
+        if (str_starts_with((string)$rawSecret, 'your-aws-')) {
+            $rawSecret = '';
+        }
 
         update_setting('storage_primary', $primary);
         update_setting('storage_fallback', $fallback);
@@ -1991,8 +2008,17 @@ include __DIR__ . '/includes/header.php';
       $curFallback  = setting('storage_fallback') ?: (function_exists('env') ? env('STORAGE_FALLBACK', 'none') : 'none');
       $curRegion    = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
       $curBucket    = setting('storage_s3_bucket') ?: (function_exists('env') ? env('S3_BUCKET', '') : '');
-      $curKeyId     = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
-      $curSecretSet = !empty(setting('storage_aws_secret_access_key')) || !empty(function_exists('env') ? env('AWS_SECRET_ACCESS_KEY') : '');
+      $rawKeyVal    = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+      if (str_starts_with((string)$rawKeyVal, 'your-aws-') || str_starts_with((string)$rawKeyVal, 'AKIA_PLACEHOLDER')) {
+          $rawKeyVal = '';
+      }
+      $curKeyId     = (string)$rawKeyVal;
+
+      $rawSecVal    = setting('storage_aws_secret_access_key') ?: (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+      if (str_starts_with((string)$rawSecVal, 'your-aws-')) {
+          $rawSecVal = '';
+      }
+      $curSecretSet = !empty($rawSecVal);
       $curPublicUrl = setting('storage_s3_public_base_url') ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : '');
       $curPrefix    = setting('storage_s3_key_prefix') ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : '');
     ?>
