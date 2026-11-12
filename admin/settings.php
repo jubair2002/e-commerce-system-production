@@ -138,10 +138,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$useIamRole) {
                 if ($secret === '********' || $secret === '') {
                     $dbEnc = setting('storage_aws_secret_access_key');
-                    $secret = (!empty($dbEnc) && function_exists('app_decrypt')) ? app_decrypt($dbEnc) : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+                    if ($dbEnc !== null && $dbEnc !== '') {
+                        $secret = function_exists('app_decrypt') ? (string)app_decrypt($dbEnc) : '';
+                    } elseif ($dbEnc === '') {
+                        $secret = '';
+                    } else {
+                        $secret = function_exists('env') ? (string)env('AWS_SECRET_ACCESS_KEY', '') : '';
+                    }
                 }
                 if (empty($keyId)) {
-                    $keyId = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+                    $dbKey = setting('storage_aws_access_key_id');
+                    $keyId = ($dbKey !== null) ? (string)$dbKey : (function_exists('env') ? (string)env('AWS_ACCESS_KEY_ID', '') : '');
                 }
             } else {
                 $keyId  = '';
@@ -248,9 +255,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         update_setting('storage_aws_region', trim($_POST['storage_aws_region'] ?? 'us-east-1'));
         update_setting('storage_s3_bucket', trim($_POST['storage_s3_bucket'] ?? ''));
         update_setting('storage_aws_access_key_id', $keyId);
+        update_setting('storage_auth_mode', ($keyId === '' || $useIamRole) ? 'iam' : 'keys');
 
         if ($keyId === '' || $useIamRole) {
-            // User cleared key or enabled IAM Role: clear saved secret too
+            // User cleared key or enabled IAM Role: explicitly wipe secret in database
             update_setting('storage_aws_secret_access_key', '');
         } elseif ($rawSecret !== '' && $rawSecret !== '********') {
             update_setting('storage_aws_secret_access_key', app_encrypt($rawSecret));
@@ -2008,17 +2016,29 @@ include __DIR__ . '/includes/header.php';
       $curFallback  = setting('storage_fallback') ?: (function_exists('env') ? env('STORAGE_FALLBACK', 'none') : 'none');
       $curRegion    = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
       $curBucket    = setting('storage_s3_bucket') ?: (function_exists('env') ? env('S3_BUCKET', '') : '');
-      $rawKeyVal    = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
-      if (str_starts_with((string)$rawKeyVal, 'your-aws-') || str_starts_with((string)$rawKeyVal, 'AKIA_PLACEHOLDER')) {
-          $rawKeyVal = '';
-      }
-      $curKeyId     = (string)$rawKeyVal;
+      $savedAuthMode = setting('storage_auth_mode');
+      $dbKeyVal      = setting('storage_aws_access_key_id'); // null if never saved, '' if saved blank
+      $dbSecVal      = setting('storage_aws_secret_access_key');
 
-      $rawSecVal    = setting('storage_aws_secret_access_key') ?: (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
-      if (str_starts_with((string)$rawSecVal, 'your-aws-')) {
-          $rawSecVal = '';
+      // If user explicitly saved as IAM Role or saved key is empty, do NOT fall back to .env!
+      if ($savedAuthMode === 'iam' || $dbKeyVal === '') {
+          $curKeyId     = '';
+          $curSecretSet = false;
+          $isIamActive  = true;
+      } else {
+          $rawKeyVal    = ($dbKeyVal !== null) ? $dbKeyVal : (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+          if (str_starts_with((string)$rawKeyVal, 'your-aws-') || str_starts_with((string)$rawKeyVal, 'AKIA_PLACEHOLDER')) {
+              $rawKeyVal = '';
+          }
+          $curKeyId = (string)$rawKeyVal;
+
+          $rawSecVal = ($dbSecVal !== null) ? $dbSecVal : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+          if (str_starts_with((string)$rawSecVal, 'your-aws-')) {
+              $rawSecVal = '';
+          }
+          $curSecretSet = !empty($rawSecVal);
+          $isIamActive  = empty($curKeyId);
       }
-      $curSecretSet = !empty($rawSecVal);
       $curPublicUrl = setting('storage_s3_public_base_url') ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : '');
       $curPrefix    = setting('storage_s3_key_prefix') ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : '');
     ?>
@@ -2132,7 +2152,7 @@ include __DIR__ . '/includes/header.php';
 
                 <div class="col-12">
                   <div class="form-check form-switch p-3 bg-light rounded border">
-                    <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="use_iam_role_toggle" name="use_iam_role" value="1" <?= empty($curKeyId) ? 'checked' : '' ?>>
+                    <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="use_iam_role_toggle" name="use_iam_role" value="1" <?= $isIamActive ? 'checked' : '' ?>>
                     <label class="form-check-label fw-semibold" for="use_iam_role_toggle">
                       <i class="bi bi-shield-check text-success me-1"></i> Use EC2 IAM Instance Role (Recommended on EC2)
                     </label>
@@ -2193,6 +2213,8 @@ include __DIR__ . '/includes/header.php';
               if (wrapSec) wrapSec.style.opacity = '0.5';
               keyInput.disabled = true;
               secretInput.disabled = true;
+              keyInput.value = '';
+              secretInput.value = '';
               keyInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
               secretInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
             } else {
