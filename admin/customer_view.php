@@ -178,6 +178,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
         try {
             // Remove avatar file if exists
+            if (!empty($customer['avatar_file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$customer['avatar_file_id']);
+            }
             if (!empty($customer['avatar'])) {
                 $oldPath = UPLOADS_PATH . '/avatars/' . $customer['avatar'];
                 if (file_exists($oldPath)) {

@@ -30,61 +30,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'profile
         if ($stmt->fetch()) $errors[] = 'That email is already in use.';
     }
 
-    // Avatar upload (optional).
-    $avatarFile = $user['avatar'];
-    $uploadErr  = $_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE;
-    $hasUpload  = !empty($_FILES['avatar']['name']) && $uploadErr !== UPLOAD_ERR_NO_FILE;
+    // Avatar upload (optional) via StorageManager
+    $avatarFile   = $user['avatar'];
+    $avatarFileId = $user['avatar_file_id'] ?? null;
+    $uploadErr    = $_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE;
+    $hasUpload    = !empty($_FILES['avatar']['name']) && $uploadErr !== UPLOAD_ERR_NO_FILE;
 
     if ($hasUpload) {
-        if ($uploadErr !== UPLOAD_ERR_OK) {
-            $errors[] = 'Upload failed: ' . upload_error_message($uploadErr);
-        } else {
-            $tmp  = $_FILES['avatar']['tmp_name'];
-            $size = (int) $_FILES['avatar']['size'];
-            $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
-            $ok   = ['image/jpeg' => 'jpg', 'image/png' => 'png',
-                     'image/gif'  => 'gif', 'image/webp' => 'webp'];
+        try {
+            $stored = storage()->storeUploadedFile('avatar', $_FILES['avatar'], [
+                'owner_type' => 'user',
+                'owner_id'   => $user['id'],
+                'visibility' => 'public',
+            ]);
+            $avatarFile   = $stored['storage_key'];
+            $avatarFileId = $stored['id'];
 
-            if (!isset($ok[$mime])) {
-                $errors[] = 'Avatar must be JPG, PNG, GIF or WEBP (got: ' . e((string)$mime) . ').';
-            } elseif ($size > 2 * 1024 * 1024) {
-                $errors[] = 'Avatar must be smaller than 2 MB.';
-            } else {
-                if (!is_dir(UPLOADS_PATH) && !@mkdir(UPLOADS_PATH, 0775, true)) {
-                    $errors[] = 'Upload folder could not be created: ' . e(UPLOADS_PATH);
-                } elseif (!is_writable(UPLOADS_PATH)) {
-                    $errors[] = 'Upload folder is not writable by the web server: '
-                              . e(UPLOADS_PATH) . ' — try: chmod 775 (or 777) on that folder.';
-                } else {
-                    $avatarsDir = UPLOADS_PATH . '/avatars';
-                    if (!is_dir($avatarsDir)) {
-                        @mkdir($avatarsDir, 0775, true);
-                    }
-                    $targetDir = (is_dir($avatarsDir) && is_writable($avatarsDir)) ? $avatarsDir : UPLOADS_PATH;
-                    $newName = 'avatar_' . $user['id'] . '_' . time() . '.' . $ok[$mime];
-                    if (move_uploaded_file($tmp, $targetDir . '/' . $newName)) {
-                        if ($user['avatar']) {
-                            if (file_exists($avatarsDir . '/' . $user['avatar'])) @unlink($avatarsDir . '/' . $user['avatar']);
-                            if (file_exists(UPLOADS_PATH . '/' . $user['avatar'])) @unlink(UPLOADS_PATH . '/' . $user['avatar']);
-                        }
-                        $avatarFile = $newName;
-                    } else {
-                        $errors[] = 'Could not save avatar. Last PHP error: '
-                                  . e(error_get_last()['message'] ?? 'unknown');
-                    }
-                }
+            // Clean up old avatar
+            if (!empty($user['avatar_file_id'])) {
+                storage()->deleteFile((int)$user['avatar_file_id']);
             }
+            if (!empty($user['avatar'])) {
+                $avatarsDir = UPLOADS_PATH . '/avatars';
+                if (file_exists($avatarsDir . '/' . $user['avatar'])) @unlink($avatarsDir . '/' . $user['avatar']);
+                if (file_exists(UPLOADS_PATH . '/' . $user['avatar'])) @unlink(UPLOADS_PATH . '/' . $user['avatar']);
+            }
+        } catch (Throwable $e) {
+            $errors[] = 'Avatar upload failed: ' . $e->getMessage();
         }
     }
 
     if (!$errors) {
         db()->prepare(
-            'UPDATE users SET name = :n, email = :e, phone = :ph, bio = :b, avatar = :av
+            'UPDATE users SET name = :n, email = :e, phone = :ph, bio = :b, avatar = :av, avatar_file_id = :avid
              WHERE id = :id'
         )->execute([
-            ':n'  => $name, ':e' => $email, ':ph' => $phone,
-            ':b'  => $bio,  ':av' => $avatarFile,
-            ':id' => $user['id'],
+            ':n'    => $name, ':e' => $email, ':ph' => $phone,
+            ':b'    => $bio,  ':av' => $avatarFile, ':avid' => $avatarFileId,
+            ':id'   => $user['id'],
         ]);
         log_activity('profile.update', 'Updated own profile');
         refresh_user_session();

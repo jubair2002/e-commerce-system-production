@@ -187,7 +187,9 @@
     if (mainImage && matched.image) {
       const currentSrc = mainImage.getAttribute('src');
       const uploadsBase = container.dataset.uploadsUrl || 'assets/uploads/products/';
-      const targetSrc = uploadsBase + matched.image;
+      const targetSrc = (matched.image.startsWith('http://') || matched.image.startsWith('https://') || matched.image.startsWith('data:'))
+        ? matched.image
+        : (uploadsBase + matched.image);
       if (currentSrc !== targetSrc) {
         mainImage.setAttribute('src', targetSrc);
       }

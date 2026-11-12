@@ -5,7 +5,7 @@ require_role('admin');
 $pageTitle = 'Settings & CMS';
 
 $activeTab = trim((string)($_GET['tab'] ?? 'general'));
-$allowedTabs = ['general', 'storefront', 'inventory', 'checkout', 'shipping', 'coupons', 'seo', 'customers'];
+$allowedTabs = ['general', 'storefront', 'inventory', 'checkout', 'shipping', 'coupons', 'seo', 'customers', 'storage'];
 if (!in_array($activeTab, $allowedTabs, true)) {
     $activeTab = 'general';
 }
@@ -124,6 +124,107 @@ if (!function_exists('settings_save')) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
     $action = $_POST['action'] ?? '';
+
+    // Action: AJAX Test S3 Connection
+    if ($action === 'test_s3_connection') {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $region   = trim($_POST['region'] ?? '');
+            $bucket   = trim($_POST['bucket'] ?? '');
+            $keyId    = trim($_POST['key_id'] ?? '');
+            $secret   = trim($_POST['secret'] ?? '');
+
+            // Fallback to saved or env if empty or masked
+            if (empty($secret) || $secret === '********') {
+                $dbEnc = setting('storage_aws_secret_access_key');
+                $secret = (!empty($dbEnc) && function_exists('app_decrypt')) ? app_decrypt($dbEnc) : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '');
+            }
+            if (empty($keyId)) {
+                $keyId = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+            }
+            if (empty($region)) {
+                $region = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
+            }
+            if (empty($bucket)) {
+                $bucket = setting('storage_s3_bucket') ?: (function_exists('env') ? env('S3_BUCKET', '') : '');
+            }
+
+            if (empty($bucket)) {
+                echo json_encode(['ok' => false, 'error' => 'S3 Bucket name is required to test connection.']);
+                exit;
+            }
+
+            $s3 = new \App\Storage\S3Storage([
+                'region'                  => $region,
+                'bucket'                  => $bucket,
+                'key'                     => $keyId,
+                'secret'                  => $secret,
+                'endpoint'                => function_exists('env') ? env('S3_ENDPOINT', null) : null,
+                'use_path_style_endpoint' => function_exists('env') ? (bool)env('S3_USE_PATH_STYLE_ENDPOINT', false) : false,
+            ]);
+
+            $testKey = '_test_connection_' . time() . '.tmp';
+            $testPayload = 'Jinispotro S3 Storage Verification ' . date('c');
+
+            // 1. Put
+            if (!$s3->put($testKey, $testPayload, ['mime_type' => 'text/plain'])) {
+                throw new RuntimeException("PutObject failed on test file.");
+            }
+
+            // 2. Exists & Get
+            if (!$s3->exists($testKey)) {
+                throw new RuntimeException("Object verification failed: doesObjectExist returned false after put.");
+            }
+            $stream = $s3->getStream($testKey);
+            if (!$stream) {
+                throw new RuntimeException("GetObject failed to retrieve test file content.");
+            }
+            $retrieved = stream_get_contents($stream);
+            fclose($stream);
+            if ($retrieved !== $testPayload) {
+                throw new RuntimeException("Integrity check failed: retrieved content did not match uploaded payload.");
+            }
+
+            // 3. Delete
+            $s3->delete($testKey);
+
+            echo json_encode(['ok' => true, 'message' => "Success! Connected to bucket '{$bucket}', uploaded a test object, verified its integrity, and deleted the test object."]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    // Action: Save Storage Settings
+    if ($action === 'save_storage') {
+        $primary  = in_array($_POST['storage_primary'] ?? '', ['local', 's3'], true) ? $_POST['storage_primary'] : 'local';
+        $fallback = in_array($_POST['storage_fallback'] ?? '', ['none', 'local', 's3'], true) ? $_POST['storage_fallback'] : 'none';
+        if ($primary === $fallback && $fallback !== 'none') {
+            flash('danger', 'Primary and Fallback drivers cannot be set to the same provider.');
+            admin_redirect('settings.php?tab=storage');
+        }
+
+        update_setting('storage_primary', $primary);
+        update_setting('storage_fallback', $fallback);
+        update_setting('storage_aws_region', trim($_POST['storage_aws_region'] ?? 'us-east-1'));
+        update_setting('storage_s3_bucket', trim($_POST['storage_s3_bucket'] ?? ''));
+        update_setting('storage_aws_access_key_id', trim($_POST['storage_aws_access_key_id'] ?? ''));
+
+        $rawSecret = trim($_POST['storage_aws_secret_access_key'] ?? '');
+        if ($rawSecret !== '' && $rawSecret !== '********') {
+            update_setting('storage_aws_secret_access_key', app_encrypt($rawSecret));
+        }
+
+        update_setting('storage_s3_public_base_url', trim($_POST['storage_s3_public_base_url'] ?? ''));
+        update_setting('storage_s3_key_prefix', trim($_POST['storage_s3_key_prefix'] ?? ''));
+
+        \App\Storage\StorageManager::resetInstance();
+        log_activity('settings.storage', "Updated storage layer configuration (Primary: {$primary}, Fallback: {$fallback})");
+        flash('success', 'Storage settings saved successfully.');
+        admin_redirect('settings.php?tab=storage');
+    }
+
     // Action: Link Storage Symlink
     if ($action === 'link_storage') {
         $link = ROOT_PATH . '/uploads';
@@ -161,42 +262,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $res = settings_save($_POST, $rules, 'general');
 
-        // Handle Branding Uploads (Logo & Favicon)
-        $brandingDir = UPLOADS_PATH . '/branding';
-        if (!is_dir($brandingDir)) {
-            @mkdir($brandingDir, 0755, true);
-        }
-
-        $allowedMimes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'];
-
+        // Handle Branding Uploads (Logo & Favicon) via StorageManager
         foreach (['store_logo', 'store_favicon'] as $fileKey) {
             if (!empty($_FILES[$fileKey]['tmp_name']) && is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
-                $f = $_FILES[$fileKey];
-                if ($f['size'] > 2 * 1024 * 1024) {
-                    $res['errors'][] = ucfirst(str_replace('_', ' ', $fileKey)) . " exceeds maximum size of 2 MB.";
-                    continue;
-                }
+                try {
+                    $stored = storage()->storeUploadedFile('branding', $_FILES[$fileKey], [
+                        'owner_type' => 'setting',
+                        'visibility' => 'public',
+                    ]);
 
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mime = finfo_file($finfo, $f['tmp_name']);
-                finfo_close($finfo);
-
-                if (!in_array($mime, $allowedMimes, true)) {
-                    $res['errors'][] = "Invalid file type for " . str_replace('_', ' ', $fileKey) . " ({$mime}).";
-                    continue;
-                }
-
-                $ext = pathinfo($f['name'], PATHINFO_EXTENSION) ?: 'png';
-                $newFilename = $fileKey . '_' . bin2hex(random_bytes(6)) . '.' . strtolower($ext);
-
-                if (move_uploaded_file($f['tmp_name'], $brandingDir . '/' . $newFilename)) {
-                    // Delete old file if present
                     $oldFile = setting($fileKey);
-                    if (!empty($oldFile) && file_exists($brandingDir . '/' . $oldFile)) {
-                        @unlink($brandingDir . '/' . $oldFile);
+                    if (!empty($oldFile)) {
+                        $brandingDir = UPLOADS_PATH . '/branding';
+                        if (file_exists($brandingDir . '/' . $oldFile)) {
+                            @unlink($brandingDir . '/' . $oldFile);
+                        }
                     }
-                    update_setting($fileKey, $newFilename);
-                    log_activity('settings.update', "Uploaded new {$fileKey}: {$newFilename}");
+
+                    update_setting($fileKey, $stored['storage_key']);
+                    log_activity('settings.update', "Uploaded new {$fileKey}: {$stored['storage_key']}");
+                } catch (Throwable $e) {
+                    $res['errors'][] = "Failed to upload " . str_replace('_', ' ', $fileKey) . ": " . $e->getMessage();
                 }
             }
         }
@@ -592,6 +678,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'customer_can_cancel' => '1',
                 'customer_unverified_ttl_days' => '14',
             ],
+            'storage' => [
+                'storage_primary' => 'local',
+                'storage_fallback' => 'none',
+                'storage_aws_region' => 'us-east-1',
+                'storage_s3_bucket' => '',
+                'storage_aws_access_key_id' => '',
+                'storage_aws_secret_access_key' => '',
+                'storage_s3_public_base_url' => '',
+                'storage_s3_key_prefix' => 'uploads/',
+            ],
         ];
 
         if (isset($defaults[$tabToReset])) {
@@ -675,6 +771,11 @@ include __DIR__ . '/includes/header.php';
   <li class="nav-item">
     <a class="nav-link <?= $activeTab === 'customers' ? 'active fw-bold' : '' ?>" href="<?= e(admin_url('settings.php?tab=customers')) ?>">
       <i class="bi bi-people me-1"></i> Customers
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <?= $activeTab === 'storage' ? 'active fw-bold' : '' ?>" href="<?= e(admin_url('settings.php?tab=storage')) ?>">
+      <i class="bi bi-cloud-arrow-up me-1"></i> Storage &amp; AWS S3
     </a>
   </li>
 </ul>
@@ -1854,6 +1955,226 @@ include __DIR__ . '/includes/header.php';
             <i class="bi bi-save me-1"></i> Save Customer Settings
           </button>
         </form>
+      </div>
+    </div>
+  <?php elseif ($activeTab === 'storage'): ?>
+    <?php
+      $totalFiles   = (int)db()->query("SELECT COUNT(*) FROM files WHERE deleted_at IS NULL")->fetchColumn();
+      $s3Files      = (int)db()->query("SELECT COUNT(*) FROM files WHERE provider = 's3' AND deleted_at IS NULL")->fetchColumn();
+      $localFiles   = (int)db()->query("SELECT COUNT(*) FROM files WHERE provider = 'local' AND deleted_at IS NULL")->fetchColumn();
+      $pendingSync  = (int)db()->query("SELECT COUNT(*) FROM files WHERE sync_status = 'pending' AND deleted_at IS NULL")->fetchColumn();
+
+      $curPrimary   = setting('storage_primary') ?: (function_exists('env') ? env('STORAGE_PRIMARY', 'local') : 'local');
+      $curFallback  = setting('storage_fallback') ?: (function_exists('env') ? env('STORAGE_FALLBACK', 'none') : 'none');
+      $curRegion    = setting('storage_aws_region') ?: (function_exists('env') ? env('AWS_REGION', 'us-east-1') : 'us-east-1');
+      $curBucket    = setting('storage_s3_bucket') ?: (function_exists('env') ? env('S3_BUCKET', '') : '');
+      $curKeyId     = setting('storage_aws_access_key_id') ?: (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '');
+      $curSecretSet = !empty(setting('storage_aws_secret_access_key')) || !empty(function_exists('env') ? env('AWS_SECRET_ACCESS_KEY') : '');
+      $curPublicUrl = setting('storage_s3_public_base_url') ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : '');
+      $curPrefix    = setting('storage_s3_key_prefix') ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : '');
+    ?>
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up text-primary me-2"></i> Object Storage & AWS S3 Configuration</h5>
+            <p class="text-muted small mb-0">Production-grade dual storage layer supporting local disk and AWS S3 with automatic failover and CloudFront CDN.</p>
+          </div>
+          <div>
+            <button type="button" id="btnTestS3" class="btn btn-outline-info btn-sm me-2">
+              <i class="bi bi-broadcast me-1"></i> Test S3 Connection
+            </button>
+            <button type="submit" form="storageForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+          </div>
+        </div>
+
+        <div id="s3TestAlert" style="display: none;" class="mb-4"></div>
+
+        <!-- Metric Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Primary Provider</div>
+              <div class="h5 fw-bold mb-0 mt-1 text-uppercase text-primary"><?= e($curPrimary) ?></div>
+              <small class="text-muted">Target for all new uploads</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Fallback Provider</div>
+              <div class="h5 fw-bold mb-0 mt-1 text-uppercase text-secondary"><?= e($curFallback) ?></div>
+              <small class="text-muted">High-availability failover</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Files Tracked</div>
+              <div class="h5 fw-bold mb-0 mt-1"><?= $totalFiles ?> <span class="fs-6 fw-normal text-muted">(S3: <?= $s3Files ?>, Local: <?= $localFiles ?>)</span></div>
+              <small class="text-muted">Managed file objects</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Pending S3 Sync</div>
+              <div class="h5 fw-bold mb-0 mt-1 <?= $pendingSync > 0 ? 'text-warning' : 'text-success' ?>"><?= $pendingSync ?></div>
+              <small class="text-muted"><?= $pendingSync > 0 ? 'Awaiting sync job' : 'All files synced' ?></small>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" action="settings.php?tab=storage" id="storageForm" novalidate>
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="save_storage">
+
+          <!-- Storage Strategy Card -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-toggles text-primary me-2"></i> Storage Mode & Failover Strategy
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Primary Storage Driver <span class="text-danger">*</span></label>
+                  <select name="storage_primary" id="storage_primary" class="form-select">
+                    <option value="local" <?= $curPrimary === 'local' ? 'selected' : '' ?>>Local Disk (Single-server / Development)</option>
+                    <option value="s3" <?= $curPrimary === 's3' ? 'selected' : '' ?>>AWS S3 (Scalable Cloud Object Storage)</option>
+                  </select>
+                  <div class="form-text small">Where new files are written first.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Fallback Storage Driver</label>
+                  <select name="storage_fallback" id="storage_fallback" class="form-select">
+                    <option value="none" <?= $curFallback === 'none' ? 'selected' : '' ?>>None (No fallback)</option>
+                    <option value="local" <?= $curFallback === 'local' ? 'selected' : '' ?>>Local Disk (Failover if S3 unreachable)</option>
+                    <option value="s3" <?= $curFallback === 's3' ? 'selected' : '' ?>>AWS S3 (Failover if local disk fails)</option>
+                  </select>
+                  <div class="form-text small">If primary fails, file is written to fallback with sync_status='pending'.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AWS S3 Credentials & Settings -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-amazon text-primary me-2"></i> AWS S3 Credentials & Bucket Details
+            </div>
+            <div class="card-body">
+              <div class="alert alert-light border small py-2 mb-3">
+                <i class="bi bi-shield-check text-success me-1"></i>
+                <strong>Security Best Practice:</strong> When hosting on an AWS EC2 instance, prefer attaching an <strong>IAM Instance Profile/Role</strong> with S3 permissions. If an instance role is attached, leave Access Key ID and Secret blank!
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">AWS Region <span class="text-danger">*</span></label>
+                  <input type="text" name="storage_aws_region" id="storage_aws_region" class="form-control" value="<?= e($curRegion) ?>" placeholder="us-east-1" required>
+                  <div class="form-text small">e.g. us-east-1, ap-southeast-1, eu-west-1.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Bucket Name <span class="text-danger">*</span></label>
+                  <input type="text" name="storage_s3_bucket" id="storage_s3_bucket" class="form-control" value="<?= e($curBucket) ?>" placeholder="my-ecommerce-media-bucket" required>
+                  <div class="form-text small">Target S3 bucket configured with ACLs disabled.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">AWS Access Key ID (Optional)</label>
+                  <input type="text" name="storage_aws_access_key_id" id="storage_aws_access_key_id" class="form-control" value="<?= e($curKeyId) ?>" placeholder="AKIA..." autocomplete="off">
+                  <div class="form-text small">Leave blank to use EC2 IAM Instance Role.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">AWS Secret Access Key (Optional)</label>
+                  <input type="password" name="storage_aws_secret_access_key" id="storage_aws_secret_access_key" class="form-control" value="<?= $curSecretSet ? '********' : '' ?>" placeholder="Leave blank to use IAM Role or keep existing" autocomplete="new-password">
+                  <div class="form-text small">Stored encrypted using AES-256-CBC. Never echoed back plain.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">CloudFront / Public Base URL (Recommended)</label>
+                  <input type="url" name="storage_s3_public_base_url" id="storage_s3_public_base_url" class="form-control" value="<?= e($curPublicUrl) ?>" placeholder="https://d123456abcdef8.cloudfront.net">
+                  <div class="form-text small">Origin Access Control (OAC) CloudFront distribution domain for global caching.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Key Prefix (Optional)</label>
+                  <input type="text" name="storage_s3_key_prefix" id="storage_s3_key_prefix" class="form-control" value="<?= e($curPrefix) ?>" placeholder="e.g. media or uploads">
+                  <div class="form-text small">Optional folder prefix inside bucket. Leave empty for root.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-save me-1"></i> Save Storage Configuration
+            </button>
+            <button type="button" id="btnTestS3Footer" class="btn btn-outline-info">
+              <i class="bi bi-broadcast me-1"></i> Test S3 Connection
+            </button>
+          </div>
+        </form>
+
+        <script>
+        (function() {
+          function runS3Test() {
+            var btn = document.getElementById('btnTestS3');
+            var btnFoot = document.getElementById('btnTestS3Footer');
+            var alertBox = document.getElementById('s3TestAlert');
+
+            btn.disabled = true;
+            btnFoot.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+            btnFoot.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+
+            alertBox.className = 'alert alert-info py-2 small';
+            alertBox.style.display = 'block';
+            alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Connecting to S3, testing PutObject, GetObject, and DeleteObject on a temporary object...';
+
+            var formData = new FormData();
+            formData.append('_csrf', '<?= csrf_token() ?>');
+            formData.append('action', 'test_s3_connection');
+            formData.append('region', document.getElementById('storage_aws_region').value);
+            formData.append('bucket', document.getElementById('storage_s3_bucket').value);
+            formData.append('key_id', document.getElementById('storage_aws_access_key_id').value);
+            formData.append('secret', document.getElementById('storage_aws_secret_access_key').value);
+
+            fetch('settings.php', {
+              method: 'POST',
+              body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              btn.disabled = false;
+              btnFoot.disabled = false;
+              btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection';
+              btnFoot.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection';
+
+              if (data.ok) {
+                alertBox.className = 'alert alert-success py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> <strong>S3 Connection Verified:</strong> ' + data.message;
+              } else {
+                alertBox.className = 'alert alert-danger py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>S3 Connection Failed:</strong> ' + data.error;
+              }
+            })
+            .catch(function(err) {
+              btn.disabled = false;
+              btnFoot.disabled = false;
+              btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection';
+              btnFoot.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection';
+              alertBox.className = 'alert alert-danger py-2 small';
+              alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Network error: ' + err.message;
+            });
+          }
+
+          document.getElementById('btnTestS3').addEventListener('click', runS3Test);
+          document.getElementById('btnTestS3Footer').addEventListener('click', runS3Test);
+        })();
+        </script>
       </div>
     </div>
   <?php endif; ?>

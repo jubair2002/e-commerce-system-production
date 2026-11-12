@@ -15,12 +15,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         require_role('admin');
         $id = (int)($_POST['id'] ?? 0);
-        $stmt = db()->prepare('SELECT name, image FROM products WHERE id = :id');
+        $stmt = db()->prepare('SELECT id, name, image, file_id FROM products WHERE id = :id');
         $stmt->execute([':id' => $id]);
         if ($p = $stmt->fetch()) {
+            // Delete product primary file via StorageManager
+            if (!empty($p['file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$p['file_id']);
+            }
             if ($p['image'] && file_exists(UPLOADS_PATH . '/products/' . $p['image'])) {
                 @unlink(UPLOADS_PATH . '/products/' . $p['image']);
             }
+
+            // Delete gallery images
+            $stmtGal = db()->prepare('SELECT file_id, filename FROM product_images WHERE product_id = :id');
+            $stmtGal->execute([':id' => $id]);
+            while ($g = $stmtGal->fetch()) {
+                if (!empty($g['file_id']) && function_exists('storage')) {
+                    storage()->deleteFile((int)$g['file_id']);
+                }
+                if ($g['filename'] && file_exists(UPLOADS_PATH . '/products/' . $g['filename'])) {
+                    @unlink(UPLOADS_PATH . '/products/' . $g['filename']);
+                }
+            }
+
             db()->prepare('DELETE FROM products WHERE id = :id')->execute([':id' => $id]);
             if (class_exists('FileCache')) {
                 FileCache::deletePattern('products:*');
@@ -52,10 +69,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash('success', count($selectedIds) . ' products deactivated.');
             } elseif ($bulkOp === 'delete') {
                 require_role('admin');
-                $stmtImgs = db()->query("SELECT image FROM products WHERE id IN ($inClause)");
-                while ($img = $stmtImgs->fetchColumn()) {
-                    if ($img && file_exists(UPLOADS_PATH . '/products/' . $img)) {
-                        @unlink(UPLOADS_PATH . '/products/' . $img);
+                $stmtImgs = db()->query("SELECT id, image, file_id FROM products WHERE id IN ($inClause)");
+                while ($pRow = $stmtImgs->fetch()) {
+                    if (!empty($pRow['file_id']) && function_exists('storage')) {
+                        storage()->deleteFile((int)$pRow['file_id']);
+                    }
+                    if ($pRow['image'] && file_exists(UPLOADS_PATH . '/products/' . $pRow['image'])) {
+                        @unlink(UPLOADS_PATH . '/products/' . $pRow['image']);
+                    }
+                }
+                // Delete gallery images for bulk deleted products
+                $stmtGalBulk = db()->query("SELECT file_id, filename FROM product_images WHERE product_id IN ($inClause)");
+                while ($gRow = $stmtGalBulk->fetch()) {
+                    if (!empty($gRow['file_id']) && function_exists('storage')) {
+                        storage()->deleteFile((int)$gRow['file_id']);
+                    }
+                    if ($gRow['filename'] && file_exists(UPLOADS_PATH . '/products/' . $gRow['filename'])) {
+                        @unlink(UPLOADS_PATH . '/products/' . $gRow['filename']);
                     }
                 }
                 db()->exec("DELETE FROM products WHERE id IN ($inClause)");

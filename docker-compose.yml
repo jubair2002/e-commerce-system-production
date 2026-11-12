@@ -1,0 +1,211 @@
+# ==============================================================================
+# Jinispotro Full Production Stack
+# Includes: PHP 8.2 Apache App, MySQL 8.0, Prometheus, Grafana & Exporters
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Main Web Application & Background Workers (PHP 8.2 + Apache)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jinispotro_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    environment:
+      # Database connection
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-php_admin_panel}
+      DB_USER: ${DB_USER:-jinispotro}
+      DB_PASS: ${DB_PASS:-secret123}
+      DB_CHARSET: utf8mb4
+
+      # AWS S3 Storage (Provided by User)
+      STORAGE_PRIMARY: ${STORAGE_PRIMARY:-s3}
+      STORAGE_FALLBACK: ${STORAGE_FALLBACK:-local}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
+      S3_KEY_PREFIX: ${S3_KEY_PREFIX:-uploads/}
+
+      # App Settings
+      APP_NAME: "${APP_NAME:-Jinispotro E-Commerce}"
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY:-c84f1a29e46a78b901d3e5f72a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b}
+      BASE_URL: ${BASE_URL:-/}
+      SITE_URL: ${SITE_URL:-http://localhost}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+    volumes:
+      - app_uploads:/var/www/html/assets/uploads
+      - app_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/metrics.php || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 2. Database Service (MySQL 8.0)
+  # ----------------------------------------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: jinispotro_db
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=250
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-php_admin_panel}
+      MYSQL_USER: ${DB_USER:-jinispotro}
+      MYSQL_PASSWORD: ${DB_PASS:-secret123}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret123}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 3. Prometheus Monitoring Engine
+  # ----------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: jinispotro_prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.enable-lifecycle
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - app
+      - mysqld-exporter
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 4. Grafana Dashboards (Pre-configured)
+  # ----------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: jinispotro_grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-grafana.domain.com}
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "${GRAFANA_ANONYMOUS_ENABLED:-true}"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 5. MySQL Prometheus Exporter
+  # ----------------------------------------------------------------------------
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: jinispotro_mysqld_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "root:${DB_ROOT_PASSWORD:-rootsecret123}@(db:3306)/"
+    ports:
+      - "${MYSQLD_EXPORTER_PORT:-9104}:9104"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 6. Host Hardware & OS Node Exporter
+  # ----------------------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: jinispotro_node_exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "${NODE_EXPORTER_PORT:-9100}:9100"
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 7. Container Resource Metrics (cAdvisor)
+  # ----------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: jinispotro_cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "${CADVISOR_PORT:-8080}:8080"
+    networks:
+      - jinispotro_net
+
+volumes:
+  db_data:
+    driver: local
+  app_uploads:
+    driver: local
+  app_storage:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  jinispotro_net:
+    driver: bridge

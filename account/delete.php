@@ -54,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (Throwable $e) {}
 
             // Delete avatar image file if exists
+            if (!empty($freshCustomer['avatar_file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$freshCustomer['avatar_file_id']);
+            }
             if (!empty($freshCustomer['avatar'])) {
                 $avatarFile = UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'];
                 if (file_exists($avatarFile)) {

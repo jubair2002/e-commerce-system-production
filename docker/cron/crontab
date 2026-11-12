@@ -1,0 +1,19 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# 1. Process asynchronous mail queue every minute
+* * * * * www-data php /var/www/html/cron/process_mail_queue.php >/dev/null 2>&1
+
+# 2. Reconcile fallback uploads to S3 every 5 minutes
+*/5 * * * * www-data php /var/www/html/bin/sync-storage.php >/dev/null 2>&1
+
+# 3. Clean orphaned files and purge soft-deletes daily at 3:00 AM
+0 3 * * * www-data php /var/www/html/bin/cleanup-orphans.php --days=30 >/dev/null 2>&1
+
+# 4. Customer maintenance and GDPR tasks daily at midnight
+0 0 * * * www-data php /var/www/html/cron/customer_maintenance.php >/dev/null 2>&1
+
+# 5. System metrics collection every minute
+* * * * * www-data php /var/www/html/cron/collect_metrics.php >/dev/null 2>&1
+
+# Required blank line at end of crontab

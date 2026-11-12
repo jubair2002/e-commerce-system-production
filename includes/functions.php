@@ -547,6 +547,24 @@ function format_date(?string $datetime, string $format = 'M j, Y H:i'): string
 function avatar_url(?string $avatar, ?string $name = ''): string
 {
     if (!empty($avatar)) {
+        if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://') || str_starts_with($avatar, 'data:')) {
+            return $avatar;
+        }
+
+        // Try StorageManager resolution (handles files table by ID, storage_key, or provider URL)
+        if (function_exists('storage')) {
+            try {
+                $storageUrl = storage()->getUrl($avatar);
+                if (!empty($storageUrl) && !str_contains($storageUrl, 'assets/uploads/' . $avatar)) {
+                    return $storageUrl;
+                }
+                // If storage returned a valid S3 URL or existing file URL
+                if (!empty($storageUrl) && !file_exists(UPLOADS_PATH . '/' . ltrim($avatar, '/')) && str_starts_with($storageUrl, 'http')) {
+                    return $storageUrl;
+                }
+            } catch (Throwable $e) {}
+        }
+
         $clean = ltrim($avatar, '/');
         // 1. Direct file in UPLOADS_PATH
         if (file_exists(UPLOADS_PATH . '/' . $clean)) {
@@ -635,10 +653,28 @@ function upload_error_message(int $code): string
     return 'Unknown upload error.';
 }
 
-/** Return URL to product image (or a placeholder), with support for pre-generated responsive WebP variants. */
+/** Return URL to product image (or a placeholder), with support for pre-generated responsive WebP variants and S3/StorageManager. */
 function product_image_url(?string $image, string $size = 'full', ?int $productId = null): string
 {
     if (!empty($image)) {
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://') || str_starts_with($image, 'data:')) {
+            return $image;
+        }
+
+        // 1. Try StorageManager resolution (files table lookup by ID, storage_key, or S3 public/signed URL)
+        if (function_exists('storage')) {
+            try {
+                $storageUrl = storage()->getUrl($image, ['size' => $size]);
+                if (!empty($storageUrl) && !str_contains($storageUrl, 'assets/uploads/' . $image)) {
+                    return $storageUrl;
+                }
+                // If storage returned a valid URL and local file doesn't exist, use storage URL
+                if (!empty($storageUrl) && str_starts_with($storageUrl, 'http') && !file_exists(UPLOADS_PATH . '/products/' . ltrim($image, '/'))) {
+                    return $storageUrl;
+                }
+            } catch (Throwable $e) {}
+        }
+
         $clean = ltrim($image, '/');
 
         // Check if pre-generated responsive variant exists when a specific size is requested
@@ -686,6 +722,17 @@ function store_logo_url(?string $logo = null): ?string
 {
     $logo = $logo ?? (function_exists('setting') ? setting('store_logo') : null);
     if (empty($logo)) return null;
+    if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+        return $logo;
+    }
+    if (function_exists('storage')) {
+        try {
+            $storageUrl = storage()->getUrl($logo);
+            if (!empty($storageUrl) && str_starts_with($storageUrl, 'http')) {
+                return $storageUrl;
+            }
+        } catch (Throwable $e) {}
+    }
     $clean = ltrim($logo, '/');
     if (file_exists(UPLOADS_PATH . '/branding/' . $clean)) {
         return UPLOADS_URL . 'branding/' . $clean;
@@ -713,6 +760,17 @@ function store_favicon_url(?string $fav = null): ?string
 {
     $fav = $fav ?? (function_exists('setting') ? setting('store_favicon') : null);
     if (empty($fav)) return null;
+    if (str_starts_with($fav, 'http://') || str_starts_with($fav, 'https://')) {
+        return $fav;
+    }
+    if (function_exists('storage')) {
+        try {
+            $storageUrl = storage()->getUrl($fav);
+            if (!empty($storageUrl) && str_starts_with($storageUrl, 'http')) {
+                return $storageUrl;
+            }
+        } catch (Throwable $e) {}
+    }
     $clean = ltrim($fav, '/');
     if (file_exists(UPLOADS_PATH . '/branding/' . $clean)) {
         return UPLOADS_URL . 'branding/' . $clean;
@@ -733,6 +791,17 @@ function store_favicon_url(?string $fav = null): ?string
 function banner_image_url(?string $image): ?string
 {
     if (empty($image)) return null;
+    if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+        return $image;
+    }
+    if (function_exists('storage')) {
+        try {
+            $storageUrl = storage()->getUrl($image);
+            if (!empty($storageUrl) && str_starts_with($storageUrl, 'http')) {
+                return $storageUrl;
+            }
+        } catch (Throwable $e) {}
+    }
     $clean = ltrim($image, '/');
     if (file_exists(UPLOADS_PATH . '/banners/' . $clean)) {
         return UPLOADS_URL . 'banners/' . $clean;

@@ -1,5 +1,5 @@
 # Allow images, deny PHP execution.
-<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phar)$">
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|phps|cgi|pl|py|sh)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

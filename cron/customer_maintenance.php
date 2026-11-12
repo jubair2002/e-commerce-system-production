@@ -50,7 +50,7 @@ try {
     if ($ttlDays > 0) {
         // Find abandoned unverified registrations with no linked orders
         $stmtFind = $pdo->prepare(
-            "SELECT id, avatar FROM customers
+            "SELECT id, avatar, avatar_file_id FROM customers
              WHERE status = 'pending'
                AND email_verified_at IS NULL
                AND deleted_at IS NULL
@@ -63,6 +63,9 @@ try {
             $cid = (int)$cust['id'];
 
             // Clean avatar file if present
+            if (!empty($cust['avatar_file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$cust['avatar_file_id']);
+            }
             if (!empty($cust['avatar'])) {
                 $aPath = UPLOADS_PATH . '/avatars/' . $cust['avatar'];
                 if (file_exists($aPath)) {

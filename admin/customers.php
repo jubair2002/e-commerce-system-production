@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_redirect('customers.php');
         }
 
-        $stmtC = $pdo->prepare("SELECT id, name, email, avatar FROM customers WHERE id = :id AND deleted_at IS NULL LIMIT 1");
+        $stmtC = $pdo->prepare("SELECT id, name, email, avatar, avatar_file_id FROM customers WHERE id = :id AND deleted_at IS NULL LIMIT 1");
         $stmtC->execute([':id' => $cid]);
         $targetCustomer = $stmtC->fetch();
 
@@ -114,6 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
         try {
             // Remove avatar
+            if (!empty($targetCustomer['avatar_file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$targetCustomer['avatar_file_id']);
+            }
             if (!empty($targetCustomer['avatar'])) {
                 $oldPath = UPLOADS_PATH . '/avatars/' . $targetCustomer['avatar'];
                 if (file_exists($oldPath)) {
@@ -175,10 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
             try {
                 // Delete avatars
-                $stmtAvatars = $pdo->prepare("SELECT id, avatar FROM customers WHERE id IN ($inPlaceholders)");
+                $stmtAvatars = $pdo->prepare("SELECT id, avatar, avatar_file_id FROM customers WHERE id IN ($inPlaceholders)");
                 $stmtAvatars->execute($selectedIds);
                 $avRows = $stmtAvatars->fetchAll();
                 foreach ($avRows as $av) {
+                    if (!empty($av['avatar_file_id']) && function_exists('storage')) {
+                        storage()->deleteFile((int)$av['avatar_file_id']);
+                    }
                     if (!empty($av['avatar'])) {
                         $p = UPLOADS_PATH . '/avatars/' . $av['avatar'];
                         if (file_exists($p)) @unlink($p);

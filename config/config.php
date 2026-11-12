@@ -5,6 +5,11 @@
  */
 require_once __DIR__ . '/env.php';
 
+// Composer Autoloader
+if (file_exists(dirname(__DIR__) . '/vendor/autoload.php')) {
+    require_once dirname(__DIR__) . '/vendor/autoload.php';
+}
+
 // ----- Database -----
 define('DB_HOST',    (string)env('DB_HOST', '127.0.0.1'));
 define('DB_PORT',    (string)env('DB_PORT', '3306'));
@@ -130,4 +135,12 @@ if (function_exists('setting')) {
     } catch (Throwable $e) {}
 }
 date_default_timezone_set($appTimezone);
+
+/** Convenience helper for StorageManager */
+if (!function_exists('storage')) {
+    function storage(): \App\Storage\StorageManager
+    {
+        return \App\Storage\StorageManager::getInstance();
+    }
+}
 

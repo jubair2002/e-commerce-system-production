@@ -168,39 +168,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // -------------------------------------------------------------
-    // Image Upload Pre-Validation
+    // Image Upload Pre-Validation via StorageManager
     // -------------------------------------------------------------
-    $hasPrimaryUpload = !empty($_FILES['image']['name']);
-    $resolvedPrimaryExt = null;
-    $okMimes = [
-        'image/jpeg' => 'jpg', 'image/pjpeg' => 'jpg',
-        'image/png'  => 'png', 'image/x-png' => 'png',
-        'image/gif'  => 'gif',
-        'image/webp' => 'webp',
-    ];
+    $hasPrimaryUpload = !empty($_FILES['image']['name']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    $primaryFileId    = $product['file_id'] ?? null;
+    $primaryImage     = $product['image'] ?? null;
 
     if ($hasPrimaryUpload) {
         $uploadErr = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
         if ($uploadErr !== UPLOAD_ERR_OK) {
             $errors[] = 'Primary image upload failed: ' . upload_error_message($uploadErr);
         } else {
-            $tmp  = $_FILES['image']['tmp_name'];
             $size = (int)$_FILES['image']['size'];
-            $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
-            $ext  = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-            $resolvedPrimaryExt = $okMimes[$mime] ?? ($ext === 'jpeg' ? 'jpg' : (in_array($ext, ['jpg', 'png', 'gif', 'webp'], true) ? $ext : null));
-
-            if (!$resolvedPrimaryExt) {
-                $errors[] = 'Primary image must be a JPG, PNG, GIF or WEBP image (detected: ' . e((string)$mime) . ').';
-            } elseif ($size > 10 * 1024 * 1024) {
-                $errors[] = 'Primary image exceeds 10 MB limit (file size: ' . round($size / 1048576, 2) . ' MB).';
-            } else {
-                $dir = UPLOADS_PATH . '/products';
-                if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
-                    $errors[] = 'Uploads folder could not be created at ' . e($dir) . '. Please check filesystem permissions.';
-                } elseif (!is_writable($dir)) {
-                    $errors[] = 'Upload directory is not writable by web server (www-data): ' . e($dir) . '. Please run: sudo chown -R www-data:www-data ' . escapeshellarg(UPLOADS_PATH) . ' && sudo chmod -R 775 ' . escapeshellarg(UPLOADS_PATH);
-                }
+            if ($size > 10 * 1024 * 1024) {
+                $errors[] = 'Primary image exceeds 10 MB limit.';
             }
         }
     }
@@ -215,14 +196,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = "Gallery image '{$gName}' failed to upload: " . upload_error_message($gErr);
                 continue;
             }
-            $gTmp = $_FILES['gallery_images']['tmp_name'][$gk];
             $gSize = (int)$_FILES['gallery_images']['size'][$gk];
-            $gMime = function_exists('mime_content_type') ? mime_content_type($gTmp) : null;
-            $gExt = strtolower(pathinfo($gName, PATHINFO_EXTENSION));
-            $resolvedGExt = $okMimes[$gMime] ?? ($gExt === 'jpeg' ? 'jpg' : (in_array($gExt, ['jpg', 'png', 'gif', 'webp'], true) ? $gExt : null));
-            if (!$resolvedGExt) {
-                $errors[] = "Gallery image '{$gName}' must be a JPG, PNG, GIF or WEBP image.";
-            } elseif ($gSize > 10 * 1024 * 1024) {
+            if ($gSize > 10 * 1024 * 1024) {
                 $errors[] = "Gallery image '{$gName}' exceeds 10 MB limit.";
             }
         }
@@ -242,20 +217,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $primaryImage = $product['image'] ?? null;
             $uploadedPrimaryFile = null;
 
-            // Handle primary image upload if file selected and validated
-            if ($hasPrimaryUpload && $resolvedPrimaryExt) {
-                $tmp = $_FILES['image']['tmp_name'];
-                $dir = UPLOADS_PATH . '/products';
-                if (!is_dir($dir)) {
-                    @mkdir($dir, 0775, true);
-                }
-                $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $resolvedPrimaryExt;
-                if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
-                    $primaryImage = $newFileName;
-                    $uploadedPrimaryFile = $dir . '/' . $newFileName;
-                } else {
-                    throw new RuntimeException('Failed to move uploaded file to ' . $dir . '/' . $newFileName . '. Check folder write permissions.');
-                }
+            // Handle primary image upload if file selected and validated via StorageManager
+            if ($hasPrimaryUpload) {
+                $stored = storage()->storeUploadedFile('product', $_FILES['image'], [
+                    'owner_type' => 'product',
+                    'owner_id'   => $id ?: null,
+                    'visibility' => 'public',
+                ]);
+                $primaryImage  = $stored['storage_key'];
+                $primaryFileId = $stored['id'];
             }
 
             // Insert / Update Product Row
@@ -271,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':sp'    => $salePrice !== '' ? number_format((float)$salePrice, 2, '.', '') : null,
                 ':stock' => ($productType === 'simple') ? $stock : 0,
                 ':img'   => $primaryImage,
+                ':fid'   => $primaryFileId,
                 ':st'    => $status,
                 ':feat'  => $featured,
                 ':ti'    => $trackInventory,
@@ -299,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "UPDATE products SET
                         category_id = :cid, name = :name, slug = :slug, product_type = :ptype, sku = :sku,
                         short_description = :sd, description = :d, price = :price, sale_price = :sp,
-                        image = :img, status = :st, featured = :feat,
+                        image = :img, file_id = :fid, status = :st, featured = :feat,
                         track_inventory = :ti, allow_backorder = :ab, low_stock_threshold = :lst,
                         show_stock_count = :ssc, weight_g = :wg, brand = :brand, tags = :tags,
                         meta_title = :mt, meta_description = :md
@@ -312,33 +283,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtInsert = $pdo->prepare(
                     "INSERT INTO products
                         (category_id, name, slug, product_type, sku, short_description, description,
-                         price, sale_price, stock, image, status, featured,
+                         price, sale_price, stock, image, file_id, status, featured,
                          track_inventory, allow_backorder, low_stock_threshold, show_stock_count,
                          weight_g, brand, tags, meta_title, meta_description)
                      VALUES
                         (:cid, :name, :slug, :ptype, :sku, :sd, :d,
-                         :price, :sp, :stock, :img, :st, :feat,
+                         :price, :sp, :stock, :img, :fid, :st, :feat,
                          :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md)"
                 );
                 $stmtInsert->execute($insertData);
                 $id = (int)$pdo->lastInsertId();
             }
 
-            // Generate responsive WebP variants for newly uploaded primary image
-            if ($uploadedPrimaryFile && $id) {
-                product_generate_responsive_variants($id, $uploadedPrimaryFile, $primaryImage);
-
-                // Ensure primary image exists in product_images gallery table as well
-                $chkPrimary = $pdo->prepare("SELECT id FROM product_images WHERE product_id = :pid AND filename = :fn");
-                $chkPrimary->execute([':pid' => $id, ':fn' => $primaryImage]);
+            // Ensure primary image exists in product_images gallery table as well
+            if ($primaryImage && $id) {
+                $chkPrimary = $pdo->prepare("SELECT id FROM product_images WHERE product_id = :pid AND (filename = :fn OR file_id = :fid)");
+                $chkPrimary->execute([':pid' => $id, ':fn' => $primaryImage, ':fid' => $primaryFileId]);
                 if (!$chkPrimary->fetchColumn()) {
                     $pdo->prepare("UPDATE product_images SET is_primary = 0 WHERE product_id = :pid")->execute([':pid' => $id]);
                     $pdo->prepare(
-                        "INSERT INTO product_images (product_id, filename, alt_text, position, is_primary)
-                         VALUES (:pid, :fn, :alt, 0, 1)"
+                        "INSERT INTO product_images (product_id, filename, file_id, alt_text, position, is_primary)
+                         VALUES (:pid, :fn, :fid, :alt, 0, 1)"
                     )->execute([
                         ':pid' => $id,
                         ':fn'  => $primaryImage,
+                        ':fid' => $primaryFileId,
                         ':alt' => $name,
                     ]);
                 }
@@ -549,31 +518,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // ---------------------------------------------------------
-            // Product Images Gallery Multi-Upload & Management
+            // Product Images Gallery Multi-Upload & Management via StorageManager
             // ---------------------------------------------------------
             // 1. Delete selected gallery images
             if (!empty($_POST['delete_gallery_images']) && is_array($_POST['delete_gallery_images'])) {
-                $delStmt = $pdo->prepare("SELECT filename FROM product_images WHERE id = :img_id AND product_id = :pid");
+                $delStmt = $pdo->prepare("SELECT filename, file_id FROM product_images WHERE id = :img_id AND product_id = :pid");
                 $delExec = $pdo->prepare("DELETE FROM product_images WHERE id = :img_id AND product_id = :pid");
                 foreach ($_POST['delete_gallery_images'] as $delId) {
                     $delId = (int)$delId;
                     if ($delId <= 0) continue;
                     $delStmt->execute([':img_id' => $delId, ':pid' => $id]);
-                    $delFn = $delStmt->fetchColumn();
-                    if ($delFn) {
+                    $delRow = $delStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($delRow) {
+                        $delFn  = $delRow['filename'];
+                        $delFid = $delRow['file_id'];
                         $delExec->execute([':img_id' => $delId, ':pid' => $id]);
+                        if ($delFid) {
+                            storage()->deleteFile((int)$delFid);
+                        }
                         // If deleted image was primary, pick next available
                         if ($primaryImage === $delFn) {
-                            $nextPrimeStmt = $pdo->prepare("SELECT filename FROM product_images WHERE product_id = :pid ORDER BY is_primary DESC, position ASC LIMIT 1");
+                            $nextPrimeStmt = $pdo->prepare("SELECT filename, file_id FROM product_images WHERE product_id = :pid ORDER BY is_primary DESC, position ASC LIMIT 1");
                             $nextPrimeStmt->execute([':pid' => $id]);
-                            $newPrimary = $nextPrimeStmt->fetchColumn() ?: null;
+                            $nextRow = $nextPrimeStmt->fetch(PDO::FETCH_ASSOC);
+                            $newPrimary = $nextRow['filename'] ?? null;
+                            $newPrimaryFid = $nextRow['file_id'] ?? null;
                             $primaryImage = $newPrimary;
-                            $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $newPrimary, ':id' => $id]);
+                            $primaryFileId = $newPrimaryFid;
+                            $pdo->prepare("UPDATE products SET image = :img, file_id = :fid WHERE id = :id")->execute([':img' => $newPrimary, ':fid' => $newPrimaryFid, ':id' => $id]);
                             if ($newPrimary) {
                                 $pdo->prepare("UPDATE product_images SET is_primary = 1 WHERE product_id = :pid AND filename = :fn")->execute([':pid' => $id, ':fn' => $newPrimary]);
                             }
                         }
-                        // Delete files from disk if not referenced by other products
+                        // Delete legacy file from disk if not referenced by other products
                         $refCountStmt = $pdo->prepare("SELECT COUNT(*) FROM product_images WHERE filename = :fn");
                         $refCountStmt->execute([':fn' => $delFn]);
                         if ((int)$refCountStmt->fetchColumn() === 0) {
@@ -586,16 +563,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // 2. Upload multiple gallery images
+            // 2. Upload multiple gallery images via StorageManager
             if (!empty($_FILES['gallery_images']['name']) && is_array($_FILES['gallery_images']['name'])) {
-                $dir = UPLOADS_PATH . '/products';
-                if (!is_dir($dir)) {
-                    @mkdir($dir, 0775, true);
-                }
-
                 $stmtImgIns = $pdo->prepare(
-                    "INSERT INTO product_images (product_id, filename, alt_text, position, is_primary)
-                     VALUES (:pid, :fn, :alt, :pos, :ip)"
+                    "INSERT INTO product_images (product_id, filename, file_id, alt_text, position, is_primary)
+                     VALUES (:pid, :fn, :fid, :alt, :pos, :ip)"
                 );
 
                 $curPosStmt = $pdo->prepare("SELECT COALESCE(MAX(position), 0) FROM product_images WHERE product_id = :pid");
@@ -606,30 +578,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (empty($fName) || ($_FILES['gallery_images']['error'][$k] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
                         continue;
                     }
-                    $tmp  = $_FILES['gallery_images']['tmp_name'][$k];
-                    $size = (int)$_FILES['gallery_images']['size'][$k];
-                    $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : null;
-                    $ext  = strtolower(pathinfo($fName, PATHINFO_EXTENSION));
-                    $galExt = $okMimes[$mime] ?? ($ext === 'jpeg' ? 'jpg' : (in_array($ext, ['jpg', 'png', 'gif', 'webp'], true) ? $ext : null));
-
-                    if ($galExt && $size <= 10 * 1024 * 1024) {
-                        $newFileName = 'p_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $galExt;
-                        if (move_uploaded_file($tmp, $dir . '/' . $newFileName)) {
-                            product_generate_responsive_variants($id, $dir . '/' . $newFileName, $newFileName);
-                            $isPrimaryFlag = 0;
-                            if (empty($primaryImage)) {
-                                $primaryImage = $newFileName;
-                                $isPrimaryFlag = 1;
-                                $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $newFileName, ':id' => $id]);
-                            }
-                            $stmtImgIns->execute([
-                                ':pid' => $id,
-                                ':fn'  => $newFileName,
-                                ':alt' => $name,
-                                ':pos' => $nextImgPos++,
-                                ':ip'  => $isPrimaryFlag,
+                    $fItem = [
+                        'name'     => $fName,
+                        'tmp_name' => $_FILES['gallery_images']['tmp_name'][$k],
+                        'size'     => (int)$_FILES['gallery_images']['size'][$k],
+                        'error'    => (int)$_FILES['gallery_images']['error'][$k],
+                    ];
+                    try {
+                        $stored = storage()->storeUploadedFile('product', $fItem, [
+                            'owner_type' => 'product',
+                            'owner_id'   => $id,
+                            'visibility' => 'public',
+                        ]);
+                        $isPrimaryFlag = 0;
+                        if (empty($primaryImage)) {
+                            $primaryImage  = $stored['storage_key'];
+                            $primaryFileId = $stored['id'];
+                            $isPrimaryFlag = 1;
+                            $pdo->prepare("UPDATE products SET image = :img, file_id = :fid WHERE id = :id")->execute([
+                                ':img' => $primaryImage,
+                                ':fid' => $primaryFileId,
+                                ':id'  => $id,
                             ]);
                         }
+                        $stmtImgIns->execute([
+                            ':pid' => $id,
+                            ':fn'  => $stored['storage_key'],
+                            ':fid' => $stored['id'],
+                            ':alt' => $name,
+                            ':pos' => $nextImgPos++,
+                            ':ip'  => $isPrimaryFlag,
+                        ]);
+                    } catch (Throwable $uploadErr) {
+                        error_log("[Product Gallery] Upload failed: " . $uploadErr->getMessage());
                     }
                 }
             }

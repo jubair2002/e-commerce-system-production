@@ -48,82 +48,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $newAvatarFilename = null;
 
-        // Avatar Upload Handling
+        $newAvatarFilename = null;
+        $newAvatarFileId   = null;
+
+        // Avatar Upload Handling via StorageManager
         if (empty($errors) && !empty($_FILES['avatar']['name']) && $_FILES['avatar']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $file = $_FILES['avatar'];
+            try {
+                $stored = storage()->storeUploadedFile('avatar', $_FILES['avatar'], [
+                    'owner_type' => 'customer',
+                    'owner_id'   => $cid,
+                    'visibility' => 'public',
+                ]);
+                $newAvatarFilename = $stored['storage_key'];
+                $newAvatarFileId   = $stored['id'];
 
-            if ($file['error'] !== UPLOAD_ERR_OK) {
-                $errors['avatar'] = 'Failed to upload image. Please try again.';
-            } elseif ($file['size'] > 2 * 1024 * 1024) {
-                $errors['avatar'] = 'Avatar image must not exceed 2 MB.';
-            } else {
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mime = finfo_file($finfo, $file['tmp_name']);
-                finfo_close($finfo);
-
-                $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-                if (!in_array($mime, $allowedMimes, true)) {
-                    $errors['avatar'] = 'Only JPG, PNG, and WEBP image formats are accepted.';
-                } else {
-                    // Re-encode image with GD to sanitize EXIF metadata and malicious payloads
-                    $srcImg = null;
-                    if ($mime === 'image/jpeg') {
-                        $srcImg = @imagecreatefromjpeg($file['tmp_name']);
-                    } elseif ($mime === 'image/png') {
-                        $srcImg = @imagecreatefrompng($file['tmp_name']);
-                    } elseif ($mime === 'image/webp') {
-                        $srcImg = @imagecreatefromwebp($file['tmp_name']);
-                    }
-
-                    if (!$srcImg) {
-                        $errors['avatar'] = 'Invalid image file. Please choose another image.';
-                    } else {
-                        $origW = imagesx($srcImg);
-                        $origH = imagesy($srcImg);
-
-                        // Square crop & resize to 400x400
-                        $minSide = min($origW, $origH);
-                        $srcX = (int)(($origW - $minSide) / 2);
-                        $srcY = (int)(($origH - $minSide) / 2);
-
-                        $destImg = imagecreatetruecolor(400, 400);
-                        imagealphablending($destImg, false);
-                        imagesavealpha($destImg, true);
-
-                        imagecopyresampled($destImg, $srcImg, 0, 0, $srcX, $srcY, 400, 400, $minSide, $minSide);
-
-                        $uploadDir = UPLOADS_PATH . '/avatars/';
-                        if (!is_dir($uploadDir)) {
-                            @mkdir($uploadDir, 0775, true);
-                        }
-
-                        $newAvatarFilename = bin2hex(random_bytes(16)) . '.webp';
-                        $destPath = $uploadDir . $newAvatarFilename;
-
-                        if (imagewebp($destImg, $destPath, 85)) {
-                            // Delete old avatar
-                            if (!empty($freshCustomer['avatar']) && file_exists($uploadDir . $freshCustomer['avatar'])) {
-                                @unlink($uploadDir . $freshCustomer['avatar']);
-                            }
-                        } else {
-                            $newAvatarFilename = null;
-                            $errors['avatar'] = 'Unable to save avatar image.';
-                        }
-
-                        imagedestroy($srcImg);
-                        imagedestroy($destImg);
-                    }
+                // Clean up old avatar if exists
+                if (!empty($freshCustomer['avatar_file_id'])) {
+                    storage()->deleteFile((int)$freshCustomer['avatar_file_id']);
                 }
+                if (!empty($freshCustomer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'])) {
+                    @unlink(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar']);
+                }
+            } catch (Throwable $e) {
+                $errors['avatar'] = $e->getMessage();
             }
         }
 
         // Handle Avatar Removal
         if ($removeAvatar && empty($newAvatarFilename)) {
-            $uploadDir = UPLOADS_PATH . '/avatars/';
-            if (!empty($freshCustomer['avatar']) && file_exists($uploadDir . $freshCustomer['avatar'])) {
-                @unlink($uploadDir . $freshCustomer['avatar']);
+            if (!empty($freshCustomer['avatar_file_id'])) {
+                storage()->deleteFile((int)$freshCustomer['avatar_file_id']);
+            }
+            if (!empty($freshCustomer['avatar']) && file_exists(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar'])) {
+                @unlink(UPLOADS_PATH . '/avatars/' . $freshCustomer['avatar']);
             }
             $newAvatarFilename = '';
+            $newAvatarFileId   = null;
         }
 
         if (empty($errors)) {
@@ -131,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($newAvatarFilename !== null) {
                     $stmtUp = $pdo->prepare(
                         "UPDATE customers
-                         SET name = :name, phone = :phone, marketing_opt_in = :mkt, avatar = :av, updated_at = NOW()
+                         SET name = :name, phone = :phone, marketing_opt_in = :mkt, avatar = :av, avatar_file_id = :avid, updated_at = NOW()
                          WHERE id = :id"
                     );
                     $stmtUp->execute([
@@ -139,8 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':phone' => $phone ?: null,
                         ':mkt'   => $marketing,
                         ':av'    => $newAvatarFilename ?: null,
+                        ':avid'  => $newAvatarFileId,
                         ':id'    => $cid,
                     ]);
+                    $_SESSION['customer']['avatar'] = $newAvatarFilename ?: null;
                 } else {
                     $stmtUp = $pdo->prepare(
                         "UPDATE customers

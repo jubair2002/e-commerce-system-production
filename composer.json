@@ -1,0 +1,20 @@
+{
+    "name": "jinispotro/ecommerce",
+    "description": "Modern PHP E-Commerce System with Local & AWS S3 Storage",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "aws/aws-sdk-php": "^3.300"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Storage\\": "src/Storage/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}
+

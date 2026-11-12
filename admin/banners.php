@@ -14,6 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     $banner = $stmt->fetch();
 
     if ($banner) {
+        if (!empty($banner['file_id']) && function_exists('storage')) {
+            storage()->deleteFile((int)$banner['file_id']);
+        }
         if (!empty($banner['image'])) {
             $imgPath = UPLOADS_PATH . '/banners/' . $banner['image'];
             if (file_exists($imgPath)) {

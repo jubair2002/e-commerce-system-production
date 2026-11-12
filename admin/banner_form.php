@@ -38,37 +38,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $imageName = $banner['image'] ?? null;
 
-    // Handle image upload
+    $bannerFileId = $banner['file_id'] ?? null;
+
+    // Handle image upload via StorageManager
     if (!empty($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
-        $f = $_FILES['image'];
-        if ($f['size'] > 4 * 1024 * 1024) {
-            $errors[] = 'Banner image exceeds maximum size of 4 MB.';
-        } else {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = finfo_file($finfo, $f['tmp_name']);
-            finfo_close($finfo);
+        try {
+            $stored = storage()->storeUploadedFile('banner', $_FILES['image'], [
+                'owner_type' => 'banner',
+                'owner_id'   => $id ?: null,
+                'visibility' => 'public',
+            ]);
 
-            $allowedMimes = ['image/png', 'image/jpeg', 'image/webp'];
-            if (!in_array($mime, $allowedMimes, true)) {
-                $errors[] = 'Invalid image type (only PNG, JPG, WebP allowed).';
-            } else {
-                $ext = pathinfo($f['name'], PATHINFO_EXTENSION) ?: 'jpg';
-                $newFilename = 'banner_' . bin2hex(random_bytes(8)) . '.' . strtolower($ext);
+            // Clean up old banner file
+            if (!empty($banner['file_id']) && function_exists('storage')) {
+                storage()->deleteFile((int)$banner['file_id']);
+            }
+            if (!empty($imageName)) {
                 $destDir = UPLOADS_PATH . '/banners';
-                if (!is_dir($destDir)) {
-                    @mkdir($destDir, 0755, true);
-                }
-
-                if (move_uploaded_file($f['tmp_name'], $destDir . '/' . $newFilename)) {
-                    // Delete old image if present
-                    if (!empty($imageName) && file_exists($destDir . '/' . $imageName)) {
-                        @unlink($destDir . '/' . $imageName);
-                    }
-                    $imageName = $newFilename;
-                } else {
-                    $errors[] = 'Failed to upload banner image.';
+                if (file_exists($destDir . '/' . $imageName)) {
+                    @unlink($destDir . '/' . $imageName);
                 }
             }
+
+            $imageName    = $stored['storage_key'];
+            $bannerFileId = $stored['id'];
+        } catch (Throwable $e) {
+            $errors[] = 'Failed to upload banner image: ' . $e->getMessage();
         }
     }
 
@@ -77,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db()->prepare(
                 "UPDATE storefront_banners
                  SET title = :t, subtitle = :sub, button_text = :bt, button_url = :bu,
-                     image = :img, placement = :pl, position = :pos, starts_at = :st, ends_at = :en, status = :stat
+                     image = :img, file_id = :fid, placement = :pl, position = :pos, starts_at = :st, ends_at = :en, status = :stat
                  WHERE id = :id"
             )->execute([
                 ':t'    => $title,
@@ -85,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':bt'   => $buttonText ?: null,
                 ':bu'   => $buttonUrl ?: null,
                 ':img'  => $imageName,
+                ':fid'  => $bannerFileId,
                 ':pl'   => $placement,
                 ':pos'  => $position,
                 ':st'   => $startsAt,
@@ -96,14 +92,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'Banner updated successfully.');
         } else {
             db()->prepare(
-                "INSERT INTO storefront_banners (title, subtitle, button_text, button_url, image, placement, position, starts_at, ends_at, status)
-                 VALUES (:t, :sub, :bt, :bu, :img, :pl, :pos, :st, :en, :stat)"
+                "INSERT INTO storefront_banners (title, subtitle, button_text, button_url, image, file_id, placement, position, starts_at, ends_at, status)
+                 VALUES (:t, :sub, :bt, :bu, :img, :fid, :pl, :pos, :st, :en, :stat)"
             )->execute([
                 ':t'    => $title,
                 ':sub'  => $subtitle ?: null,
                 ':bt'   => $buttonText ?: null,
                 ':bu'   => $buttonUrl ?: null,
                 ':img'  => $imageName,
+                ':fid'  => $bannerFileId,
                 ':pl'   => $placement,
                 ':pos'  => $position,
                 ':st'   => $startsAt,
