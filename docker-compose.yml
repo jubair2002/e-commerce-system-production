@@ -5,6 +5,26 @@
 
 services:
   # ----------------------------------------------------------------------------
+  # 0. Nginx Reverse Proxy (SSL, Domain Routing, WebSockets)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: jinispotro_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/www/certbot
+    depends_on:
+      - app
+      - grafana
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
   # 1. Main Web Application & Background Workers (PHP 8.2 + Apache)
   # ----------------------------------------------------------------------------
   app:
@@ -13,8 +33,10 @@ services:
       dockerfile: Dockerfile
     container_name: jinispotro_app
     restart: unless-stopped
+    expose:
+      - "80"
     ports:
-      - "${APP_PORT:-80}:80"
+      - "${APP_PORT:-8080}:80"
     environment:
       # Database connection
       DB_HOST: db
@@ -125,7 +147,7 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-grafana.domain.com}
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-grafana.jinishpotro.store}
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "${GRAFANA_ANONYMOUS_ENABLED:-true}"
@@ -194,6 +216,19 @@ services:
     networks:
       - jinispotro_net
 
+  # ----------------------------------------------------------------------------
+  # 8. Let's Encrypt Certbot for Automated SSL Certificates
+  # ----------------------------------------------------------------------------
+  certbot:
+    image: certbot/certbot:latest
+    container_name: jinispotro_certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - jinispotro_net
+
 volumes:
   db_data:
     driver: local
@@ -204,6 +239,10 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  certbot_etc:
+    driver: local
+  certbot_var:
     driver: local
 
 networks:
