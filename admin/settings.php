@@ -266,6 +266,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         update_setting('storage_s3_public_base_url', trim($_POST['storage_s3_public_base_url'] ?? ''));
         update_setting('storage_s3_key_prefix', trim($_POST['storage_s3_key_prefix'] ?? ''));
+        $delivery = in_array($_POST['storage_s3_delivery'] ?? '', ['public', 'presigned'], true) ? $_POST['storage_s3_delivery'] : 'public';
+        update_setting('storage_s3_delivery', $delivery);
 
         \App\Storage\StorageManager::resetInstance();
         log_activity('settings.storage', "Updated storage layer configuration (Primary: {$primary}, Fallback: {$fallback})");
@@ -2041,6 +2043,7 @@ include __DIR__ . '/includes/header.php';
       }
       $curPublicUrl = setting('storage_s3_public_base_url') ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : '');
       $curPrefix    = setting('storage_s3_key_prefix') ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : '');
+      $curDelivery  = setting('storage_s3_delivery') ?: (function_exists('env') ? env('STORAGE_S3_DELIVERY', 'public') : 'public');
     ?>
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
@@ -2184,6 +2187,44 @@ include __DIR__ . '/includes/header.php';
                   <label class="form-label small fw-semibold">S3 Key Prefix (Optional)</label>
                   <input type="text" name="storage_s3_key_prefix" id="storage_s3_key_prefix" class="form-control" value="<?= e($curPrefix) ?>" placeholder="e.g. media or uploads">
                   <div class="form-text small">Optional folder prefix inside bucket. Leave empty for root.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Image Delivery Method</label>
+                  <select name="storage_s3_delivery" id="storage_s3_delivery" class="form-select">
+                    <option value="public" <?= $curDelivery === 'public' ? 'selected' : '' ?>>Direct Public S3 / CloudFront (Fastest, requires S3 Bucket Policy)</option>
+                    <option value="presigned" <?= $curDelivery === 'presigned' ? 'selected' : '' ?>>Auto-Presigned URLs (Works with 100% Private Buckets, no bucket policy needed)</option>
+                  </select>
+                  <div class="form-text small">If your S3 bucket is private and has no policy, select "Auto-Presigned URLs" so images load without 403 Forbidden errors.</div>
+                </div>
+              </div>
+
+              <!-- Collapsible S3 Bucket Policy Helper -->
+              <div class="mt-4 pt-3 border-top">
+                <a class="text-decoration-none small fw-semibold text-primary" data-bs-toggle="collapse" href="#bucketPolicyHelper" role="button" aria-expanded="false" aria-controls="bucketPolicyHelper">
+                  <i class="bi bi-info-circle me-1"></i> How to allow public image access on your S3 Bucket (Click to view AWS Bucket Policy)
+                </a>
+                <div class="collapse mt-2" id="bucketPolicyHelper">
+                  <div class="alert alert-secondary small mb-0">
+                    <p class="mb-2">If images show as broken (HTTP 403 Access Denied), AWS S3 is blocking public reads by default. You can either select <strong>"Auto-Presigned URLs"</strong> above, or add this policy to AWS:</p>
+                    <ol class="ps-3 mb-2">
+                      <li>Go to <strong>AWS S3 Console</strong> &rarr; Select bucket <code class="fw-bold"><?= e($curBucket ?: 'your-bucket') ?></code> &rarr; <strong>Permissions</strong> tab.</li>
+                      <li>Under <strong>Block public access</strong> &rarr; Click <strong>Edit</strong> &rarr; Uncheck <strong>"Block all public access"</strong> &rarr; Save.</li>
+                      <li>Under <strong>Bucket policy</strong> &rarr; Click <strong>Edit</strong> &rarr; Paste this JSON:</li>
+                    </ol>
+                    <pre class="bg-dark text-light p-2 rounded mb-0 user-select-all" style="font-size: 11px;">{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::<?= e($curBucket ?: 'your-bucket-name') ?>/*"
+        }
+    ]
+}</pre>
+                  </div>
                 </div>
               </div>
             </div>

@@ -14,6 +14,7 @@ class S3Storage implements StorageInterface
     private string $bucket;
     private string $prefix;
     private ?string $publicBaseUrl;
+    private string $delivery;
     private ?string $lastError = null;
 
     public function __construct(array $config)
@@ -23,6 +24,7 @@ class S3Storage implements StorageInterface
             throw new RuntimeException("S3 bucket name is required for S3Storage.");
         }
 
+        $this->delivery = (string)($config['delivery'] ?? 'public');
         $this->prefix = trim((string)($config['prefix'] ?? ''), '/');
         if ($this->prefix !== '') {
             $this->prefix .= '/';
@@ -240,6 +242,9 @@ class S3Storage implements StorageInterface
         $fullKey = $this->resolveKey($key);
         if ($this->publicBaseUrl) {
             return $this->publicBaseUrl . '/' . ltrim($fullKey, '/');
+        }
+        if ($this->delivery === 'presigned') {
+            return $this->signedUrl($key, 86400); // 24 hours
         }
         return $this->client->getObjectUrl($this->bucket, $fullKey);
     }

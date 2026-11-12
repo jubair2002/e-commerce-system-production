@@ -62,6 +62,7 @@ class StorageConfig
         }
         $dbPublicBaseUrl = function_exists('setting') ? setting('storage_s3_public_base_url') : null;
         $dbPrefix        = function_exists('setting') ? setting('storage_s3_key_prefix') : null;
+        $dbDelivery      = function_exists('setting') ? setting('storage_s3_delivery') : null;
 
         $resolvedKey = (string)($overrides['s3']['key'] ?? ($dbKey !== null ? $dbKey : (function_exists('env') ? env('AWS_ACCESS_KEY_ID', '') : '')));
         $resolvedSecret = (string)($overrides['s3']['secret'] ?? ($dbSecret !== null ? $dbSecret : (function_exists('env') ? env('AWS_SECRET_ACCESS_KEY', '') : '')));
@@ -79,6 +80,7 @@ class StorageConfig
             'secret'                   => $resolvedSecret,
             'public_base_url'          => (string)($overrides['s3']['public_base_url'] ?? ($dbPublicBaseUrl ?: (function_exists('env') ? env('S3_PUBLIC_BASE_URL', '') : ''))),
             'prefix'                   => (string)($overrides['s3']['prefix'] ?? ($dbPrefix ?: (function_exists('env') ? env('S3_KEY_PREFIX', '') : ''))),
+            'delivery'                 => (string)($overrides['s3']['delivery'] ?? ($dbDelivery ?: (function_exists('env') ? env('STORAGE_S3_DELIVERY', 'public') : 'public'))),
             'endpoint'                 => function_exists('env') ? env('S3_ENDPOINT', null) : null,
             'use_path_style_endpoint'  => function_exists('env') ? (bool)env('S3_USE_PATH_STYLE_ENDPOINT', false) : false,
         ];

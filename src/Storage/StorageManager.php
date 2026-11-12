@@ -490,8 +490,8 @@ class StorageManager
             $sizeLabel = ($opts['size'] === 'thumbnail') ? 'thumb' : $opts['size'];
             $pathInfo = pathinfo($key);
             $variantKey = "{$pathInfo['dirname']}/{$pathInfo['filename']}_{$sizeLabel}.webp";
-            // Check if variant exists
-            if ($driver->exists($variantKey)) {
+            // Product variants are generated deterministically during upload and sync
+            if (($row['purpose'] ?? '') === 'product' || $driver->exists($variantKey)) {
                 $key = $variantKey;
             }
         }
