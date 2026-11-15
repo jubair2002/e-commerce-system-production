@@ -19,6 +19,83 @@ try {
     }
 } catch (Throwable $e) {}
 ?>
+	<!-- Pre-footer Trust Strip (Customer Commitments) -->
+	<section class="sec-trust-bar bg0 p-t-40 p-b-40" aria-label="Customer Commitments" style="border-top: 1px solid #eef0f3;">
+		<div class="container">
+			<div class="row p-tb-25 p-lr-15 bg6" style="border: 1px solid #eef0f3; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.02);">
+				
+				<!-- Item 1: Nationwide COD -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-center" style="gap: 14px;">
+						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+							<i class="zmdi zmdi-shield-check"></i>
+						</div>
+						<div style="flex: 1; min-width: 0;">
+							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+								<?= htmlspecialchars(setting('trust_item_1_title', 'Nationwide COD'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+								<?= htmlspecialchars(setting('trust_item_1_desc', 'Cash on delivery across all 64 districts'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 2: Fast Dispatch -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-center" style="gap: 14px;">
+						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+							<i class="zmdi zmdi-truck"></i>
+						</div>
+						<div style="flex: 1; min-width: 0;">
+							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+								<?= htmlspecialchars(setting('trust_item_2_title', 'Fast Dispatch'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+								<?= htmlspecialchars(setting('trust_item_2_desc', '24h in Dhaka, 48-72h outside'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 3: 100% Authentic -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-center" style="gap: 14px;">
+						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+							<i class="zmdi zmdi-badge-check"></i>
+						</div>
+						<div style="flex: 1; min-width: 0;">
+							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+								<?= htmlspecialchars(setting('trust_item_3_title', '100% Authentic'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+								<?= htmlspecialchars(setting('trust_item_3_desc', 'Guaranteed genuine products direct from makers'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 4: Dedicated Support -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-center" style="gap: 14px;">
+						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+							<i class="zmdi zmdi-headset-mic"></i>
+						</div>
+						<div style="flex: 1; min-width: 0;">
+							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+								<?= htmlspecialchars(setting('trust_item_4_title', 'Dedicated Support'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+								<?= htmlspecialchars(setting('trust_item_4_desc', 'Friendly phone & WhatsApp assistance'), ENT_QUOTES, 'UTF-8') ?>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</section>
+
 	<!-- Footer -->
 	<footer class="bg3 p-t-75 p-b-32">
 		<div class="container">

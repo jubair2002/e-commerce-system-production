@@ -437,4 +437,27 @@ svg.i {
   visibility: visible !important;
 }
 
+/* 10. Modern Dropdown Menu Styling */
+.main-menu > li > .sub-menu {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eef0f3;
+  padding: 8px 0;
+  min-width: 200px;
+}
+.main-menu > li > .sub-menu li a {
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+.main-menu > li > .sub-menu li a:hover {
+  background-color: #f8f9fa;
+  color: #111827;
+  padding-left: 26px;
+}
+
+
 

@@ -369,40 +369,6 @@ include __DIR__ . '/../../includes/partials/header.php';
 							</div>
 						</div>	
 					</form>
-
-					<!-- Reassurance Trust Badges -->
-					<div class="pdp-trust-box">
-						<div class="row">
-							<div class="col-sm-6 pdp-trust-item m-b-10">
-								<div class="pdp-trust-icon"><i class="zmdi zmdi-truck"></i></div>
-								<div>
-									<strong>Fast Shipping</strong>
-									<span>24h Dhaka &bull; Nationwide COD</span>
-								</div>
-							</div>
-							<div class="col-sm-6 pdp-trust-item m-b-10">
-								<div class="pdp-trust-icon"><i class="zmdi zmdi-money-box"></i></div>
-								<div>
-									<strong>Cash on Delivery</strong>
-									<span>Pay safely at your doorstep</span>
-								</div>
-							</div>
-							<div class="col-sm-6 pdp-trust-item m-t-5">
-								<div class="pdp-trust-icon"><i class="zmdi zmdi-replay"></i></div>
-								<div>
-									<strong>7-Day Easy Returns</strong>
-									<span>Hassle-free product exchange</span>
-								</div>
-							</div>
-							<div class="col-sm-6 pdp-trust-item m-t-5">
-								<div class="pdp-trust-icon"><i class="zmdi zmdi-shield-check"></i></div>
-								<div>
-									<strong>100% Genuine</strong>
-									<span>Verified quality guaranteed</span>
-								</div>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>

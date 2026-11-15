@@ -426,58 +426,6 @@ include __DIR__ . '/includes/partials/header.php';
 	</div>
 </section>
 
-<!-- =================== TRUST BAR =================== -->
-<section class="sec-trust bg0 p-b-80" aria-label="Customer Commitments">
-  <div class="container">
-    <div class="row bor10 p-tb-30 p-lr-20 bg6" style="border-radius: 8px;">
-      <div class="col-6 col-lg-3 p-b-15 p-t-15">
-        <div class="flex-w flex-m">
-          <div class="fs-36 cl1 m-r-16">
-            <i class="zmdi zmdi-shield-check"></i>
-          </div>
-          <div>
-            <div class="stext-101 cl2 font-weight-bold"><?= htmlspecialchars(setting('trust_item_1_title', 'Nationwide COD'), ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="stext-102 cl6"><?= htmlspecialchars(setting('trust_item_1_desc', 'Cash on delivery across all 64 districts'), ENT_QUOTES, 'UTF-8') ?></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3 p-b-15 p-t-15">
-        <div class="flex-w flex-m">
-          <div class="fs-36 cl1 m-r-16">
-            <i class="zmdi zmdi-truck"></i>
-          </div>
-          <div>
-            <div class="stext-101 cl2 font-weight-bold"><?= htmlspecialchars(setting('trust_item_2_title', 'Fast Dispatch'), ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="stext-102 cl6"><?= htmlspecialchars(setting('trust_item_2_desc', '24h in Dhaka, 48-72h outside'), ENT_QUOTES, 'UTF-8') ?></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3 p-b-15 p-t-15">
-        <div class="flex-w flex-m">
-          <div class="fs-36 cl1 m-r-16">
-            <i class="zmdi zmdi-badge-check"></i>
-          </div>
-          <div>
-            <div class="stext-101 cl2 font-weight-bold"><?= htmlspecialchars(setting('trust_item_3_title', '100% Authentic'), ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="stext-102 cl6"><?= htmlspecialchars(setting('trust_item_3_desc', 'Guaranteed genuine products direct from makers'), ENT_QUOTES, 'UTF-8') ?></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3 p-b-15 p-t-15">
-        <div class="flex-w flex-m">
-          <div class="fs-36 cl1 m-r-16">
-            <i class="zmdi zmdi-headset-mic"></i>
-          </div>
-          <div>
-            <div class="stext-101 cl2 font-weight-bold"><?= htmlspecialchars(setting('trust_item_4_title', 'Dedicated Support'), ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="stext-102 cl6"><?= htmlspecialchars(setting('trust_item_4_desc', 'Friendly phone & WhatsApp assistance'), ENT_QUOTES, 'UTF-8') ?></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- =================== CUSTOMER REVIEWS STRIP =================== -->
 <?php if ($showReviews && !empty($homeReviews)): ?>
 <section class="sec-reviews bg0 p-b-100" aria-label="Customer Reviews">

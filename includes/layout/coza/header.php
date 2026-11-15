@@ -72,7 +72,7 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							</li>
 
 							<li class="<?= route_is('shop') ? 'active-menu' : '' ?>">
-								<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>">Shop</a>
+								<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>">Shop<?php if (!empty($categories)): ?> <i class="fa fa-angle-down m-l-4" style="font-size: 11px; opacity: 0.7;"></i><?php endif; ?></a>
 								<?php if (!empty($categories)): ?>
 									<ul class="sub-menu">
 										<li><a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>">All Categories</a></li>
