@@ -33,24 +33,26 @@ if ($showHero) {
     $heroBanners = storefront_banners_get('hero');
 }
 
+$categoryBanners = [];
+if ($showCategories) {
+    $categoryBanners = storefront_banners_get('category_row');
+}
+
 $pdo = db();
 
 // 1. Categories (cached 5 min for faster load)
 $categories = [];
-if ($showCategories) {
-    try {
-        $categories = FileCache::remember('home:categories:6', 300, function () use ($pdo) {
-            return $pdo->query(
-                "SELECT c.id, c.name, c.slug, c.description,
-                        (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
-                 FROM categories c
-                 WHERE c.status = 'active'
-                 ORDER BY product_count DESC, c.name ASC
-                 LIMIT 6"
-            )->fetchAll() ?: [];
-        });
-    } catch (Throwable $e) { $categories = []; }
-}
+try {
+    $categories = FileCache::remember('home:categories:all', 300, function () use ($pdo) {
+        return $pdo->query(
+            "SELECT c.id, c.name, c.slug, c.description, c.image,
+                    (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
+             FROM categories c
+             WHERE c.status = 'active'
+             ORDER BY product_count DESC, c.name ASC"
+        )->fetchAll() ?: [];
+    });
+} catch (Throwable $e) { $categories = []; }
 
 $productCols = "p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
                 p.status, p.featured, p.product_type, p.low_stock_threshold, p.allow_backorder,
@@ -165,6 +167,33 @@ if ($showBestSellers) {
     }
 }
 
+// Backfill overview products if needed so categories are well-represented
+if (count($overviewProducts) < 16) {
+    try {
+        $recentProducts = FileCache::remember('home:recent:16', 300, function () use ($pdo, $productCols) {
+            $rows = $pdo->query(
+                "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug
+                 FROM products p
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 WHERE p.status = 'active'
+                 ORDER BY p.id DESC
+                 LIMIT 16"
+            )->fetchAll() ?: [];
+            if (!empty($rows)) products_attach_card_data($rows);
+            return $rows;
+        });
+        foreach ($recentProducts as $p) {
+            $pid = (int)$p['id'];
+            if (!isset($overviewProducts[$pid])) {
+                $overviewProducts[$pid] = $p;
+            }
+            if (!empty($p['category_slug'])) {
+                $productTags[$pid][$p['category_slug']] = $p['category_slug'];
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
 include __DIR__ . '/includes/partials/header.php';
 ?>
 
@@ -244,41 +273,87 @@ include __DIR__ . '/includes/partials/header.php';
 <?php endif; ?>
 
 <!-- =================== CATEGORY BANNER CARDS =================== -->
-<?php if ($showCategories && !empty($categories)): ?>
+<?php if ($showCategories && (!empty($categoryBanners) || !empty($categories))): ?>
 <div class="sec-banner bg0 p-t-80 p-b-50">
 	<div class="container">
 		<div class="row">
-			<?php 
-			// Show top 3 categories as showcase banner cards
-			$bannerCats = array_slice($categories, 0, 3);
-			foreach ($bannerCats as $cat): 
-				$catImg = category_image_url($cat['image'] ?? null);
-			?>
-			<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
-				<!-- Block1 -->
-				<div class="block1 wrap-pic-w">
-					<img src="<?= htmlspecialchars($catImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
-
-					<a href="<?= htmlspecialchars(route('category', ['slug' => $cat['slug']]), ENT_QUOTES, 'UTF-8') ?>" class="block1-txt ab-t-l s-full flex-col-l-sb p-lr-38 p-tb-34 trans-03 respon3">
-						<div class="block1-txt-child1 flex-col-l">
-							<span class="block1-name ltext-102 trans-04 p-b-8">
-								<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
-							</span>
-
-							<span class="block1-info stext-102 trans-04">
-								<?= (int)($cat['product_count'] ?? 0) ?> Products
-							</span>
-						</div>
-
-						<div class="block1-txt-child2 p-b-4 trans-05">
-							<div class="block1-link stext-101 cl0 trans-09">
-								Shop Now
+			<?php if (!empty($categoryBanners)): ?>
+				<?php 
+				$bannerCount = count($categoryBanners);
+				$colClass = $bannerCount >= 4 ? 'col-md-6 col-xl-3' : ($bannerCount === 2 ? 'col-md-6' : 'col-md-6 col-xl-4');
+				foreach ($categoryBanners as $b): 
+					$bImg    = !empty($b['image']) ? banner_image_url($b['image']) : '';
+					$bTitle  = $b['title'];
+					$bSub    = $b['subtitle'] ?? '';
+					$bBtnTxt = !empty($b['button_text']) ? $b['button_text'] : 'Shop Now';
+					$bUrl    = !empty($b['button_url']) ? $b['button_url'] : route('shop');
+				?>
+				<div class="<?= $colClass ?> p-b-30 m-lr-auto">
+					<!-- Block1 -->
+					<div class="block1 wrap-pic-w">
+						<?php if ($bImg): ?>
+							<img src="<?= htmlspecialchars($bImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?>" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+						<?php else: ?>
+							<div class="block1-fallback-box" style="width: 100%; aspect-ratio: 4/3; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center;">
+								<span style="font-size: 16px; font-weight: 700; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase;"><?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?></span>
 							</div>
-						</div>
-					</a>
+						<?php endif; ?>
+
+						<a href="<?= htmlspecialchars($bUrl, ENT_QUOTES, 'UTF-8') ?>" class="block1-txt ab-t-l s-full flex-col-l-sb p-lr-38 p-tb-34 trans-03 respon3">
+							<div class="block1-txt-child1 flex-col-l">
+								<span class="block1-name ltext-102 trans-04 p-b-8">
+									<?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?>
+								</span>
+
+								<?php if ($bSub !== ''): ?>
+								<span class="block1-info stext-102 trans-04">
+									<?= htmlspecialchars($bSub, ENT_QUOTES, 'UTF-8') ?>
+								</span>
+								<?php endif; ?>
+							</div>
+
+							<div class="block1-txt-child2 p-b-4 trans-05">
+								<div class="block1-link stext-101 cl0 trans-09">
+									<?= htmlspecialchars($bBtnTxt, ENT_QUOTES, 'UTF-8') ?>
+								</div>
+							</div>
+						</a>
+					</div>
 				</div>
-			</div>
-			<?php endforeach; ?>
+				<?php endforeach; ?>
+			<?php else: ?>
+				<?php 
+				// Fallback to active categories from DB
+				$bannerCats = array_slice($categories, 0, 3);
+				foreach ($bannerCats as $cat): 
+					$catImg = category_image_url($cat['image'] ?? null);
+				?>
+				<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
+					<!-- Block1 -->
+					<div class="block1 wrap-pic-w">
+						<img src="<?= htmlspecialchars($catImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+
+						<a href="<?= htmlspecialchars(route('category', ['slug' => $cat['slug']]), ENT_QUOTES, 'UTF-8') ?>" class="block1-txt ab-t-l s-full flex-col-l-sb p-lr-38 p-tb-34 trans-03 respon3">
+							<div class="block1-txt-child1 flex-col-l">
+								<span class="block1-name ltext-102 trans-04 p-b-8">
+									<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+								</span>
+
+								<span class="block1-info stext-102 trans-04">
+									<?= (int)($cat['product_count'] ?? 0) ?> Products
+								</span>
+							</div>
+
+							<div class="block1-txt-child2 p-b-4 trans-05">
+								<div class="block1-link stext-101 cl0 trans-09">
+									Shop Now
+								</div>
+							</div>
+						</a>
+					</div>
+				</div>
+				<?php endforeach; ?>
+			<?php endif; ?>
 		</div>
 	</div>
 </div>
@@ -289,7 +364,7 @@ include __DIR__ . '/includes/partials/header.php';
 	<div class="container">
 		<div class="p-b-10">
 			<h3 class="ltext-103 cl5">
-				Product Overview
+				<?= htmlspecialchars(setting('home_overview_title', 'Product Overview'), ENT_QUOTES, 'UTF-8') ?>
 			</h3>
 		</div>
 
@@ -316,6 +391,12 @@ include __DIR__ . '/includes/partials/header.php';
 					Featured
 				</button>
 				<?php endif; ?>
+
+				<?php foreach ($categories as $cat): ?>
+				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>">
+					<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+				</button>
+				<?php endforeach; ?>
 			</div>
 
 			<div class="flex-w flex-c-m m-tb-10">

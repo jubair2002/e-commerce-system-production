@@ -105,8 +105,16 @@ include __DIR__ . '/includes/header.php';
                 <?php endif; ?>
               </td>
               <td>
-                <span class="badge bg-light text-dark border text-uppercase">
-                  <?= e(str_replace('_', ' ', $b['placement'])) ?>
+                <?php
+                $plBadges = [
+                    'category_row' => ['label' => 'Category Showcase', 'class' => 'bg-info text-dark'],
+                    'hero'         => ['label' => 'Hero Slider', 'class' => 'bg-primary text-white'],
+                    'promo_strip'  => ['label' => 'Promo Strip', 'class' => 'bg-warning text-dark'],
+                ];
+                $badge = $plBadges[$b['placement']] ?? ['label' => ucwords(str_replace('_', ' ', $b['placement'])), 'class' => 'bg-light text-dark'];
+                ?>
+                <span class="badge <?= $badge['class'] ?> border">
+                  <?= e($badge['label']) ?>
                 </span>
               </td>
               <td><?= (int)$b['position'] ?></td>

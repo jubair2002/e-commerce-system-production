@@ -17,6 +17,11 @@ if ($id > 0) {
 
 $pageTitle = $banner ? 'Edit Banner: ' . $banner['title'] : 'Add New Banner';
 
+$categoriesList = [];
+try {
+    $categoriesList = db()->query("SELECT name, slug FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+} catch (Throwable $e) {}
+
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -174,16 +179,27 @@ include __DIR__ . '/includes/header.php';
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Button Destination URL</label>
-              <input type="text" name="button_url" class="form-control"
+              <input type="text" name="button_url" id="bannerBtnUrlInput" class="form-control"
                      value="<?= e($_POST['button_url'] ?? ($banner['button_url'] ?? '')) ?>"
-                     placeholder="e.g. /shop.php or /category.php?slug=tees">
+                     placeholder="e.g. /storefront/shop/index.php or /storefront/shop/category.php?slug=women">
+              <?php if (!empty($categoriesList)): ?>
+                <div class="mt-1">
+                  <select class="form-select form-select-sm text-muted" onchange="if(this.value){ document.getElementById('bannerBtnUrlInput').value = this.value; }">
+                    <option value="">-- Quick Link: Pick a Store Page or Category --</option>
+                    <option value="/storefront/shop/index.php">All Products (/storefront/shop/index.php)</option>
+                    <?php foreach ($categoriesList as $cl): ?>
+                      <option value="/storefront/shop/category.php?slug=<?= e($cl['slug']) ?>"><?= e($cl['name']) ?> Category (/storefront/shop/category.php?slug=<?= e($cl['slug']) ?>)</option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              <?php endif; ?>
             </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Banner Background Image</label>
             <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/webp">
-            <div class="form-text">Recommended size: 1600 &times; 600 px (hero) or 1200 &times; 400 px (promo). Max 4MB.</div>
+            <div class="form-text">Recommended: 1600 &times; 600 px (Hero Slider) or 600 &times; 450 px (Category Showcase, 4:3 ratio). Max 4MB.</div>
             <?php $bannerUrl = !empty($banner['image']) ? banner_image_url($banner['image']) : null; ?>
             <?php if ($bannerUrl): ?>
               <div class="mt-2 p-2 bg-light rounded border d-inline-block">
@@ -194,16 +210,16 @@ include __DIR__ . '/includes/header.php';
           </div>
 
           <div class="row g-3 mb-3">
-            <div class="col-md-4">
+            <div class="col-md-5">
               <label class="form-label fw-semibold">Placement</label>
-              <?php $pl = $_POST['placement'] ?? ($banner['placement'] ?? 'hero'); ?>
+              <?php $pl = $_POST['placement'] ?? ($banner['placement'] ?? 'category_row'); ?>
               <select name="placement" class="form-select">
-                <option value="hero" <?= $pl === 'hero' ? 'selected' : '' ?>>Hero Slider</option>
+                <option value="category_row" <?= $pl === 'category_row' ? 'selected' : '' ?>>Category Showcase (Cards above Product Overview)</option>
+                <option value="hero" <?= $pl === 'hero' ? 'selected' : '' ?>>Hero Slider (Homepage Slider)</option>
                 <option value="promo_strip" <?= $pl === 'promo_strip' ? 'selected' : '' ?>>Promo Strip</option>
-                <option value="category_row" <?= $pl === 'category_row' ? 'selected' : '' ?>>Category Showcase</option>
               </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Sort Position</label>
               <input type="number" name="position" class="form-control"
                      value="<?= e($_POST['position'] ?? ($banner['position'] ?? 0)) ?>">
