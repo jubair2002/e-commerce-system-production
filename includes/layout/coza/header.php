@@ -50,9 +50,7 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 						<?php if ($storeLogoUrl): ?>
 							<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 40px; width: auto; object-fit: contain;">
 						<?php else: ?>
-							<span class="brand-text-logo" style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; color: #222; display: flex; align-items: center;">
-								<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #111827; margin-left: 2px;">.</span>
-							</span>
+							<span class="brand-text-logo"><?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span class="brand-dot">.</span></span>
 						<?php endif; ?>
 					</a>
 
@@ -100,8 +98,8 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 						</a>
 
 						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
-							<i class="zmdi zmdi-sun theme-icon-sun" style="display:none; font-size: 20px;"></i>
-							<i class="zmdi zmdi-brightness-2 theme-icon-moon" style="font-size: 19px;"></i>
+							<i class="fa fa-sun-o theme-icon-sun"></i>
+							<i class="fa fa-moon-o theme-icon-moon"></i>
 						</div>
 					</div>
 				</nav>
@@ -112,34 +110,32 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 		<div class="wrap-header-mobile">
 			<!-- Logo mobile -->		
 			<div class="logo-mobile">
-				<a href="<?= htmlspecialchars(shop_url(), ENT_QUOTES, 'UTF-8') ?>" style="display: flex; align-items: center; height: 100%;">
+				<a href="<?= htmlspecialchars(shop_url(), ENT_QUOTES, 'UTF-8') ?>">
 					<?php if ($storeLogoUrl): ?>
-						<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 36px; width: auto; object-fit: contain;">
+						<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 34px; width: auto; object-fit: contain;">
 					<?php else: ?>
-						<span class="brand-text-logo" style="font-size: 18px; font-weight: 800; text-transform: uppercase; color: #222; display: flex; align-items: center;">
-							<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #111827; margin-left: 1px;">.</span>
-						</span>
+						<span class="brand-text-logo"><?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span class="brand-dot">.</span></span>
 					<?php endif; ?>
 				</a>
 			</div>
 
 			<!-- Icon header mobile -->
-			<div class="wrap-icon-header flex-w flex-r-m m-r-15">
-				<div class="icon-header-item cl2 hov-cl1 trans-04 p-r-11 js-show-modal-search">
+			<div class="wrap-icon-header d-flex align-items-center flex-nowrap m-r-10">
+				<div class="icon-header-item cl2 hov-cl1 trans-04 js-show-modal-search" title="Search">
 					<i class="zmdi zmdi-search"></i>
 				</div>
 
-				<div class="icon-header-item cl2 hov-cl1 trans-04 p-r-11 p-l-10 icon-header-noti js-show-cart" data-notify="<?= (int)$cartCnt ?>">
+				<div class="icon-header-item cl2 hov-cl1 trans-04 icon-header-noti js-show-cart" data-notify="<?= (int)$cartCnt ?>" title="Cart">
 					<i class="zmdi zmdi-shopping-cart"></i>
 				</div>
 
-				<a href="<?= htmlspecialchars(route('account_wishlist'), ENT_QUOTES, 'UTF-8') ?>" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-r-11 p-l-10 icon-header-noti" data-notify="<?= (int)$wishlistCnt ?>">
+				<a href="<?= htmlspecialchars(route('account_wishlist'), ENT_QUOTES, 'UTF-8') ?>" class="dis-block icon-header-item cl2 hov-cl1 trans-04 icon-header-noti" data-notify="<?= (int)$wishlistCnt ?>" title="Wishlist">
 					<i class="zmdi zmdi-favorite-outline"></i>
 				</a>
 
-				<div class="icon-header-item cl2 hov-cl1 trans-04 p-r-11 p-l-10 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
-					<i class="zmdi zmdi-sun theme-icon-sun" style="display:none; font-size: 19px;"></i>
-					<i class="zmdi zmdi-brightness-2 theme-icon-moon" style="font-size: 18px;"></i>
+				<div class="icon-header-item cl2 hov-cl1 trans-04 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
+					<i class="fa fa-sun-o theme-icon-sun"></i>
+					<i class="fa fa-moon-o theme-icon-moon"></i>
 				</div>
 			</div>
 

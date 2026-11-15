@@ -155,12 +155,8 @@
 		// Theme Manager (Dark / Light Mode)
 		function updateThemeIcons(theme) {
 			if (theme === 'dark') {
-				$('[data-theme-toggle] .theme-icon-sun').show();
-				$('[data-theme-toggle] .theme-icon-moon').hide();
 				$('[data-theme-toggle]').attr('title', 'Switch to Light Mode');
 			} else {
-				$('[data-theme-toggle] .theme-icon-sun').hide();
-				$('[data-theme-toggle] .theme-icon-moon').show();
 				$('[data-theme-toggle]').attr('title', 'Switch to Dark Mode');
 			}
 		}
