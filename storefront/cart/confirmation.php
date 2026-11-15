@@ -223,9 +223,11 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <label for="guestPass" class="form-label small fw-semibold">Choose a Password</label>
                 <div class="input-group">
                   <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
-                  <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
-                    <?= icon('eye') ?>
-                  </button>
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                      <?= icon('eye') ?>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="col-md-5">

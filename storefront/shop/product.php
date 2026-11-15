@@ -165,6 +165,9 @@ if (!empty($product['category_id'])) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
+<!-- Modern PDP Stylesheet -->
+<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/pdp-modern.css'), ENT_QUOTES, 'UTF-8') ?>">
+
 <!-- JSON-LD Structured Data for SEO -->
 <script type="application/ld+json">
 {
@@ -218,83 +221,95 @@ include __DIR__ . '/../../includes/partials/header.php';
 	</div>
 </div>
 
-<!-- =================== COZASTORE PRODUCT DETAIL SECTION =================== -->
-<section class="sec-product-detail bg0 p-t-30 p-b-60">
+<!-- =================== CLEAN & MODERN PRODUCT DETAIL SHOWCASE =================== -->
+<section class="sec-product-detail bg0 p-t-20 p-b-60">
 	<div class="container">
 		<div class="row">
 			<!-- Gallery Column (Left) -->
-			<div class="col-md-6 col-lg-7 p-b-30">
-				<div class="p-l-0 p-r-30 p-lr-0-lg">
-					<div class="wrap-slick3 flex-sb flex-w">
-						<div class="wrap-slick3-dots"></div>
-						<div class="wrap-slick3-arrows flex-sb-m flex-w"></div>
+			<div class="col-lg-6 p-b-30">
+				<div class="pdp-gallery-card">
+					<div class="pdp-main-image-wrap pos-relative">
+						<?php if ($onSale): ?>
+							<span class="pdp-badge-discount">-<?= (int)$discount ?>% OFF</span>
+						<?php endif; ?>
 
-						<div class="slick3 gallery-lb">
+						<a class="pdp-zoom-btn js-gallery-zoom" href="<?= htmlspecialchars($mainImgUrl, ENT_QUOTES, 'UTF-8') ?>" title="Zoom Image">
+							<i class="zmdi zmdi-fullscreen"></i>
+						</a>
+
+						<img id="pdpMainImg" src="<?= htmlspecialchars($mainImgUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" class="pdp-main-img">
+					</div>
+
+					<?php if (count($gallery) > 1): ?>
+						<div class="pdp-thumbnails-strip">
 							<?php foreach ($gallery as $idx => $img): 
 								$gUrl = product_image_url($img['filename'] ?? null, 'large', $productId);
 								$tUrl = product_image_url($img['filename'] ?? null, 'thumbnail', $productId);
 							?>
-							<div class="item-slick3" data-thumb="<?= htmlspecialchars($tUrl, ENT_QUOTES, 'UTF-8') ?>">
-								<div class="wrap-pic-w pos-relative">
-									<img src="<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
-
-									<a class="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" href="<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>">
-										<i class="fa fa-expand"></i>
-									</a>
-								</div>
+							<div class="pdp-thumb-item <?= $idx === 0 ? 'active' : '' ?>" data-large="<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>" onclick="switchPdpImage(this, '<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>')">
+								<img src="<?= htmlspecialchars($tUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>">
 							</div>
 							<?php endforeach; ?>
 						</div>
-					</div>
+					<?php endif; ?>
 				</div>
 			</div>
 				
 			<!-- Product Info & Purchase Column (Right) -->
-			<div class="col-md-6 col-lg-5 p-b-30">
-				<div class="p-r-50 p-t-5 p-lr-0-lg">
-					<h4 class="mtext-105 cl2 js-name-detail p-b-14">
-						<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>
-					</h4>
-
-					<!-- Star Rating & Review Count -->
-					<div class="flex-w flex-m p-b-14">
-						<div class="cl1 fs-14 m-r-10">
-							<?php for ($i = 1; $i <= 5; $i++): ?>
-								<i class="zmdi <?= $avgRating >= $i ? 'zmdi-star' : 'zmdi-star-outline' ?>" style="color: #f59e0b;"></i>
-							<?php endfor; ?>
+			<div class="col-lg-6 p-b-30">
+				<div class="pdp-info-card">
+					<?php if (!empty($product['category_name']) && !empty($product['category_slug'])): ?>
+						<div class="m-b-8">
+							<a href="<?= htmlspecialchars(route('category', ['slug' => $product['category_slug']]), ENT_QUOTES, 'UTF-8') ?>" class="pdp-category-pill">
+								<?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?>
+							</a>
 						</div>
-						<a href="#reviews" class="stext-102 cl6 hov-cl1 trans-04">
-							(<?= $totalReviews ?> customer review<?= $totalReviews === 1 ? '' : 's' ?>)
-						</a>
+					<?php endif; ?>
+
+					<h1 class="pdp-product-title">
+						<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>
+					</h1>
+
+					<div class="pdp-meta-row">
+						<div class="d-flex align-items-center">
+							<span class="pdp-stars">
+								<?php for ($i = 1; $i <= 5; $i++): ?>
+									<i class="zmdi <?= $avgRating >= $i ? 'zmdi-star' : 'zmdi-star-outline' ?>"></i>
+								<?php endfor; ?>
+							</span>
+							<span class="pdp-rating-num"><?= $totalReviews > 0 ? number_format($avgRating, 1) : '5.0' ?></span>
+							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
+						</div>
+
+						<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>">
+							<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
+							<?= $inStock ? 'In Stock (Ready to Ship)' : 'Sold Out' ?>
+						</span>
+
+						<?php if (!empty($product['sku'])): ?>
+							<span class="pdp-sku-badge">SKU: <strong><?= htmlspecialchars($product['sku'], ENT_QUOTES, 'UTF-8') ?></strong></span>
+						<?php endif; ?>
 					</div>
 
-					<!-- Price Row -->
-					<div class="p-b-14">
+					<!-- Pricing Box -->
+					<div class="pdp-price-box">
 						<?php if ($onSale): ?>
-							<span class="mtext-106 cl1 font-weight-bold m-r-10" id="pdpPrice">
-								<?= price((float)$product['sale_price']) ?>
-							</span>
-							<span class="mtext-106 cl3" id="pdpOldPrice" style="text-decoration: line-through; opacity: 0.7;">
-								<?= price((float)$product['price']) ?>
-							</span>
-							<span class="stext-109 cl0 bg1 p-lr-8 p-tb-2 m-l-10" style="border-radius: 2px;">
-								-<?= (int)$discount ?>% OFF
-							</span>
+							<span class="pdp-price-current" id="pdpPrice"><?= price((float)$product['sale_price']) ?></span>
+							<span class="pdp-price-original" id="pdpOldPrice"><?= price((float)$product['price']) ?></span>
+							<span class="pdp-discount-tag">Save <?= (int)$discount ?>%</span>
 						<?php else: ?>
-							<span class="mtext-106 cl2 font-weight-bold" id="pdpPrice">
-								<?= price((float)$product['price']) ?>
-							</span>
+							<span class="pdp-price-current" id="pdpPrice"><?= price((float)$product['price']) ?></span>
 						<?php endif; ?>
 					</div>
 
 					<?php if (!empty($product['short_description'])): ?>
-						<p class="stext-102 cl3 p-t-10 p-b-20" style="line-height: 1.6;">
+						<p class="pdp-short-desc">
 							<?= htmlspecialchars($product['short_description'], ENT_QUOTES, 'UTF-8') ?>
 						</p>
 					<?php endif; ?>
-					
-					<!-- Form Actions -->
-					<form method="post" action="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" id="pdpAddToCartForm" class="p-t-20">
+
+					<!-- Purchase Form -->
+					<form method="post" action="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" id="pdpAddToCartForm">
 						<?= csrf_field() ?>
 						<input type="hidden" name="action" value="add">
 						<input type="hidden" name="product_id" value="<?= $productId ?>">
@@ -302,14 +317,11 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 						<!-- Variant Option Selectors -->
 						<?php if ($isVariable && !empty($options)): ?>
-							<?php foreach ($options as $opt): ?>
-								<div class="flex-w flex-r-m p-b-14">
-									<div class="size-203 flex-c-m respon6">
-										<?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?>
-									</div>
-
-									<div class="size-204 respon6-next">
-										<div class="rs1-select2 bor8 bg0">
+							<div class="pdp-options-wrap m-b-20">
+								<?php foreach ($options as $opt): ?>
+									<div class="pdp-option-group">
+										<label class="pdp-option-label"><?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?>:</label>
+										<div class="rs1-select2 bor8 bg0" style="border-radius: 8px;">
 											<select class="js-select2 option-select" data-option-id="<?= (int)$opt['id'] ?>">
 												<option value="">Choose <?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?></option>
 												<?php foreach ($opt['values'] as $val): ?>
@@ -321,235 +333,253 @@ include __DIR__ . '/../../includes/partials/header.php';
 											<div class="dropDownSelect2"></div>
 										</div>
 									</div>
-								</div>
-							<?php endforeach; ?>
+								<?php endforeach; ?>
+							</div>
 						<?php endif; ?>
 
-						<!-- Stock Availability Status -->
-						<div class="flex-w flex-m p-b-20 p-t-10">
-							<span class="stext-102 font-weight-bold <?= $inStock ? 'cl1' : 'cl3' ?>">
-								<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-close-circle' ?> m-r-4"></i>
-								<?= $inStock ? 'In Stock (Ready for fast delivery)' : 'Currently Sold Out' ?>
-							</span>
-						</div>
-
 						<!-- Quantity Controls, Add To Cart & Buy Now Buttons -->
-						<div class="flex-w flex-r-m p-b-10">
-							<div class="size-204 flex-w flex-m respon6-next" style="gap: 10px;">
-								<div class="wrap-num-product flex-w m-r-10 m-tb-10">
-									<div class="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m pointer">
+						<div class="pdp-actions-panel">
+							<div class="pdp-actions-row">
+								<div class="pdp-quantity-stepper">
+									<button type="button" class="btn-num-product-down pdp-qty-btn" aria-label="Decrease quantity">
 										<i class="fs-16 zmdi zmdi-minus"></i>
-									</div>
+									</button>
 
-									<input class="mtext-104 cl3 txt-center num-product" type="number" name="quantity" id="pdpQtyInput" value="1" min="1" max="<?= max(1, $currentStock) ?>">
+									<input class="num-product pdp-qty-val" type="number" name="quantity" id="pdpQtyInput" value="1" min="1" max="<?= max(1, $currentStock) ?>">
 
-									<div class="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m pointer">
+									<button type="button" class="btn-num-product-up pdp-qty-btn" aria-label="Increase quantity">
 										<i class="fs-16 zmdi zmdi-plus"></i>
-									</div>
+									</button>
 								</div>
 
 								<!-- Add to Cart (AJAX - stays on page) -->
-								<button type="button" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-tb-10 pointer" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
-									Add to cart
+								<button type="button" class="pdp-btn-cart" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
+									<i class="zmdi zmdi-shopping-cart-plus m-r-8 fs-18"></i> Add to Cart
 								</button>
 
 								<!-- Buy Now (Direct Checkout) -->
-								<button type="submit" name="action_type" value="buy_now" class="flex-c-m stext-101 cl0 size-101 bg3 bor1 hov-btn3 p-lr-15 trans-04 m-tb-10 pointer" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
-									Buy Now
+								<button type="submit" name="action_type" value="buy_now" class="pdp-btn-buy" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
+									<i class="zmdi zmdi-flash m-r-8 fs-18"></i> Buy Now
+								</button>
+
+								<!-- Wishlist Button -->
+								<button type="button" class="pdp-btn-wish" onclick="window.cozaToggleWishlist(<?= $productId ?>, this); return false;" title="Add to Wishlist" aria-label="Add to Wishlist">
+									<i class="zmdi zmdi-favorite-outline fs-20"></i>
 								</button>
 							</div>
 						</div>	
 					</form>
 
-					<!-- Wishlist & Trust Badges -->
-					<div class="flex-w flex-m p-t-30">
-						<div class="flex-m bor9 p-r-10 m-r-11">
-							<a href="#" class="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail" onclick="window.cozaToggleWishlist(<?= $productId ?>, this); return false;" title="Add to Wishlist">
-								<i class="zmdi zmdi-favorite fs-20"></i>
-							</a>
+					<!-- Reassurance Trust Badges -->
+					<div class="pdp-trust-box">
+						<div class="row">
+							<div class="col-sm-6 pdp-trust-item m-b-10">
+								<div class="pdp-trust-icon"><i class="zmdi zmdi-truck"></i></div>
+								<div>
+									<strong>Fast Shipping</strong>
+									<span>24h Dhaka &bull; Nationwide COD</span>
+								</div>
+							</div>
+							<div class="col-sm-6 pdp-trust-item m-b-10">
+								<div class="pdp-trust-icon"><i class="zmdi zmdi-money-box"></i></div>
+								<div>
+									<strong>Cash on Delivery</strong>
+									<span>Pay safely at your doorstep</span>
+								</div>
+							</div>
+							<div class="col-sm-6 pdp-trust-item m-t-5">
+								<div class="pdp-trust-icon"><i class="zmdi zmdi-replay"></i></div>
+								<div>
+									<strong>7-Day Easy Returns</strong>
+									<span>Hassle-free product exchange</span>
+								</div>
+							</div>
+							<div class="col-sm-6 pdp-trust-item m-t-5">
+								<div class="pdp-trust-icon"><i class="zmdi zmdi-shield-check"></i></div>
+								<div>
+									<strong>100% Genuine</strong>
+									<span>Verified quality guaranteed</span>
+								</div>
+							</div>
 						</div>
-						<span class="stext-107 cl6">Add to wishlist</span>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Cozastore Details Tabs (Description, Information, Reviews) -->
-		<div class="bor10 m-t-50 p-t-43 p-b-40">
-			<div class="tab01">
-				<!-- Nav tabs -->
-				<ul class="nav nav-tabs" role="tablist">
-					<li class="nav-item p-b-10">
-						<a class="nav-link active" data-toggle="tab" href="#description" role="tab">Description</a>
-					</li>
+		<!-- Details Tabs (Description, Information, Reviews) -->
+		<div class="pdp-tabs-wrap">
+			<ul class="nav pdp-tabs-nav" role="tablist">
+				<li class="nav-item">
+					<a class="pdp-tab-item active" data-toggle="tab" href="#description" role="tab" id="tabLinkDesc">Product Description</a>
+				</li>
 
-					<li class="nav-item p-b-10">
-						<a class="nav-link" data-toggle="tab" href="#information" role="tab">Additional information</a>
-					</li>
+				<li class="nav-item">
+					<a class="pdp-tab-item" data-toggle="tab" href="#information" role="tab" id="tabLinkInfo">Specifications</a>
+				</li>
 
-					<li class="nav-item p-b-10">
-						<a class="nav-link" data-toggle="tab" href="#reviews" role="tab">Reviews (<?= $totalReviews ?>)</a>
-					</li>
-				</ul>
+				<li class="nav-item">
+					<a class="pdp-tab-item" data-toggle="tab" href="#reviews" role="tab" id="tabLinkReviews">Verified Reviews (<?= $totalReviews ?>)</a>
+				</li>
+			</ul>
 
-				<!-- Tab panes -->
-				<div class="tab-content p-t-43">
-					<!-- Tab 1: Description -->
-					<div class="tab-pane fade show active" id="description" role="tabpanel">
-						<div class="how-pos2 p-lr-15-md">
-							<div class="stext-102 cl6" style="line-height: 1.8;">
-								<?php
-								$desc = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
-								if (strip_tags($desc) !== $desc) {
-									echo strip_tags($desc, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
-								} else {
-									echo nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'));
-								}
-								?>
-							</div>
+			<!-- Tab panes -->
+			<div class="tab-content">
+				<!-- Tab 1: Description -->
+				<div class="tab-pane fade show active" id="description" role="tabpanel">
+					<div class="col-lg-10 m-lr-auto">
+						<div class="stext-102 cl6" style="line-height: 1.85; font-size: 15px;">
+							<?php
+							$desc = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
+							if (strip_tags($desc) !== $desc) {
+								echo strip_tags($desc, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
+							} else {
+								echo nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'));
+							}
+							?>
 						</div>
 					</div>
+				</div>
 
-					<!-- Tab 2: Additional information -->
-					<div class="tab-pane fade" id="information" role="tabpanel">
-						<div class="row">
-							<div class="col-sm-10 col-md-8 col-lg-6 m-lr-auto">
-								<ul class="p-lr-28 p-lr-15-sm">
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Product SKU</span>
-										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['sku'] ?: 'PROD-' . str_pad((string)$productId, 5, '0', STR_PAD_LEFT), ENT_QUOTES, 'UTF-8') ?></span>
-									</li>
-
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Product Type</span>
-										<span class="stext-102 cl6 size-206"><?= ucfirst(htmlspecialchars($product['product_type'], ENT_QUOTES, 'UTF-8')) ?></span>
-									</li>
-
+				<!-- Tab 2: Specifications -->
+				<div class="tab-pane fade" id="information" role="tabpanel">
+					<div class="col-lg-8 m-lr-auto">
+						<div class="table-responsive bg0" style="border: 1px solid #eef0f3; border-radius: 12px; overflow: hidden;">
+							<table class="table table-borderless m-b-0" style="font-size: 14px;">
+								<tbody>
+									<tr style="border-bottom: 1px solid #f3f4f6;">
+										<td class="font-weight-bold p-all-15" style="width: 35%; color: #374151; background: #fafbfc;">Product SKU</td>
+										<td class="p-all-15 cl6"><?= htmlspecialchars($product['sku'] ?: 'PROD-' . str_pad((string)$productId, 5, '0', STR_PAD_LEFT), ENT_QUOTES, 'UTF-8') ?></td>
+									</tr>
+									<tr style="border-bottom: 1px solid #f3f4f6;">
+										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Product Type</td>
+										<td class="p-all-15 cl6"><?= ucfirst(htmlspecialchars($product['product_type'], ENT_QUOTES, 'UTF-8')) ?></td>
+									</tr>
 									<?php if (!empty($product['category_name'])): ?>
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Category</span>
-										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
-									</li>
+									<tr style="border-bottom: 1px solid #f3f4f6;">
+										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Category</td>
+										<td class="p-all-15 cl6"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></td>
+									</tr>
 									<?php endif; ?>
-
 									<?php if (!empty($product['brand'])): ?>
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Brand</span>
-										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['brand'], ENT_QUOTES, 'UTF-8') ?></span>
-									</li>
+									<tr style="border-bottom: 1px solid #f3f4f6;">
+										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Brand</td>
+										<td class="p-all-15 cl6"><?= htmlspecialchars($product['brand'], ENT_QUOTES, 'UTF-8') ?></td>
+									</tr>
 									<?php endif; ?>
-
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Authenticity</span>
-										<span class="stext-102 cl6 size-206">100% Genuine Direct from Verified Creators</span>
-									</li>
-
-									<li class="flex-w flex-t p-b-7">
-										<span class="stext-102 cl3 size-205 font-weight-bold">Delivery Estimate</span>
-										<span class="stext-102 cl6 size-206">24h Dhaka, 48-72h Nationwide COD</span>
-									</li>
-								</ul>
-							</div>
+									<tr style="border-bottom: 1px solid #f3f4f6;">
+										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Authenticity</td>
+										<td class="p-all-15 cl6">100% Original and Brand New</td>
+									</tr>
+									<tr>
+										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Delivery Time</td>
+										<td class="p-all-15 cl6">24h inside Dhaka, 48-72h outside Dhaka</td>
+									</tr>
+								</tbody>
+							</table>
 						</div>
 					</div>
+				</div>
 
-					<!-- Tab 3: Reviews -->
-					<div class="tab-pane fade" id="reviews" role="tabpanel">
-						<div class="row">
-							<div class="col-sm-10 col-md-8 col-lg-6 m-lr-auto">
-								<div class="p-b-30 m-lr-15-sm">
-									<!-- Review list -->
-									<?php if (!empty($reviews)): ?>
-										<?php foreach ($reviews as $rev): ?>
-											<div class="flex-w flex-t p-b-30 bor12 m-b-25">
-												<div class="wrap-pic-s size-109 bor0 of-hidden m-r-18 m-t-6">
-													<img src="<?= htmlspecialchars(avatar_url($rev['author_name']), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+				<!-- Tab 3: Reviews -->
+				<div class="tab-pane fade" id="reviews" role="tabpanel">
+					<div class="col-lg-8 m-lr-auto">
+						<div class="p-b-30">
+							<!-- Review list -->
+							<?php if (!empty($reviews)): ?>
+								<?php foreach ($reviews as $rev): ?>
+									<div class="p-all-20 m-b-20 bg0" style="border: 1px solid #eef0f3; border-radius: 12px;">
+										<div class="flex-w flex-sb-m p-b-10">
+											<div class="flex-m">
+												<div class="wrap-pic-s size-109 bor0 of-hidden m-r-12">
+													<img src="<?= htmlspecialchars(avatar_url($rev['author_name']), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;">
 												</div>
-
-												<div class="size-207">
-													<div class="flex-w flex-sb-m p-b-10">
-														<span class="mtext-107 cl2 p-r-20 font-weight-bold">
-															<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>
-														</span>
-
-														<span class="fs-14 cl11">
-															<?php for ($i = 1; $i <= (int)$rev['rating']; $i++): ?>
-																<i class="zmdi zmdi-star" style="color: #f59e0b;"></i>
-															<?php endfor; ?>
-														</span>
-													</div>
-
-													<h5 class="stext-101 cl2 font-weight-bold m-b-4">
-														<?= htmlspecialchars($rev['title'], ENT_QUOTES, 'UTF-8') ?>
-													</h5>
-
-													<p class="stext-102 cl6">
-														<?= nl2br(htmlspecialchars($rev['body'], ENT_QUOTES, 'UTF-8')) ?>
-													</p>
-
-													<?php if (!empty($rev['admin_reply'])): ?>
-														<div class="p-t-10 p-b-10 p-l-15 p-r-15 m-t-10 bg6 bor10" style="border-left: 3px solid #222;">
-															<span class="stext-102 font-weight-bold cl2 d-block">Store Response:</span>
-															<span class="stext-102 cl6"><?= nl2br(htmlspecialchars($rev['admin_reply'], ENT_QUOTES, 'UTF-8')) ?></span>
-														</div>
-													<?php endif; ?>
+												<div>
+													<span class="font-weight-bold cl2 d-block" style="font-size: 15px;">
+														<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>
+													</span>
+													<span class="badge" style="background: #ecfdf5; color: #059669; font-size: 11px; font-weight: 600;">Verified Customer</span>
 												</div>
 											</div>
-										<?php endforeach; ?>
-									<?php else: ?>
-										<div class="text-center p-tb-30 text-muted">
-											<p class="stext-102 cl6">No reviews yet. Be the first to review this product!</p>
-										</div>
-									<?php endif; ?>
-									
-									<!-- Add review form -->
-									<form class="w-full p-t-20" id="writeReviewForm" method="post" action="<?= htmlspecialchars(url('api/review.php'), ENT_QUOTES, 'UTF-8') ?>">
-										<?= csrf_field() ?>
-										<input type="hidden" name="product_id" value="<?= $productId ?>">
-										<input type="hidden" name="form_time" value="<?= time() ?>">
-										<div style="display:none;"><input type="text" name="website_hp" value=""></div>
 
-										<h5 class="mtext-108 cl2 p-b-15">
-											Add a review
+											<span class="fs-14" style="color: #f59e0b;">
+												<?php for ($i = 1; $i <= (int)$rev['rating']; $i++): ?>
+													<i class="zmdi zmdi-star"></i>
+												<?php endfor; ?>
+											</span>
+										</div>
+
+										<h5 class="font-weight-bold cl2 m-b-6" style="font-size: 15px;">
+											<?= htmlspecialchars($rev['title'], ENT_QUOTES, 'UTF-8') ?>
 										</h5>
 
-										<div class="flex-w flex-m p-b-23">
-											<span class="stext-102 cl3 m-r-16">
-												Your Rating:
-											</span>
+										<p class="stext-102 cl6" style="line-height: 1.6;">
+											<?= nl2br(htmlspecialchars($rev['body'], ENT_QUOTES, 'UTF-8')) ?>
+										</p>
 
-											<span class="wrap-rating fs-18 cl11 pointer">
-												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
-												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
-												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
-												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
-												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
-												<input class="dis-none" type="number" name="rating" value="5" required>
-											</span>
-										</div>
-
-										<div class="row p-b-25">
-											<div class="col-12 p-b-15">
-												<label class="stext-102 cl3" for="reviewTitle">Review Headline</label>
-												<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="reviewTitle" type="text" name="title" placeholder="e.g. Excellent quality!" required maxlength="120">
+										<?php if (!empty($rev['admin_reply'])): ?>
+											<div class="p-all-15 m-t-15 bg6" style="border-left: 3px solid #111; border-radius: 6px;">
+												<span class="stext-102 font-weight-bold cl2 d-block">Store Response:</span>
+												<span class="stext-102 cl6"><?= nl2br(htmlspecialchars($rev['admin_reply'], ENT_QUOTES, 'UTF-8')) ?></span>
 											</div>
-
-											<div class="col-12 p-b-15">
-												<label class="stext-102 cl3" for="review">Your Review</label>
-												<textarea class="size-110 bor8 stext-102 cl2 p-lr-20 p-tb-10" id="review" name="body" placeholder="Share your experience with this product..." required minlength="10" maxlength="2000"></textarea>
-											</div>
-
-											<div class="col-sm-6 p-b-15">
-												<label class="stext-102 cl3" for="name">Your Name</label>
-												<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="name" type="text" name="author_name" value="<?= htmlspecialchars(function_exists('customer_current') && customer_current() ? customer_current()['name'] : '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Your name">
-											</div>
-										</div>
-
-										<button type="submit" id="submitReviewBtn" class="flex-c-m stext-101 cl0 size-112 bg7 bor11 hov-btn3 p-lr-15 trans-04 m-b-10 pointer">
-											Submit Review
-										</button>
-									</form>
+										<?php endif; ?>
+									</div>
+								<?php endforeach; ?>
+							<?php else: ?>
+								<div class="text-center p-tb-30 text-muted bg0 p-all-30 m-b-25" style="border: 1px dashed #d1d5db; border-radius: 12px;">
+									<i class="zmdi zmdi-comment-text-alt fs-36 d-block m-b-10" style="color: #9ca3af; font-size: 40px;"></i>
+									<p class="stext-102 cl6 mb-0">No customer reviews yet. Be the first to share your experience!</p>
 								</div>
+							<?php endif; ?>
+							
+							<!-- Add review form -->
+							<div class="bg0 p-all-25 m-t-20" style="border: 1px solid #eef0f3; border-radius: 14px;">
+								<form class="w-full" id="writeReviewForm" method="post" action="<?= htmlspecialchars(url('api/review.php'), ENT_QUOTES, 'UTF-8') ?>">
+									<?= csrf_field() ?>
+									<input type="hidden" name="product_id" value="<?= $productId ?>">
+									<input type="hidden" name="form_time" value="<?= time() ?>">
+									<div style="display:none;"><input type="text" name="website_hp" value=""></div>
+
+									<h5 class="mtext-108 cl2 p-b-15 font-weight-bold">
+										Write a Customer Review
+									</h5>
+
+									<div class="flex-w flex-m p-b-20">
+										<span class="stext-102 cl3 m-r-16 font-weight-bold">
+											Your Rating:
+										</span>
+
+										<span class="wrap-rating fs-18 cl11 pointer" style="cursor: pointer;">
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<input class="dis-none" type="number" name="rating" value="5" required>
+										</span>
+									</div>
+
+									<div class="row p-b-15">
+										<div class="col-12 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="reviewTitle">Review Title</label>
+											<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="reviewTitle" type="text" name="title" placeholder="e.g. Excellent quality, fast delivery!" required maxlength="120" style="border-radius: 8px;">
+										</div>
+
+										<div class="col-12 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="review">Your Review Details</label>
+											<textarea class="size-110 bor8 stext-102 cl2 p-lr-20 p-tb-10" id="review" name="body" placeholder="Share your experience with this product..." required minlength="10" maxlength="2000" style="border-radius: 8px; height: 110px;"></textarea>
+										</div>
+
+										<div class="col-sm-6 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="name">Your Name</label>
+											<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="name" type="text" name="author_name" value="<?= htmlspecialchars(function_exists('customer_current') && customer_current() ? customer_current()['name'] : '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Your name" style="border-radius: 8px;">
+										</div>
+									</div>
+
+									<button type="submit" id="submitReviewBtn" class="flex-c-m stext-101 cl0 size-112 bg3 bor1 hov-btn3 p-lr-25 trans-04 pointer" style="border-radius: 8px; font-weight: 700; height: 46px;">
+										Submit Review
+									</button>
+								</form>
 							</div>
 						</div>
 					</div>
@@ -563,7 +593,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 	<div class="bg6 m-t-60 p-t-50 p-b-70">
 		<div class="container">
 			<div class="p-b-35 text-center">
-				<h3 class="ltext-103 cl5">
+				<h3 class="ltext-103 cl5 font-weight-bold">
 					Related Products
 				</h3>
 			</div>
@@ -578,9 +608,50 @@ include __DIR__ . '/../../includes/partials/header.php';
 	<?php endif; ?>
 </section>
 
+<!-- Switch PDP Main Image Function & Enhanced Controls -->
+<script>
+function switchPdpImage(el, url) {
+	var thumbs = document.querySelectorAll('.pdp-thumb-item');
+	thumbs.forEach(function(item) { item.classList.remove('active'); });
+	if (el) el.classList.add('active');
+	var main = document.getElementById('pdpMainImg');
+	if (main) main.src = url;
+	var zoom = document.querySelector('.js-gallery-zoom');
+	if (zoom) zoom.href = url;
+}
+</script>
+
 <!-- PDP AJAX Add to Cart & Review Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	// Stepper increment / decrement handler
+	var downBtn = document.querySelector('.btn-num-product-down');
+	var upBtn = document.querySelector('.btn-num-product-up');
+	var qtyInput = document.getElementById('pdpQtyInput');
+	if (downBtn && qtyInput) {
+		downBtn.addEventListener('click', function() {
+			var current = parseInt(qtyInput.value, 10) || 1;
+			if (current > 1) qtyInput.value = current - 1;
+		});
+	}
+	if (upBtn && qtyInput) {
+		upBtn.addEventListener('click', function() {
+			var current = parseInt(qtyInput.value, 10) || 1;
+			var max = parseInt(qtyInput.max, 10) || 999;
+			if (current < max) qtyInput.value = current + 1;
+		});
+	}
+
+	// Initialize Magnific Popup zoom on main image
+	if (typeof $ !== 'undefined' && typeof $.fn.magnificPopup === 'function') {
+		$('.js-gallery-zoom').magnificPopup({
+			type: 'image',
+			closeOnContentClick: true,
+			mainClass: 'mfp-img-mobile',
+			image: { verticalFit: true }
+		});
+	}
+
 	// AJAX Add to Cart (Stays on PDP, updates counter, triggers sweetalert)
 	var addBtn = document.getElementById('pdpAddBtn');
 	if (addBtn) {

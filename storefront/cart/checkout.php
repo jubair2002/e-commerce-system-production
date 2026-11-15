@@ -559,10 +559,12 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <label class="form-label fw-semibold small">
                   Phone Number <?= $requirePhone ? '<span class="text-danger">*</span>' : '' ?>
                 </label>
-                <div class="input-group">
-                  <span class="input-group-text bg-transparent border-end-0"><?= icon('phone') ?></span>
-                  <input type="tel" name="customer_phone" class="form-control border-start-0 ps-0"
+                <div class="pos-relative" style="position: relative;">
+                  <input type="tel" name="customer_phone" class="form-control" style="padding-left: 42px;"
                          value="<?= e($old['customer_phone']) ?>" placeholder="01712345678" <?= $requirePhone ? 'required' : '' ?>>
+                  <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-phone fs-18"></i>
+                  </div>
                 </div>
               </div>
 
@@ -570,10 +572,12 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <label class="form-label fw-semibold small">
                   Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted fw-normal">(Optional - for digital receipt)</span>' ?>
                 </label>
-                <div class="input-group">
-                  <span class="input-group-text bg-transparent border-end-0"><?= icon('mail') ?></span>
-                  <input type="email" name="customer_email" class="form-control border-start-0 ps-0"
+                <div class="pos-relative" style="position: relative;">
+                  <input type="email" name="customer_email" class="form-control" style="padding-left: 42px;"
                          value="<?= e($old['customer_email']) ?>" placeholder="tanvir@example.com" <?= $requireEmail ? 'required' : '' ?>>
+                  <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-email fs-18"></i>
+                  </div>
                 </div>
               </div>
 
@@ -796,7 +800,9 @@ include __DIR__ . '/../../includes/partials/header.php';
                   <div id="checkoutCouponRow" class="mt-2 d-none">
                     <div class="input-group input-group-sm">
                       <input type="text" name="coupon_code" id="checkoutCouponInput" class="form-control" placeholder="Enter coupon code" style="text-transform: uppercase;">
-                      <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-editorial-secondary" formnovalidate>Apply</button>
+                      <div class="input-group-append">
+                        <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-editorial-secondary" formnovalidate>Apply</button>
+                      </div>
                     </div>
                   </div>
                 </div>

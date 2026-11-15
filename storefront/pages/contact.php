@@ -154,33 +154,48 @@ include __DIR__ . '/../../includes/partials/header.php';
 						Send Us A Message
 					</h4>
 
-					<div class="bor8 m-b-20">
-						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="text" name="name" placeholder="Your Name *" required value="<?= htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="text" name="name" placeholder="Your Name *" required value="<?= htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-account fs-20"></i>
+						</div>
 					</div>
 
-					<div class="bor8 m-b-20">
-						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="email" name="email" placeholder="Your Email Address *" required value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="email" name="email" placeholder="Your Email Address *" required value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-email fs-20"></i>
+						</div>
 					</div>
 
 					<div class="row m-lr-0 m-b-20" style="gap: 15px;">
-						<div class="col-sm p-lr-0 bor8">
-							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="tel" name="phone" placeholder="Phone Number" value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<div class="col-sm p-lr-0 pos-relative">
+							<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 18px; border-radius: 8px;" type="tel" name="phone" placeholder="Phone Number" value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+							<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+								<i class="zmdi zmdi-phone fs-20"></i>
+							</div>
 						</div>
-						<div class="col-sm p-lr-0 bor8">
-							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="text" name="order_number" placeholder="Order # (Optional)" value="<?= htmlspecialchars($_POST['order_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<div class="col-sm p-lr-0 pos-relative">
+							<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 18px; border-radius: 8px;" type="text" name="order_number" placeholder="Order # (Optional)" value="<?= htmlspecialchars($_POST['order_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+							<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+								<i class="zmdi zmdi-receipt fs-20"></i>
+							</div>
 						</div>
 					</div>
 
-					<div class="bor8 m-b-20">
-						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="text" name="subject" placeholder="Subject" value="<?= htmlspecialchars($_POST['subject'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="text" name="subject" placeholder="Subject" value="<?= htmlspecialchars($_POST['subject'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-comment-text fs-20"></i>
+						</div>
 					</div>
 
-					<div class="bor8 m-b-30">
-						<textarea class="stext-111 cl2 plh3 size-120 p-lr-25 p-tb-20" name="message" placeholder="How Can We Help You? *" required minlength="10"><?= htmlspecialchars($_POST['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+					<div class="m-b-30">
+						<textarea class="stext-111 cl2 plh3 size-120 bor8 p-lr-20 p-tb-16" style="width: 100%; border-radius: 8px;" name="message" placeholder="How Can We Help You? *" required minlength="10"><?= htmlspecialchars($_POST['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
 					</div>
 
-					<button type="submit" class="flex-c-m stext-101 cl0 size-121 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer">
-						Submit Message
+					<button type="submit" class="flex-c-m stext-101 cl0 size-121 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer" style="border-radius: 8px; font-weight: 700;">
+						<i class="zmdi zmdi-mail-send m-r-8 fs-20"></i> Submit Message
 					</button>
 				</form>
 			</div>
@@ -189,7 +204,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 			<div class="size-210 bor10 flex-w flex-col-m p-lr-93 p-tb-30 p-lr-15-lg w-full-md">
 				<div class="flex-w w-full p-b-42">
 					<span class="fs-18 cl5 txt-center size-211">
-						<span class="lnr lnr-map-marker fs-24 cl1"></span>
+						<i class="zmdi zmdi-pin fs-28 cl1"></i>
 					</span>
 
 					<div class="size-212 p-t-2">
@@ -205,7 +220,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 				<div class="flex-w w-full p-b-42">
 					<span class="fs-18 cl5 txt-center size-211">
-						<span class="lnr lnr-phone-handset fs-24 cl1"></span>
+						<i class="zmdi zmdi-phone fs-28 cl1"></i>
 					</span>
 
 					<div class="size-212 p-t-2">
@@ -223,7 +238,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 				<div class="flex-w w-full">
 					<span class="fs-18 cl5 txt-center size-211">
-						<span class="lnr lnr-envelope fs-24 cl1"></span>
+						<i class="zmdi zmdi-email fs-28 cl1"></i>
 					</span>
 
 					<div class="size-212 p-t-2">

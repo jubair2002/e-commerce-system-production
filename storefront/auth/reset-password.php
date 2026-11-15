@@ -92,9 +92,11 @@ include __DIR__ . '/../../includes/partials/header.php';
                    autocomplete="new-password"
                    required
                    placeholder="At least 8 characters">
-            <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPassword" aria-label="Toggle password visibility">
-              <?= icon('eye') ?>
-            </button>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPassword" aria-label="Toggle password visibility">
+                <?= icon('eye') ?>
+              </button>
+            </div>
           </div>
           <!-- Live password strength meter -->
           <div class="password-meter-wrap mt-2">
@@ -114,9 +116,11 @@ include __DIR__ . '/../../includes/partials/header.php';
                    autocomplete="new-password"
                    required
                    placeholder="Repeat new password">
-            <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPasswordConfirm" aria-label="Toggle password visibility">
-              <?= icon('eye') ?>
-            </button>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPasswordConfirm" aria-label="Toggle password visibility">
+                <?= icon('eye') ?>
+              </button>
+            </div>
           </div>
         </div>
 

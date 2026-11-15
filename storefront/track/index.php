@@ -161,34 +161,36 @@ include __DIR__ . '/../../includes/partials/header.php';
     </div>
 
     <!-- Search Form -->
-    <div class="card shadow-sm border-0 mb-4" style="border-radius: var(--radius-lg);">
-      <div class="card-body p-4">
-        <form method="get" class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold small">Order or Tracking Number <span class="text-danger">*</span></label>
-            <div class="input-group">
-              <span class="input-group-text bg-transparent border-end-0"><?= icon('bag', 'text-muted') ?></span>
-              <input type="text" name="order_number" class="form-control border-start-0 ps-0"
+    <div class="bg0 p-all-30 m-b-35" style="border: 1px solid #eef0f3; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.03);">
+        <form method="get" class="row">
+          <div class="col-md-6 m-b-20">
+            <label class="form-label fw-semibold small" style="color: #333; margin-bottom: 8px; font-size: 13px;">Order or Tracking Number <span class="text-danger">*</span></label>
+            <div class="pos-relative">
+              <input type="text" name="order_number" class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 46px; padding-right: 18px; border-radius: 8px;"
                      value="<?= e($orderNumber) ?>"
                      placeholder="e.g. ORD-20261017-05000" required>
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                <i class="zmdi zmdi-shopping-basket fs-20"></i>
+              </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold small">Phone or Email <span class="text-muted fw-normal">(Optional)</span></label>
-            <div class="input-group">
-              <span class="input-group-text bg-transparent border-end-0"><?= icon('user', 'text-muted') ?></span>
-              <input type="text" name="contact" class="form-control border-start-0 ps-0"
+          <div class="col-md-6 m-b-20">
+            <label class="form-label fw-semibold small" style="color: #333; margin-bottom: 8px; font-size: 13px;">Phone or Email <span class="text-muted fw-normal">(Optional)</span></label>
+            <div class="pos-relative">
+              <input type="text" name="contact" class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 46px; padding-right: 18px; border-radius: 8px;"
                      value="<?= e($contact) ?>"
                      placeholder="01712345678 or you@example.com">
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                <i class="zmdi zmdi-account fs-20"></i>
+              </div>
             </div>
           </div>
-          <div class="col-12 mt-4">
-            <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
-              <?= icon('search', 'me-2') ?> Track Order Status
+          <div class="col-12 m-t-10">
+            <button type="submit" class="flex-c-m stext-101 cl0 size-116 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer w-full" style="border-radius: 8px; font-weight: 700; height: 50px;">
+              <i class="zmdi zmdi-search m-r-8 fs-20"></i> Track Order Status
             </button>
           </div>
         </form>
-      </div>
     </div>
 
     <?php if ($errors): ?>
