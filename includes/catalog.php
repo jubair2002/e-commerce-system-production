@@ -223,9 +223,6 @@ function product_available_qty(int $productId): int
     if (!$p) {
         return 0;
     }
-    if (isset($p['track_inventory']) && (int)$p['track_inventory'] === 0) {
-        return 999999;
-    }
     if (!empty($p['allow_backorder'])) {
         return 999999;
     }

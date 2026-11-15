@@ -303,57 +303,90 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 18px 24px;
   background-color: #fafbfc;
   border-top: 1px solid #e5e7eb;
+  gap: 16px;
 }
 
-.cart-continue-link {
+.cart-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cart-continue-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
   font-size: 13.5px;
   font-weight: 600;
-  color: #4b5563;
   text-decoration: none;
-  transition: color 0.15s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.cart-continue-link:hover {
+.cart-continue-btn:hover {
+  background: #f9fafb;
+  border-color: #111827;
   color: #111827;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .cart-clear-btn {
-  margin-left: 18px;
-  font-size: 13px;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 16px;
+  background: #ffffff;
+  border: 1.5px solid #fecaca;
+  border-radius: 8px;
   color: #dc2626;
-  background: transparent;
-  border: none;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  transition: opacity 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .cart-clear-btn:hover {
-  opacity: 0.8;
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
 }
 
 .cart-update-btn {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  color: #111827;
-  font-size: 13px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  background: #111827;
+  border: none;
   border-radius: 8px;
-  padding: 8px 18px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.1);
 }
 
 .cart-update-btn:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(17, 24, 39, 0.2);
 }
 
 /* Coupon Box */
@@ -647,12 +680,15 @@
   .cart-actions-left {
     display: flex !important;
     width: 100% !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+    flex-direction: column !important;
+    gap: 10px !important;
   }
 
+  .cart-continue-btn,
+  .cart-clear-btn,
   .cart-update-btn {
     width: 100% !important;
+    justify-content: center !important;
     height: 44px !important;
   }
 

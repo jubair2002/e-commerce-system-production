@@ -54,25 +54,39 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $newTotal = $currentInCart + $qty;
 
     if ($newTotal > $availQty) {
-        $qtyToAdd = max(0, $availQty - $currentInCart);
-        if ($qtyToAdd <= 0) {
-            http_response_code(400);
+        http_response_code(400);
+        $remaining = max(0, $availQty - $currentInCart);
+        if ($remaining <= 0) {
             echo json_encode([
                 'ok'    => false,
                 'error' => "You already have all available {$availQty} units in your cart.",
             ]);
-            exit;
+        } else {
+            echo json_encode([
+                'ok'    => false,
+                'error' => "Only {$availQty} units available in stock. You can only add {$remaining} more.",
+            ]);
         }
-        cart_add($productId, $qtyToAdd, $variantId);
-        $response['warning'] = "Added {$qtyToAdd} units (maximum available).";
-    } else {
-        cart_add($productId, $qty, $variantId);
+        exit;
     }
+
+    cart_add($productId, $qty, $variantId);
 } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $cartKey = trim((string)($_POST['cart_key'] ?? ''));
-    $qty     = (int)($_POST['quantity'] ?? 1);
+    $qty     = max(1, (int)($_POST['quantity'] ?? 1));
 
     if ($cartKey !== '') {
+        $cartData = cart_load();
+        foreach ($cartData['items'] as $ci) {
+            if ($ci['cart_key'] === $cartKey) {
+                $maxAvail = (int)($ci['available_qty'] ?? 99);
+                if ($maxAvail > 0 && $qty > $maxAvail) {
+                    $qty = $maxAvail;
+                    $response['warning'] = "Quantity capped to available stock ({$maxAvail}).";
+                }
+                break;
+            }
+        }
         cart_set_key($cartKey, $qty);
     }
 } elseif ($action === 'remove' && $_SERVER['REQUEST_METHOD'] === 'POST') {

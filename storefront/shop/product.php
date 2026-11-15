@@ -600,21 +600,51 @@ function switchPdpImage(el, url) {
 <!-- PDP AJAX Add to Cart & Review Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-	// Stepper increment / decrement handler
+	// Stepper increment / decrement and input validation handler
 	var downBtn = document.querySelector('.btn-num-product-down');
 	var upBtn = document.querySelector('.btn-num-product-up');
 	var qtyInput = document.getElementById('pdpQtyInput');
+
+	function validatePdpQty() {
+		if (!qtyInput) return;
+		var val = parseInt(qtyInput.value, 10);
+		var max = parseInt(qtyInput.max, 10) || 999;
+		var min = parseInt(qtyInput.min, 10) || 1;
+		if (isNaN(val) || val < min) {
+			qtyInput.value = min;
+		} else if (val > max) {
+			qtyInput.value = max;
+			if (typeof swal === 'function') {
+				swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+			}
+		}
+	}
+
+	if (qtyInput) {
+		qtyInput.addEventListener('change', validatePdpQty);
+		qtyInput.addEventListener('input', validatePdpQty);
+	}
+
 	if (downBtn && qtyInput) {
 		downBtn.addEventListener('click', function() {
 			var current = parseInt(qtyInput.value, 10) || 1;
-			if (current > 1) qtyInput.value = current - 1;
+			var min = parseInt(qtyInput.min, 10) || 1;
+			if (current > min) {
+				qtyInput.value = current - 1;
+			}
 		});
 	}
 	if (upBtn && qtyInput) {
 		upBtn.addEventListener('click', function() {
 			var current = parseInt(qtyInput.value, 10) || 1;
 			var max = parseInt(qtyInput.max, 10) || 999;
-			if (current < max) qtyInput.value = current + 1;
+			if (current < max) {
+				qtyInput.value = current + 1;
+			} else {
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'info');
+				}
+			}
 		});
 	}
 
@@ -698,7 +728,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		addBtn.addEventListener('click', function(e) {
 			e.preventDefault();
 			var pid = <?= (int)$productId ?>;
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
 			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
+			}
 			var vidInput = document.getElementById('selectedVariantId');
 			var vid = vidInput ? vidInput.value : '';
 			var pName = <?= json_encode($product['name']) ?>;
@@ -737,6 +775,39 @@ document.addEventListener('DOMContentLoaded', function() {
 				.catch(function() {
 					if (typeof swal === 'function') swal('Notice', 'Could not add to cart.', 'error');
 				});
+			}
+		});
+	}
+
+	// Buy Now and Form submit stock limit protection
+	var buyBtn = document.getElementById('pdpBuyNowBtn');
+	if (buyBtn) {
+		buyBtn.addEventListener('click', function(e) {
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
+			}
+		});
+	}
+
+	var pdpForm = document.getElementById('pdpAddToCartForm');
+	if (pdpForm) {
+		pdpForm.addEventListener('submit', function(e) {
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
 			}
 		});
 	}

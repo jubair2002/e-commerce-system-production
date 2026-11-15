@@ -106,10 +106,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $targetQty = $currentInCart + $qty;
 
         if ($targetQty > $avail) {
-            cart_set($key, $avail);
-            $msg = "Only {$avail} available. Cart updated to maximum available quantity.";
-            if ($isAjax) $respondJson(true, $msg);
+            $remaining = max(0, $avail - $currentInCart);
+            if ($remaining <= 0) {
+                $msg = "You already have the maximum available stock ({$avail}) in your cart.";
+            } else {
+                $msg = "Only {$avail} units available in stock. You can only add {$remaining} more.";
+            }
+            if ($isAjax) $respondJson(false, $msg);
             flash('warning', $msg);
+            redirect(route('product', ['slug' => $product['slug']]));
         } else {
             cart_add($pid, $vid, $qty);
             $msg = "Added \"{$itemName}\" to your cart.";
@@ -129,12 +134,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         } else {
             $items = $_POST['qty'] ?? [];
             if (is_array($items)) {
+                $cartData = cart_load();
+                $availMap = [];
+                foreach ($cartData['items'] as $ci) {
+                    $availMap[(string)$ci['cart_key']] = (int)($ci['available_qty'] ?? 99);
+                }
                 foreach ($items as $k => $qty) {
                     $q = (int)$qty;
                     if ($q <= 0) {
                         cart_remove((string)$k);
                     } else {
-                        cart_set((string)$k, min(99, $q));
+                        $maxAvail = $availMap[(string)$k] ?? 99;
+                        if ($maxAvail > 0 && $q > $maxAvail) {
+                            $q = $maxAvail;
+                            flash('warning', "Quantity capped to maximum available stock ({$maxAvail}).");
+                        }
+                        cart_set((string)$k, $q);
                     }
                 }
             }
@@ -401,16 +416,16 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<!-- Table Bottom Actions Bar -->
 							<div class="cart-actions-bar">
 								<div class="cart-actions-left">
-									<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="cart-continue-link">
+									<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="cart-continue-btn">
 										<i class="zmdi zmdi-arrow-left"></i> Continue Shopping
 									</a>
-									<button type="submit" name="action" value="clear" class="cart-clear-btn" onclick="return confirm('Clear your entire cart?');">
-										Clear Cart
+									<button type="submit" name="action" value="clear" class="cart-clear-btn" onclick="return confirm('Are you sure you want to clear your entire cart?');">
+										<i class="zmdi zmdi-delete"></i> Clear Cart
 									</button>
 								</div>
 
 								<button type="submit" name="action" value="update" class="cart-update-btn">
-									Update Cart
+									<i class="zmdi zmdi-refresh"></i> Update Cart
 								</button>
 							</div>
 						</div>

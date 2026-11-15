@@ -240,6 +240,15 @@ function cart_add(int $productId, $arg2 = 1, $arg3 = null): int
     $key = cart_key($productId, $variantId);
     $current = (int)($_SESSION['cart'][$key] ?? 0);
     $newQty = $current + $qty;
+
+    // Defense-in-depth: cap to available stock
+    $avail = ($variantId !== null)
+        ? variant_available_qty(variant_get($variantId) ?: [], $product)
+        : product_available_qty($productId);
+    if ($avail > 0 && $newQty > $avail) {
+        $newQty = $avail;
+    }
+
     $_SESSION['cart'][$key] = $newQty;
 
     hook_fire('cart.added', [
