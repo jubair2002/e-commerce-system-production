@@ -706,3 +706,176 @@
     padding: 20px 16px !important;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Overrides for Modern Cart ([data-theme="dark"])
+   ========================================================================== */
+[data-theme="dark"] .sec-cart-page {
+  background-color: #0b0f19 !important;
+}
+[data-theme="dark"] .cart-free-shipping-card {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-free-shipping-title {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-free-shipping-pct {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cart-free-shipping-track {
+  background-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-free-shipping-fill {
+  background-color: #ffffff !important;
+}
+[data-theme="dark"] .cart-items-card,
+[data-theme="dark"] .cart-summary-card,
+[data-theme="dark"] .cart-coupon-card,
+[data-theme="dark"] .card {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+[data-theme="dark"] .cart-table tbody tr {
+  background: #111827 !important;
+  border-bottom-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-table tbody tr:hover {
+  background: #161e2e !important;
+}
+[data-theme="dark"] .cart-table th {
+  background: #161e2e !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-table td {
+  border-bottom-color: #1f2937 !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .cart-item-title {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-item-title:hover {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .cart-item-var {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cart-price-unit {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .cart-price-total {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-item-img {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+[data-theme="dark"] .cart-num-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .cart-num-btn:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-num-input {
+  background: #111827 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-actions-bar {
+  background-color: #161e2e !important;
+  border-top-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-continue-btn {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .cart-continue-btn:hover {
+  background: #1f2937 !important;
+  border-color: #e2e8f0 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-clear-btn {
+  background: #111827 !important;
+  border-color: #7f1d1d !important;
+  color: #f87171 !important;
+}
+[data-theme="dark"] .cart-clear-btn:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-update-btn {
+  background: #ffffff !important;
+  color: #0b0f19 !important;
+}
+[data-theme="dark"] .cart-update-btn:hover {
+  background: #f1f5f9 !important;
+}
+[data-theme="dark"] .cart-summary-title {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-summary-row {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cart-summary-row span:last-child {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-shipping-select {
+  background-color: #161e2e !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-summary-total {
+  border-top-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-summary-total span:first-child,
+[data-theme="dark"] .cart-total-amount {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-checkout-btn {
+  background: #ffffff !important;
+  color: #0b0f19 !important;
+}
+[data-theme="dark"] .cart-checkout-btn:hover {
+  background: #f1f5f9 !important;
+  color: #000000 !important;
+}
+[data-theme="dark"] .cart-coupon-title {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-coupon-input {
+  background: #161e2e !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-coupon-btn {
+  background: #ffffff !important;
+  color: #0b0f19 !important;
+}
+[data-theme="dark"] .cart-coupon-btn:hover {
+  background: #f1f5f9 !important;
+}
+[data-theme="dark"] .cart-empty-state {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+}
+[data-theme="dark"] .cart-empty-title {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .cart-empty-text {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cart-empty-icon {
+  background: #161e2e !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cart-item-mobile {
+  border-bottom-color: #1f2937 !important;
+}
+

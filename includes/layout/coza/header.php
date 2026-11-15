@@ -106,6 +106,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 						<a href="<?= htmlspecialchars(!empty($headerCustomer) ? route('account') : route('login'), ENT_QUOTES, 'UTF-8') ?>" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11" title="Account">
 							<i class="zmdi zmdi-account"></i>
 						</a>
+
+						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
+							<i class="zmdi zmdi-sun theme-icon-sun" style="display:none; font-size: 20px;"></i>
+							<i class="zmdi zmdi-brightness-2 theme-icon-moon" style="font-size: 19px;"></i>
+						</div>
 					</div>
 				</nav>
 			</div>	
@@ -139,6 +144,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 				<a href="<?= htmlspecialchars(route('account_wishlist'), ENT_QUOTES, 'UTF-8') ?>" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-r-11 p-l-10 icon-header-noti" data-notify="<?= (int)$wishlistCnt ?>">
 					<i class="zmdi zmdi-favorite-outline"></i>
 				</a>
+
+				<div class="icon-header-item cl2 hov-cl1 trans-04 p-r-11 p-l-10 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
+					<i class="zmdi zmdi-sun theme-icon-sun" style="display:none; font-size: 19px;"></i>
+					<i class="zmdi zmdi-brightness-2 theme-icon-moon" style="font-size: 18px;"></i>
+				</div>
 			</div>
 
 			<!-- Button show menu -->

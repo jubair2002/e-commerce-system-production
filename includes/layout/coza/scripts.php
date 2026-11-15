@@ -145,6 +145,36 @@
 			});
 		};
 
+		// Theme Manager (Dark / Light Mode)
+		function updateThemeIcons(theme) {
+			if (theme === 'dark') {
+				$('[data-theme-toggle] .theme-icon-sun').show();
+				$('[data-theme-toggle] .theme-icon-moon').hide();
+				$('[data-theme-toggle]').attr('title', 'Switch to Light Mode');
+			} else {
+				$('[data-theme-toggle] .theme-icon-sun').hide();
+				$('[data-theme-toggle] .theme-icon-moon').show();
+				$('[data-theme-toggle]').attr('title', 'Switch to Dark Mode');
+			}
+		}
+
+		// Initial sync on DOM ready
+		$(function() {
+			var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+			updateThemeIcons(currentTheme);
+		});
+
+		$(document).on('click', '[data-theme-toggle]', function(e) {
+			e.preventDefault();
+			var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+			var next = current === 'dark' ? 'light' : 'dark';
+			document.documentElement.setAttribute('data-theme', next);
+			try {
+				localStorage.setItem('jinispotro_theme', next);
+			} catch (_) {}
+			updateThemeIcons(next);
+		});
+
 	})(jQuery);
 	</script>
 </body>

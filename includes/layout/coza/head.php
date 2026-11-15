@@ -24,6 +24,16 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 	<meta name="keywords" content="<?= htmlspecialchars($metaKeywordsContent, ENT_QUOTES, 'UTF-8') ?>">
 	<?php endif; ?>
 
+	<!-- Theme Flash Prevention -->
+	<script>
+		(function() {
+			try {
+				var t = localStorage.getItem('jinispotro_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-theme', t);
+			} catch (e) {}
+		})();
+	</script>
+
 	<?php if ($favUrl): ?>
 	<link rel="icon" type="image/png" href="<?= htmlspecialchars($favUrl, ENT_QUOTES, 'UTF-8') ?>">
 	<?php else: ?>
