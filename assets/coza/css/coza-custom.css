@@ -1,0 +1,404 @@
+/* Cozastore Component Harmony Stylesheet
+ * Integrates application components (checkout, account, auth, order track, and SVG icons)
+ * seamlessly with the Cozastore typography and color palette.
+ */
+
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-card: #f9f9f9;
+  --surface-muted: #f2f2f2;
+  --ink: #222222;
+  --ink-2: #555555;
+  --muted: #888888;
+  --line: #e6e6e6;
+  --line-subtle: #f0f0f0;
+  --line-strong: #cccccc;
+  
+  --accent: #717fe0;
+  --accent-hover: #222222;
+  --accent-light: rgba(113, 127, 224, 0.1);
+  --primary: #222222;
+  --primary-hover: #717fe0;
+  
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 9999px;
+  
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  
+  --duration-fast: 0.15s;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* 1. SVG Icons sizing */
+svg.i {
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: -0.2em;
+  fill: currentColor;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.btn-pw-toggle svg.i {
+  width: 1em;
+  height: 1em;
+}
+.btn-pw-toggle {
+  border: 1px solid #e6e6e6;
+  border-left: 0;
+  background: #ffffff;
+  color: #666666;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-pw-toggle:hover {
+  background: #f7f7f7;
+  color: #222222;
+}
+
+/* 2. Cozastore Button Harmonization */
+.btn-primary, .btn-editorial-primary {
+  background-color: #222222 !important;
+  border-color: #222222 !important;
+  color: #ffffff !important;
+  transition: all 0.3s ease;
+}
+.btn-primary:hover, .btn-primary:focus, .btn-editorial-primary:hover, .btn-editorial-primary:focus {
+  background-color: #717fe0 !important;
+  border-color: #717fe0 !important;
+  color: #ffffff !important;
+}
+.btn-outline-primary {
+  color: #222222 !important;
+  border-color: #222222 !important;
+}
+.btn-outline-primary:hover {
+  background-color: #717fe0 !important;
+  border-color: #717fe0 !important;
+  color: #ffffff !important;
+}
+.btn-editorial-secondary {
+  background-color: #f2f2f2;
+  border-color: #e6e6e6;
+  color: #333333;
+}
+.btn-editorial-secondary:hover {
+  background-color: #e6e6e6;
+  color: #111111;
+}
+
+/* 3. Form controls */
+.form-control, .form-select {
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333333;
+  padding: 10px 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #717fe0;
+  box-shadow: 0 0 0 0.2rem rgba(113, 127, 224, 0.2);
+}
+
+/* 4. Auth Pages (Login, Register, Forgot Password) */
+.auth-page-wrapper {
+  background-color: #f7f7f7;
+  min-height: calc(100vh - 200px);
+  padding: 60px 15px;
+}
+.auth-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+}
+
+/* 5. Checkout & Progress */
+.checkout-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #888888;
+}
+.step-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #f2f2f2;
+  border: 1px solid #e6e6e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+.progress-step.is-active {
+  color: #222222;
+}
+.progress-step.is-active .step-number {
+  background-color: #222222;
+  color: #ffffff;
+  border-color: #222222;
+}
+.progress-line {
+  flex-grow: 1;
+  height: 1px;
+  background-color: #e6e6e6;
+  max-width: 80px;
+  margin: 0 12px;
+}
+.checkout-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+@media (max-width: 768px) {
+  .checkout-card {
+    padding: 18px 16px;
+    margin-bottom: 16px;
+  }
+}
+.checkout-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e6e6e6;
+}
+.checkout-card-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: #222222;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.checkout-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #222222;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.checkout-summary-box {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 24px;
+  position: sticky;
+  top: 90px;
+}
+.shipping-method-card {
+  border: 1px solid #e6e6e6 !important;
+  border-radius: 6px !important;
+  margin-bottom: 8px;
+  transition: all 0.18s ease;
+}
+.shipping-method-card:hover {
+  border-color: #888888 !important;
+}
+.shipping-method-card.border-primary {
+  border-color: #717fe0 !important;
+  background-color: rgba(113, 127, 224, 0.05) !important;
+}
+
+/* 6. Account Portal */
+.account-wrapper {
+  padding: 40px 0 60px;
+  background: #f7f7f7;
+}
+.account-nav-mobile {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+@media (min-width: 992px) {
+  .account-nav-mobile { display: none; }
+}
+.account-nav-pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  color: #555555;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.account-nav-pill.active {
+  background: #222222;
+  border-color: #222222;
+  color: #ffffff;
+}
+.account-sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.account-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e6e6e6;
+}
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f2f2f2;
+  color: #222222;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid #e6e6e6;
+}
+.account-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.account-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #555555;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.account-nav-link:hover, .account-nav-link.active {
+  background: #f2f2f2;
+  color: #222222;
+}
+.account-card, .account-welcome-banner {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.account-stat-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* 7. Order Tracking Timeline */
+.timeline-item {
+  position: relative;
+  padding-left: 36px;
+  padding-bottom: 24px;
+  border-left: 2px solid #e6e6e6;
+}
+.timeline-item:last-child {
+  border-left: 2px solid transparent;
+  padding-bottom: 0;
+}
+.timeline-dot {
+  position: absolute;
+  left: -9px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #888888;
+}
+.timeline-item.is-done .timeline-dot {
+  background: #222222;
+  border-color: #222222;
+}
+.timeline-item.is-current .timeline-dot {
+  background: #717fe0;
+  border-color: #717fe0;
+}
+
+/* 8. Bootstrap 5 Utility Polyfills for BS4 Compatibility */
+.fs-1 { font-size: 2.5rem !important; }
+.fs-2 { font-size: 2rem !important; }
+.fs-3 { font-size: 1.75rem !important; }
+.fs-4 { font-size: 1.5rem !important; }
+.fs-5 { font-size: 1.25rem !important; }
+.fs-6 { font-size: 1rem !important; }
+.fs-2xl { font-size: 1.85rem !important; }
+
+.g-1 { margin-right: -0.25rem; margin-left: -0.25rem; }
+.g-1 > * { padding-right: 0.25rem; padding-left: 0.25rem; }
+.g-2 { margin-right: -0.5rem; margin-left: -0.5rem; }
+.g-2 > * { padding-right: 0.5rem; padding-left: 0.5rem; }
+.g-3 { margin-right: -0.75rem; margin-left: -0.75rem; }
+.g-3 > * { padding-right: 0.75rem; padding-left: 0.75rem; }
+.g-4 { margin-right: -1rem; margin-left: -1rem; }
+.g-4 > * { padding-right: 1rem; padding-left: 1rem; }
+
+.gap-1 { gap: 0.25rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-3 { gap: 1rem !important; }
+.gap-4 { gap: 1.5rem !important; }
+
+.d-grid { display: grid !important; }
+.bg-soft { background-color: #f7f7f7 !important; }
+.text-ink { color: #222222 !important; }
+.cursor-pointer { cursor: pointer !important; }
+
