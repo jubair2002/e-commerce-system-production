@@ -402,3 +402,39 @@ svg.i {
 .text-ink { color: #222222 !important; }
 .cursor-pointer { cursor: pointer !important; }
 
+/* 9. Brand Logo Precision Alignment */
+.brand-text-logo {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  color: #222222;
+  text-decoration: none !important;
+}
+.logo {
+  display: flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+}
+.logo-mobile {
+  display: flex !important;
+  align-items: center !important;
+}
+.logo-mobile a {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  text-decoration: none !important;
+}
+.logo-mobile img {
+  position: static !important;
+  margin: 0 !important;
+}
+
+/* Progressive enhancement: Ensure hero slider typography is visible without delay */
+.layer-slick1, .layer-slick1.visible-false {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+

@@ -132,19 +132,32 @@ $timelineSteps = [
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<section class="section py-5">
+<!-- Title Banner (Clean Brand Header) -->
+<section class="txt-center p-lr-15 p-tb-60 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
+	<h2 class="ltext-105 cl0 txt-center">
+		Track Your Order
+	</h2>
+</section>
+
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
+
+		<span class="stext-109 cl4">
+			Track Order
+		</span>
+	</div>
+</div>
+
+<section class="section p-b-80">
   <div class="container" style="max-width: 960px;">
 
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>">Home</a></li>
-        <li class="breadcrumb-item active">Track Order</li>
-      </ol>
-    </nav>
-
     <div class="section-header text-center mb-4">
-      <h2 class="display-serif fs-2xl mb-2"><?= icon('map-pin', 'text-primary me-2') ?> Track Your Order</h2>
-      <p class="text-muted">Enter your order reference number or tracking ID below to check live delivery progress.</p>
+      <p class="stext-115 cl6">Enter your order reference number or tracking ID below to check live delivery progress.</p>
     </div>
 
     <!-- Search Form -->

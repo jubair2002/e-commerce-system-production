@@ -32,8 +32,8 @@ $pageDescription = !empty($page['meta_description']) ? $page['meta_description']
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- Title Banner -->
-<section class="bg-img1 txt-center p-lr-15 p-tb-92" style="background-image: url('<?= htmlspecialchars(url('assets/coza/images/bg-01.jpg'), ENT_QUOTES, 'UTF-8') ?>');">
+<!-- Title Banner (Clean Brand Header) -->
+<section class="txt-center p-lr-15 p-tb-60 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
 	<h2 class="ltext-105 cl0 txt-center">
 		<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
 	</h2>

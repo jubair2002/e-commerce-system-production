@@ -14,7 +14,11 @@ if ($requestUri !== null && preg_match('#(?:^|/)(?:assets/)?uploads/(.+)$#', $re
 require_once __DIR__ . '/includes/shop_bootstrap.php';
 
 $pageTitle = 'Home';
-$siteName  = setting('site_name', APP_NAME);
+$siteBrand = trim((string)setting('site_name', ''));
+if ($siteBrand === '' || $siteBrand === 'PHP Admin Panel' || $siteBrand === 'Store') {
+    $siteBrand = 'Jinish Potro';
+}
+$siteName  = $siteBrand;
 
 // Section Toggles from Settings
 $showHero        = (int)setting('home_show_hero', '1') === 1;
@@ -37,7 +41,7 @@ if ($showCategories) {
     try {
         $categories = FileCache::remember('home:categories:6', 300, function () use ($pdo) {
             return $pdo->query(
-                "SELECT c.id, c.name, c.slug, c.image,
+                "SELECT c.id, c.name, c.slug, c.description,
                         (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
                  FROM categories c
                  WHERE c.status = 'active'
@@ -171,8 +175,9 @@ include __DIR__ . '/includes/partials/header.php';
 		<div class="slick1">
 			<?php if (!empty($heroBanners)): ?>
 				<?php foreach ($heroBanners as $idx => $b):
-					$bgUrl    = !empty($b['image']) ? banner_image_url($b['image']) : url('assets/coza/images/slide-01.jpg');
-					$bTitle   = !empty($b['title']) ? $b['title'] : "Made by {$siteName}";
+					$bgImg    = !empty($b['image']) ? banner_image_url($b['image']) : '';
+					$bStyle   = $bgImg ? "background-image: url('" . htmlspecialchars($bgImg, ENT_QUOTES, 'UTF-8') . "');" : "background-color: #1e272e; background-image: radial-gradient(circle at 50% 50%, #2f3542 0%, #1e272e 100%);";
+					$bTitle   = !empty($b['title']) ? $b['title'] : "Welcome to {$siteBrand}";
 					$bDesc    = !empty($b['subtitle']) ? $b['subtitle'] : setting('store_tagline', 'Curated collections crafted with intention.');
 					$bBtnText = !empty($b['button_text']) ? $b['button_text'] : 'Shop Now';
 					$bBtnUrl  = !empty($b['button_url']) ? $b['button_url'] : route('shop');
@@ -183,17 +188,17 @@ include __DIR__ . '/includes/partials/header.php';
 					];
 					$anim = $animations[$idx % 3];
 				?>
-				<div class="item-slick1" style="background-image: url('<?= htmlspecialchars($bgUrl, ENT_QUOTES, 'UTF-8') ?>');">
+				<div class="item-slick1" style="<?= $bStyle ?>">
 					<div class="container h-full">
 						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="<?= $anim[0] ?>" data-delay="0">
-								<span class="ltext-101 cl2 respon2">
+								<span class="ltext-101 <?= $bgImg ? 'cl2' : 'cl0' ?> respon2">
 									<?= htmlspecialchars($bDesc, ENT_QUOTES, 'UTF-8') ?>
 								</span>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="<?= $anim[1] ?>" data-delay="800">
-								<h2 class="ltext-201 cl2 p-t-19 p-b-43 respon1">
+								<h2 class="ltext-201 <?= $bgImg ? 'cl2' : 'cl0' ?> p-t-19 p-b-43 respon1">
 									<?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?>
 								</h2>
 							</div>
@@ -208,19 +213,19 @@ include __DIR__ . '/includes/partials/header.php';
 				</div>
 				<?php endforeach; ?>
 			<?php else: ?>
-				<!-- Default Fallback Banner -->
-				<div class="item-slick1" style="background-color: #222; background-image: radial-gradient(circle at 50% 50%, #2f3542 0%, #1e272e 100%);">
+				<!-- Clean Brand Hero Banner (No static demo images) -->
+				<div class="item-slick1" style="background-color: #1e272e; background-image: radial-gradient(circle at 50% 50%, #2f3542 0%, #1e272e 100%);">
 					<div class="container h-full">
 						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="fadeInDown" data-delay="0">
 								<span class="ltext-101 cl0 respon2">
-									New Season <?= date('Y') ?>
+									Quality Essentials
 								</span>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="fadeInUp" data-delay="800">
 								<h2 class="ltext-201 cl0 p-t-19 p-b-43 respon1">
-									<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>
+									<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>
 								</h2>
 							</div>
 								
@@ -247,7 +252,7 @@ include __DIR__ . '/includes/partials/header.php';
 			// Show top 3 categories as showcase banner cards
 			$bannerCats = array_slice($categories, 0, 3);
 			foreach ($bannerCats as $cat): 
-				$catImg = !empty($cat['image']) ? category_image_url($cat['image']) : url('assets/coza/images/banner-01.jpg');
+				$catImg = category_image_url($cat['image'] ?? null);
 			?>
 			<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
 				<!-- Block1 -->

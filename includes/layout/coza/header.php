@@ -3,6 +3,10 @@ $categories = shop_active_categories();
 $cartCnt = cart_count();
 $wishlistCnt = function_exists('wishlist_count') ? wishlist_count() : 0;
 $headerCustomer = function_exists('customer_current') ? customer_current() : null;
+$siteBrand = trim((string)setting('site_name', ''));
+if ($siteBrand === '' || $siteBrand === 'PHP Admin Panel' || $siteBrand === 'Store') {
+    $siteBrand = 'Jinish Potro';
+}
 $storeLogoUrl = store_logo_url();
 $announcementText = trim((string)setting('announcement_bar_text', ''));
 $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $announcementText !== '';
@@ -52,9 +56,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 					<!-- Logo desktop -->		
 					<a href="<?= htmlspecialchars(shop_url(), ENT_QUOTES, 'UTF-8') ?>" class="logo">
 						<?php if ($storeLogoUrl): ?>
-							<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?>" style="max-height: 40px;">
+							<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 40px; width: auto; object-fit: contain;">
 						<?php else: ?>
-							<span class="ltext-103 cl2 fw-bold" style="font-size: 22px; font-weight: 700; letter-spacing: -0.5px;"><?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?></span>
+							<span class="brand-text-logo" style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; color: #222; display: flex; align-items: center;">
+								<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #717fe0; margin-left: 2px;">.</span>
+							</span>
 						<?php endif; ?>
 					</a>
 
@@ -121,11 +127,13 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 		<div class="wrap-header-mobile">
 			<!-- Logo mobile -->		
 			<div class="logo-mobile">
-				<a href="<?= htmlspecialchars(shop_url(), ENT_QUOTES, 'UTF-8') ?>">
+				<a href="<?= htmlspecialchars(shop_url(), ENT_QUOTES, 'UTF-8') ?>" style="display: flex; align-items: center; height: 100%;">
 					<?php if ($storeLogoUrl): ?>
-						<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?>" style="max-height: 36px;">
+						<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 36px; width: auto; object-fit: contain;">
 					<?php else: ?>
-						<span class="ltext-103 cl2 fw-bold" style="font-size: 18px;"><?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?></span>
+						<span class="brand-text-logo" style="font-size: 18px; font-weight: 800; text-transform: uppercase; color: #222; display: flex; align-items: center;">
+							<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #717fe0; margin-left: 1px;">.</span>
+						</span>
 					<?php endif; ?>
 				</a>
 			</div>

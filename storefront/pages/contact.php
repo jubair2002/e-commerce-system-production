@@ -89,10 +89,10 @@ $storeAddress = setting('store_address', 'Dhaka, Bangladesh');
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- Title Banner -->
-<section class="bg-img1 txt-center p-lr-15 p-tb-92" style="background-image: url('<?= htmlspecialchars(url('assets/coza/images/bg-01.jpg'), ENT_QUOTES, 'UTF-8') ?>');">
+<!-- Title Banner (Clean Brand Header) -->
+<section class="txt-center p-lr-15 p-tb-60 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
 	<h2 class="ltext-105 cl0 txt-center">
-		Contact
+		Contact Us
 	</h2>
 </section>
 
@@ -154,25 +154,24 @@ include __DIR__ . '/../../includes/partials/header.php';
 						Send Us A Message
 					</h4>
 
-					<div class="bor8 m-b-20 how-pos4-parent">
-						<input class="stext-111 cl2 plh3 size-116 p-l-25 p-r-30" type="text" name="name" placeholder="Your Name *" required value="<?= htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					<div class="bor8 m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="text" name="name" placeholder="Your Name *" required value="<?= htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 					</div>
 
-					<div class="bor8 m-b-20 how-pos4-parent">
-						<input class="stext-111 cl2 plh3 size-116 p-l-62 p-r-30" type="email" name="email" placeholder="Your Email Address *" required value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-						<img class="how-pos4 pointer-none" src="<?= htmlspecialchars(url('assets/coza/images/icons/icon-email.png'), ENT_QUOTES, 'UTF-8') ?>" alt="ICON">
+					<div class="bor8 m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="email" name="email" placeholder="Your Email Address *" required value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 					</div>
 
-					<div class="row">
-						<div class="col-sm-6 bor8 m-b-20 how-pos4-parent" style="border: 1px solid #e6e6e6;">
+					<div class="row m-lr-0 m-b-20" style="gap: 15px;">
+						<div class="col-sm p-lr-0 bor8">
 							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="tel" name="phone" placeholder="Phone Number" value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 						</div>
-						<div class="col-sm-6 bor8 m-b-20 how-pos4-parent" style="border: 1px solid #e6e6e6;">
+						<div class="col-sm p-lr-0 bor8">
 							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="text" name="order_number" placeholder="Order # (Optional)" value="<?= htmlspecialchars($_POST['order_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 						</div>
 					</div>
 
-					<div class="bor8 m-b-20 how-pos4-parent">
+					<div class="bor8 m-b-20">
 						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="text" name="subject" placeholder="Subject" value="<?= htmlspecialchars($_POST['subject'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 					</div>
 

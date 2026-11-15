@@ -818,24 +818,50 @@ function banner_image_url(?string $image): ?string
     return null;
 }
 
-/** Return URL to category image (or null if none exists). */
-function category_image_url(?string $image): ?string
+/** Return clean SVG placeholder for categories when no image is uploaded. */
+function category_placeholder_url(): string
 {
-    if (empty($image)) return null;
-    $clean = ltrim($image, '/');
-    if (file_exists(UPLOADS_PATH . '/categories/' . $clean)) {
-        return UPLOADS_URL . 'categories/' . $clean;
+    return 'data:image/svg+xml;utf8,' . rawurlencode(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">' .
+        '<defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2c3e50"/><stop offset="100%" stop-color="#1a252f"/></linearGradient></defs>' .
+        '<rect width="600" height="450" fill="url(#bg)"/>' .
+        '<circle cx="300" cy="200" r="50" fill="none" stroke="#7f8c8d" stroke-width="3"/>' .
+        '<path d="M275 195 L325 195 M300 170 L300 220" stroke="#7f8c8d" stroke-width="3" stroke-linecap="round"/>' .
+        '<text x="300" y="280" text-anchor="middle" fill="#bdc3c7" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" font-weight="600" letter-spacing="3">COLLECTION</text>' .
+        '</svg>'
+    );
+}
+
+/** Return URL to category image (or clean SVG placeholder if none exists). */
+function category_image_url(?string $image): string
+{
+    if (!empty($image)) {
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://') || str_starts_with($image, 'data:')) {
+            return $image;
+        }
+        if (function_exists('storage')) {
+            try {
+                $storageUrl = storage()->getUrl($image);
+                if (!empty($storageUrl) && str_starts_with($storageUrl, 'http')) {
+                    return $storageUrl;
+                }
+            } catch (Throwable $e) {}
+        }
+        $clean = ltrim($image, '/');
+        if (file_exists(UPLOADS_PATH . '/categories/' . $clean)) {
+            return UPLOADS_URL . 'categories/' . $clean;
+        }
+        if (file_exists(UPLOADS_PATH . '/' . $clean)) {
+            return UPLOADS_URL . $clean;
+        }
+        if (file_exists(ROOT_PATH . '/assets/uploads/categories/' . $clean)) {
+            return BASE_URL . 'assets/uploads/categories/' . $clean;
+        }
+        if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
+            return BASE_URL . 'assets/uploads/' . $clean;
+        }
     }
-    if (file_exists(UPLOADS_PATH . '/' . $clean)) {
-        return UPLOADS_URL . $clean;
-    }
-    if (file_exists(ROOT_PATH . '/assets/uploads/categories/' . $clean)) {
-        return BASE_URL . 'assets/uploads/categories/' . $clean;
-    }
-    if (file_exists(ROOT_PATH . '/assets/uploads/' . $clean)) {
-        return BASE_URL . 'assets/uploads/' . $clean;
-    }
-    return null;
+    return category_placeholder_url();
 }
 
 /**

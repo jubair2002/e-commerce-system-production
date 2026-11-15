@@ -1,8 +1,11 @@
 <?php
 $footerCategories = shop_active_categories();
-$storeAddress = trim((string)setting('store_address', ''));
-$storePhone   = trim((string)setting('store_phone', ''));
-$storeEmail   = trim((string)setting('store_email', ''));
+$storeAddress = trim((string)setting('store_address', 'Dhaka, Bangladesh'));
+if ($storeAddress === '') $storeAddress = 'Dhaka, Bangladesh';
+$storePhone   = trim((string)setting('store_phone', setting('contact_phone', '+880 1700-000000')));
+if ($storePhone === '') $storePhone = '+880 1700-000000';
+$storeEmail   = trim((string)setting('store_email', setting('contact_email', 'support@jinishpotro.store')));
+if ($storeEmail === '') $storeEmail = 'support@jinishpotro.store';
 $socialFb     = trim((string)setting('social_facebook', ''));
 $socialIg     = trim((string)setting('social_instagram', ''));
 $socialWa     = trim((string)setting('social_whatsapp', ''));

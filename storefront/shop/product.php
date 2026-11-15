@@ -333,10 +333,10 @@ include __DIR__ . '/../../includes/partials/header.php';
 							</span>
 						</div>
 
-						<!-- Quantity Controls & Add To Cart Button -->
+						<!-- Quantity Controls, Add To Cart & Buy Now Buttons -->
 						<div class="flex-w flex-r-m p-b-10">
-							<div class="size-204 flex-w flex-m respon6-next">
-								<div class="wrap-num-product flex-w m-r-20 m-tb-10">
+							<div class="size-204 flex-w flex-m respon6-next" style="gap: 10px;">
+								<div class="wrap-num-product flex-w m-r-10 m-tb-10">
 									<div class="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m pointer">
 										<i class="fs-16 zmdi zmdi-minus"></i>
 									</div>
@@ -348,8 +348,14 @@ include __DIR__ . '/../../includes/partials/header.php';
 									</div>
 								</div>
 
-								<button type="submit" name="action_type" value="add_to_cart" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
+								<!-- Add to Cart (AJAX - stays on page) -->
+								<button type="button" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-tb-10 pointer" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
 									Add to cart
+								</button>
+
+								<!-- Buy Now (Direct Checkout) -->
+								<button type="submit" name="action_type" value="buy_now" class="flex-c-m stext-101 cl0 size-101 bg3 bor1 hov-btn3 p-lr-15 trans-04 m-tb-10 pointer" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
+									Buy Now
 								</button>
 							</div>
 						</div>	
@@ -572,9 +578,58 @@ include __DIR__ . '/../../includes/partials/header.php';
 	<?php endif; ?>
 </section>
 
-<!-- Review AJAX Handler -->
+<!-- PDP AJAX Add to Cart & Review Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	// AJAX Add to Cart (Stays on PDP, updates counter, triggers sweetalert)
+	var addBtn = document.getElementById('pdpAddBtn');
+	if (addBtn) {
+		addBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var pid = <?= (int)$productId ?>;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+			var pName = <?= json_encode($product['name']) ?>;
+
+			if (typeof window.cozaAddToCart === 'function') {
+				window.cozaAddToCart(pid, qty, vid, pName);
+			} else {
+				var fd = new FormData();
+				fd.append('action', 'add');
+				fd.append('product_id', pid);
+				if (vid) fd.append('variant_id', vid);
+				fd.append('quantity', qty);
+				fd.append('_csrf', window.SHOP_CSRF_TOKEN || '');
+				fetch((window.SHOP_BASE_URL || '/') + 'api/cart_ajax.php', {
+					method: 'POST',
+					body: fd,
+					headers: { 'X-Requested-With': 'XMLHttpRequest' }
+				})
+				.then(function(r) { return r.json(); })
+				.then(function(res) {
+					if (res && res.ok) {
+						if (typeof swal === 'function') {
+							swal(pName, 'has been added to your cart!', 'success');
+						} else {
+							alert(pName + ' has been added to your cart!');
+						}
+						if (res.cart_count !== undefined) {
+							$('.js-show-cart').attr('data-notify', res.cart_count);
+						}
+					} else {
+						var msg = (res && res.error) ? res.error : 'Could not add product to cart.';
+						if (typeof swal === 'function') swal('Notice', msg, 'error');
+						else alert(msg);
+					}
+				})
+				.catch(function() {
+					if (typeof swal === 'function') swal('Notice', 'Could not add to cart.', 'error');
+				});
+			}
+		});
+	}
+
 	var reviewForm = document.getElementById('writeReviewForm');
 	if (reviewForm) {
 		reviewForm.addEventListener('submit', function(e) {
