@@ -65,5 +65,16 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 		window.SHOP_CSRF_TOKEN = "<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>";
 		window.CUSTOMER_LOGGED_IN = <?= (function_exists('customer_current') && customer_current() !== null) ? 'true' : 'false' ?>;
 	</script>
+	<style>
+		/* Progressive enhancement: Instant paint, prevent white flash */
+		body.animsition, .animsition {
+			opacity: 1 !important;
+			-webkit-animation: none !important;
+			animation: none !important;
+		}
+		.animsition-loading-1 {
+			display: none !important;
+		}
+	</style>
 </head>
 <body class="animsition">
