@@ -23,14 +23,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 					</div>
 
 					<div class="right-top-bar flex-w h-full">
-						<a href="<?= htmlspecialchars(route('contact'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
-							Help & FAQs
-						</a>
-
-						<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
-							Track Order
-						</a>
-
 						<?php if ($headerCustomer): ?>
 							<a href="<?= htmlspecialchars(route('account'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
 								<i class="fa fa-user m-r-6"></i> <?= htmlspecialchars($headerCustomer['name'], ENT_QUOTES, 'UTF-8') ?>
@@ -170,14 +162,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 
 				<li>
 					<div class="right-top-bar flex-w h-full">
-						<a href="<?= htmlspecialchars(route('contact'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
-							Help & FAQs
-						</a>
-
-						<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
-							Track Order
-						</a>
-
 						<?php if ($headerCustomer): ?>
 							<a href="<?= htmlspecialchars(route('account'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
 								My Account
