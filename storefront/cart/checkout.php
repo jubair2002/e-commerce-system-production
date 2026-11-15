@@ -477,36 +477,42 @@ $_SESSION['checkout_rendered_at'] = time();
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<section class="section-py pt-4">
+<!-- Modern Checkout Stylesheet -->
+<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/checkout-modern.css'), ENT_QUOTES, 'UTF-8') ?>">
+
+<!-- Brand Title Banner -->
+<section class="txt-center p-lr-15 p-tb-50 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
+	<h2 class="ltext-105 cl0 txt-center">
+		Checkout
+	</h2>
+</section>
+
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
+
+		<a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Cart
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
+
+		<span class="stext-109 cl4">
+			Checkout
+		</span>
+	</div>
+</div>
+
+<section class="sec-checkout">
   <div class="container">
 
-    <!-- 3-Step Checkout Visual Progress Indicator -->
-    <div class="checkout-progress">
-      <a href="<?= e(route('cart')) ?>" class="progress-step text-muted text-decoration-none">
-        <span class="step-number">1</span>
-        <span>Cart</span>
-      </a>
-      <div class="progress-line"></div>
-      <div class="progress-step is-active">
-        <span class="step-number">2</span>
-        <span>Details</span>
-      </div>
-      <div class="progress-line"></div>
-      <div class="progress-step">
-        <span class="step-number">3</span>
-        <span>Confirmation</span>
-      </div>
-    </div>
-
-    <div class="section-header mb-4 text-center">
-      <h1 class="display-serif fs-2xl mb-1">Complete Your Order</h1>
-      <p class="text-muted small">Fill in your delivery details below. Fast shipping with Cash on Delivery nationwide.</p>
-    </div>
-
     <?php if ($errors): ?>
-      <div class="alert alert-danger alert-dismissible fade show mb-4">
-        <strong><?= icon('alert-circle', 'me-1') ?> Please check the following:</strong>
-        <ul class="mb-0 mt-2 ps-3">
+      <div class="alert alert-danger alert-dismissible fade show mb-4" style="border-radius: 10px;">
+        <strong><i class="zmdi zmdi-alert-circle m-r-6 fs-18"></i> Please check the following:</strong>
+        <ul class="mb-0 mt-2 ps-3" style="padding-left: 20px;">
           <?php foreach ($errors as $err): ?>
             <li><?= e($err) ?></li>
           <?php endforeach; ?>
@@ -526,7 +532,7 @@ include __DIR__ . '/../../includes/partials/header.php';
         <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off">
       </div>
 
-      <div class="row g-4">
+      <div class="row">
         <!-- Left: Customer and Delivery Details -->
         <div class="col-lg-7">
 
@@ -534,64 +540,64 @@ include __DIR__ . '/../../includes/partials/header.php';
           <div class="checkout-card">
             <div class="checkout-card-header">
               <h2 class="checkout-card-title">
-                <span class="checkout-step-badge">1</span>
+                <span class="checkout-step-icon"><i class="zmdi zmdi-pin"></i></span>
                 <span>Delivery &amp; Contact Information</span>
               </h2>
               <?php if ($currentCustomer): ?>
-                <span class="badge bg-light text-dark border">
-                  <?= icon('check-circle', 'text-success me-1') ?> <?= e($currentCustomer['name']) ?>
+                <span class="badge" style="background: #ecfdf5; color: #059669; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
+                  <i class="zmdi zmdi-check-circle me-1"></i> <?= e($currentCustomer['name']) ?>
                 </span>
               <?php else: ?>
-                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-decoration-none text-muted">
-                  Have an account? <span class="text-primary text-decoration-underline">Sign in</span>
+                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-muted" style="font-size: 13px;">
+                  Have an account? <span class="font-weight-bold" style="color: #4f46e5; text-decoration: underline;">Sign in</span>
                 </a>
               <?php endif; ?>
             </div>
 
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
-                <input type="text" name="customer_name" class="form-control"
+            <div class="row">
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="customer_name" class="checkout-input"
                        value="<?= e($old['customer_name']) ?>" placeholder="e.g. Tanvir Ahmed" required>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">
                   Phone Number <?= $requirePhone ? '<span class="text-danger">*</span>' : '' ?>
                 </label>
                 <div class="pos-relative" style="position: relative;">
-                  <input type="tel" name="customer_phone" class="form-control" style="padding-left: 42px;"
+                  <input type="tel" name="customer_phone" class="checkout-input" style="padding-left: 44px;"
                          value="<?= e($old['customer_phone']) ?>" placeholder="01712345678" <?= $requirePhone ? 'required' : '' ?>>
-                  <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
                     <i class="zmdi zmdi-phone fs-18"></i>
                   </div>
                 </div>
               </div>
 
-              <div class="col-12">
-                <label class="form-label fw-semibold small">
-                  Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted fw-normal">(Optional - for digital receipt)</span>' ?>
+              <div class="col-12 m-b-18">
+                <label class="checkout-form-label">
+                  Email Address <?= $requireEmail ? '<span class="text-danger">*</span>' : '<span class="text-muted fw-normal font-weight-normal" style="font-size: 12px;">(Optional - for digital receipt)</span>' ?>
                 </label>
                 <div class="pos-relative" style="position: relative;">
-                  <input type="email" name="customer_email" class="form-control" style="padding-left: 42px;"
+                  <input type="email" name="customer_email" class="checkout-input" style="padding-left: 44px;"
                          value="<?= e($old['customer_email']) ?>" placeholder="tanvir@example.com" <?= $requireEmail ? 'required' : '' ?>>
-                  <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
                     <i class="zmdi zmdi-email fs-18"></i>
                   </div>
                 </div>
               </div>
 
               <?php if (!empty($savedAddresses)): ?>
-                <div class="col-12 mb-2">
-                  <label class="form-label fw-semibold small d-flex justify-content-between align-items-center">
-                    <span><?= icon('map-pin', 'me-1 text-primary') ?> Saved Delivery Addresses</span>
+                <div class="col-12 m-b-18">
+                  <label class="checkout-form-label d-flex justify-content-between align-items-center">
+                    <span><i class="zmdi zmdi-bookmark text-primary me-1"></i> Saved Delivery Addresses</span>
                     <a href="<?= e(route('account_addresses')) ?>" target="_blank" class="small text-decoration-none">Manage addresses</a>
                   </label>
                   <div class="d-flex flex-column gap-2" id="savedAddressSelector">
                     <?php foreach ($savedAddresses as $idx => $sa): 
                       $isSelected = ($idx === 0);
                     ?>
-                      <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item <?= $isSelected ? 'border-primary bg-primary-subtle' : '' ?>" style="cursor:pointer;">
+                      <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item <?= $isSelected ? 'border-primary bg-primary-subtle' : '' ?>" style="cursor:pointer; border-radius: 8px;">
                         <input type="radio" name="saved_address_id" value="<?= (int)$sa['id'] ?>" class="form-check-input mt-1" <?= $isSelected ? 'checked' : '' ?>
                           data-name="<?= e($sa['full_name']) ?>"
                           data-phone="<?= e($sa['phone']) ?>"
@@ -612,23 +618,23 @@ include __DIR__ . '/../../includes/partials/header.php';
                         </div>
                       </label>
                     <?php endforeach; ?>
-                    <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer;">
+                    <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer; border-radius: 8px;">
                       <input type="radio" name="saved_address_id" value="new" class="form-check-input">
-                      <span class="small fw-semibold text-primary"><?= icon('map-pin', 'me-1') ?> Add new delivery address</span>
+                      <span class="small fw-semibold text-primary"><i class="zmdi zmdi-plus-circle me-1"></i> Add new delivery address</span>
                     </label>
                   </div>
                 </div>
               <?php endif; ?>
 
-              <div class="col-12" id="addressInputWrap">
-                <label class="form-label fw-semibold small">Street Address / House / Flat <span class="text-danger">*</span></label>
-                <textarea name="shipping_address" id="shippingAddressInput" class="form-control" rows="2"
+              <div class="col-12 m-b-18" id="addressInputWrap">
+                <label class="checkout-form-label">Street Address / House / Flat <span class="text-danger">*</span></label>
+                <textarea name="shipping_address" id="shippingAddressInput" class="checkout-textarea" rows="2"
                           placeholder="House #, Road #, Area / Thana" required><?= e($old['shipping_address']) ?></textarea>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
-                <select name="shipping_city" id="shippingCityInput" class="form-select" required>
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
+                <select name="shipping_city" id="shippingCityInput" class="checkout-select" required>
                   <option value="">-- Select District (64 Districts) --</option>
                   <?php foreach ($bdDistricts as $dist): ?>
                     <option value="<?= e($dist['name']) ?>" data-zone="<?= e($dist['zone']) ?>" <?= ($old['shipping_city'] === $dist['name'] || (empty($old['shipping_city']) && $dist['name'] === 'Dhaka')) ? 'selected' : '' ?>>
@@ -638,15 +644,15 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </select>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Postal Code</label>
-                <input type="text" name="shipping_zip" id="shippingZipInput" class="form-control"
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">Postal Code</label>
+                <input type="text" name="shipping_zip" id="shippingZipInput" class="checkout-input"
                        value="<?= e($old['shipping_zip']) ?>" placeholder="e.g. 1205">
               </div>
 
-              <div class="col-12">
-                <label class="form-label fw-semibold small">Delivery Instructions <span class="text-muted fw-normal">(Optional)</span></label>
-                <input type="text" name="notes" class="form-control"
+              <div class="col-12 m-b-10">
+                <label class="checkout-form-label">Delivery Instructions <span class="text-muted fw-normal font-weight-normal" style="font-size: 12px;">(Optional)</span></label>
+                <input type="text" name="notes" class="checkout-input"
                        value="<?= e($old['notes']) ?>" placeholder="e.g. Call before delivery, ring doorbell">
               </div>
 
@@ -667,7 +673,7 @@ include __DIR__ . '/../../includes/partials/header.php';
           <div class="checkout-card">
             <div class="checkout-card-header">
               <h2 class="checkout-card-title">
-                <span class="checkout-step-badge">2</span>
+                <span class="checkout-step-icon"><i class="zmdi zmdi-truck"></i></span>
                 <span>Shipping Method</span>
               </h2>
             </div>
@@ -678,28 +684,27 @@ include __DIR__ . '/../../includes/partials/header.php';
                   $cost = $isFree ? 0.0 : (float)$sm['cost'];
                   $isChecked = ((int)$sm['id'] === (int)$selectedShippingId) || ($idx === 0 && !$selectedShippingId);
                 ?>
-                <label class="p-3 d-flex justify-content-between align-items-center shipping-method-card <?= $isChecked ? 'border-primary' : '' ?>" style="cursor: pointer;">
-                  <div class="d-flex align-items-center">
-                    <input class="form-check-input me-3 mt-0 shipping-radio" type="radio" name="shipping_method_id"
-                           value="<?= (int)$sm['id'] ?>"
-                           data-cost="<?= $cost ?>"
-                           data-is-free="<?= $isFree ? '1' : '0' ?>"
-                           data-name="<?= e($sm['name']) ?>"
-                           data-zone="<?= e($sm['zone']) ?>"
-                           data-cod-allowed="<?= (int)$sm['cod_allowed'] ?>"
-                           <?= $isChecked ? 'checked' : '' ?>>
-                    <div>
-                      <div class="fw-semibold shipping-name small"><?= e($sm['name']) ?></div>
-                      <div class="text-muted" style="font-size: 12px;">
-                        <?= e($sm['zone']) ?> · Estimated <?= e($sm['min_days'] ?: 1) ?>–<?= e($sm['max_days'] ?: 3) ?> business days
+                <label class="checkout-option-card shipping-method-card <?= $isChecked ? 'active' : '' ?>">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title"><?= e($sm['name']) ?></div>
+                      <div class="checkout-option-sub">
+                        <?= e($sm['zone']) ?> &bull; Estimated <?= e($sm['min_days'] ?: 1) ?>–<?= e($sm['max_days'] ?: 3) ?> business days
                       </div>
                     </div>
                   </div>
-                  <div class="text-end">
-                    <span class="fw-bold small <?= $isFree ? 'text-success' : 'text-ink' ?>">
-                      <?= $isFree ? 'FREE' : price($cost) ?>
-                    </span>
+                  <div class="checkout-option-price <?= $isFree ? 'is-free' : '' ?>">
+                    <?= $isFree ? 'FREE' : price($cost) ?>
                   </div>
+                  <input class="shipping-radio sr-only" type="radio" name="shipping_method_id" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="<?= (int)$sm['id'] ?>"
+                         data-cost="<?= $cost ?>"
+                         data-is-free="<?= $isFree ? '1' : '0' ?>"
+                         data-name="<?= e($sm['name']) ?>"
+                         data-zone="<?= e($sm['zone']) ?>"
+                         data-cod-allowed="<?= (int)$sm['cod_allowed'] ?>"
+                         <?= $isChecked ? 'checked' : '' ?>>
                 </label>
               <?php endforeach; ?>
             </div>
@@ -709,38 +714,48 @@ include __DIR__ . '/../../includes/partials/header.php';
           <div class="checkout-card">
             <div class="checkout-card-header">
               <h2 class="checkout-card-title">
-                <span class="checkout-step-badge">3</span>
+                <span class="checkout-step-icon"><i class="zmdi zmdi-card"></i></span>
                 <span>Payment Method</span>
               </h2>
             </div>
             <div>
               <?php if ($codEnabled): ?>
-                <div class="form-check p-3 border rounded-3 mb-3 bg-light" id="codOptionWrapper">
-                  <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_cod"
-                         value="cod" <?= $old['payment_method'] === 'cod' ? 'checked' : '' ?>>
-                  <label class="form-check-label fw-semibold d-block small" for="pay_cod" style="cursor: pointer;">
-                    <?= icon('check', 'text-success me-1') ?> Cash on Delivery (COD)
-                    <?php if ($codFee > 0): ?>
-                      <span class="badge bg-secondary ms-2" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
-                    <?php endif; ?>
-                  </label>
-                  <div class="text-muted mt-1" style="font-size: 12px;">
-                    Pay in cash directly to courier upon receiving your parcel at your doorstep.
+                <label class="checkout-option-card payment-method-card <?= $old['payment_method'] === 'cod' ? 'active' : '' ?>" id="codOptionWrapper">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title">
+                        Cash on Delivery (COD)
+                        <?php if ($codFee > 0): ?>
+                          <span class="badge" style="background: #eef2ff; color: #4f46e5; font-size: 11px; margin-left: 6px;" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
+                        <?php endif; ?>
+                      </div>
+                      <div class="checkout-option-sub">
+                        Pay in cash directly to courier upon receiving your parcel at your doorstep.
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  <input class="payment-radio sr-only" type="radio" name="payment_method" id="pay_cod" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="cod" <?= $old['payment_method'] === 'cod' ? 'checked' : '' ?>>
+                </label>
               <?php endif; ?>
 
               <?php if ($bankEnabled): ?>
-                <div class="form-check p-3 border rounded-3 mb-2">
-                  <input class="form-check-input payment-radio" type="radio" name="payment_method" id="pay_bank"
-                         value="bank_transfer" <?= $old['payment_method'] === 'bank_transfer' ? 'checked' : '' ?>>
-                  <label class="form-check-label fw-semibold d-block small" for="pay_bank">
-                    <?= icon('shield', 'text-primary me-1') ?> Direct Bank Transfer
-                  </label>
-                  <div class="text-muted mt-1" style="font-size: 12px;">
-                    <?= nl2br(e($bankInstructions ?: 'Bank account details will be shown upon placing the order.')) ?>
+                <label class="checkout-option-card payment-method-card <?= $old['payment_method'] === 'bank_transfer' ? 'active' : '' ?>">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title">
+                        Direct Bank Transfer
+                      </div>
+                      <div class="checkout-option-sub">
+                        <?= nl2br(e($bankInstructions ?: 'Bank account details will be shown upon placing the order.')) ?>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  <input class="payment-radio sr-only" type="radio" name="payment_method" id="pay_bank" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="bank_transfer" <?= $old['payment_method'] === 'bank_transfer' ? 'checked' : '' ?>>
+                </label>
               <?php endif; ?>
             </div>
           </div>
@@ -750,42 +765,42 @@ include __DIR__ . '/../../includes/partials/header.php';
         <!-- Right: Clean Order Summary Sidebar -->
         <div class="col-lg-5">
           <div class="checkout-summary-box">
-            <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
-              <h3 class="fw-bold mb-0 fs-6">Order Summary</h3>
-              <span class="badge bg-soft text-ink small border px-2 py-1"><?= cart_count() ?> item<?= cart_count() === 1 ? '' : 's' ?></span>
+            <div class="summary-header">
+              <h3 class="summary-title">Order Summary</h3>
+              <span class="summary-badge"><?= cart_count() ?> item<?= cart_count() === 1 ? '' : 's' ?></span>
             </div>
 
-            <!-- Scrollable Items List -->
-            <div class="mb-3" style="max-height: 260px; overflow-y: auto; padding-right: 4px;">
+            <!-- Scrollable Items List (No text collision) -->
+            <div class="summary-items-list">
               <?php foreach ($cart['items'] as $item): ?>
-                <div class="d-flex align-items-center mb-3">
+                <div class="summary-item-row">
                   <img src="<?= e(product_image_url($item['image'])) ?>"
-                       class="rounded-3 border me-3 flex-shrink-0" width="50" height="50"
-                       style="object-fit:cover" alt="">
-                  <div class="flex-grow-1 min-w-0">
-                    <div class="fw-semibold text-truncate small"><?= e($item['product_name']) ?></div>
+                       class="summary-item-img"
+                       alt="<?= e($item['product_name']) ?>">
+                  <div class="summary-item-details">
+                    <div class="summary-item-name"><?= e($item['product_name']) ?></div>
                     <?php if (!empty($item['variant_label'])): ?>
-                      <div class="text-muted" style="font-size: 11px;"><?= e($item['variant_label']) ?></div>
+                      <div class="summary-item-variant"><?= e($item['variant_label']) ?></div>
                     <?php endif; ?>
-                    <div class="text-muted small"><?= (int)$item['qty'] ?> &times; <?= e(price($item['unit_price'])) ?></div>
+                    <div class="summary-item-qty"><?= (int)$item['qty'] ?> &times; <?= e(price($item['unit_price'])) ?></div>
                   </div>
-                  <div class="text-end fw-semibold small ps-2" style="font-family: var(--font-mono);">
+                  <div class="summary-item-price">
                     <?= e(price($item['line_total'])) ?>
                   </div>
                 </div>
               <?php endforeach; ?>
             </div>
 
-            <div class="border-top pt-3">
-              <div class="d-flex justify-content-between mb-2 small">
-                <span class="text-muted">Subtotal</span>
-                <strong style="font-family: var(--font-mono);"><?= e(price($totals['subtotal'])) ?></strong>
+            <div class="p-t-15" style="border-top: 1px solid #f3f4f6;">
+              <div class="summary-calc-row">
+                <span class="summary-calc-label">Subtotal</span>
+                <span class="summary-calc-val"><?= e(price($totals['subtotal'])) ?></span>
               </div>
 
               <?php if (!empty($totals['discount']) && $totals['discount'] > 0): ?>
                 <div class="d-flex justify-content-between align-items-center mb-2 small text-success p-2 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
                   <span class="d-flex align-items-center gap-1">
-                    <?= icon('tag') ?> Coupon (<code><?= e($totals['coupon']['code']) ?></code>)
+                    <i class="zmdi zmdi-label m-r-4"></i> Coupon (<code><?= e($totals['coupon']['code']) ?></code>)
                   </span>
                   <div class="d-flex align-items-center gap-2">
                     <strong style="font-family: var(--font-mono);">-<?= e(price($totals['discount'])) ?></strong>
@@ -795,44 +810,43 @@ include __DIR__ . '/../../includes/partials/header.php';
               <?php else: ?>
                 <div class="mb-3">
                   <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary d-flex align-items-center gap-1" id="toggleCouponBtn">
-                    <?= icon('tag') ?> <span>Have a promo or coupon code?</span>
+                    <i class="zmdi zmdi-label m-r-4"></i> <span>Have a promo or coupon code?</span>
                   </button>
                   <div id="checkoutCouponRow" class="mt-2 d-none">
                     <div class="input-group input-group-sm">
                       <input type="text" name="coupon_code" id="checkoutCouponInput" class="form-control" placeholder="Enter coupon code" style="text-transform: uppercase;">
                       <div class="input-group-append">
-                        <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-editorial-secondary" formnovalidate>Apply</button>
+                        <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-dark" formnovalidate>Apply</button>
                       </div>
                     </div>
                   </div>
                 </div>
               <?php endif; ?>
 
-              <div class="d-flex justify-content-between mb-2 small">
-                <span class="text-muted">Shipping</span>
-                <strong id="summaryShipping" style="font-family: var(--font-mono);">
-                  <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
-                </strong>
+              <div class="summary-calc-row">
+                <span class="summary-calc-label">Shipping</span>
+                <span class="summary-calc-val" id="summaryShipping">
+                  <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success font-weight-bold">Free</span>' ?>
+                </span>
               </div>
 
-              <div id="summaryCodRow" class="d-flex justify-content-between mb-2 small <?= $totals['cod_fee'] > 0 ? '' : 'd-none' ?>">
-                <span class="text-muted">Cash on Delivery Fee</span>
-                <strong id="summaryCodFee" style="font-family: var(--font-mono);"><?= e(price($totals['cod_fee'])) ?></strong>
+              <div id="summaryCodRow" class="summary-calc-row <?= $totals['cod_fee'] > 0 ? '' : 'd-none' ?>">
+                <span class="summary-calc-label">Cash on Delivery Fee</span>
+                <span class="summary-calc-val" id="summaryCodFee"><?= e(price($totals['cod_fee'])) ?></span>
               </div>
 
-              <hr class="my-3">
-
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <span class="fs-6 fw-bold">Total</span>
-                <span id="summaryTotal" class="fs-4 fw-bold text-primary" style="font-family: var(--font-mono);"><?= e(price($totals['total'])) ?></span>
+              <div class="summary-total-row">
+                <span class="summary-total-label">Total</span>
+                <span id="summaryTotal" class="summary-total-val"><?= e(price($totals['total'])) ?></span>
               </div>
 
-              <button type="submit" id="btnSubmitOrder" class="btn btn-primary btn-lg w-100 py-3 fw-semibold shadow-sm">
-                <?= icon('bag', 'me-2') ?> Place Order Now
+              <button type="submit" id="btnSubmitOrder" class="btn-place-order">
+                <i class="zmdi zmdi-lock fs-18 m-r-8"></i> Place Order Now
               </button>
 
-              <div class="text-center mt-3 text-muted" style="font-size: 12px;">
-                <?= icon('shield', 'text-success me-1') ?> 100% Cash on Delivery · Zero prepayment required
+              <div class="checkout-trust-note">
+                <i class="zmdi zmdi-shield-check text-success fs-16"></i>
+                <span>100% Cash on Delivery &bull; Zero prepayment required</span>
               </div>
             </div>
           </div>
@@ -880,9 +894,19 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.shipping-method-card').forEach(card => {
             const rad = card.querySelector('.shipping-radio');
             if (rad && rad.checked) {
-                card.classList.add('border-primary', 'bg-light');
+                card.classList.add('active');
             } else {
-                card.classList.remove('border-primary', 'bg-light');
+                card.classList.remove('active');
+            }
+        });
+
+        // Highlight selected payment card
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            const rad = card.querySelector('.payment-radio');
+            if (rad && rad.checked) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
             }
         });
 
