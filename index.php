@@ -176,7 +176,7 @@ include __DIR__ . '/includes/partials/header.php';
 			<?php if (!empty($heroBanners)): ?>
 				<?php foreach ($heroBanners as $idx => $b):
 					$bgImg    = !empty($b['image']) ? banner_image_url($b['image']) : '';
-					$bStyle   = $bgImg ? "background-image: url('" . htmlspecialchars($bgImg, ENT_QUOTES, 'UTF-8') . "');" : "background-color: #1e272e; background-image: radial-gradient(circle at 50% 50%, #2f3542 0%, #1e272e 100%);";
+					$bStyle   = $bgImg ? "background-image: url('" . htmlspecialchars($bgImg, ENT_QUOTES, 'UTF-8') . "');" : "background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);";
 					$bTitle   = !empty($b['title']) ? $b['title'] : "Welcome to {$siteBrand}";
 					$bDesc    = !empty($b['subtitle']) ? $b['subtitle'] : setting('store_tagline', 'Curated collections crafted with intention.');
 					$bBtnText = !empty($b['button_text']) ? $b['button_text'] : 'Shop Now';
@@ -190,21 +190,21 @@ include __DIR__ . '/includes/partials/header.php';
 				?>
 				<div class="item-slick1" style="<?= $bStyle ?>">
 					<div class="container h-full">
-						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
+						<div class="flex-col-l-m h-full p-t-70 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="<?= $anim[0] ?>" data-delay="0">
-								<span class="ltext-101 <?= $bgImg ? 'cl2' : 'cl0' ?> respon2">
+								<span class="stext-101 respon2" style="color: <?= $bgImg ? '#ffffff' : '#64748b' ?>; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">
 									<?= htmlspecialchars($bDesc, ENT_QUOTES, 'UTF-8') ?>
 								</span>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="<?= $anim[1] ?>" data-delay="800">
-								<h2 class="ltext-201 <?= $bgImg ? 'cl2' : 'cl0' ?> p-t-19 p-b-43 respon1">
+								<h2 class="ltext-201 respon1" style="color: <?= $bgImg ? '#ffffff' : '#111827' ?>; font-size: 52px; font-weight: 800; letter-spacing: -1px; padding-top: 14px; padding-bottom: 32px; line-height: 1.15;">
 									<?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?>
 								</h2>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="<?= $anim[2] ?>" data-delay="1600">
-								<a href="<?= htmlspecialchars($bBtnUrl, ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04">
+								<a href="<?= htmlspecialchars($bBtnUrl, ENT_QUOTES, 'UTF-8') ?>" class="hero-shop-btn flex-c-m stext-101 trans-04">
 									<?= htmlspecialchars($bBtnText, ENT_QUOTES, 'UTF-8') ?>
 								</a>
 							</div>
@@ -213,24 +213,24 @@ include __DIR__ . '/includes/partials/header.php';
 				</div>
 				<?php endforeach; ?>
 			<?php else: ?>
-				<!-- Clean Brand Hero Banner (No static demo images) -->
-				<div class="item-slick1" style="background-color: #1e272e; background-image: radial-gradient(circle at 50% 50%, #2f3542 0%, #1e272e 100%);">
+				<!-- Clean Brand Hero Banner (Modern Obsidian Light Palette) -->
+				<div class="item-slick1" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%); border-bottom: 1px solid #eef0f3;">
 					<div class="container h-full">
-						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
+						<div class="flex-col-l-m h-full p-t-70 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="fadeInDown" data-delay="0">
-								<span class="ltext-101 cl0 respon2">
+								<span class="stext-101 respon2" style="color: #64748b; font-size: 14px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;">
 									Quality Essentials
 								</span>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="fadeInUp" data-delay="800">
-								<h2 class="ltext-201 cl0 p-t-19 p-b-43 respon1">
+								<h2 class="ltext-201 respon1" style="color: #111827; font-size: 54px; font-weight: 800; letter-spacing: -1.5px; padding-top: 14px; padding-bottom: 32px; line-height: 1.15;">
 									<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>
 								</h2>
 							</div>
 								
 							<div class="layer-slick1 animated visible-false" data-appear="zoomIn" data-delay="1600">
-								<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04">
+								<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="hero-shop-btn flex-c-m stext-101 trans-04">
 									Shop Now
 								</a>
 							</div>
@@ -419,8 +419,8 @@ include __DIR__ . '/includes/partials/header.php';
 
 		<!-- Load more -->
 		<div class="flex-c-m flex-w w-full p-t-45">
-			<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl5 size-103 bg2 bor1 hov-btn1 p-lr-15 trans-04">
-				View All Products
+			<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="view-all-products-btn flex-c-m stext-101 trans-04">
+				View All Products <i class="zmdi zmdi-arrow-right m-l-8 fs-16"></i>
 			</a>
 		</div>
 	</div>

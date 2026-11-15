@@ -823,11 +823,11 @@ function category_placeholder_url(): string
 {
     return 'data:image/svg+xml;utf8,' . rawurlencode(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">' .
-        '<defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2c3e50"/><stop offset="100%" stop-color="#1a252f"/></linearGradient></defs>' .
-        '<rect width="600" height="450" fill="url(#bg)"/>' .
-        '<circle cx="300" cy="200" r="50" fill="none" stroke="#7f8c8d" stroke-width="3"/>' .
-        '<path d="M275 195 L325 195 M300 170 L300 220" stroke="#7f8c8d" stroke-width="3" stroke-linecap="round"/>' .
-        '<text x="300" y="280" text-anchor="middle" fill="#bdc3c7" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" font-weight="600" letter-spacing="3">COLLECTION</text>' .
+        '<defs><linearGradient id="cbg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#e2e8f0"/></linearGradient></defs>' .
+        '<rect width="600" height="450" fill="url(#cbg)"/>' .
+        '<circle cx="300" cy="190" r="44" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>' .
+        '<path d="M280 190 L320 190 M300 170 L300 210" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>' .
+        '<text x="300" y="270" text-anchor="middle" fill="#64748b" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="13" font-weight="700" letter-spacing="3">COLLECTION</text>' .
         '</svg>'
     );
 }

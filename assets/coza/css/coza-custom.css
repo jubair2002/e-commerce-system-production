@@ -683,5 +683,281 @@ svg.i {
   }
 }
 
+/* ==========================================================================
+   Homepage & Storefront Obsidian Monochrome Color Palette & Contrast Enhancements
+   ========================================================================== */
+
+/* 1. Hero Slider Proportions & Obsidian Shop Button */
+.item-slick1 {
+  min-height: 440px !important;
+  max-height: 560px !important;
+  height: 56vh !important;
+}
+@media (max-width: 991px) {
+  .item-slick1 {
+    min-height: 380px !important;
+    max-height: 480px !important;
+    height: 50vh !important;
+  }
+}
+.hero-shop-btn {
+  height: 48px;
+  min-width: 175px;
+  padding: 0 24px;
+  background: #111827;
+  color: #ffffff !important;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.18);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.hero-shop-btn:hover {
+  background: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.28);
+  color: #ffffff !important;
+}
+
+/* 2. Category Banner Cards Modernization */
+.sec-banner .block1 {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  background: #ffffff !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.sec-banner .block1:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08) !important;
+  border-color: #d1d5db !important;
+}
+.sec-banner .block1 img {
+  transition: transform 0.4s ease !important;
+}
+.sec-banner .block1:hover img {
+  transform: scale(1.05) !important;
+}
+.sec-banner .block1-txt {
+  background-color: transparent !important;
+}
+.sec-banner .block1-txt:hover {
+  background-color: rgba(17, 24, 39, 0.15) !important;
+}
+.sec-banner .block1-txt-child1 {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  display: inline-flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+.sec-banner .block1:hover .block1-txt-child1 {
+  background: #111827;
+  border-color: #111827;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.25);
+}
+.sec-banner .block1-name {
+  color: #111827 !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.3px !important;
+  line-height: 1.2 !important;
+  transition: color 0.2s ease !important;
+}
+.sec-banner .block1:hover .block1-name {
+  color: #ffffff !important;
+}
+.sec-banner .block1-info {
+  color: #6b7280 !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  transition: color 0.2s ease !important;
+}
+.sec-banner .block1:hover .block1-info {
+  color: #d1d5db !important;
+}
+.sec-banner .block1-txt-child2 {
+  border-bottom: none !important;
+}
+.sec-banner .block1-link {
+  background: #111827;
+  color: #ffffff !important;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 3. Product Cards Typography & High Contrast (Eliminate #999 faint text) */
+.block2-txt .js-name-b2 {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  font-size: 14.5px !important;
+  line-height: 1.4 !important;
+  transition: color 0.18s ease;
+}
+.block2-txt .js-name-b2:hover {
+  color: #000000 !important;
+}
+.block2-txt .price-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+}
+.block2-txt .price-wrap .cl3 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+.block2-txt .price-wrap .cl1 {
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+}
+
+/* 4. Product Overview Tabs */
+.filter-tope-group button {
+  color: #4b5563 !important;
+  font-weight: 600 !important;
+  font-size: 14.5px !important;
+  padding-bottom: 4px !important;
+  border-bottom: 2px solid transparent !important;
+  transition: all 0.2s ease !important;
+}
+.filter-tope-group button:hover {
+  color: #111827 !important;
+}
+.filter-tope-group button.how-active1 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #111827 !important;
+}
+.filter-tope-group button.how-active1::after {
+  background-color: #111827 !important;
+}
+
+/* 5. Filter & Search Controls */
+.js-show-filter, .js-show-search {
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;
+  border-radius: 8px !important;
+  color: #374151 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  height: 42px !important;
+  padding: 0 16px !important;
+  transition: all 0.2s ease !important;
+}
+.js-show-filter:hover, .js-show-search:hover,
+.js-show-filter.show-filter, .js-show-search.show-search {
+  background: #111827 !important;
+  border-color: #111827 !important;
+  color: #ffffff !important;
+}
+.js-show-filter:hover i, .js-show-search:hover i,
+.js-show-filter.show-filter i, .js-show-search.show-search i {
+  color: #ffffff !important;
+}
+
+/* 6. Filter Drawer Links & Layout */
+.panel-filter .wrap-filter {
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  padding: 24px 30px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03) !important;
+}
+.panel-filter .mtext-102 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  font-size: 14.5px !important;
+}
+.filter-link {
+  color: #4b5563 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-bottom: 1.5px solid transparent !important;
+  padding-bottom: 2px !important;
+  transition: all 0.18s ease !important;
+}
+.filter-link:hover {
+  color: #111827 !important;
+  border-bottom-color: #111827 !important;
+}
+.filter-link-active {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  border-bottom-color: #111827 !important;
+}
+
+/* 7. View All Products Button */
+.view-all-products-btn {
+  height: 48px;
+  min-width: 220px;
+  padding: 0 28px;
+  background: #ffffff;
+  border: 2px solid #111827;
+  color: #111827;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.view-all-products-btn:hover {
+  background: #111827;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.18);
+}
+
+/* 8. Back to Top Button */
+.btn-back-to-top {
+  background-color: #111827 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.25) !important;
+}
+.btn-back-to-top:hover {
+  background-color: #1f2937 !important;
+}
+.symbol-btn-back-to-top {
+  color: #ffffff !important;
+}
+
+/* 9. Reviews Section Cards */
+.sec-reviews .bor10 {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+.sec-reviews .bor10:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+  border-color: #d1d5db !important;
+}
+
+
 
 
