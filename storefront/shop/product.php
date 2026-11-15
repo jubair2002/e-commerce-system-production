@@ -293,11 +293,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 						<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>" id="pdpStockBadge">
 							<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
-							<?php if ($inStock): ?>
-								In Stock (<?= (int)$currentStock ?> left)
-							<?php else: ?>
-								Sold Out
-							<?php endif; ?>
+							<?= $inStock ? 'In Stock: ' . (int)$currentStock : 'Sold Out' ?>
 						</span>
 
 						<?php if (!empty($product['sku'])): ?>
@@ -315,30 +311,6 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<span class="pdp-price-current" id="pdpPrice"><?= price((float)$product['price']) ?></span>
 						<?php endif; ?>
 					</div>
-
-					<!-- Real-Time Stock Status / Units Remaining Alert -->
-					<?php if ($inStock): ?>
-						<div class="pdp-stock-left-box" id="pdpStockLeftBox">
-							<div class="pdp-stock-left-header">
-								<span class="pdp-stock-left-text" id="pdpStockLeftText">
-									<i class="zmdi zmdi-fire m-r-6 fs-18" style="color: #ef4444;"></i>
-									<?php if ($currentStock <= 5): ?>
-										<span style="color: #b91c1c;">Hurry! Only&nbsp;<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;left in stock</span>
-									<?php elseif ($currentStock <= 15): ?>
-										Only&nbsp;<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;left in stock - order soon!
-									<?php else: ?>
-										<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;items available in stock
-									<?php endif; ?>
-								</span>
-								<span class="pdp-stock-left-badge">
-									Ready to ship
-								</span>
-							</div>
-							<div class="pdp-stock-progress-track">
-								<div id="pdpStockBar" style="background: <?= $currentStock <= 5 ? '#ef4444' : '#111827' ?>; height: 100%; border-radius: 4px; width: <?= min(100, max(12, ($currentStock / 30) * 100)) ?>%; transition: width 0.3s ease;"></div>
-							</div>
-						</div>
-					<?php endif; ?>
 
 					<?php if (!empty($product['short_description'])): ?>
 						<p class="pdp-short-desc">
@@ -696,8 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 				var vStock = parseInt(match.stock, 10);
 				var stockBadge = document.getElementById('pdpStockBadge');
-				var stockLeftBox = document.getElementById('pdpStockLeftBox');
-				var stockBar = document.getElementById('pdpStockBar');
 				var addBtn = document.getElementById('pdpAddBtn');
 				var buyBtn = document.getElementById('pdpBuyNowBtn');
 				var qtyInput = document.getElementById('pdpQtyInput');
@@ -705,17 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (vStock > 0) {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge in-stock';
-						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock (' + vStock + ' left)';
-					}
-					if (stockLeftBox) {
-						stockLeftBox.style.display = 'block';
-						var txt = (vStock <= 5) ? '<span style="color:#b91c1c;">Hurry! Only <strong>' + vStock + '</strong> left in stock</span>' : (vStock <= 15 ? 'Only <strong>' + vStock + '</strong> left in stock - order soon!' : '<strong>' + vStock + '</strong> items available in stock');
-						var leftText = document.getElementById('pdpStockLeftText');
-						if (leftText) leftText.innerHTML = '<i class="zmdi zmdi-fire m-r-6 fs-18" style="color: #ef4444;"></i> ' + txt;
-						if (stockBar) {
-							stockBar.style.background = (vStock <= 5) ? '#ef4444' : '#111827';
-							stockBar.style.width = Math.min(100, Math.max(12, (vStock / 30) * 100)) + '%';
-						}
+						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;
 					}
 					if (addBtn) addBtn.disabled = false;
 					if (buyBtn) buyBtn.disabled = false;
@@ -725,7 +685,6 @@ document.addEventListener('DOMContentLoaded', function() {
 						stockBadge.className = 'pdp-stock-badge out-of-stock';
 						stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
 					}
-					if (stockLeftBox) stockLeftBox.style.display = 'none';
 					if (addBtn) addBtn.disabled = true;
 					if (buyBtn) buyBtn.disabled = true;
 				}
