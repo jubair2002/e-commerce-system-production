@@ -59,18 +59,22 @@ $productCols = "p.id, p.category_id, p.name, p.slug, p.sku, p.price, p.sale_pric
                 p.track_inventory, p.rating_avg, p.rating_count, p.sold_count";
 
 // 2. New Arrivals (cached 5 min)
+$newArrivalsCount = max(4, min(40, (int)setting('home_featured_count', '8')));
 $newArrivals = [];
 if ($showNewArrivals) {
     try {
-        $newArrivals = FileCache::remember('home:newarrivals:8', 300, function () use ($pdo, $productCols) {
-            $rows = $pdo->query(
+        $newArrivals = FileCache::remember("home:newarrivals:{$newArrivalsCount}", 300, function () use ($pdo, $productCols, $newArrivalsCount) {
+            $stmt = $pdo->prepare(
                 "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
                  WHERE p.status = 'active'
-                 ORDER BY p.created_at DESC
-                 LIMIT 8"
-            )->fetchAll() ?: [];
+                 ORDER BY p.created_at DESC, p.id DESC
+                 LIMIT :lim"
+            );
+            $stmt->bindValue(':lim', $newArrivalsCount, PDO::PARAM_INT);
+            $stmt->execute();
+            $rows = $stmt->fetchAll() ?: [];
             if (!empty($rows)) products_attach_card_data($rows);
             return $rows;
         });
@@ -136,62 +140,18 @@ if ($showReviews) {
     } catch (Throwable $e) { $homeReviews = []; }
 }
 
-// Build deduplicated overview products map tagged with filter classes
-$overviewProducts = [];
+// Build New Arrivals products map tagged with category filter classes
+$newArrivalProducts = [];
 $productTags = [];
 
-if ($showFeatured) {
-    foreach ($featured as $p) {
-        $pid = (int)$p['id'];
-        $overviewProducts[$pid] = $p;
-        $productTags[$pid]['featured'] = 'featured';
-        if (!empty($p['category_slug'])) $productTags[$pid][$p['category_slug']] = $p['category_slug'];
-    }
-}
-
-if ($showNewArrivals) {
+if ($showNewArrivals && !empty($newArrivals)) {
     foreach ($newArrivals as $p) {
         $pid = (int)$p['id'];
-        $overviewProducts[$pid] = $p;
-        $productTags[$pid]['new-arrivals'] = 'new-arrivals';
-        if (!empty($p['category_slug'])) $productTags[$pid][$p['category_slug']] = $p['category_slug'];
-    }
-}
-
-if ($showBestSellers) {
-    foreach ($bestSellers as $p) {
-        $pid = (int)$p['id'];
-        $overviewProducts[$pid] = $p;
-        $productTags[$pid]['best-sellers'] = 'best-sellers';
-        if (!empty($p['category_slug'])) $productTags[$pid][$p['category_slug']] = $p['category_slug'];
-    }
-}
-
-// Backfill overview products if needed so categories are well-represented
-if (count($overviewProducts) < 16) {
-    try {
-        $recentProducts = FileCache::remember('home:recent:16', 300, function () use ($pdo, $productCols) {
-            $rows = $pdo->query(
-                "SELECT {$productCols}, c.name AS category_name, c.slug AS category_slug
-                 FROM products p
-                 LEFT JOIN categories c ON c.id = p.category_id
-                 WHERE p.status = 'active'
-                 ORDER BY p.id DESC
-                 LIMIT 16"
-            )->fetchAll() ?: [];
-            if (!empty($rows)) products_attach_card_data($rows);
-            return $rows;
-        });
-        foreach ($recentProducts as $p) {
-            $pid = (int)$p['id'];
-            if (!isset($overviewProducts[$pid])) {
-                $overviewProducts[$pid] = $p;
-            }
-            if (!empty($p['category_slug'])) {
-                $productTags[$pid][$p['category_slug']] = $p['category_slug'];
-            }
+        $newArrivalProducts[$pid] = $p;
+        if (!empty($p['category_slug'])) {
+            $productTags[$pid][$p['category_slug']] = $p['category_slug'];
         }
-    } catch (Throwable $e) {}
+    }
 }
 
 include __DIR__ . '/includes/partials/header.php';
@@ -359,38 +319,21 @@ include __DIR__ . '/includes/partials/header.php';
 </div>
 <?php endif; ?>
 
-<!-- =================== PRODUCT OVERVIEW SECTION =================== -->
+<!-- =================== NEW ARRIVALS SECTION =================== -->
+<?php if ($showNewArrivals): ?>
 <section class="bg0 p-t-23 p-b-140">
 	<div class="container">
 		<div class="p-b-10">
 			<h3 class="ltext-103 cl5">
-				<?= htmlspecialchars(setting('home_overview_title', 'Product Overview'), ENT_QUOTES, 'UTF-8') ?>
+				<?= htmlspecialchars(setting('home_new_arrivals_title', 'New Arrivals'), ENT_QUOTES, 'UTF-8') ?>
 			</h3>
 		</div>
 
 		<div class="flex-w flex-sb-m p-b-52">
 			<div class="flex-w flex-l-m filter-tope-group m-tb-10">
 				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5 how-active1" data-filter="*">
-					All Products
+					All
 				</button>
-
-				<?php if ($showNewArrivals && !empty($newArrivals)): ?>
-				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".new-arrivals">
-					New Arrivals
-				</button>
-				<?php endif; ?>
-
-				<?php if ($showBestSellers && !empty($bestSellers)): ?>
-				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".best-sellers">
-					Best Sellers
-				</button>
-				<?php endif; ?>
-
-				<?php if ($showFeatured && !empty($featured)): ?>
-				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".featured">
-					Featured
-				</button>
-				<?php endif; ?>
 
 				<?php foreach ($categories as $cat): ?>
 				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>">
@@ -485,17 +428,17 @@ include __DIR__ . '/includes/partials/header.php';
 			</div>
 		</div>
 
-		<?php if (!empty($overviewProducts)): ?>
+		<?php if (!empty($newArrivalProducts)): ?>
 			<div class="row isotope-grid">
-				<?php foreach ($overviewProducts as $pid => $p): 
+				<?php foreach ($newArrivalProducts as $pid => $p): 
 					$productCardExtraClass = implode(' ', $productTags[$pid] ?? []);
 					include __DIR__ . '/includes/partials/product_card.php';
 				endforeach; ?>
 			</div>
 
-			<!-- Load more -->
+			<!-- View All Products -->
 			<div class="flex-c-m flex-w w-full p-t-45">
-				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="view-all-products-btn flex-c-m stext-101 trans-04">
+				<a href="<?= htmlspecialchars(route('shop', ['sort' => 'newest']), ENT_QUOTES, 'UTF-8') ?>" class="view-all-products-btn flex-c-m stext-101 trans-04">
 					View All Products <i class="zmdi zmdi-arrow-right m-l-8 fs-16"></i>
 				</a>
 			</div>
@@ -505,9 +448,9 @@ include __DIR__ . '/includes/partials/header.php';
 					<div class="empty-state-icon m-b-20">
 						<i class="zmdi zmdi-shopping-basket cl6" style="font-size: 64px;"></i>
 					</div>
-					<h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No products found</h4>
+					<h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No new arrivals yet</h4>
 					<p class="stext-115 cl6 p-b-25" style="max-width: 520px; margin: 0 auto 25px auto;">
-						Check back soon as we restock new items daily.
+						We are preparing our latest collection drops. Check back soon or explore our full catalog.
 					</p>
 					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px; border-radius: 25px;">
 						Browse Shop
@@ -517,6 +460,7 @@ include __DIR__ . '/includes/partials/header.php';
 		<?php endif; ?>
 	</div>
 </section>
+<?php endif; ?>
 
 <!-- =================== CUSTOMER REVIEWS STRIP =================== -->
 <?php if ($showReviews && !empty($homeReviews)): ?>
