@@ -87,10 +87,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 								<?php endif; ?>
 							</li>
 
-							<li class="<?= route_is('cart') ? 'active-menu' : '' ?>">
-								<a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>">Cart</a>
-							</li>
-
 							<li class="<?= route_is('track') ? 'active-menu' : '' ?>">
 								<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>">Track Order</a>
 							</li>
@@ -221,10 +217,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							<i class="fa fa-angle-right" aria-hidden="true"></i>
 						</span>
 					<?php endif; ?>
-				</li>
-
-				<li>
-					<a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>">Cart</a>
 				</li>
 
 				<li>
