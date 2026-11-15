@@ -110,6 +110,13 @@ class S3Storage implements StorageInterface
 
         if (is_resource($sourcePathOrStream)) {
             $source = $sourcePathOrStream;
+            $stat = @fstat($source);
+            if ($stat && isset($stat['size']) && $stat['size'] >= 0) {
+                $size = (int)$stat['size'];
+            }
+            if (@stream_get_meta_data($source)['seekable'] ?? false) {
+                @rewind($source);
+            }
         } elseif (is_string($sourcePathOrStream)) {
             if (strlen($sourcePathOrStream) < 4096 && @file_exists($sourcePathOrStream) && @is_file($sourcePathOrStream)) {
                 $source = @fopen($sourcePathOrStream, 'rb');
@@ -135,7 +142,7 @@ class S3Storage implements StorageInterface
                     $this->bucket,
                     $fullKey,
                     $source,
-                    'private', // Bucket owner enforced - ACLs disabled in modern AWS setups
+                    null, // Do not send x-amz-acl header; modern S3 buckets have ACLs disabled
                     [
                         'before_upload' => function (\Aws\Command $command) use ($mimeType, $cacheControl, $metadata) {
                             $command['ContentType'] = $mimeType;

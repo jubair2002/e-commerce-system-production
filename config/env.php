@@ -69,3 +69,6 @@ if (!function_exists('env')) {
 
 // Auto-load root .env if present
 load_env(dirname(__DIR__) . '/.env');
+if (file_exists('/etc/environment')) {
+    load_env('/etc/environment');
+}

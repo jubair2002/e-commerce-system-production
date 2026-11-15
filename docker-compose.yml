@@ -1,11 +1,12 @@
 # ==============================================================================
-# Jinispotro Full Production Stack
-# Includes: PHP 8.2 Apache App, MySQL 8.0, Prometheus, Grafana & Exporters
+# Jinispotro Production Stack
+# Services: Nginx Reverse Proxy (SSL), PHP 8.2 Apache App, MySQL 8.0, Certbot
+# Domain: jinishpotro.store
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # 0. Nginx Reverse Proxy (SSL, Domain Routing, WebSockets)
+  # 1. Nginx Reverse Proxy (SSL Termination, HTTP/2, Static Buffering)
   # ----------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
@@ -20,12 +21,11 @@ services:
       - certbot_var:/var/www/certbot
     depends_on:
       - app
-      - grafana
     networks:
       - jinispotro_net
 
   # ----------------------------------------------------------------------------
-  # 1. Main Web Application & Background Workers (PHP 8.2 + Apache)
+  # 2. Main Web Application & Background Workers (PHP 8.2 + Apache)
   # ----------------------------------------------------------------------------
   app:
     build:
@@ -46,23 +46,23 @@ services:
       DB_PASS: ${DB_PASS:-secret123}
       DB_CHARSET: utf8mb4
 
-      # AWS S3 Storage (Provided by User)
+      # AWS S3 Storage (Configurable via Admin Panel or .env)
       STORAGE_PRIMARY: ${STORAGE_PRIMARY:-s3}
       STORAGE_FALLBACK: ${STORAGE_FALLBACK:-local}
-      AWS_REGION: ${AWS_REGION:-ap-southeast-1}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
       S3_KEY_PREFIX: ${S3_KEY_PREFIX:-uploads/}
+      STORAGE_S3_DELIVERY: ${STORAGE_S3_DELIVERY:-public}
 
       # App Settings
       APP_NAME: "${APP_NAME:-Jinispotro E-Commerce}"
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY:-c84f1a29e46a78b901d3e5f72a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b}
       BASE_URL: ${BASE_URL:-/}
-      SITE_URL: ${SITE_URL:-http://localhost}
-      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      SITE_URL: ${SITE_URL:-http://jinishpotro.store}
     volumes:
       - app_uploads:/var/www/html/assets/uploads
       - app_storage:/var/www/html/storage
@@ -70,7 +70,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/metrics.php || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -79,7 +79,7 @@ services:
       - jinispotro_net
 
   # ----------------------------------------------------------------------------
-  # 2. Database Service (MySQL 8.0)
+  # 3. Database Service (MySQL 8.0)
   # ----------------------------------------------------------------------------
   db:
     image: mysql:8.0
@@ -110,114 +110,7 @@ services:
       - jinispotro_net
 
   # ----------------------------------------------------------------------------
-  # 3. Prometheus Monitoring Engine
-  # ----------------------------------------------------------------------------
-  prometheus:
-    image: prom/prometheus:v2.51.0
-    container_name: jinispotro_prometheus
-    restart: unless-stopped
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=15d
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
-      - --web.enable-lifecycle
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    depends_on:
-      - app
-      - mysqld-exporter
-    networks:
-      - jinispotro_net
-
-  # ----------------------------------------------------------------------------
-  # 4. Grafana Dashboards (Pre-configured)
-  # ----------------------------------------------------------------------------
-  grafana:
-    image: grafana/grafana:10.4.0
-    container_name: jinispotro_grafana
-    restart: unless-stopped
-    ports:
-      - "${GRAFANA_PORT:-3000}:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-grafana.jinishpotro.store}
-      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/"
-      GF_SERVER_SERVE_FROM_SUB_PATH: "false"
-      GF_AUTH_ANONYMOUS_ENABLED: "${GRAFANA_ANONYMOUS_ENABLED:-true}"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
-    depends_on:
-      - prometheus
-    networks:
-      - jinispotro_net
-
-  # ----------------------------------------------------------------------------
-  # 5. MySQL Prometheus Exporter
-  # ----------------------------------------------------------------------------
-  mysqld-exporter:
-    image: prom/mysqld-exporter:v0.15.1
-    container_name: jinispotro_mysqld_exporter
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "root:${DB_ROOT_PASSWORD:-rootsecret123}@(db:3306)/"
-    ports:
-      - "${MYSQLD_EXPORTER_PORT:-9104}:9104"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - jinispotro_net
-
-  # ----------------------------------------------------------------------------
-  # 6. Host Hardware & OS Node Exporter
-  # ----------------------------------------------------------------------------
-  node-exporter:
-    image: prom/node-exporter:v1.7.0
-    container_name: jinispotro_node_exporter
-    restart: unless-stopped
-    command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --path.rootfs=/rootfs
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    ports:
-      - "${NODE_EXPORTER_PORT:-9100}:9100"
-    networks:
-      - jinispotro_net
-
-  # ----------------------------------------------------------------------------
-  # 7. Container Resource Metrics (cAdvisor)
-  # ----------------------------------------------------------------------------
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: jinispotro_cadvisor
-    restart: unless-stopped
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    ports:
-      - "${CADVISOR_PORT:-8080}:8080"
-    networks:
-      - jinispotro_net
-
-  # ----------------------------------------------------------------------------
-  # 8. Let's Encrypt Certbot for Automated SSL Certificates
+  # 4. Let's Encrypt Certbot for Automated SSL Certificates
   # ----------------------------------------------------------------------------
   certbot:
     image: certbot/certbot:latest
@@ -235,10 +128,6 @@ volumes:
   app_uploads:
     driver: local
   app_storage:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
     driver: local
   certbot_etc:
     driver: local

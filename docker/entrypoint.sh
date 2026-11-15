@@ -40,10 +40,12 @@ exit(1);
 echo "Applying database schema migrations..."
 php bin/migrate.php up
 
-# 4. Ensure upload and cache directories exist with correct permissions
+# 4. Ensure upload, cache, and log files exist with correct permissions
 mkdir -p /var/www/html/assets/uploads /var/www/html/storage/cache
-chown -R www-data:www-data /var/www/html/assets/uploads /var/www/html/storage
+touch /var/log/storage-sync.log
+chown -R www-data:www-data /var/www/html/assets/uploads /var/www/html/storage /var/log/storage-sync.log
 chmod -R 775 /var/www/html/assets/uploads /var/www/html/storage
+chmod 0664 /var/log/storage-sync.log
 
 # 5. Start background cron service
 echo "Starting background cron daemon..."

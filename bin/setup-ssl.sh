@@ -11,7 +11,7 @@ DOMAIN="jinishpotro.store"
 
 echo "=========================================================="
 echo " Starting Let's Encrypt SSL Setup for: $DOMAIN"
-echo " Domains: $DOMAIN, www.$DOMAIN, grafana.$DOMAIN"
+echo " Domains: $DOMAIN, www.$DOMAIN"
 echo " Admin Email: $EMAIL"
 echo "=========================================================="
 
@@ -26,7 +26,6 @@ docker compose run --rm certbot certonly \
   -w /var/www/certbot \
   -d "$DOMAIN" \
   -d "www.$DOMAIN" \
-  -d "grafana.$DOMAIN" \
   --email "$EMAIL" \
   --agree-tos \
   --no-eff-email
@@ -42,5 +41,5 @@ docker compose exec nginx nginx -s reload
 echo "=========================================================="
 echo " SSL Setup Complete!"
 echo " • Storefront: https://$DOMAIN"
-echo " • Grafana:    https://grafana.$DOMAIN"
+echo " • WWW:        https://www.$DOMAIN"
 echo "=========================================================="
