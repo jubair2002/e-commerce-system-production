@@ -35,8 +35,6 @@ services:
     restart: unless-stopped
     expose:
       - "80"
-    ports:
-      - "${APP_PORT:-8080}:80"
     environment:
       # Database connection
       DB_HOST: db
