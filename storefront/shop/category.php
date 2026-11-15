@@ -1,7 +1,8 @@
 <?php
 /**
- * Category Listing Page (Prompt 04).
- * Breadcrumb, Category Title, Filter Sidebar, Sort, and Clean Cards.
+ * Category Listing Page (Cozastore Edition).
+ * Cozastore category layout with breadcrumbs, category pills, filter & search drawers,
+ * product grid, and circular pagination.
  */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
@@ -26,18 +27,16 @@ if (!$category) {
     $pageTitle = 'Category Not Found';
     include __DIR__ . '/../../includes/partials/header.php';
     ?>
-    <section class="section">
-      <div class="container">
-        <div class="empty-state-card">
-          <div class="empty-state-icon"><?= icon('bag') ?></div>
-          <h2>Category Not Found</h2>
-          <p>The category you're looking for does not exist or has been moved.</p>
-          <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
-            Browse All Products
-          </a>
+    <div class="bg0 p-t-100 p-b-140">
+        <div class="container text-center">
+            <i class="zmdi zmdi-alert-circle-o fs-50 cl6 d-block m-b-20" style="font-size: 60px;"></i>
+            <h2 class="ltext-103 cl2 p-b-15">Category Not Found</h2>
+            <p class="stext-115 cl6 p-b-30">The category you're looking for does not exist or has been moved.</p>
+            <a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px;">
+                Browse All Products
+            </a>
         </div>
-      </div>
-    </section>
+    </div>
     <?php
     include __DIR__ . '/../../includes/partials/footer.php';
     exit;
@@ -152,151 +151,212 @@ if (empty($products) && $total === 0) {
 }
 
 $categoriesList = shop_active_categories();
+$baseQuery = $_GET;
 
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<section class="section">
-  <div class="container">
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-      <ol class="breadcrumb small" style="background:none; padding:0;">
-        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>" class="text-muted">Home</a></li>
-        <li class="breadcrumb-item"><a href="<?= e(route('shop')) ?>" class="text-muted">Shop</a></li>
-        <li class="breadcrumb-item active" aria-current="page"><?= e($category['name']) ?></li>
-      </ol>
-    </nav>
+		<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Shop
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <!-- Category Header -->
-    <div class="section-header mb-3">
-      <h1 class="section-title"><?= e($category['name']) ?></h1>
-      <p class="section-sub text-muted">Showing <?= count($products) ?> of <?= $total ?> product<?= $total === 1 ? '' : 's' ?></p>
-    </div>
+		<span class="stext-109 cl4">
+			<?= htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8') ?>
+		</span>
+	</div>
+</div>
 
-    <!-- Category Filter Pills Bar (Webflow Shop Style) -->
-    <?php if (!empty($categoriesList)): ?>
-      <div class="category-pills-wrap mb-4">
-        <a href="<?= e(route('shop')) ?>" class="category-pill">All Products</a>
-        <?php foreach ($categoriesList as $cl): ?>
-          <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>" class="category-pill <?= ($cl['slug'] === $slug) ? 'is-active' : '' ?>">
-            <?= e($cl['name']) ?>
-          </a>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
+<!-- =================== COZASTORE CATEGORY CATALOG =================== -->
+<div class="bg0 p-b-140">
+	<div class="container">
 
-    <!-- Top Toolbar -->
-    <div class="catalog-toolbar">
-      <div></div>
-      <div class="toolbar-controls">
-        <form method="get" id="sortFormCategory" class="d-inline-flex align-items-center">
-          <input type="hidden" name="slug" value="<?= e($slug) ?>">
-          <?php if ($inStockOnly): ?><input type="hidden" name="in_stock" value="1"><?php endif; ?>
-          <?php if ($onSaleOnly): ?><input type="hidden" name="on_sale" value="1"><?php endif; ?>
-          <?php if ($minPrice !== null): ?><input type="hidden" name="min_price" value="<?= e($minPrice) ?>"><?php endif; ?>
-          <?php if ($maxPrice !== null): ?><input type="hidden" name="max_price" value="<?= e($maxPrice) ?>"><?php endif; ?>
-          <select name="sort" class="sort-select" onchange="document.getElementById('sortFormCategory').submit();" aria-label="Sort products">
-            <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest First</option>
-            <option value="best_selling" <?= $sort === 'best_selling' ? 'selected' : '' ?>>Best Selling</option>
-            <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Price: Low to High</option>
-            <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Price: High to Low</option>
-          </select>
-        </form>
-      </div>
-    </div>
+		<!-- Category Title & Meta -->
+		<div class="p-b-30">
+			<h2 class="ltext-103 cl5">
+				<?= htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8') ?>
+			</h2>
+			<p class="stext-102 cl6 p-t-6">
+				Showing <?= count($products) ?> of <?= $total ?> product<?= $total === 1 ? '' : 's' ?>
+			</p>
+		</div>
 
-    <!-- Catalog Layout -->
-    <div class="catalog-layout">
+		<!-- Category Filter Pills Bar & Controls -->
+		<div class="flex-w flex-sb-m p-b-40">
+			<div class="flex-w flex-l-m filter-tope-group m-tb-10">
+				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5">
+					All Products
+				</a>
 
-      <!-- Desktop Sidebar -->
-      <aside class="filter-sidebar" aria-label="Filters">
-        <form method="get" action="<?= e(route('category', ['slug' => $slug])) ?>">
-          <input type="hidden" name="slug" value="<?= e($slug) ?>">
+				<?php if (!empty($categoriesList)): ?>
+					<?php foreach ($categoriesList as $cl): ?>
+						<a href="<?= htmlspecialchars(route('category', ['slug' => $cl['slug']]), ENT_QUOTES, 'UTF-8') ?>" class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5 <?= ($cl['slug'] === $slug) ? 'how-active1' : '' ?>">
+							<?= htmlspecialchars($cl['name'], ENT_QUOTES, 'UTF-8') ?>
+						</a>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</div>
 
-          <!-- Categories List -->
-          <div class="filter-block">
-            <div class="filter-title">All Categories</div>
-            <ul class="filter-list">
-              <li>
-                <a href="<?= e(route('shop')) ?>" class="text-reset small">All Products</a>
-              </li>
-              <?php foreach ($categoriesList as $cl): ?>
-                <li>
-                  <a href="<?= e(route('category', ['slug' => $cl['slug']])) ?>"
-                     class="small <?= $cl['slug'] === $slug ? 'fw-bold text-ink' : 'text-muted' ?>">
-                    <?= e($cl['name']) ?>
-                  </a>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          </div>
+			<div class="flex-w flex-c-m m-tb-10">
+				<div class="flex-c-m stext-106 cl6 size-104 bor4 pointer hov-btn3 trans-04 m-r-8 m-tb-4 js-show-filter">
+					<i class="icon-filter cl2 m-r-6 fs-15 trans-04 zmdi zmdi-filter-list"></i>
+					<i class="icon-close-filter cl2 m-r-6 fs-15 trans-04 zmdi zmdi-close dis-none"></i>
+					Filter
+				</div>
 
-          <!-- Availability -->
-          <div class="filter-block">
-            <div class="filter-title">Availability</div>
-            <ul class="filter-list">
-              <li>
-                <label class="filter-checkbox-label">
-                  <span>
-                    <input type="checkbox" name="in_stock" value="1" <?= $inStockOnly === '1' ? 'checked' : '' ?> onchange="this.form.submit()">
-                    In Stock Only
-                  </span>
-                </label>
-              </li>
-              <li>
-                <label class="filter-checkbox-label">
-                  <span>
-                    <input type="checkbox" name="on_sale" value="1" <?= $onSaleOnly === '1' ? 'checked' : '' ?> onchange="this.form.submit()">
-                    On Sale Only
-                  </span>
-                </label>
-              </li>
-            </ul>
-          </div>
+				<div class="flex-c-m stext-106 cl6 size-105 bor4 pointer hov-btn3 trans-04 m-tb-4 js-show-search">
+					<i class="icon-search cl2 m-r-6 fs-15 trans-04 zmdi zmdi-search"></i>
+					<i class="icon-close-search cl2 m-r-6 fs-15 trans-04 zmdi zmdi-close dis-none"></i>
+					Search
+				</div>
+			</div>
+			
+			<!-- Search Drawer -->
+			<div class="dis-none panel-search w-full p-t-10 p-b-15">
+				<form action="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" method="GET" class="bor8 dis-flex p-l-15">
+					<input type="hidden" name="category" value="<?= htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') ?>">
+					<button type="submit" class="size-113 flex-c-m fs-16 cl2 hov-cl1 trans-04">
+						<i class="zmdi zmdi-search"></i>
+					</button>
+					<input class="mtext-107 cl2 size-114 plh2 p-r-15" type="text" name="q" placeholder="Search in <?= htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8') ?>...">
+				</form>	
+			</div>
 
-          <!-- Price -->
-          <div class="filter-block">
-            <div class="filter-title">Price Range</div>
-            <div class="price-inputs-row mb-2">
-              <input type="number" name="min_price" class="price-input" placeholder="Min" value="<?= $minPrice !== null ? e($minPrice) : '' ?>">
-              <span class="text-muted">–</span>
-              <input type="number" name="max_price" class="price-input" placeholder="Max" value="<?= $maxPrice !== null ? e($maxPrice) : '' ?>">
-            </div>
-            <button type="submit" class="btn btn-editorial-secondary btn-sm w-100">Apply</button>
-          </div>
-        </form>
-      </aside>
+			<!-- Filter Drawer -->
+			<div class="dis-none panel-filter w-full p-t-10">
+				<div class="wrap-filter flex-w bg6 w-full p-lr-40 p-t-27 p-lr-15-sm">
+					<!-- Sort By Column -->
+					<div class="filter-col1 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Sort By
+						</div>
+						<?php
+						$qSort = $baseQuery; unset($qSort['sort'], $qSort['page']);
+						$buildSortUrl = fn($s) => '?' . http_build_query(array_merge($qSort, ['sort' => $s]));
+						?>
+						<ul>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildSortUrl('newest'), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $sort === 'newest' ? 'filter-link-active' : '' ?>">
+									Newness
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildSortUrl('best_selling'), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $sort === 'best_selling' ? 'filter-link-active' : '' ?>">
+									Popularity
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildSortUrl('price_asc'), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $sort === 'price_asc' ? 'filter-link-active' : '' ?>">
+									Price: Low to High
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildSortUrl('price_desc'), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $sort === 'price_desc' ? 'filter-link-active' : '' ?>">
+									Price: High to Low
+								</a>
+							</li>
+						</ul>
+					</div>
 
-      <!-- Main Products Grid -->
-      <main class="catalog-main">
-        <?php if (!empty($products)): ?>
-          <div class="row g-4 row-cols-2 row-cols-md-2 row-cols-lg-3">
-            <?php foreach ($products as $p): ?>
-              <div class="col">
-                <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
-              </div>
-            <?php endforeach; ?>
-          </div>
+					<!-- Price Filter Column -->
+					<div class="filter-col2 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Price
+						</div>
+						<?php
+						$qPrice = $baseQuery; unset($qPrice['min_price'], $qPrice['max_price'], $qPrice['page']);
+						$buildPriceUrl = fn($min, $max = null) => '?' . http_build_query(array_merge($qPrice, array_filter(['min_price' => $min, 'max_price' => $max], fn($v) => $v !== null)));
+						?>
+						<ul>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars('?' . http_build_query($qPrice), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= ($minPrice === null && $maxPrice === null) ? 'filter-link-active' : '' ?>">
+									All Prices
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildPriceUrl(0, 500), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= ($minPrice == 0 && $maxPrice == 500) ? 'filter-link-active' : '' ?>">
+									<?= price(0) ?> - <?= price(500) ?>
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildPriceUrl(500, 1500), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= ($minPrice == 500 && $maxPrice == 1500) ? 'filter-link-active' : '' ?>">
+									<?= price(500) ?> - <?= price(1500) ?>
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars($buildPriceUrl(1500), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= ($minPrice == 1500 && $maxPrice === null) ? 'filter-link-active' : '' ?>">
+									<?= price(1500) ?>+
+								</a>
+							</li>
+						</ul>
+					</div>
 
-          <!-- Pagination -->
-          <?= render_editorial_pagination($page, $pages, $_GET, 15) ?>
+					<!-- Availability Column -->
+					<div class="filter-col3 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Availability
+						</div>
+						<ul>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars('?' . http_build_query(array_merge($baseQuery, ['in_stock' => $inStockOnly === '1' ? null : '1'])), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $inStockOnly === '1' ? 'filter-link-active' : '' ?>">
+									<i class="zmdi <?= $inStockOnly === '1' ? 'zmdi-check-square' : 'zmdi-square-o' ?> m-r-4"></i> In Stock Only
+								</a>
+							</li>
+							<li class="p-b-6">
+								<a href="<?= htmlspecialchars('?' . http_build_query(array_merge($baseQuery, ['on_sale' => $onSaleOnly === '1' ? null : '1'])), ENT_QUOTES, 'UTF-8') ?>" class="filter-link stext-106 trans-04 <?= $onSaleOnly === '1' ? 'filter-link-active' : '' ?>">
+									<i class="zmdi <?= $onSaleOnly === '1' ? 'zmdi-check-square' : 'zmdi-square-o' ?> m-r-4"></i> On Sale Only
+								</a>
+							</li>
+						</ul>
+					</div>
 
-        <?php else: ?>
-          <div class="empty-state-card">
-            <div class="empty-state-icon"><?= icon('bag') ?></div>
-            <h2>No products in this category</h2>
-            <p>We are currently restocking this category. Check back soon or explore our full collection.</p>
-            <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary">
-              Browse All Products
-            </a>
-          </div>
-        <?php endif; ?>
-      </main>
+					<!-- Other Categories Column -->
+					<div class="filter-col4 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							All Categories
+						</div>
+						<div class="flex-w p-t-4 m-r--5">
+							<?php foreach ($categoriesList as $cl): ?>
+								<a href="<?= htmlspecialchars(route('category', ['slug' => $cl['slug']]), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-107 cl6 size-301 bor7 p-lr-15 hov-tag1 trans-04 m-r-5 m-b-5 <?= $cl['slug'] === $slug ? 'bg1 cl0' : '' ?>">
+									<?= htmlspecialchars($cl['name'], ENT_QUOTES, 'UTF-8') ?>
+								</a>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-    </div>
+		<!-- Product Grid -->
+		<div class="row isotope-grid">
+			<?php if (!empty($products)): ?>
+				<?php foreach ($products as $p): ?>
+					<?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
+				<?php endforeach; ?>
+			<?php else: ?>
+				<div class="col-12 text-center p-tb-80">
+					<i class="zmdi zmdi-shopping-basket cl6 fs-50 d-block m-b-15" style="font-size: 56px;"></i>
+					<h4 class="mtext-105 cl2 p-b-10">No products in this category</h4>
+					<p class="stext-115 cl6 p-b-25">We are currently restocking this category. Check back soon or explore our full collection.</p>
+					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 200px;">
+						Browse Full Shop
+					</a>
+				</div>
+			<?php endif; ?>
+		</div>
 
-  </div>
-</section>
+		<!-- Cozastore Numbered Circular Pagination -->
+		<?= render_coza_pagination($page, $pages, $_GET) ?>
+
+	</div>
+</div>
 
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

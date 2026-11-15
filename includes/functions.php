@@ -997,3 +997,40 @@ function render_editorial_pagination(int $currentPage, int $totalPages, array $q
     return $html;
 }
 
+/**
+ * Render storefront Cozastore pagination HTML with circular numbers.
+ */
+function render_coza_pagination(int $currentPage, int $totalPages, array $queryParams = [], int $maxOptions = 10, string $pageParam = 'page'): string
+{
+    if ($totalPages <= 1) {
+        return '';
+    }
+
+    $window = pagination_window($currentPage, $totalPages, $maxOptions);
+    $html = '<div class="flex-c-m flex-w w-full p-t-38 m-lr--7" aria-label="Page navigation">';
+
+    if ($currentPage > 1) {
+        $prevUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage - 1]));
+        $html .= '<a href="' . htmlspecialchars($prevUrl, ENT_QUOTES, 'UTF-8') . '" class="flex-c-m how-pagination1 trans-04 m-all-7" aria-label="Previous page"><i class="zmdi zmdi-chevron-left"></i></a>';
+    }
+
+    foreach ($window as $item) {
+        if ($item === '...') {
+            $html .= '<span class="flex-c-m stext-106 cl6 m-all-7">&hellip;</span>';
+        } elseif ((int)$item === $currentPage) {
+            $html .= '<span class="flex-c-m how-pagination1 trans-04 m-all-7 active-pagination1" aria-current="page">' . (int)$item . '</span>';
+        } else {
+            $url = '?' . http_build_query(array_merge($queryParams, [$pageParam => (int)$item]));
+            $html .= '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="flex-c-m how-pagination1 trans-04 m-all-7">' . (int)$item . '</a>';
+        }
+    }
+
+    if ($currentPage < $totalPages) {
+        $nextUrl = '?' . http_build_query(array_merge($queryParams, [$pageParam => $currentPage + 1]));
+        $html .= '<a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8') . '" class="flex-c-m how-pagination1 trans-04 m-all-7" aria-label="Next page"><i class="zmdi zmdi-chevron-right"></i></a>';
+    }
+
+    $html .= '</div>';
+    return $html;
+}
+
