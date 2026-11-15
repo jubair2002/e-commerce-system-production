@@ -1,7 +1,8 @@
 <?php
 /**
- * Product Detail Page (Phase C).
- * Editorial, restrained, modern, responsive.
+ * Product Detail Page (Cozastore Edition).
+ * Cozastore PDP with wrap-slick3 multi-image thumbnail gallery, Magnific Popup zoom,
+ * variant option selectors, quantity controls, AJAX review form, and related products.
  */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
@@ -32,28 +33,27 @@ if (!$product) {
     $pageTitle = 'Product Not Found';
     include __DIR__ . '/../../includes/partials/header.php';
     ?>
-    <section class="section-py">
-      <div class="container">
-        <?php
-        $emptyIcon = 'bag';
-        $emptyTitle = 'Product Not Found';
-        $emptyMessage = 'The product you are looking for has been moved or is no longer available.';
-        $emptyActionUrl = route('shop');
-        $emptyActionLabel = 'Browse All Products';
-        include __DIR__ . '/../../includes/partials/empty_state.php';
-        ?>
-      </div>
-    </section>
+    <div class="bg0 p-t-100 p-b-140">
+        <div class="container text-center">
+            <i class="zmdi zmdi-alert-circle-o fs-50 cl6 d-block m-b-20" style="font-size: 60px;"></i>
+            <h2 class="ltext-103 cl2 p-b-15">Product Not Found</h2>
+            <p class="stext-115 cl6 p-b-30">The product you are looking for has been moved or is no longer available.</p>
+            <a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px;">
+                Browse All Products
+            </a>
+        </div>
+    </div>
     <?php
     include __DIR__ . '/../../includes/partials/footer.php';
     exit;
 }
 
-$productId  = (int)$product['id'];
+$productId = (int)$product['id'];
 hook_fire('product.viewed', [
     'product_id' => $productId,
     'price'      => (float)($product['sale_price'] ?: $product['price']),
 ]);
+
 $pageTitle       = !empty($product['meta_title']) ? $product['meta_title'] : $product['name'];
 $pageDescription = !empty($product['meta_description'])
     ? $product['meta_description']
@@ -86,7 +86,7 @@ if (!empty($product['image'])) {
     $seenFiles[trim((string)$product['image'])] = true;
 }
 
-// Add additional gallery images from product_images table, deduplicated and non-empty
+// Add additional gallery images from product_images table, deduplicated
 foreach ($rawGallery as $gItem) {
     $fn = trim((string)($gItem['filename'] ?? ''));
     if ($fn === '' || isset($seenFiles[$fn])) {
@@ -94,6 +94,15 @@ foreach ($rawGallery as $gItem) {
     }
     $seenFiles[$fn] = true;
     $gallery[] = $gItem;
+}
+
+// Fallback to placeholder if completely empty
+if (empty($gallery)) {
+    $gallery[] = [
+        'filename'   => null,
+        'alt_text'   => $product['name'],
+        'is_primary' => 1,
+    ];
 }
 
 $mainImgFile = $gallery[0]['filename'] ?? ($product['image'] ?? null);
@@ -128,8 +137,6 @@ try {
     }
 } catch (Throwable $e) {}
 
-
-
 // Related Products (same category)
 $related = [];
 if (!empty($product['category_id'])) {
@@ -155,19 +162,10 @@ if (!empty($product['category_id'])) {
     } catch (Throwable $e) { $related = []; }
 }
 
-// Breadcrumbs
-$breadcrumbs = [
-    ['label' => 'Shop', 'url' => route('shop')],
-];
-if (!empty($product['category_name']) && !empty($product['category_slug'])) {
-    $breadcrumbs[] = ['label' => $product['category_name'], 'url' => route('category', ['slug' => $product['category_slug']])];
-}
-$breadcrumbs[] = ['label' => $product['name'], 'url' => null];
-
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- JSON-LD Structured Data -->
+<!-- JSON-LD Structured Data for SEO -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org/",
@@ -194,519 +192,429 @@ include __DIR__ . '/../../includes/partials/header.php';
 }
 </script>
 
-<section class="section-py pt-4">
-  <div class="container">
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <!-- Breadcrumb Navigation -->
-    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
+		<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Shop
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <!-- Main PDP Grid: Gallery (Left) + Buy Box (Right) -->
-    <div class="pdp-grid">
+		<?php if (!empty($product['category_name']) && !empty($product['category_slug'])): ?>
+			<a href="<?= htmlspecialchars(route('category', ['slug' => $product['category_slug']]), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+				<?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?>
+				<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+		<?php endif; ?>
 
-      <!-- Gallery Column -->
-      <div class="pdp-gallery-col">
-        <div class="product-gallery">
-          <!-- Thumbnails Strip -->
-          <?php if (count($gallery) > 1): ?>
-            <div class="gallery-thumbs" aria-label="Product thumbnails">
-              <?php foreach ($gallery as $idx => $img): ?>
-                <?php $thumbUrl = product_image_url($img['filename']); ?>
-                <button type="button"
-                        class="thumb-btn <?= $idx === 0 ? 'is-active' : '' ?>"
-                        data-gallery-thumb="<?= e($thumbUrl) ?>"
-                        data-thumb-index="<?= $idx ?>"
-                        aria-label="View image <?= $idx + 1 ?>">
-                  <img src="<?= e($thumbUrl) ?>" alt="" loading="lazy">
-                </button>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
+		<span class="stext-109 cl4">
+			<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>
+		</span>
+	</div>
+</div>
 
-          <!-- Main Hero Image -->
-          <div class="gallery-main" id="mainGalleryContainer">
-            <?php if (!empty($mainImgFile)): ?>
-              <img src="<?= e($mainImgUrl) ?>"
-                   id="mainProductImage"
-                   alt="<?= e($product['name']) ?>"
-                   loading="eager"
-                   fetchpriority="high"
-                   data-zoom-src="<?= e($mainImgUrl) ?>">
-            <?php else: ?>
-              <div class="d-flex flex-column align-items-center justify-content-center text-muted p-6 text-center">
-                <?= icon('bag') ?>
-                <span class="small mt-2">No image available</span>
-              </div>
-            <?php endif; ?>
+<!-- =================== COZASTORE PRODUCT DETAIL SECTION =================== -->
+<section class="sec-product-detail bg0 p-t-30 p-b-60">
+	<div class="container">
+		<div class="row">
+			<!-- Gallery Column (Left) -->
+			<div class="col-md-6 col-lg-7 p-b-30">
+				<div class="p-l-0 p-r-30 p-lr-0-lg">
+					<div class="wrap-slick3 flex-sb flex-w">
+						<div class="wrap-slick3-dots"></div>
+						<div class="wrap-slick3-arrows flex-sb-m flex-w"></div>
 
-            <?php if ($onSale && $discount > 0): ?>
-              <span class="badge badge-sale position-absolute" style="top: 16px; left: 16px;">
-                &minus;<?= $discount ?>% OFF
-              </span>
-            <?php endif; ?>
-          </div>
-        </div>
-      </div>
+						<div class="slick3 gallery-lb">
+							<?php foreach ($gallery as $idx => $img): 
+								$gUrl = product_image_url($img['filename'] ?? null, 'large', $productId);
+								$tUrl = product_image_url($img['filename'] ?? null, 'thumbnail', $productId);
+							?>
+							<div class="item-slick3" data-thumb="<?= htmlspecialchars($tUrl, ENT_QUOTES, 'UTF-8') ?>">
+								<div class="wrap-pic-w pos-relative">
+									<img src="<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
 
-      <!-- Buy Box Column -->
-      <div class="pdp-buybox-col">
-        <div class="sticky-buy-box" data-product-availability data-product-id="<?= $productId ?>" data-currency-symbol="৳" data-uploads-url="<?= e(UPLOADS_URL . 'products/') ?>" data-poll-seconds="15">
-          
-          <?php if (!empty($product['category_name'])): ?>
-            <div class="mb-2">
-              <a href="<?= e(route('category', ['slug' => $product['category_slug']])) ?>" class="pdp-category-badge">
-                <?= e($product['category_name']) ?>
-              </a>
-            </div>
-          <?php endif; ?>
+									<a class="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" href="<?= htmlspecialchars($gUrl, ENT_QUOTES, 'UTF-8') ?>">
+										<i class="fa fa-expand"></i>
+									</a>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				</div>
+			</div>
+				
+			<!-- Product Info & Purchase Column (Right) -->
+			<div class="col-md-6 col-lg-5 p-b-30">
+				<div class="p-r-50 p-t-5 p-lr-0-lg">
+					<h4 class="mtext-105 cl2 js-name-detail p-b-14">
+						<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>
+					</h4>
 
-          <h1 class="pdp-title"><?= e($product['name']) ?></h1>
+					<!-- Star Rating & Review Count -->
+					<div class="flex-w flex-m p-b-14">
+						<div class="cl1 fs-14 m-r-10">
+							<?php for ($i = 1; $i <= 5; $i++): ?>
+								<i class="zmdi <?= $avgRating >= $i ? 'zmdi-star' : 'zmdi-star-outline' ?>" style="color: #f59e0b;"></i>
+							<?php endfor; ?>
+						</div>
+						<a href="#reviews" class="stext-102 cl6 hov-cl1 trans-04">
+							(<?= $totalReviews ?> customer review<?= $totalReviews === 1 ? '' : 's' ?>)
+						</a>
+					</div>
 
-          <!-- Rating Stars & Summary (Size guide removed) -->
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <div class="rating-summary" title="<?= number_format($avgRating, 1) ?> out of 5 stars">
-              <div class="rating-stars" aria-hidden="true">
-                <?php for ($i = 1; $i <= 5; $i++): ?>
-                  <?= icon($avgRating >= $i ? 'star' : 'star-empty') ?>
-                <?php endfor; ?>
-              </div>
-              <span class="rating-score fw-bold"><?= number_format($avgRating, 1) ?></span>
-              <a href="#reviewsSection" class="text-muted small text-decoration-underline">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
-            </div>
-          </div>
+					<!-- Price Row -->
+					<div class="p-b-14">
+						<?php if ($onSale): ?>
+							<span class="mtext-106 cl1 font-weight-bold m-r-10" id="pdpPrice">
+								<?= price((float)$product['sale_price']) ?>
+							</span>
+							<span class="mtext-106 cl3" id="pdpOldPrice" style="text-decoration: line-through; opacity: 0.7;">
+								<?= price((float)$product['price']) ?>
+							</span>
+							<span class="stext-109 cl0 bg1 p-lr-8 p-tb-2 m-l-10" style="border-radius: 2px;">
+								-<?= (int)$discount ?>% OFF
+							</span>
+						<?php else: ?>
+							<span class="mtext-106 cl2 font-weight-bold" id="pdpPrice">
+								<?= price((float)$product['price']) ?>
+							</span>
+						<?php endif; ?>
+					</div>
 
-          <!-- Price Presentation -->
-          <div class="pdp-price-row">
-            <?php if ($onSale): ?>
-              <span class="pdp-price-current" id="pdpPrice"><?= e(price((float)$product['sale_price'])) ?></span>
-              <span class="pdp-price-strike" id="pdpOldPrice"><?= e(price((float)$product['price'])) ?></span>
-              <span class="pdp-sale-pill">&minus;<?= $discount ?>% OFF</span>
-            <?php else: ?>
-              <span class="pdp-price-current" id="pdpPrice"><?= e(price((float)$product['price'])) ?></span>
-            <?php endif; ?>
-          </div>
+					<?php if (!empty($product['short_description'])): ?>
+						<p class="stext-102 cl3 p-t-10 p-b-20" style="line-height: 1.6;">
+							<?= htmlspecialchars($product['short_description'], ENT_QUOTES, 'UTF-8') ?>
+						</p>
+					<?php endif; ?>
+					
+					<!-- Form Actions -->
+					<form method="post" action="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" id="pdpAddToCartForm" class="p-t-20">
+						<?= csrf_field() ?>
+						<input type="hidden" name="action" value="add">
+						<input type="hidden" name="product_id" value="<?= $productId ?>">
+						<input type="hidden" name="variant_id" id="selectedVariantId" value="<?= ($isVariable && !empty($variants[0]['id'])) ? (int)$variants[0]['id'] : '' ?>">
 
-          <?php if (!empty($product['short_description'])): ?>
-            <p class="text-ink-2 mb-4 small" style="line-height: 1.6;">
-              <?= e($product['short_description']) ?>
-            </p>
-          <?php endif; ?>
+						<!-- Variant Option Selectors -->
+						<?php if ($isVariable && !empty($options)): ?>
+							<?php foreach ($options as $opt): ?>
+								<div class="flex-w flex-r-m p-b-14">
+									<div class="size-203 flex-c-m respon6">
+										<?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?>
+									</div>
 
-          <!-- Purchase Form -->
-          <form method="post" action="<?= e(route('cart')) ?>" id="pdpAddToCartForm">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="add">
-            <input type="hidden" name="product_id" value="<?= $productId ?>">
-            <input type="hidden" name="variant_id" id="selectedVariantId" value="<?= ($isVariable && !empty($variants[0]['id'])) ? (int)$variants[0]['id'] : '' ?>">
+									<div class="size-204 respon6-next">
+										<div class="rs1-select2 bor8 bg0">
+											<select class="js-select2 option-select" data-option-id="<?= (int)$opt['id'] ?>">
+												<option value="">Choose <?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?></option>
+												<?php foreach ($opt['values'] as $val): ?>
+													<option value="<?= (int)$val['id'] ?>">
+														<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>
+													</option>
+												<?php endforeach; ?>
+											</select>
+											<div class="dropDownSelect2"></div>
+										</div>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						<?php endif; ?>
 
-            <!-- Variable Option Pickers -->
-            <?php if ($isVariable && !empty($options)): ?>
-              <div class="pdp-options-wrapper mb-4">
-                <?php foreach ($options as $opt): ?>
-                  <?php
-                  $optNameLower = strtolower($opt['name']);
-                  $isColor = in_array($optNameLower, ['color', 'colour']) || ($opt['display_type'] ?? '') === 'color';
-                  ?>
-                  <div class="form-group mb-3">
-                    <label class="form-label d-flex justify-content-between mb-2">
-                      <span class="fw-semibold small"><?= e($opt['name']) ?>: <span class="text-muted fw-normal" id="selectedLabel_<?= (int)$opt['id'] ?>">—</span></span>
-                    </label>
-                    <div class="swatch-group">
-                      <?php foreach ($opt['values'] as $val): ?>
-                        <?php if ($isColor): ?>
-                          <button type="button"
-                                  class="swatch-color-circle option-btn option-picker-btn"
-                                  data-option-id="<?= (int)$opt['id'] ?>"
-                                  data-value-id="<?= (int)$val['id'] ?>"
-                                  data-value-name="<?= e($val['value']) ?>"
-                                  style="background-color: <?= e($val['swatch_hex'] ?: '#e0e0e0') ?>;"
-                                  title="<?= e($val['value']) ?>"
-                                  aria-label="<?= e($val['value']) ?>">
-                          </button>
-                        <?php else: ?>
-                          <button type="button"
-                                  class="swatch-btn option-btn option-picker-btn"
-                                  data-option-id="<?= (int)$opt['id'] ?>"
-                                  data-value-id="<?= (int)$val['id'] ?>"
-                                  data-value-name="<?= e($val['value']) ?>">
-                            <?= e($val['value']) ?>
-                          </button>
-                        <?php endif; ?>
-                      <?php endforeach; ?>
-                    </div>
-                  </div>
-                <?php endforeach; ?>
-              </div>
-            <?php endif; ?>
+						<!-- Stock Availability Status -->
+						<div class="flex-w flex-m p-b-20 p-t-10">
+							<span class="stext-102 font-weight-bold <?= $inStock ? 'cl1' : 'cl3' ?>">
+								<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-close-circle' ?> m-r-4"></i>
+								<?= $inStock ? 'In Stock (Ready for fast delivery)' : 'Currently Sold Out' ?>
+							</span>
+						</div>
 
-            <!-- Live Availability Status Line -->
-            <div class="d-flex align-items-center gap-2 mb-3 small" id="stockStatusContainer">
-              <span class="badge <?= $inStock ? 'badge-stock' : 'badge-outline' ?>" id="stockStatusBadge">
-                <?= $inStock ? '● In Stock' : 'Out of Stock' ?>
-              </span>
-              <span class="text-muted" id="stockStatusText">
-                <?= $inStock ? ($product['show_stock_count'] && $currentStock <= ($product['low_stock_threshold'] ?: 5) ? 'Only ' . $currentStock . ' left in stock' : 'Ready for fast dispatch') : 'Currently sold out' ?>
-              </span>
-            </div>
+						<!-- Quantity Controls & Add To Cart Button -->
+						<div class="flex-w flex-r-m p-b-10">
+							<div class="size-204 flex-w flex-m respon6-next">
+								<div class="wrap-num-product flex-w m-r-20 m-tb-10">
+									<div class="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m pointer">
+										<i class="fs-16 zmdi zmdi-minus"></i>
+									</div>
 
-            <!-- Actions: Stepper + Add to Cart + Wishlist -->
-            <div class="d-flex gap-2 mb-3">
-              <div class="quantity-stepper">
-                <button type="button" class="stepper-btn" id="pdpQtyDec" aria-label="Decrease quantity">−</button>
-                <input type="number" name="quantity" id="pdpQtyInput" class="stepper-input" value="1" min="1" max="<?= max(1, $currentStock) ?>" aria-label="Quantity">
-                <button type="button" class="stepper-btn" id="pdpQtyInc" aria-label="Increase quantity">+</button>
-              </div>
+									<input class="mtext-104 cl3 txt-center num-product" type="number" name="quantity" id="pdpQtyInput" value="1" min="1" max="<?= max(1, $currentStock) ?>">
 
-              <button type="submit" name="action_type" value="add_to_cart" class="btn btn-primary flex-grow-1" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
-                <?= icon('bag') ?> Add to Cart
-              </button>
+									<div class="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m pointer">
+										<i class="fs-16 zmdi zmdi-plus"></i>
+									</div>
+								</div>
 
-              <button type="button" class="btn btn-secondary btn-icon" data-wishlist-btn="<?= $productId ?>" aria-label="Save to wishlist" title="Save to wishlist">
-                <?= icon('heart') ?>
-              </button>
-            </div>
+								<button type="submit" name="action_type" value="add_to_cart" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
+									Add to cart
+								</button>
+							</div>
+						</div>	
+					</form>
 
-            <button type="submit" name="action_type" value="buy_now" class="btn btn-secondary w-100 mb-3" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
-              Buy Now with Cash on Delivery
-            </button>
-          </form>
+					<!-- Wishlist & Trust Badges -->
+					<div class="flex-w flex-m p-t-30">
+						<div class="flex-m bor9 p-r-10 m-r-11">
+							<a href="#" class="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail" onclick="window.cozaToggleWishlist(<?= $productId ?>, this); return false;" title="Add to Wishlist">
+								<i class="zmdi zmdi-favorite fs-20"></i>
+							</a>
+						</div>
+						<span class="stext-107 cl6">Add to wishlist</span>
+					</div>
+				</div>
+			</div>
+		</div>
 
+		<!-- Cozastore Details Tabs (Description, Information, Reviews) -->
+		<div class="bor10 m-t-50 p-t-43 p-b-40">
+			<div class="tab01">
+				<!-- Nav tabs -->
+				<ul class="nav nav-tabs" role="tablist">
+					<li class="nav-item p-b-10">
+						<a class="nav-link active" data-toggle="tab" href="#description" role="tab">Description</a>
+					</li>
 
+					<li class="nav-item p-b-10">
+						<a class="nav-link" data-toggle="tab" href="#information" role="tab">Additional information</a>
+					</li>
 
-          <!-- Product Description Box (Filling bottom buybox space) -->
-          <div class="pdp-description-box">
-            <h4 class="pdp-desc-heading">Product Description</h4>
-            <div class="pdp-desc-body">
-              <?php
-                $descContent = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
-                if (strip_tags($descContent) !== $descContent) {
-                    echo strip_tags($descContent, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
-                } else {
-                    echo nl2br(e($descContent));
-                }
-              ?>
-            </div>
-          </div>
+					<li class="nav-item p-b-10">
+						<a class="nav-link" data-toggle="tab" href="#reviews" role="tab">Reviews (<?= $totalReviews ?>)</a>
+					</li>
+				</ul>
 
-        </div>
-      </div>
+				<!-- Tab panes -->
+				<div class="tab-content p-t-43">
+					<!-- Tab 1: Description -->
+					<div class="tab-pane fade show active" id="description" role="tabpanel">
+						<div class="how-pos2 p-lr-15-md">
+							<div class="stext-102 cl6" style="line-height: 1.8;">
+								<?php
+								$desc = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
+								if (strip_tags($desc) !== $desc) {
+									echo strip_tags($desc, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
+								} else {
+									echo nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'));
+								}
+								?>
+							</div>
+						</div>
+					</div>
 
-    </div>
+					<!-- Tab 2: Additional information -->
+					<div class="tab-pane fade" id="information" role="tabpanel">
+						<div class="row">
+							<div class="col-sm-10 col-md-8 col-lg-6 m-lr-auto">
+								<ul class="p-lr-28 p-lr-15-sm">
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Product SKU</span>
+										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['sku'] ?: 'PROD-' . str_pad((string)$productId, 5, '0', STR_PAD_LEFT), ENT_QUOTES, 'UTF-8') ?></span>
+									</li>
 
-    <!-- Product Details Tabs (Specifications, Shipping) -->
-    <div class="pdp-tabs-wrap">
-      <div class="pdp-tab-nav" role="tablist">
-        <button type="button" class="pdp-tab-btn is-active" data-pdp-tab="tab-specs" role="tab" aria-selected="true">
-          Specifications
-        </button>
-        <button type="button" class="pdp-tab-btn" data-pdp-tab="tab-shipping" role="tab" aria-selected="false">
-          Shipping &amp; Returns
-        </button>
-      </div>
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Product Type</span>
+										<span class="stext-102 cl6 size-206"><?= ucfirst(htmlspecialchars($product['product_type'], ENT_QUOTES, 'UTF-8')) ?></span>
+									</li>
 
-      <div class="pdp-tab-content is-active" id="tab-specs" role="tabpanel">
-        <div class="card p-4" style="max-width: 840px;">
-          <table class="pdp-specs-table">
-            <tbody>
-              <tr>
-                <th>Product Name</th>
-                <td><?= e($product['name']) ?></td>
-              </tr>
-              <tr>
-                <th>Product Type</th>
-                <td><?= ucfirst($product['product_type']) ?></td>
-              </tr>
-              <tr>
-                <th>SKU</th>
-                <td><?= e($product['sku'] ?: 'PROD-' . str_pad($productId, 5, '0', STR_PAD_LEFT)) ?></td>
-              </tr>
-              <?php if (!empty($product['brand'])): ?>
-                <tr>
-                  <th>Brand</th>
-                  <td><?= e($product['brand']) ?></td>
-                </tr>
-              <?php endif; ?>
-              <?php if (!empty($product['category_name'])): ?>
-                <tr>
-                  <th>Category</th>
-                  <td><?= e($product['category_name']) ?></td>
-                </tr>
-              <?php endif; ?>
-              <tr>
-                <th>Authenticity</th>
-                <td>100% Genuine &amp; Direct from Verified Manufacturers</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+									<?php if (!empty($product['category_name'])): ?>
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Category</span>
+										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
+									</li>
+									<?php endif; ?>
 
-      <div class="pdp-tab-content" id="tab-shipping" role="tabpanel">
-        <div class="card p-6" style="max-width: 840px; line-height: 1.8;">
-          <h4 class="mb-3">Nationwide Delivery &amp; Hassle-Free Returns</h4>
-          <p class="mb-3 text-ink-2">
-            We deliver across all 64 districts in Bangladesh with prompt dispatches. Orders inside Dhaka are delivered within 24 to 48 hours, while deliveries outside Dhaka typically arrive within 48 to 72 hours.
-          </p>
-          <ul class="d-flex flex-column gap-2 mb-0 text-ink-2 small">
-            <li><strong>Cash on Delivery:</strong> No advance payment or card required. Pay courier after inspecting your parcel.</li>
-            <li><strong>Open Parcel Checking:</strong> You are encouraged to inspect the item in front of the delivery partner.</li>
-            <li><strong>3-Day Exchange Guarantee:</strong> Sizing mismatch or transit defect? Contact us within 3 days for an instant replacement.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+									<?php if (!empty($product['brand'])): ?>
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Brand</span>
+										<span class="stext-102 cl6 size-206"><?= htmlspecialchars($product['brand'], ENT_QUOTES, 'UTF-8') ?></span>
+									</li>
+									<?php endif; ?>
 
-    <!-- =================== REVIEWS SECTION =================== -->
-    <section class="section-py border-top mt-6" id="reviewsSection">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-6">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Customer Feedback</span>
-          <h2 class="display-serif mt-1">Customer Reviews (<?= $totalReviews ?>)</h2>
-        </div>
-        <button type="button" class="btn btn-primary" data-modal-open="writeReviewModal">
-          Write a Review
-        </button>
-      </div>
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Authenticity</span>
+										<span class="stext-102 cl6 size-206">100% Genuine Direct from Verified Creators</span>
+									</li>
 
-      <div class="row g-6">
-        <!-- Review Breakdown Column -->
-        <div class="col-lg-4">
-          <div class="card p-6 bg-soft text-center">
-            <div class="fs-hero fw-bold text-ink mb-1"><?= number_format($avgRating, 1) ?></div>
-            <div class="rating-stars justify-content-center mb-2" aria-hidden="true">
-              <?php for ($i = 1; $i <= 5; $i++): ?>
-                <?= icon($avgRating >= $i ? 'star' : 'star-empty') ?>
-              <?php endfor; ?>
-            </div>
-            <p class="small text-muted mb-4">Based on <?= $totalReviews ?> verified review<?= $totalReviews === 1 ? '' : 's' ?></p>
+									<li class="flex-w flex-t p-b-7">
+										<span class="stext-102 cl3 size-205 font-weight-bold">Delivery Estimate</span>
+										<span class="stext-102 cl6 size-206">24h Dhaka, 48-72h Nationwide COD</span>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
 
-            <!-- Star breakdown bars -->
-            <div class="d-flex flex-column gap-2 text-start">
-              <?php for ($s = 5; $s >= 1; $s--): ?>
-                <?php $pct = $totalReviews > 0 ? round(($ratingCounts[$s] / $totalReviews) * 100) : 0; ?>
-                <div class="d-flex align-items-center gap-2 small">
-                  <span style="width: 50px;" class="text-muted"><?= $s ?> star</span>
-                  <div class="flex-grow-1 rounded-pill overflow-hidden border" style="height: 8px; background-color: var(--surface-muted);">
-                    <div class="h-100" style="width: <?= $pct ?>%; background-color: var(--ink);"></div>
-                  </div>
-                  <span style="width: 30px;" class="text-end text-muted"><?= $pct ?>%</span>
-                </div>
-              <?php endfor; ?>
-            </div>
-          </div>
-        </div>
+					<!-- Tab 3: Reviews -->
+					<div class="tab-pane fade" id="reviews" role="tabpanel">
+						<div class="row">
+							<div class="col-sm-10 col-md-8 col-lg-6 m-lr-auto">
+								<div class="p-b-30 m-lr-15-sm">
+									<!-- Review list -->
+									<?php if (!empty($reviews)): ?>
+										<?php foreach ($reviews as $rev): ?>
+											<div class="flex-w flex-t p-b-30 bor12 m-b-25">
+												<div class="wrap-pic-s size-109 bor0 of-hidden m-r-18 m-t-6">
+													<img src="<?= htmlspecialchars(avatar_url($rev['author_name']), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+												</div>
 
-        <!-- Reviews List Column -->
-        <div class="col-lg-8">
-          <?php if (empty($reviews)): ?>
-            <div class="card p-6 text-center text-muted">
-              <?= icon('star') ?>
-              <h4 class="mt-2 mb-1">No reviews yet</h4>
-              <p class="small mb-3">Be the first to share your experience with this item.</p>
-              <button type="button" class="btn btn-secondary btn-sm mx-auto" data-modal-open="writeReviewModal">Write the First Review</button>
-            </div>
-          <?php else: ?>
-            <div class="d-flex flex-column gap-4">
-              <?php foreach ($reviews as $rev): ?>
-                <div class="card p-4">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="fw-semibold text-ink"><?= e($rev['author_name']) ?></span>
-                      <?php if (!empty($rev['order_id'])): ?>
-                        <span class="badge badge-stock">Verified Buyer</span>
-                      <?php endif; ?>
-                    </div>
-                    <span class="text-muted small"><?= e(date('M d, Y', strtotime($rev['created_at']))) ?></span>
-                  </div>
+												<div class="size-207">
+													<div class="flex-w flex-sb-m p-b-10">
+														<span class="mtext-107 cl2 p-r-20 font-weight-bold">
+															<?= htmlspecialchars($rev['author_name'], ENT_QUOTES, 'UTF-8') ?>
+														</span>
 
-                  <div class="rating-stars mb-2" aria-hidden="true">
-                    <?php for ($i = 1; $i <= (int)$rev['rating']; $i++): ?>
-                      <?= icon('star') ?>
-                    <?php endfor; ?>
-                  </div>
+														<span class="fs-14 cl11">
+															<?php for ($i = 1; $i <= (int)$rev['rating']; $i++): ?>
+																<i class="zmdi zmdi-star" style="color: #f59e0b;"></i>
+															<?php endfor; ?>
+														</span>
+													</div>
 
-                  <h5 class="fw-semibold mb-2"><?= e($rev['title']) ?></h5>
-                  <p class="small text-ink-2 mb-0" style="line-height: 1.6;"><?= nl2br(e($rev['body'])) ?></p>
+													<h5 class="stext-101 cl2 font-weight-bold m-b-4">
+														<?= htmlspecialchars($rev['title'], ENT_QUOTES, 'UTF-8') ?>
+													</h5>
 
-                  <?php if (!empty($rev['admin_reply'])): ?>
-                    <div class="p-3 mt-3 bg-soft rounded border-start border-3 border-dark small">
-                      <div class="fw-bold mb-1">Official Response:</div>
-                      <?= nl2br(e($rev['admin_reply'])) ?>
-                    </div>
-                  <?php endif; ?>
-                </div>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-    </section>
+													<p class="stext-102 cl6">
+														<?= nl2br(htmlspecialchars($rev['body'], ENT_QUOTES, 'UTF-8')) ?>
+													</p>
 
-    <!-- Related Products -->
-    <?php if (!empty($related)): ?>
-      <section class="section-py pt-0 border-top mt-6">
-        <div class="d-flex justify-content-between align-items-end mb-6">
-          <div>
-            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Complementary</span>
-            <h2 class="display-serif mt-1">You Might Also Like</h2>
-          </div>
-        </div>
-        <div class="product-grid">
-          <?php foreach ($related as $p): ?>
-            <?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
-          <?php endforeach; ?>
-        </div>
-      </section>
-    <?php endif; ?>
+													<?php if (!empty($rev['admin_reply'])): ?>
+														<div class="p-t-10 p-b-10 p-l-15 p-r-15 m-t-10 bg6 bor10" style="border-left: 3px solid #222;">
+															<span class="stext-102 font-weight-bold cl2 d-block">Store Response:</span>
+															<span class="stext-102 cl6"><?= nl2br(htmlspecialchars($rev['admin_reply'], ENT_QUOTES, 'UTF-8')) ?></span>
+														</div>
+													<?php endif; ?>
+												</div>
+											</div>
+										<?php endforeach; ?>
+									<?php else: ?>
+										<div class="text-center p-tb-30 text-muted">
+											<p class="stext-102 cl6">No reviews yet. Be the first to review this product!</p>
+										</div>
+									<?php endif; ?>
+									
+									<!-- Add review form -->
+									<form class="w-full p-t-20" id="writeReviewForm" method="post" action="<?= htmlspecialchars(url('api/review.php'), ENT_QUOTES, 'UTF-8') ?>">
+										<?= csrf_field() ?>
+										<input type="hidden" name="product_id" value="<?= $productId ?>">
+										<input type="hidden" name="form_time" value="<?= time() ?>">
+										<div style="display:none;"><input type="text" name="website_hp" value=""></div>
 
-  </div>
+										<h5 class="mtext-108 cl2 p-b-15">
+											Add a review
+										</h5>
+
+										<div class="flex-w flex-m p-b-23">
+											<span class="stext-102 cl3 m-r-16">
+												Your Rating:
+											</span>
+
+											<span class="wrap-rating fs-18 cl11 pointer">
+												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+												<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+												<input class="dis-none" type="number" name="rating" value="5" required>
+											</span>
+										</div>
+
+										<div class="row p-b-25">
+											<div class="col-12 p-b-15">
+												<label class="stext-102 cl3" for="reviewTitle">Review Headline</label>
+												<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="reviewTitle" type="text" name="title" placeholder="e.g. Excellent quality!" required maxlength="120">
+											</div>
+
+											<div class="col-12 p-b-15">
+												<label class="stext-102 cl3" for="review">Your Review</label>
+												<textarea class="size-110 bor8 stext-102 cl2 p-lr-20 p-tb-10" id="review" name="body" placeholder="Share your experience with this product..." required minlength="10" maxlength="2000"></textarea>
+											</div>
+
+											<div class="col-sm-6 p-b-15">
+												<label class="stext-102 cl3" for="name">Your Name</label>
+												<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="name" type="text" name="author_name" value="<?= htmlspecialchars(function_exists('customer_current') && customer_current() ? customer_current()['name'] : '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Your name">
+											</div>
+										</div>
+
+										<button type="submit" id="submitReviewBtn" class="flex-c-m stext-101 cl0 size-112 bg7 bor11 hov-btn3 p-lr-15 trans-04 m-b-10 pointer">
+											Submit Review
+										</button>
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Related Products Carousel -->
+	<?php if (!empty($related)): ?>
+	<div class="bg6 m-t-60 p-t-50 p-b-70">
+		<div class="container">
+			<div class="p-b-35 text-center">
+				<h3 class="ltext-103 cl5">
+					Related Products
+				</h3>
+			</div>
+
+			<div class="row isotope-grid">
+				<?php foreach ($related as $p): ?>
+					<?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
+				<?php endforeach; ?>
+			</div>
+		</div>
+	</div>
+	<?php endif; ?>
 </section>
 
-<!-- Sticky Mobile Add to Cart Bar -->
-<div class="mobile-sticky-atc" id="mobileStickyBar">
-  <div class="d-flex align-items-center gap-2">
-    <img src="<?= e($mainImgUrl) ?>" alt="" style="width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-sm);">
-    <div>
-      <div class="fw-semibold small text-truncate" style="max-width: 140px;"><?= e($product['name']) ?></div>
-      <div class="fw-bold price-current small"><?= e(price((float)($onSale ? $product['sale_price'] : $product['price']))) ?></div>
-    </div>
-  </div>
-  <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('pdpAddBtn').click();">
-    <?= icon('bag') ?> Add to Cart
-  </button>
-</div>
-
-
-
-<!-- Write Review Modal -->
-<div class="shop-modal" id="writeReviewModal" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <h3 class="modal-title fs-base">Write a Review for <?= e($product['name']) ?></h3>
-      <button type="button" class="drawer-close" data-modal-close aria-label="Close review modal">
-        <?= icon('x') ?>
-      </button>
-    </div>
-    <form id="writeReviewForm" method="post" action="<?= e(url('api/review.php')) ?>" class="modal-body">
-      <?= csrf_field() ?>
-      <input type="hidden" name="product_id" value="<?= $productId ?>">
-      <input type="hidden" name="form_time" value="<?= time() ?>">
-      <div style="display:none;"><input type="text" name="website_hp" value=""></div>
-
-      <div class="form-group mb-3">
-        <label class="form-label">Overall Rating <span class="text-danger">*</span></label>
-        <div class="d-flex gap-2">
-          <?php for ($s = 5; $s >= 1; $s--): ?>
-            <label class="d-flex align-items-center gap-1 small border p-2 rounded cursor-pointer">
-              <input type="radio" name="rating" value="<?= $s ?>" <?= $s === 5 ? 'checked' : '' ?>>
-              <span><?= $s ?> <?= icon('star') ?></span>
-            </label>
-          <?php endfor; ?>
-        </div>
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="reviewAuthor" class="form-label">Your Name</label>
-        <input type="text" name="author_name" id="reviewAuthor" class="form-control" value="<?= e(function_exists('customer_current') && customer_current() ? customer_current()['name'] : '') ?>" placeholder="e.g. John Doe">
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="reviewTitle" class="form-label">Review Headline <span class="text-danger">*</span></label>
-        <input type="text" name="title" id="reviewTitle" class="form-control" placeholder="e.g. Great quality and fits perfectly!" required maxlength="120">
-      </div>
-
-      <div class="form-group mb-4">
-        <label for="reviewBody" class="form-label">Review Description <span class="text-danger">*</span></label>
-        <textarea name="body" id="reviewBody" class="form-control" rows="4" placeholder="What did you like or dislike? How was the fit and material?" required minlength="10" maxlength="2000"></textarea>
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-w-full" id="submitReviewBtn">
-        Submit Review for Moderation
-      </button>
-    </form>
-  </div>
-</div>
-
+<!-- Review AJAX Handler -->
 <script>
-// PDP Tab Navigation
-document.querySelectorAll('.pdp-tab-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const target = this.getAttribute('data-pdp-tab');
-    document.querySelectorAll('.pdp-tab-btn').forEach(b => {
-      b.classList.remove('is-active');
-      b.setAttribute('aria-selected', 'false');
-    });
-    document.querySelectorAll('.pdp-tab-content').forEach(c => c.classList.remove('is-active'));
-    this.classList.add('is-active');
-    this.setAttribute('aria-selected', 'true');
-    const panel = document.getElementById(target);
-    if (panel) panel.classList.add('is-active');
-  });
-});
+document.addEventListener('DOMContentLoaded', function() {
+	var reviewForm = document.getElementById('writeReviewForm');
+	if (reviewForm) {
+		reviewForm.addEventListener('submit', function(e) {
+			e.preventDefault();
+			var btn = document.getElementById('submitReviewBtn');
+			if (btn) {
+				btn.disabled = true;
+				btn.textContent = 'Submitting...';
+			}
 
-// Gallery thumbnail switching
-document.querySelectorAll('[data-gallery-thumb]').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('[data-gallery-thumb]').forEach(b => b.classList.remove('is-active'));
-    this.classList.add('is-active');
-    const newSrc = this.getAttribute('data-gallery-thumb');
-    const mainImg = document.getElementById('mainProductImage');
-    if (mainImg && newSrc) {
-      mainImg.src = newSrc;
-    }
-  });
-});
-
-// Swatch & Option button selection
-document.querySelectorAll('.option-picker-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const optId = this.getAttribute('data-option-id');
-    const valName = this.getAttribute('data-value-name');
-    const parentGroup = this.closest('.swatch-group');
-    if (parentGroup) {
-      parentGroup.querySelectorAll('.option-picker-btn').forEach(b => b.classList.remove('active', 'is-active'));
-    }
-    this.classList.add('active', 'is-active');
-    const label = document.getElementById('selectedLabel_' + optId);
-    if (label) label.textContent = valName;
-  });
-});
-
-
-
-// Review AJAX Submission
-document.getElementById('writeReviewForm')?.addEventListener('submit', function(e) {
-  e.preventDefault();
-  const btn = document.getElementById('submitReviewBtn');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
-
-  const formData = new FormData(this);
-  fetch(this.action, {
-    method: 'POST',
-    body: formData,
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-  })
-  .then(r => r.json())
-  .then(data => {
-    btn.disabled = false;
-    btn.textContent = 'Submit Review for Moderation';
-    if (data.success) {
-      ShopUI.closeModal('writeReviewModal');
-      ShopUI.toast(data.message, 'success');
-      this.reset();
-    } else {
-      ShopUI.toast(data.error || 'Failed to submit review.', 'error');
-    }
-  })
-  .catch(() => {
-    btn.disabled = false;
-    btn.textContent = 'Submit Review for Moderation';
-    ShopUI.toast('Network error. Please try again.', 'error');
-  });
+			var formData = new FormData(this);
+			fetch(this.action, {
+				method: 'POST',
+				body: formData,
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			})
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				if (btn) {
+					btn.disabled = false;
+					btn.textContent = 'Submit Review';
+				}
+				if (data && data.success) {
+					swal('Thank you!', data.message || 'Your review has been submitted for moderation.', 'success');
+					reviewForm.reset();
+				} else {
+					var err = (data && data.error) ? data.error : 'Failed to submit review.';
+					swal('Notice', err, 'error');
+				}
+			})
+			.catch(function() {
+				if (btn) {
+					btn.disabled = false;
+					btn.textContent = 'Submit Review';
+				}
+				swal('Error', 'Network error. Please try again.', 'error');
+			});
+		});
+	}
 });
 </script>
-
-<!-- Availability Client Module -->
-<script src="<?= e(url('assets/js/availability.js')) ?>?v=<?= file_exists(__DIR__ . '/../../assets/js/availability.js') ? filemtime(__DIR__ . '/../../assets/js/availability.js') : time() ?>"></script>
 
 <?php include __DIR__ . '/../../includes/partials/footer.php'; ?>
