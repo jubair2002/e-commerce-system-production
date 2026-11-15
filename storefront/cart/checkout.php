@@ -480,31 +480,25 @@ include __DIR__ . '/../../includes/partials/header.php';
 <!-- Modern Checkout Stylesheet -->
 <link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/checkout-modern.css'), ENT_QUOTES, 'UTF-8') ?>">
 
-<!-- Brand Title Banner -->
-<section class="txt-center p-lr-15 p-tb-50 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
-	<h2 class="ltext-105 cl0 txt-center">
-		Checkout
-	</h2>
-</section>
-
-<!-- Breadcrumb -->
-<div class="container m-t-20 m-b-20">
-	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
-		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
-			Home
-			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-		</a>
-
-		<a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
-			Cart
-			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-		</a>
-
-		<span class="stext-109 cl4">
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
 			Checkout
-		</span>
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+				Cart <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Checkout
+			</span>
+		</div>
 	</div>
-</div>
+</section>
 
 <section class="sec-checkout">
   <div class="container">

@@ -228,27 +228,33 @@ foreach ($shippingMethods as $sm) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- Breadcrumb -->
-<div class="container m-t-20 m-b-20">
-	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
-		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
-			Home
-			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-		</a>
+<!-- Modern Cart Stylesheet -->
+<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/cart-modern.css'), ENT_QUOTES, 'UTF-8') ?>">
 
-		<span class="stext-109 cl4">
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
 			Shopping Cart
-		</span>
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Shopping Cart
+			</span>
+		</div>
 	</div>
-</div>
+</section>
 
-<!-- =================== COZASTORE SHOPPING CART =================== -->
-<div class="bg0 p-t-40 p-b-85">
+<!-- =================== MODERN SHOPPING CART =================== -->
+<div class="sec-cart-page">
 	<div class="container">
 
 		<!-- Flashes & Cart Notice Alerts -->
 		<?php foreach (get_flashes() as $f): ?>
-			<div class="alert alert-<?= htmlspecialchars($f['type'], ENT_QUOTES, 'UTF-8') ?> alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert">
+			<div class="alert alert-<?= htmlspecialchars($f['type'], ENT_QUOTES, 'UTF-8') ?> alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert" style="border-radius: 10px;">
 				<?= htmlspecialchars($f['message'], ENT_QUOTES, 'UTF-8') ?>
 				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
 					<span aria-hidden="true">&times;</span>
@@ -257,7 +263,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 		<?php endforeach; ?>
 
 		<?php if (!empty($cart['alerts'])): ?>
-			<div class="alert alert-warning alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert">
+			<div class="alert alert-warning alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert" style="border-radius: 10px;">
 				<strong>Notice:</strong>
 				<ul class="m-t-5 m-b-0 p-l-20">
 					<?php foreach ($cart['alerts'] as $alt): ?>
@@ -277,253 +283,230 @@ include __DIR__ . '/../../includes/partials/header.php';
 				$diff = max(0, $freeShippingThreshold - $totals['discounted_subtotal']);
 				$pct = min(100, round(($totals['discounted_subtotal'] / $freeShippingThreshold) * 100));
 			?>
-			<div class="bor10 p-lr-25 p-tb-15 m-b-30 bg6" style="border-radius: 6px;">
-				<div class="flex-w flex-sb-m p-b-8">
-					<span class="stext-102 cl2 font-weight-bold">
+			<div class="cart-free-shipping-card">
+				<div class="cart-free-shipping-header">
+					<span class="cart-free-shipping-title">
 						<?php if ($qualifies): ?>
-							<i class="zmdi zmdi-check-circle cl1 m-r-6"></i> You unlocked <strong>FREE Delivery!</strong>
+							<i class="zmdi zmdi-check-circle fs-18 text-success"></i> You unlocked <strong>FREE Delivery!</strong>
 						<?php else: ?>
-							<i class="zmdi zmdi-truck cl1 m-r-6"></i> Add <strong><?= price($diff) ?></strong> more to qualify for <strong>FREE Delivery</strong>
+							<i class="zmdi zmdi-truck fs-18" style="color: #111827;"></i> Add <strong><?= price($diff) ?></strong> more to qualify for <strong>FREE Delivery</strong>
 						<?php endif; ?>
 					</span>
-					<span class="stext-102 cl6"><?= $pct ?>%</span>
+					<span class="cart-free-shipping-pct"><?= $pct ?>%</span>
 				</div>
-				<div class="progress" style="height: 6px;">
-					<div class="progress-bar <?= $qualifies ? 'bg-success' : 'bg-dark' ?>" role="progressbar" style="width: <?= $pct ?>%;" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+				<div class="cart-free-shipping-track">
+					<div class="cart-free-shipping-bar" style="width: <?= $pct ?>%; background-color: <?= $qualifies ? '#10b981' : '#111827' ?>;"></div>
 				</div>
 			</div>
 		<?php endif; ?>
 
 		<?php if (empty($cart['items'])): ?>
 			<!-- Empty Cart State -->
-			<div class="text-center p-tb-100">
-				<i class="zmdi zmdi-shopping-cart-plus cl6 d-block m-b-20" style="font-size: 64px;"></i>
-				<h3 class="mtext-105 cl2 p-b-10">Your cart is currently empty</h3>
-				<p class="stext-115 cl6 p-b-30">Looks like you haven't added anything to your cart yet.</p>
-				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px;">
-					Start Shopping
+			<div class="cart-empty-card">
+				<div class="cart-empty-icon">
+					<i class="zmdi zmdi-shopping-cart"></i>
+				</div>
+				<h2 class="cart-empty-title">Your cart is currently empty</h2>
+				<p class="cart-empty-text">Looks like you haven't added anything to your cart yet.</p>
+				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="cart-empty-btn">
+					<i class="zmdi zmdi-shopping-basket"></i> Start Shopping
 				</a>
 			</div>
 		<?php else: ?>
 			<div class="row">
 				<!-- Left Column: Cart Table & Actions -->
-				<div class="col-lg-10 col-xl-7 m-lr-auto m-b-50">
-					<div class="m-l-0 m-r--38 m-lr-0-xl">
-						<form method="post" id="cozaCartForm">
-							<?= csrf_field() ?>
-							<input type="hidden" name="action" value="update">
+				<div class="col-lg-8 m-b-40">
+					<form method="post" id="cozaCartForm">
+						<?= csrf_field() ?>
+						<input type="hidden" name="action" value="update">
 
-							<div class="wrap-table-shopping-cart">
-								<table class="table-shopping-cart">
-									<tr class="table_head">
-										<th class="column-1">Product</th>
-										<th class="column-2"></th>
-										<th class="column-3">Price</th>
-										<th class="column-4">Quantity</th>
-										<th class="column-5">Total</th>
-										<th class="p-r-20"></th>
+						<div class="cart-items-card">
+							<table class="cart-table">
+								<thead>
+									<tr>
+										<th>Product</th>
+										<th class="text-right">Price</th>
+										<th class="text-center">Quantity</th>
+										<th class="text-right">Total</th>
+										<th></th>
 									</tr>
-
+								</thead>
+								<tbody>
 									<?php foreach ($cart['items'] as $item): 
 										$p = $item['product'];
 										$cKey = (string)$item['cart_key'];
 										$pImg = product_image_url($item['image'] ?? null, 'thumbnail', (int)$item['product_id']);
 										$pUrl = !empty($p['slug']) ? route('product', ['slug' => $p['slug']]) : route('cart');
 									?>
-									<tr class="table_row" data-cart-row="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
-										<td class="column-1">
-											<div class="how-itemcart1">
-												<img src="<?= htmlspecialchars($pImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 60px; height: 60px; object-fit: cover;">
-											</div>
-										</td>
-
-										<td class="column-2">
-											<a href="<?= htmlspecialchars($pUrl, ENT_QUOTES, 'UTF-8') ?>" class="stext-104 cl2 hov-cl1 trans-04 font-weight-bold d-block">
-												<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>
-											</a>
-											<?php if (!empty($item['variant_label'])): ?>
-												<span class="stext-109 cl6 d-block m-t-2">
-													<?= htmlspecialchars($item['variant_label'], ENT_QUOTES, 'UTF-8') ?>
-												</span>
-											<?php endif; ?>
-											<?php if (!empty($item['sku'])): ?>
-												<span class="stext-109 cl9 d-block fs-11">
-													SKU: <?= htmlspecialchars($item['sku'], ENT_QUOTES, 'UTF-8') ?>
-												</span>
-											<?php endif; ?>
-										</td>
-
-										<td class="column-3">
-											<?= price((float)$item['unit_price']) ?>
-										</td>
-
-										<td class="column-4">
-											<div class="wrap-num-product flex-w m-l-auto m-r-0" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
-												<div class="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m cart-minus-btn pointer">
-													<i class="fs-16 zmdi zmdi-minus"></i>
-												</div>
-
-												<input class="mtext-104 cl3 txt-center num-product cart-qty-input" type="number" name="qty[<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= (int)$item['qty'] ?>" min="1" max="<?= (int)$item['available_qty'] ?>" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
-
-												<div class="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m cart-plus-btn pointer">
-													<i class="fs-16 zmdi zmdi-plus"></i>
+									<tr data-cart-row="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+										<td class="cart-product-cell-td">
+											<div class="cart-product-cell">
+												<a href="<?= htmlspecialchars($pUrl, ENT_QUOTES, 'UTF-8') ?>" class="cart-product-thumb">
+													<img src="<?= htmlspecialchars($pImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>">
+												</a>
+												<div class="cart-product-info">
+													<a href="<?= htmlspecialchars($pUrl, ENT_QUOTES, 'UTF-8') ?>" class="cart-product-title">
+														<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>
+													</a>
+													<?php if (!empty($item['variant_label'])): ?>
+														<span class="cart-product-variant">
+															<?= htmlspecialchars($item['variant_label'], ENT_QUOTES, 'UTF-8') ?>
+														</span>
+													<?php endif; ?>
+													<?php if (!empty($item['sku'])): ?>
+														<span class="cart-product-sku">
+															SKU: <?= htmlspecialchars($item['sku'], ENT_QUOTES, 'UTF-8') ?>
+														</span>
+													<?php endif; ?>
 												</div>
 											</div>
 										</td>
 
-										<td class="column-5" data-line-total-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
-											<?= price((float)$item['line_total']) ?>
+										<td class="cart-price-cell-td text-right">
+											<span class="cart-price-cell">
+												<?= price((float)$item['unit_price']) ?>
+											</span>
 										</td>
 
-										<td class="p-r-20 text-center">
-											<button type="submit" name="remove_key" value="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>" class="btn-link text-danger border-0 bg-transparent pointer" title="Remove item" formnovalidate onclick="return confirm('Remove this item from your cart?');">
-												<i class="zmdi zmdi-delete fs-20"></i>
+										<td class="cart-stepper-cell-td text-center">
+											<div class="cart-stepper wrap-num-product" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+												<button type="button" class="cart-stepper-btn cart-minus-btn" aria-label="Decrease quantity">
+													<i class="zmdi zmdi-minus"></i>
+												</button>
+
+												<input class="cart-stepper-input cart-qty-input" type="number" name="qty[<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= (int)$item['qty'] ?>" min="1" max="<?= (int)$item['available_qty'] ?>" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+
+												<button type="button" class="cart-stepper-btn cart-plus-btn" aria-label="Increase quantity">
+													<i class="zmdi zmdi-plus"></i>
+												</button>
+											</div>
+										</td>
+
+										<td class="cart-total-cell-td text-right">
+											<span class="cart-total-cell" data-line-total-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+												<?= price((float)$item['line_total']) ?>
+											</span>
+										</td>
+
+										<td class="cart-remove-cell-td text-center">
+											<button type="submit" name="remove_key" value="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>" class="cart-remove-btn" title="Remove item" formnovalidate onclick="return confirm('Remove this item from your cart?');">
+												<i class="zmdi zmdi-delete"></i>
 											</button>
 										</td>
 									</tr>
 									<?php endforeach; ?>
-								</table>
-							</div>
+								</tbody>
+							</table>
 
-							<!-- Table Bottom Bar (Coupon & Update Cart) -->
-							<div class="flex-w flex-sb-m bor15 p-t-18 p-b-15 p-lr-40 p-lr-15-sm">
-								<div class="flex-w flex-m m-r-20 m-tb-5">
-									<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl2 size-119 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-r-10 m-tb-5">
-										Continue Shopping
+							<!-- Table Bottom Actions Bar -->
+							<div class="cart-actions-bar">
+								<div class="cart-actions-left">
+									<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="cart-continue-link">
+										<i class="zmdi zmdi-arrow-left"></i> Continue Shopping
 									</a>
-									<button type="submit" name="action" value="clear" class="flex-c-m stext-101 cl1 size-119 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-tb-5" onclick="return confirm('Clear your entire cart?');">
+									<button type="submit" name="action" value="clear" class="cart-clear-btn" onclick="return confirm('Clear your entire cart?');">
 										Clear Cart
 									</button>
 								</div>
 
-								<button type="submit" name="action" value="update" class="flex-c-m stext-101 cl0 size-119 bg1 bor1 hov-btn1 p-lr-15 trans-04 pointer m-tb-10">
+								<button type="submit" name="action" value="update" class="cart-update-btn">
 									Update Cart
 								</button>
 							</div>
-						</form>
+						</div>
+					</form>
 
-						<!-- Coupon Bar -->
-						<div class="bor15 p-t-20 p-b-20 p-lr-40 p-lr-15-sm m-t-20 bg6">
-							<h5 class="stext-101 cl2 font-weight-bold m-b-10">Have a coupon?</h5>
-							<?php if (!empty($totals['coupon'])): ?>
-								<div class="flex-w flex-sb-m p-lr-15 p-tb-10 bg0 bor10">
-									<span class="stext-102 cl1 font-weight-bold">
-										Coupon "<?= htmlspecialchars($totals['coupon']['code'], ENT_QUOTES, 'UTF-8') ?>" applied! (-<?= price($totals['discount']) ?>)
-									</span>
-									<form method="post" class="m-0">
-										<?= csrf_field() ?>
-										<input type="hidden" name="action" value="remove_coupon">
-										<button type="submit" class="stext-109 cl1 hov-cl2 pointer bg-transparent border-0">
-											Remove
-										</button>
-									</form>
-								</div>
-							<?php else: ?>
-								<form method="post" class="flex-w flex-m">
+					<!-- Coupon Box -->
+					<div class="cart-coupon-card">
+						<h5 class="cart-coupon-title">
+							<i class="zmdi zmdi-label fs-16"></i> Have a promo or coupon code?
+						</h5>
+						<?php if (!empty($totals['coupon'])): ?>
+							<div class="cart-coupon-applied">
+								<span class="cart-coupon-applied-text">
+									<i class="zmdi zmdi-check-circle fs-16"></i> Coupon <strong>"<?= htmlspecialchars($totals['coupon']['code'], ENT_QUOTES, 'UTF-8') ?>"</strong> applied! (-<?= price($totals['discount']) ?>)
+								</span>
+								<form method="post" class="m-0">
 									<?= csrf_field() ?>
-									<input type="hidden" name="action" value="apply_coupon">
-									<input class="stext-104 cl2 plh4 size-117 bor13 p-lr-20 m-r-10 m-tb-5" type="text" name="coupon_code" placeholder="Enter coupon code" required style="text-transform: uppercase;">
-									<button type="submit" class="flex-c-m stext-101 cl2 size-118 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-tb-5">
-										Apply coupon
+									<input type="hidden" name="action" value="remove_coupon">
+									<button type="submit" class="cart-coupon-remove-btn">
+										Remove
 									</button>
 								</form>
-							<?php endif; ?>
-						</div>
+							</div>
+						<?php else: ?>
+							<form method="post" class="cart-coupon-form">
+								<?= csrf_field() ?>
+								<input type="hidden" name="action" value="apply_coupon">
+								<input class="cart-coupon-input" type="text" name="coupon_code" placeholder="Enter coupon code" required>
+								<button type="submit" class="cart-coupon-btn">
+									Apply Coupon
+								</button>
+							</form>
+						<?php endif; ?>
 					</div>
 				</div>
 
-				<!-- Right Column: Cart Totals Box -->
-				<div class="col-sm-10 col-lg-7 col-xl-5 m-lr-auto m-b-50">
-					<div class="bor10 p-lr-40 p-t-30 p-b-40 m-l-63 m-r-40 m-lr-0-xl p-lr-15-sm">
-						<h4 class="mtext-109 cl2 p-b-30">
-							Cart Totals
-						</h4>
+				<!-- Right Column: Order Summary (Sticky Sidebar) -->
+				<div class="col-lg-4 m-b-50">
+					<div class="cart-summary-card">
+						<h3 class="cart-summary-title">
+							Order Summary
+						</h3>
 
-						<div class="flex-w flex-t bor12 p-b-13">
-							<div class="size-208">
-								<span class="stext-110 cl2">
-									Subtotal:
-								</span>
-							</div>
-
-							<div class="size-209">
-								<span class="mtext-110 cl2" id="cartSummarySubtotal">
-									<?= price($totals['subtotal']) ?>
-								</span>
-							</div>
+						<div class="cart-summary-row">
+							<span class="cart-summary-label">Subtotal</span>
+							<span class="cart-summary-val" id="cartSummarySubtotal"><?= price($totals['subtotal']) ?></span>
 						</div>
 
 						<?php if ($totals['discount'] > 0): ?>
-						<div class="flex-w flex-t bor12 p-tb-13">
-							<div class="size-208">
-								<span class="stext-110 cl1">
-									Coupon:
-								</span>
-							</div>
-
-							<div class="size-209">
-								<span class="mtext-110 cl1 font-weight-bold">
-									-<?= price($totals['discount']) ?>
-								</span>
-							</div>
+						<div class="cart-summary-row">
+							<span class="cart-summary-discount-label">Coupon Discount</span>
+							<span class="cart-summary-discount-val">-<?= price($totals['discount']) ?></span>
 						</div>
 						<?php endif; ?>
 
 						<!-- Shipping selector -->
-						<div class="flex-w flex-t bor12 p-t-15 p-b-30">
-							<div class="size-208 w-full-ssm">
-								<span class="stext-110 cl2">
-									Shipping:
+						<div style="margin-top: 14px; margin-bottom: 14px;">
+							<div class="d-flex justify-content-between align-items-center">
+								<span class="cart-summary-label">Shipping</span>
+								<span class="cart-summary-val" id="cartSummaryShipping">
+									<?= $totals['shipping_fee'] > 0 ? price($totals['shipping_fee']) : '<span class="text-success font-weight-bold">Free</span>' ?>
 								</span>
 							</div>
 
-							<div class="size-209 p-r-18 p-r-0-sm w-full-ssm">
-								<?php if (!empty($shippingMethods)): ?>
-									<form method="post" id="cartShippingForm">
-										<?= csrf_field() ?>
-										<input type="hidden" name="action" value="set_shipping">
-										<div class="rs1-select2 rs2-select2 bor8 bg0 m-b-12 m-t-9">
-											<select class="js-select2" name="shipping_method_id" onchange="this.form.submit()">
-												<?php foreach ($shippingMethods as $sm): 
-													$isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
-													$costStr = $isFree ? 'Free' : price((float)$sm['cost']);
-												?>
-													<option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
-														<?= htmlspecialchars($sm['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $costStr ?>)
-													</option>
-												<?php endforeach; ?>
-											</select>
-											<div class="dropDownSelect2"></div>
-										</div>
-									</form>
-								<?php endif; ?>
-
-								<p class="stext-111 cl6 p-t-2" id="cartSummaryShipping">
-									<?= $totals['shipping_fee'] > 0 ? 'Estimated: ' . price($totals['shipping_fee']) : 'Free Shipping' ?>
-								</p>
-							</div>
+							<?php if (!empty($shippingMethods)): ?>
+								<form method="post" id="cartShippingForm">
+									<?= csrf_field() ?>
+									<input type="hidden" name="action" value="set_shipping">
+									<select class="cart-shipping-select" name="shipping_method_id" onchange="this.form.submit()">
+										<?php foreach ($shippingMethods as $sm): 
+											$isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
+											$costStr = $isFree ? 'Free' : price((float)$sm['cost']);
+										?>
+											<option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
+												<?= htmlspecialchars($sm['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $costStr ?>)
+											</option>
+										<?php endforeach; ?>
+									</select>
+								</form>
+							<?php endif; ?>
 						</div>
 
-						<div class="flex-w flex-t p-t-27 p-b-33">
-							<div class="size-208">
-								<span class="mtext-101 cl2 font-weight-bold">
-									Total:
-								</span>
-							</div>
+						<hr class="cart-summary-divider">
 
-							<div class="size-209 p-t-1">
-								<span class="mtext-110 cl1 font-weight-bold" id="cartSummaryTotal">
-									<?= price($totals['total']) ?>
-								</span>
-							</div>
+						<div class="cart-summary-total-row">
+							<span class="cart-summary-total-label">Total</span>
+							<span class="cart-summary-total-val" id="cartSummaryTotal"><?= price($totals['total']) ?></span>
 						</div>
 
-						<a href="<?= htmlspecialchars(route('checkout'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-116 bg3 bor14 hov-btn3 p-lr-15 trans-04 pointer">
-							Proceed to Checkout
+						<a href="<?= htmlspecialchars(route('checkout'), ENT_QUOTES, 'UTF-8') ?>" class="cart-checkout-btn">
+							<i class="zmdi zmdi-lock fs-18"></i> Proceed to Checkout
 						</a>
 
-						<div class="text-center p-t-20 stext-102 cl6">
-							<i class="zmdi zmdi-shield-check cl1 m-r-4"></i> Cash on Delivery available at checkout
+						<div class="cart-trust-note">
+							<i class="zmdi zmdi-shield-check text-success fs-16"></i>
+							<span>Cash on Delivery available at checkout</span>
 						</div>
 					</div>
 				</div>

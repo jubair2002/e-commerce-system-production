@@ -20,14 +20,14 @@ try {
 } catch (Throwable $e) {}
 ?>
 	<!-- Pre-footer Trust Strip (Customer Commitments) -->
-	<section class="sec-trust-bar bg0 p-t-40 p-b-40" aria-label="Customer Commitments" style="border-top: 1px solid #eef0f3;">
+	<section class="sec-trust-bar bg0 p-t-35 p-b-35" aria-label="Customer Commitments" style="border-top: 1px solid #eef0f3; background: #fcfcfd;">
 		<div class="container">
-			<div class="row p-tb-25 p-lr-15 bg6" style="border: 1px solid #eef0f3; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.02);">
+			<div class="row p-tb-25 p-lr-15" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
 				
 				<!-- Item 1: Nationwide COD -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
 					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
 							<i class="zmdi zmdi-shield-check"></i>
 						</div>
 						<div style="flex: 1; min-width: 0;">
@@ -44,7 +44,7 @@ try {
 				<!-- Item 2: Fast Dispatch -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
 					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
 							<i class="zmdi zmdi-truck"></i>
 						</div>
 						<div style="flex: 1; min-width: 0;">
@@ -61,7 +61,7 @@ try {
 				<!-- Item 3: 100% Authentic -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
 					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
 							<i class="zmdi zmdi-badge-check"></i>
 						</div>
 						<div style="flex: 1; min-width: 0;">
@@ -78,7 +78,7 @@ try {
 				<!-- Item 4: Dedicated Support -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
 					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
 							<i class="zmdi zmdi-headset-mic"></i>
 						</div>
 						<div style="flex: 1; min-width: 0;">

@@ -32,26 +32,22 @@ $pageDescription = !empty($page['meta_description']) ? $page['meta_description']
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<!-- Title Banner (Clean Brand Header) -->
-<section class="txt-center p-lr-15 p-tb-60 bg3" style="background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);">
-	<h2 class="ltext-105 cl0 txt-center">
-		<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
-	</h2>
-</section>
-
-<!-- Breadcrumb -->
-<div class="container m-t-20 m-b-20">
-	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
-		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
-			Home
-			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-		</a>
-
-		<span class="stext-109 cl4">
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
 			<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
-		</span>
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
+			</span>
+		</div>
 	</div>
-</div>
+</section>
 
 <!-- =================== CMS PAGE CONTENT =================== -->
 <section class="bg0 p-t-30 p-b-120">

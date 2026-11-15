@@ -132,8 +132,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #f3f4f6;
+  color: #374151;
   padding: 4px 12px;
   border-radius: 20px;
   text-decoration: none;
@@ -141,8 +141,8 @@
 }
 
 .pdp-category-pill:hover {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: #e5e7eb;
+  color: #111827;
 }
 
 .pdp-product-title {
@@ -385,10 +385,10 @@
 }
 
 .pdp-btn-buy:hover:not(:disabled) {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #1f2937;
+  border-color: #1f2937;
   color: #ffffff;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.25);
 }
 
 .pdp-btn-cart:disabled,
@@ -434,12 +434,12 @@
 }
 
 .pdp-trust-icon {
-  font-size: 22px;
-  color: #4f46e5;
+  font-size: 20px;
+  color: #111827;
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  background: #eef2ff;
+  background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
