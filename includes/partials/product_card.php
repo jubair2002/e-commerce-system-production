@@ -1,8 +1,7 @@
 <?php
 /**
- * Webflow Shop Style Product Card
+ * Cozastore Style Product Card (Block2)
  * Expects $p (product row) in scope.
- * 1:1 Aspect Ratio, Dual Image Swap, Webflow Blue Hover, Swatch Dots, Badges, Quick-Add & Buy Now.
  */
 $pid         = (int)$p['id'];
 $onSale      = product_is_on_sale($p);
@@ -12,143 +11,54 @@ $isSimple    = ($productType === 'simple');
 $stock       = (int)($p['stock'] ?? 0);
 $lowThresh   = (int)($p['low_stock_threshold'] ?? 5);
 $isSoldOut   = ($stock <= 0 && empty($p['allow_backorder']));
-$isLowStock  = ($stock > 0 && $stock <= $lowThresh);
 
-$showSaleBadge = (int)setting('shop_show_sale_badge', '1') === 1;
-$showLowBadge  = (int)setting('shop_show_low_stock_badge', '1') === 1;
-
-$primaryImg   = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
-$fullImg      = product_image_url($p['image'] ?? null, 'full', $pid);
-$secondImgRaw = array_key_exists('second_image', $p) ? $p['second_image'] : product_second_image($pid);
-$secondImg    = $secondImgRaw ? product_image_url($secondImgRaw, 'thumbnail', $pid) : null;
-$swatches     = array_key_exists('swatches', $p) ? $p['swatches'] : product_color_swatches($pid);
-$productUrl   = route('product', ['slug' => $p['slug']]);
+$primaryImg  = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
+$productUrl  = route('product', ['slug' => $p['slug']]);
+$catSlug     = !empty($p['category_slug']) ? $p['category_slug'] : 'all';
+$itemCol     = !empty($productCardCol) ? $productCardCol : 'col-sm-6 col-md-4 col-lg-3';
+$extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '';
 ?>
-<div class="product-card" data-product-id="<?= $pid ?>">
-  <!-- Wishlist Heart Button -->
-  <button type="button"
-          class="product-card-wishlist"
-          data-wishlist-btn="<?= $pid ?>"
-          aria-label="Save to wishlist"
-          title="Save to wishlist">
-    <?= icon('heart') ?>
-  </button>
+<div class="<?= htmlspecialchars($itemCol, ENT_QUOTES, 'UTF-8') ?> p-b-35 isotope-item <?= htmlspecialchars($catSlug, ENT_QUOTES, 'UTF-8') ?><?= htmlspecialchars($extraClass, ENT_QUOTES, 'UTF-8') ?>">
+	<!-- Block2 -->
+	<div class="block2">
+		<div class="block2-pic hov-img0 pos-relative">
+			<img src="<?= htmlspecialchars($primaryImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
 
-  <a href="<?= e($productUrl) ?>" class="product-card-media" aria-label="<?= e($p['name']) ?>">
-    <!-- Primary Image -->
-    <img src="<?= e($primaryImg) ?>"
-         alt="<?= e($p['name']) ?>"
-         class="product-card-img product-img-primary"
-         loading="lazy"
-         width="320"
-         height="320"
-         onerror="if (!this.dataset.fallback && this.src !== '<?= e($fullImg) ?>') { this.dataset.fallback = '1'; this.src = '<?= e($fullImg) ?>'; }">
+			<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
+				View Details
+			</a>
 
-    <!-- Secondary Hover Image (if present) -->
-    <?php if ($secondImg): ?>
-      <img src="<?= e($secondImg) ?>"
-           alt="<?= e($p['name']) ?> - alternate view"
-           class="product-card-img product-img-hover"
-           loading="lazy"
-           width="320"
-           height="320">
-    <?php endif; ?>
+			<?php if ($isSoldOut): ?>
+				<span class="stext-109 cl0 bg-dark p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">Sold Out</span>
+			<?php elseif ($onSale && $discount > 0): ?>
+				<span class="stext-109 cl0 bg1 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">-<?= (int)$discount ?>%</span>
+			<?php elseif (!empty($p['featured'])): ?>
+				<span class="stext-109 cl0 bg3 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">Featured</span>
+			<?php endif; ?>
+		</div>
 
-    <!-- Badges Container -->
-    <div class="product-card-badge">
-      <?php if ($isSoldOut): ?>
-        <span class="badge badge-outline">Sold out</span>
-      <?php elseif ($onSale && $showSaleBadge && $discount > 0): ?>
-        <span class="badge badge-sale">&minus;<?= $discount ?>%</span>
-      <?php elseif ($isLowStock && $showLowBadge): ?>
-        <span class="badge badge-low-stock">Only <?= $stock ?> left</span>
-      <?php endif; ?>
+		<div class="block2-txt flex-w flex-t p-t-14">
+			<div class="block2-txt-child1 flex-col-l">
+				<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6 text-truncate d-block w-full" title="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>">
+					<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>
+				</a>
 
-      <?php if (!empty($p['featured'])): ?>
-        <span class="badge badge-new"><?= icon('star') ?> Featured</span>
-      <?php endif; ?>
-    </div>
-  </a>
+				<div class="price-wrap">
+					<?php if ($onSale): ?>
+						<span class="stext-105 cl1 font-weight-bold m-r-6"><?= price((float)$p['sale_price']) ?></span>
+						<span class="stext-105 cl3" style="text-decoration: line-through; opacity: 0.7;"><?= price((float)$p['price']) ?></span>
+					<?php else: ?>
+						<span class="stext-105 cl3 font-weight-bold"><?= price((float)$p['price']) ?></span>
+					<?php endif; ?>
+				</div>
+			</div>
 
-  <div class="product-card-body">
-    <h3 class="product-card-title">
-      <a href="<?= e($productUrl) ?>"><?= e($p['name']) ?></a>
-    </h3>
-
-    <!-- Webflow Shop Metadata Row ($Price • Category • Badge) -->
-    <div class="product-card-meta">
-      <div class="price-wrap">
-        <?php if ($onSale): ?>
-          <span class="price-current text-sale"><?= e(price((float)$p['sale_price'])) ?></span>
-          <span class="price-strike"><?= e(price((float)$p['price'])) ?></span>
-        <?php else: ?>
-          <span class="price-current"><?= e(price((float)$p['price'])) ?></span>
-        <?php endif; ?>
-      </div>
-
-      <?php if (!empty($p['category_name'])): ?>
-        <span class="meta-dot">&bull;</span>
-        <span class="meta-tag"><?= e($p['category_name']) ?></span>
-      <?php endif; ?>
-
-      <?php if (!empty($p['featured'])): ?>
-        <span class="meta-dot">&bull;</span>
-        <span class="meta-tag">Popular</span>
-      <?php elseif ($onSale): ?>
-        <span class="meta-dot">&bull;</span>
-        <span class="meta-tag">Sale</span>
-      <?php endif; ?>
-    </div>
-
-    <!-- Swatch Dots -->
-    <?php if (!empty($swatches)): ?>
-      <div class="swatch-group mb-3" aria-label="Available colors">
-        <?php foreach (array_slice($swatches, 0, 5) as $sw): ?>
-          <span class="swatch-color-circle"
-                style="background-color: <?= e($sw['swatch_hex'] ?: '#e0e0e0') ?>"
-                title="<?= e($sw['value']) ?>"></span>
-        <?php endforeach; ?>
-        <?php if (count($swatches) > 5): ?>
-          <span class="small opacity-75" style="font-size: 11px;">&plus;<?= count($swatches) - 5 ?></span>
-        <?php endif; ?>
-      </div>
-    <?php endif; ?>
-
-    <!-- Action Buttons & Circular Arrow -->
-    <div class="product-card-footer">
-      <?php if (!$isSoldOut): ?>
-        <div class="product-card-actions">
-          <?php if ($isSimple): ?>
-            <button type="button"
-                    class="btn btn-secondary btn-sm product-card-btn-add"
-                    data-quick-add="<?= $pid ?>"
-                    aria-label="Add <?= e($p['name']) ?> to cart">
-              + Add
-            </button>
-            <button type="button"
-                    class="btn btn-primary btn-sm product-card-btn-buy"
-                    data-buy-now="<?= $pid ?>"
-                    aria-label="Buy <?= e($p['name']) ?> now">
-              Buy Now
-            </button>
-          <?php else: ?>
-            <a href="<?= e($productUrl) ?>"
-               class="btn btn-primary btn-sm product-card-btn-buy"
-               aria-label="Select options for <?= e($p['name']) ?>">
-              Options
-            </a>
-          <?php endif; ?>
-        </div>
-      <?php else: ?>
-        <div class="product-card-actions">
-          <span class="badge badge-outline py-2 px-3">Sold Out</span>
-        </div>
-      <?php endif; ?>
-
-      <a href="<?= e($productUrl) ?>" class="circle-btn" title="View details" aria-label="View <?= e($p['name']) ?>">
-        <span class="circle-btn-arrow">&#x2197;</span>
-      </a>
-    </div>
-  </div>
+			<div class="block2-txt-child2 flex-r p-t-3">
+				<a href="#" class="btn-addwish-b2 dis-block pos-relative js-addwish-b2" onclick="window.cozaToggleWishlist(<?= $pid ?>, this); return false;" title="Save to wishlist">
+					<img class="icon-heart1 dis-block trans-04" src="<?= htmlspecialchars(url('assets/coza/images/icons/icon-heart-01.png'), ENT_QUOTES, 'UTF-8') ?>" alt="ICON">
+					<img class="icon-heart2 dis-block trans-04 ab-t-l" src="<?= htmlspecialchars(url('assets/coza/images/icons/icon-heart-02.png'), ENT_QUOTES, 'UTF-8') ?>" alt="ICON">
+				</a>
+			</div>
+		</div>
+	</div>
 </div>
-
