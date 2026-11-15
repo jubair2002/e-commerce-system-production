@@ -610,6 +610,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rules = [
             'seo_default_title'       => ['type' => 'text'],
             'seo_default_description' => ['type' => 'text'],
+            'seo_default_keywords'    => ['type' => 'text'],
             'robots_allow'            => ['type' => 'bool'],
             'monitor_external_url'    => ['type' => 'text'],
             'monitor_external_embed'  => ['type' => 'bool'],
@@ -707,6 +708,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'seo' => [
                 'seo_default_title' => '',
                 'seo_default_description' => '',
+                'seo_default_keywords' => '',
                 'robots_allow' => '1',
             ],
             'customers' => [
@@ -1785,6 +1787,12 @@ include __DIR__ . '/includes/header.php';
             <div class="col-12">
               <label class="form-label fw-semibold">Default Meta Description</label>
               <textarea name="seo_default_description" class="form-control" rows="3" placeholder="Compelling 150-160 character description of your store for Google search snippets..."><?= e(setting('seo_default_description', '')) ?></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Default Meta Keywords</label>
+              <input type="text" name="seo_default_keywords" class="form-control" value="<?= e(setting('seo_default_keywords', '')) ?>" placeholder="e.g. online shopping, electronics, clothing, bangladesh">
+              <div class="form-text">Comma-separated keywords used when a page does not specify its own keywords.</div>
             </div>
 
             <div class="col-12">

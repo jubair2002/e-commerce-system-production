@@ -18,17 +18,13 @@ if ($orderNumber === '' && $orderId <= 0) {
 }
 
 $pdo = db();
-$stmt = $pdo->prepare(
-    "SELECT * FROM orders
-     WHERE (:onum != '' AND order_number = :onum AND customer_id = :cid)
-        OR (:oid > 0 AND id = :oid AND customer_id = :cid)
-     LIMIT 1"
-);
-$stmt->execute([
-    ':onum' => $orderNumber,
-    ':oid'  => $orderId,
-    ':cid'  => $cid,
-]);
+if ($orderNumber !== '') {
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE order_number = :onum AND customer_id = :cid LIMIT 1");
+    $stmt->execute([':onum' => $orderNumber, ':cid' => $cid]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = :oid AND customer_id = :cid LIMIT 1");
+    $stmt->execute([':oid' => $orderId, ':cid' => $cid]);
+}
 $order = $stmt->fetch();
 
 if (!$order) {

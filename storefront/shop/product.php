@@ -54,8 +54,16 @@ hook_fire('product.viewed', [
     'product_id' => $productId,
     'price'      => (float)($product['sale_price'] ?: $product['price']),
 ]);
-$pageTitle  = $product['name'];
-$siteName   = setting('site_name', APP_NAME);
+$pageTitle       = !empty($product['meta_title']) ? $product['meta_title'] : $product['name'];
+$pageDescription = !empty($product['meta_description'])
+    ? $product['meta_description']
+    : (!empty($product['short_description'])
+        ? $product['short_description']
+        : substr(strip_tags((string)($product['description'] ?? '')), 0, 160));
+$pageKeywords    = !empty($product['meta_keywords'])
+    ? $product['meta_keywords']
+    : (!empty($product['tags']) ? $product['tags'] : '');
+$siteName        = setting('site_name', APP_NAME);
 
 $onSale     = product_is_on_sale($product);
 $discount   = $onSale ? product_discount_percent($product) : 0;

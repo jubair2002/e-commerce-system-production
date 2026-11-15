@@ -20,8 +20,9 @@ server {
 
 # 2. Main E-Commerce Application (HTTPS)
 server {
-    listen 443 ssl http2 default_server;
-    listen [::]:443 ssl http2 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    http2 on;
     server_name jinishpotro.store www.jinishpotro.store;
 
     ssl_certificate /etc/letsencrypt/live/jinishpotro.store/fullchain.pem;

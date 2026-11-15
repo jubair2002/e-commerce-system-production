@@ -287,6 +287,12 @@ SET @s = (SELECT IF(COUNT(*) = 0,
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'meta_description');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `products` ADD COLUMN `meta_keywords` VARCHAR(255) DEFAULT NULL',
+  'SELECT ''products.meta_keywords exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'meta_keywords');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = (SELECT IF(COUNT(*) = 0,
   'ALTER TABLE `products` ADD COLUMN `view_count` INT UNSIGNED NOT NULL DEFAULT 0',
   'SELECT ''products.view_count exists'' AS info')
   FROM information_schema.COLUMNS

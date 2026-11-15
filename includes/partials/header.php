@@ -36,7 +36,13 @@ $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : time();
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e($fullTitle) ?></title>
-  <meta name="description" content="<?= e(setting('seo_default_description', setting('site_about', 'Quality essentials delivered to your door.'))) ?>">
+  <meta name="description" content="<?= e(!empty($pageDescription) ? $pageDescription : setting('seo_default_description', setting('site_about', 'Quality essentials delivered to your door.'))) ?>">
+  <?php 
+    $headerKeywords = !empty($pageKeywords) ? $pageKeywords : setting('seo_default_keywords', '');
+    if (!empty($headerKeywords)): 
+  ?>
+  <meta name="keywords" content="<?= e($headerKeywords) ?>">
+  <?php endif; ?>
   <?php $favUrl = store_favicon_url($storeFavicon ?? null); ?>
   <?php if ($favUrl): ?>
     <link rel="icon" href="<?= e($favUrl) ?>">

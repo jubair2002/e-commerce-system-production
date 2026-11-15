@@ -14,7 +14,7 @@ $product = [
     'image' => null, 'status' => 'active', 'featured' => 0,
     'track_inventory' => 1, 'allow_backorder' => 0, 'low_stock_threshold' => 5,
     'show_stock_count' => 1, 'weight_g' => '', 'brand' => '', 'tags' => '',
-    'meta_title' => '', 'meta_description' => '', 'updated_at' => '',
+    'meta_title' => '', 'meta_description' => '', 'meta_keywords' => '', 'updated_at' => '',
 ];
 
 $existingOptions  = [];
@@ -73,11 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $allowBackorder    = isset($_POST['allow_backorder']) ? 1 : 0;
     $lowStockThreshold = max(0, (int)($_POST['low_stock_threshold'] ?? 5));
     $showStockCount    = isset($_POST['show_stock_count']) ? 1 : 0;
-    $weightG           = ($_POST['weight_g'] !== '' && is_numeric($_POST['weight_g'])) ? (int)$_POST['weight_g'] : null;
+    $weightG           = (isset($_POST['weight_g']) && $_POST['weight_g'] !== '' && is_numeric($_POST['weight_g'])) ? (int)$_POST['weight_g'] : null;
     $brand             = trim((string)($_POST['brand'] ?? ''));
     $tags              = trim((string)($_POST['tags'] ?? ''));
     $metaTitle         = trim((string)($_POST['meta_title'] ?? ''));
     $metaDesc          = trim((string)($_POST['meta_description'] ?? ''));
+    $metaKeywords      = trim((string)($_POST['meta_keywords'] ?? ''));
 
     // Validation
     if ($name === '') {
@@ -87,18 +88,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Price must be a non-negative number.';
     }
     if ($salePrice !== '' && (!is_numeric($salePrice) || (float)$salePrice < 0)) {
-        $errors[] = 'Sale price must be a non-negative number (or blank).';
+        $errors[] = 'Sale price must be less than the regular price.';
     }
     if ($salePrice !== '' && is_numeric($salePrice) && is_numeric($price) && (float)$salePrice >= (float)$price) {
         $errors[] = 'Sale price must be less than the regular price.';
     }
 
-    // SKU uniqueness across products
+    // SKU uniqueness across products and variants
     if ($sku !== '') {
-        $stmt = db()->prepare('SELECT id FROM products WHERE sku = :s AND id <> :id');
-        $stmt->execute([':s' => $sku, ':id' => $id]);
+        $stmt = db()->prepare(
+            'SELECT id FROM products WHERE sku = ? AND id <> ?
+             UNION
+             SELECT product_id FROM product_variants WHERE sku = ? AND product_id <> ?'
+        );
+        $stmt->execute([$sku, $id, $sku, $id]);
         if ($stmt->fetch()) {
-            $errors[] = 'The product SKU is already in use by another product.';
+            $errors[] = 'The product SKU is already in use by another product or variant.';
         }
     }
 
@@ -155,11 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Check against other products in DB
                 $stmtCheckSku = db()->prepare(
-                    "SELECT id FROM products WHERE sku = :s AND id <> :pid
+                    "SELECT id FROM products WHERE sku = ? AND id <> ?
                      UNION
-                     SELECT product_id FROM product_variants WHERE sku = :s AND product_id <> :pid"
+                     SELECT product_id FROM product_variants WHERE sku = ? AND product_id <> ?"
                 );
-                $stmtCheckSku->execute([':s' => $vSku, ':pid' => $id]);
+                $stmtCheckSku->execute([$vSku, $id, $vSku, $id]);
                 if ($stmtCheckSku->fetch()) {
                     $errors[] = "The variant SKU \"{$vSku}\" is already used by another product or variant.";
                 }
@@ -228,6 +233,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $primaryFileId = $stored['id'];
             }
 
+            // Validate category existence to avoid foreign key violations
+            if ($categoryId > 0) {
+                $chkCat = $pdo->prepare("SELECT id FROM categories WHERE id = ?");
+                $chkCat->execute([$categoryId]);
+                if (!$chkCat->fetch()) {
+                    $categoryId = 0;
+                }
+            }
+
             // Insert / Update Product Row
             $productData = [
                 ':cid'   => $categoryId > 0 ? $categoryId : null,
@@ -253,6 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':tags'  => $tags !== '' ? $tags : null,
                 ':mt'    => $metaTitle !== '' ? $metaTitle : null,
                 ':md'    => $metaDesc !== '' ? $metaDesc : null,
+                ':mk'    => $metaKeywords !== '' ? $metaKeywords : null,
             ];
 
             $oldStock = 0;
@@ -273,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         image = :img, file_id = :fid, status = :st, featured = :feat,
                         track_inventory = :ti, allow_backorder = :ab, low_stock_threshold = :lst,
                         show_stock_count = :ssc, weight_g = :wg, brand = :brand, tags = :tags,
-                        meta_title = :mt, meta_description = :md
+                        meta_title = :mt, meta_description = :md, meta_keywords = :mk
                      WHERE id = :id"
                 );
                 $stmtUpdate->execute($updateData);
@@ -285,11 +300,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         (category_id, name, slug, product_type, sku, short_description, description,
                          price, sale_price, stock, image, file_id, status, featured,
                          track_inventory, allow_backorder, low_stock_threshold, show_stock_count,
-                         weight_g, brand, tags, meta_title, meta_description)
+                         weight_g, brand, tags, meta_title, meta_description, meta_keywords)
                      VALUES
                         (:cid, :name, :slug, :ptype, :sku, :sd, :d,
                          :price, :sp, :stock, :img, :fid, :st, :feat,
-                         :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md)"
+                         :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md, :mk)"
                 );
                 $stmtInsert->execute($insertData);
                 $id = (int)$pdo->lastInsertId();
@@ -634,7 +649,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', $id ? 'Product saved successfully.' : 'Product created successfully.');
             admin_redirect('products.php');
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $errors[] = 'Failed to save product: ' . $e->getMessage();
         }
     }
@@ -649,7 +666,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'low_stock_threshold' => $lowStockThreshold, 'show_stock_count' => $showStockCount,
         'weight_g' => $weightG, 'brand' => $brand, 'tags' => $tags,
         'meta_title' => $metaTitle, 'meta_description' => $metaDesc,
+        'meta_keywords' => $metaKeywords,
     ]);
+
+    if (!empty($postedOptions)) {
+        $existingOptions = $postedOptions;
+    }
+    if (!empty($postedVariants)) {
+        $existingVariants = $postedVariants;
+    }
 }
 
 include __DIR__ . '/includes/header.php';
@@ -906,9 +931,14 @@ include __DIR__ . '/includes/header.php';
             <input type="text" name="meta_title" class="form-control" maxlength="160"
                    value="<?= e($product['meta_title'] ?? '') ?>" placeholder="Leave blank to use product name">
           </div>
-          <div>
+          <div class="mb-3">
             <label class="form-label">Meta description</label>
             <textarea name="meta_description" class="form-control" rows="2" maxlength="255"><?= e($product['meta_description'] ?? '') ?></textarea>
+          </div>
+          <div>
+            <label class="form-label">Meta keywords <small class="text-muted">(comma-separated)</small></label>
+            <input type="text" name="meta_keywords" class="form-control" maxlength="255"
+                   value="<?= e($product['meta_keywords'] ?? '') ?>" placeholder="e.g. fashion, clothing, summer, cotton">
           </div>
         </div>
       </div>
