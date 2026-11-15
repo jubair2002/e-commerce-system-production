@@ -145,6 +145,13 @@
 			});
 		};
 
+		// Ensure isotope grid items layout properly without overlap
+		$(window).on('load', function() {
+			if ($('.isotope-grid').length && typeof $.fn.isotope === 'function') {
+				$('.isotope-grid').isotope('layout');
+			}
+		});
+
 		// Theme Manager (Dark / Light Mode)
 		function updateThemeIcons(theme) {
 			if (theme === 'dark') {

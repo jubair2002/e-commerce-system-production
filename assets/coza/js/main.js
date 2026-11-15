@@ -145,7 +145,7 @@
         var $grid = $topeContainer.each(function () {
             $(this).isotope({
                 itemSelector: '.isotope-item',
-                layoutMode: 'fitRows',
+                layoutMode: 'masonry',
                 percentPosition: true,
                 animationEngine : 'best-available',
                 masonry: {
