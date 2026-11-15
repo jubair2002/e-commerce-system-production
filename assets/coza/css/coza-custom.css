@@ -370,6 +370,23 @@ svg.i {
   color: #ffffff !important;
 }
 
+.top-bar a.active,
+.right-top-bar a.active {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.topbar-track-btn i {
+  font-size: 13px !important;
+  opacity: 0.85;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.topbar-track-btn:hover i {
+  opacity: 1;
+  transform: translateX(1px);
+}
+
 /* Mobile Header Clean Ergonomics (Active ONLY on screens < 992px) */
 @media (max-width: 991.98px) {
   .container-menu-desktop {
@@ -1238,22 +1255,26 @@ svg.i {
   justify-content: center !important;
   min-height: 320px !important;
 }
+
 .empty-products-state .empty-state-icon i {
   color: #94a3b8 !important;
   display: inline-block !important;
   line-height: 1 !important;
 }
+
 .empty-products-state h4 {
   font-size: 22px !important;
   font-weight: 700 !important;
   margin-bottom: 12px !important;
   letter-spacing: -0.3px !important;
 }
+
 .empty-products-state p {
   color: #64748b !important;
   font-size: 15px !important;
   line-height: 1.6 !important;
 }
+
 .empty-products-state a.hov-btn1 {
   background: #111827 !important;
   color: #ffffff !important;
@@ -1263,6 +1284,7 @@ svg.i {
   padding: 12px 28px !important;
   height: 46px !important;
 }
+
 .empty-products-state a.hov-btn1:hover {
   background: #374151 !important;
   color: #ffffff !important;
@@ -1857,6 +1879,18 @@ svg.i {
 [data-theme="dark"] .top-bar {
   background-color: #030712 !important;
   border-bottom: 1px solid #1f2937 !important;
+}
+
+[data-theme="dark"] .top-bar a,
+[data-theme="dark"] .right-top-bar a {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .top-bar a:hover,
+[data-theme="dark"] .right-top-bar a:hover,
+[data-theme="dark"] .top-bar a.active,
+[data-theme="dark"] .right-top-bar a.active {
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .wrap-menu-desktop {

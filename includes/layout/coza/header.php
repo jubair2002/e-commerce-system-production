@@ -23,6 +23,10 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 					</div>
 
 					<div class="right-top-bar flex-w h-full">
+						<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25 topbar-track-btn <?= route_is('track') ? 'active' : '' ?>" title="Track Order">
+							<i class="fa fa-truck m-r-6"></i> Track Order
+						</a>
+
 						<?php if ($headerCustomer): ?>
 							<a href="<?= htmlspecialchars(route('account'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
 								<i class="fa fa-user m-r-6"></i> <?= htmlspecialchars($headerCustomer['name'], ENT_QUOTES, 'UTF-8') ?>
@@ -31,11 +35,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 								Sign Out
 							</a>
 						<?php else: ?>
-							<a href="<?= htmlspecialchars(route('login'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
+							<a href="<?= htmlspecialchars(route('login'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25 <?= route_is('login') ? 'active' : '' ?>">
 								Sign In
 							</a>
-							<a href="<?= htmlspecialchars(route('register'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25">
-								Register
+							<a href="<?= htmlspecialchars(route('register'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m trans-04 p-lr-25 <?= route_is('register') ? 'active' : '' ?>">
+								Sign Up
 							</a>
 						<?php endif; ?>
 					</div>
@@ -158,6 +162,10 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 
 				<li>
 					<div class="right-top-bar flex-w h-full">
+						<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04 <?= route_is('track') ? 'active' : '' ?>">
+							<i class="fa fa-truck m-r-5"></i> Track Order
+						</a>
+
 						<?php if ($headerCustomer): ?>
 							<a href="<?= htmlspecialchars(route('account'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
 								My Account
@@ -166,11 +174,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 								Sign Out
 							</a>
 						<?php else: ?>
-							<a href="<?= htmlspecialchars(route('login'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
+							<a href="<?= htmlspecialchars(route('login'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04 <?= route_is('login') ? 'active' : '' ?>">
 								Sign In
 							</a>
-							<a href="<?= htmlspecialchars(route('register'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04">
-								Register
+							<a href="<?= htmlspecialchars(route('register'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m p-lr-10 trans-04 <?= route_is('register') ? 'active' : '' ?>">
+								Sign Up
 							</a>
 						<?php endif; ?>
 					</div>
@@ -178,11 +186,11 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 			</ul>
 
 			<ul class="main-menu-m">
-				<li>
+				<li class="<?= route_is('home') ? 'active-menu' : '' ?>">
 					<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>">Home</a>
 				</li>
 
-				<li>
+				<li class="<?= route_is('shop') ? 'active-menu' : '' ?>">
 					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>">Shop</a>
 					<?php if (!empty($categories)): ?>
 						<ul class="sub-menu-m">
@@ -199,6 +207,10 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							<i class="fa fa-angle-right" aria-hidden="true"></i>
 						</span>
 					<?php endif; ?>
+				</li>
+
+				<li class="<?= route_is('track') ? 'active-menu' : '' ?>">
+					<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>">Track Order</a>
 				</li>
 			</ul>
 		</div>
