@@ -34,18 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $wishlistEnabled) {
     // 2. Move to cart
     elseif ($action === 'move_to_cart' && $productId > 0) {
         $product = product_get($productId);
-        if (!$product || $product['status'] !== 'published' || !empty($product['deleted_at'])) {
+        if (!$product || $product['status'] !== 'active') {
             flash('warning', 'This product is no longer available.');
         } elseif (($product['product_type'] ?? '') === 'variable') {
             // For variable products, direct customer to product page to choose options
-            header('Location: ' . shop_url('product.php?slug=' . urlencode($product['slug'])));
+            header('Location: ' . route('product', ['slug' => $product['slug']]));
             exit;
         } else {
             // Simple product: check stock availability
-            $inStock = true;
-            if (!empty($product['manage_stock']) && (int)$product['stock_quantity'] <= 0) {
-                $inStock = false;
-            }
+            $inStock = (product_available_qty($productId) > 0);
 
             if (!$inStock) {
                 flash('warning', 'Sorry, "' . htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') . '" is currently out of stock.');
