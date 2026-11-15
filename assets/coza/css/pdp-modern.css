@@ -507,3 +507,197 @@
   height: 2px;
   background: #111827;
 }
+
+/* ==========================================================================
+   Mobile Responsive Rules (< 576px)
+   ========================================================================== */
+@media (max-width: 575.98px) {
+  .pdp-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 50px !important;
+    gap: 10px !important;
+  }
+  .pdp-quantity-stepper {
+    grid-row: 1 !important;
+    grid-column: 1 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+  .pdp-quantity-stepper .pdp-qty-val {
+    flex: 1 !important;
+  }
+  .pdp-btn-wish {
+    grid-row: 1 !important;
+    grid-column: 2 !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+  .pdp-btn-cart {
+    grid-row: 2 !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 48px !important;
+  }
+  .pdp-btn-buy {
+    grid-row: 3 !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 48px !important;
+  }
+  .pdp-tabs-nav {
+    gap: 16px !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+  }
+  .pdp-tab-item {
+    font-size: 14.5px !important;
+    white-space: nowrap !important;
+    padding: 10px 4px !important;
+  }
+}
+
+/* ==========================================================================
+   Dark Theme Architecture for PDP ([data-theme="dark"])
+   ========================================================================== */
+[data-theme="dark"] .pdp-gallery-card {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .pdp-main-image-wrap {
+  background: #161e2e !important;
+}
+
+[data-theme="dark"] .pdp-thumb-item {
+  background: #161e2e !important;
+  border-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-actions-panel {
+  background: transparent !important;
+  border-top-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-product-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-price-box {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-price-current {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-price-original {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pdp-category-pill {
+  background: #1f2937 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pdp-quantity-stepper {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .pdp-qty-btn {
+  background: #1f2937 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-qty-btn:hover {
+  background: #374151 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-qty-val {
+  background: #111827 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-btn-cart {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme="dark"] .pdp-btn-cart:hover:not(:disabled) {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-btn-buy {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-btn-buy:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .pdp-btn-wish {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pdp-btn-wish:hover {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  background: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-trust-box {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-trust-icon {
+  background: #1f2937 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-trust-item strong {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-trust-item span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pdp-tab-item {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pdp-tab-item:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-tab-item.active {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-tab-item.active::after {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .pdp-tabs-nav {
+  border-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-tabs-wrap {
+  border-color: #1f2937 !important;
+}

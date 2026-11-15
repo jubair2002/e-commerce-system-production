@@ -700,6 +700,22 @@
     width: 100% !important;
   }
 
+  .cart-free-shipping-card {
+    padding: 14px 16px !important;
+  }
+
+  .cart-free-shipping-title {
+    font-size: 12.5px !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .cart-free-shipping-pct {
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+    margin-left: 8px !important;
+  }
+
   .cart-summary-card {
     position: static !important;
     margin-top: 30px !important;

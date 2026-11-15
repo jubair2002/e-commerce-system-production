@@ -481,9 +481,9 @@ include __DIR__ . '/../../includes/partials/header.php';
 <link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/checkout-modern.css'), ENT_QUOTES, 'UTF-8') ?>">
 
 <!-- Unified Clean Page Header -->
-<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+<section class="sec-page-header p-tb-35">
 	<div class="container text-center">
-		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+		<h1 class="page-title m-b-6">
 			Checkout
 		</h1>
 		<div class="bread-crumb flex-w flex-c-m">
@@ -538,12 +538,12 @@ include __DIR__ . '/../../includes/partials/header.php';
                 <span>Delivery &amp; Contact Information</span>
               </h2>
               <?php if ($currentCustomer): ?>
-                <span class="badge" style="background: #ecfdf5; color: #059669; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
+                <span class="checkout-customer-badge">
                   <i class="zmdi zmdi-check-circle me-1"></i> <?= e($currentCustomer['name']) ?>
                 </span>
               <?php else: ?>
-                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-muted" style="font-size: 13px;">
-                  Have an account? <span class="font-weight-bold" style="color: #111827; text-decoration: underline;">Sign in</span>
+                <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="checkout-signin-link">
+                  Have an account? <span>Sign in</span>
                 </a>
               <?php endif; ?>
             </div>
@@ -808,7 +808,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </div>
               <?php else: ?>
                 <div class="mb-3">
-                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none d-flex align-items-center gap-1" style="color: #111827; font-weight: 600; font-size: 13.5px;" id="toggleCouponBtn">
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none d-flex align-items-center gap-1 checkout-coupon-toggle" style="color: inherit; font-weight: 600; font-size: 13.5px;" id="toggleCouponBtn">
                     <i class="zmdi zmdi-label m-r-4"></i> <span>Have a promo or coupon code?</span>
                   </button>
                   <div id="checkoutCouponRow" class="mt-2 d-none">

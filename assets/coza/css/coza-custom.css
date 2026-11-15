@@ -414,6 +414,35 @@ svg.i {
   box-shadow: 0 4px 18px rgba(0,0,0,0.06);
 }
 
+@media (max-width: 575.98px) {
+  .auth-page-wrapper {
+    padding: 30px 14px !important;
+  }
+  .auth-card {
+    border-radius: 14px !important;
+    padding: 24px 18px !important;
+  }
+  .input-group {
+    display: flex !important;
+    width: 100% !important;
+  }
+  .input-group .form-control {
+    flex: 1 1 auto !important;
+    width: 1% !important;
+    min-width: 0 !important;
+  }
+  .input-group-append {
+    display: flex !important;
+  }
+  .input-group-append .btn-pw-toggle {
+    height: 100% !important;
+    padding: 0 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
 /* 5. Checkout & Progress */
 .checkout-progress {
   display: flex;
@@ -1065,6 +1094,30 @@ svg.i {
   font-weight: 700 !important;
 }
 
+@media (max-width: 575.98px) {
+  .isotope-grid > .col-6,
+  .isotope-item.col-6 {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    padding-bottom: 18px !important;
+  }
+  .block2-pic {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .block2-txt {
+    padding-top: 8px !important;
+  }
+  .block2-txt .js-name-b2 {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+  .block2-txt .price-wrap {
+    font-size: 13px !important;
+    gap: 5px !important;
+  }
+}
+
 /* 4. Product Overview Tabs */
 .filter-tope-group button {
   color: #4b5563 !important;
@@ -1666,6 +1719,116 @@ svg.i {
 }
 [data-theme="dark"] .sub-menu-m a:hover {
   color: #ffffff !important;
+}
+
+/* Dark Mode for Auth Pages */
+[data-theme="dark"] .auth-page-wrapper {
+  background-color: #0b0f19 !important;
+}
+[data-theme="dark"] .auth-card {
+  background: #111827 !important;
+  border-color: #1f2937 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme="dark"] .auth-card h1,
+[data-theme="dark"] .auth-card h2,
+[data-theme="dark"] .auth-card h3,
+[data-theme="dark"] .auth-card .form-label {
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .auth-card .text-muted {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .input-group .input-group-append .btn-pw-toggle {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .input-group .input-group-append .btn-pw-toggle:hover {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Mini-Cart Drawer Mobile & Dark Mode
+   ========================================================================== */
+@media (max-width: 575.98px) {
+  .header-cart {
+    width: 320px !important;
+    max-width: 88vw !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    padding-top: 24px !important;
+  }
+  .header-cart-item-txt {
+    max-width: calc(100% - 65px) !important;
+  }
+  .header-cart-item-name {
+    max-width: 100% !important;
+    font-size: 13.5px !important;
+  }
+}
+
+[data-theme="dark"] .header-cart {
+  background-color: #0b0f19 !important;
+  border-left: 1px solid #1f2937 !important;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme="dark"] .header-cart-title .mtext-103,
+[data-theme="dark"] .header-cart-title .zmdi-close,
+[data-theme="dark"] .header-cart-item-name,
+[data-theme="dark"] .header-cart-total {
+  color: #f9fafb !important;
+}
+[data-theme="dark"] .header-cart-item-info,
+[data-theme="dark"] .header-cart-content p {
+  color: #9ca3af !important;
+}
+[data-theme="dark"] .header-cart-item-img {
+  border: 1px solid #1f2937 !important;
+  border-radius: 6px !important;
+  background-color: #111827 !important;
+}
+
+/* ==========================================================================
+   Search Modal Mobile & Dark Mode
+   ========================================================================== */
+@media (max-width: 768px) {
+  .container-search-header {
+    width: 90vw !important;
+    max-width: 90vw !important;
+  }
+  .wrap-search-header {
+    height: 56px !important;
+    border-radius: 10px !important;
+  }
+  .wrap-search-header input {
+    font-size: 17px !important;
+    padding-right: 15px !important;
+  }
+  .wrap-search-header button {
+    width: 48px !important;
+    font-size: 20px !important;
+  }
+  .btn-hide-modal-search {
+    top: -42px !important;
+    right: 0 !important;
+  }
+}
+
+[data-theme="dark"] .modal-search-header {
+  background: rgba(11, 15, 25, 0.92) !important;
+}
+[data-theme="dark"] .wrap-search-header {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+[data-theme="dark"] .wrap-search-header input {
+  background: #111827 !important;
+  color: #f9fafb !important;
+}
+[data-theme="dark"] .wrap-search-header button {
+  color: #9ca3af !important;
 }
 
 

@@ -15,7 +15,7 @@ $isSoldOut   = ($stock <= 0 && empty($p['allow_backorder']));
 $primaryImg  = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
 $productUrl  = route('product', ['slug' => $p['slug']]);
 $catSlug     = !empty($p['category_slug']) ? $p['category_slug'] : 'all';
-$itemCol     = !empty($productCardCol) ? $productCardCol : 'col-sm-6 col-md-4 col-lg-3';
+$itemCol     = !empty($productCardCol) ? $productCardCol : 'col-6 col-md-4 col-lg-3';
 $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '';
 ?>
 <div class="<?= htmlspecialchars($itemCol, ENT_QUOTES, 'UTF-8') ?> p-b-35 isotope-item <?= htmlspecialchars($catSlug, ENT_QUOTES, 'UTF-8') ?><?= htmlspecialchars($extraClass, ENT_QUOTES, 'UTF-8') ?>">
