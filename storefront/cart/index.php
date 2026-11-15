@@ -1,4 +1,9 @@
 <?php
+/**
+ * Shopping Cart (Cozastore Edition).
+ * Cozastore table-shopping-cart markup with live quantity stepping, coupon code application,
+ * shipping estimate selector, cart totals summary, and clean empty state.
+ */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
 $pageTitle = 'Shopping Cart';
@@ -25,26 +30,26 @@ $respondJson = function (bool $ok, string $message = '', array $extra = []) {
     }
 
     echo json_encode(array_merge([
-        'ok'           => $ok,
-        'message'      => $message,
-        'count'        => cart_count(),
-        'subtotal'     => $cart['subtotal'],
-        'subtotal_fmt' => price($totals['subtotal']),
-        'total'        => $totals['total'],
-        'total_fmt'    => price($totals['total']),
-        'discount'     => $totals['discount'],
-        'discount_fmt' => price($totals['discount']),
-        'shipping_fee' => $totals['shipping_fee'],
+        'ok'               => $ok,
+        'message'          => $message,
+        'count'            => cart_count(),
+        'subtotal'         => $cart['subtotal'],
+        'subtotal_fmt'     => price($totals['subtotal']),
+        'total'            => $totals['total'],
+        'total_fmt'        => price($totals['total']),
+        'discount'         => $totals['discount'],
+        'discount_fmt'     => price($totals['discount']),
+        'shipping_fee'     => $totals['shipping_fee'],
         'shipping_fee_fmt' => $totals['shipping_fee'] > 0 ? price($totals['shipping_fee']) : 'Free',
-        'totals'       => $totals,
-        'lines'        => $lines,
-        'alerts'       => $cart['alerts'],
+        'totals'           => $totals,
+        'lines'            => $lines,
+        'alerts'           => $cart['alerts'],
     ], $extra));
     exit;
 };
 
 // ----- Handle POST actions -----
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_csrf();
     $action = $_POST['action'] ?? '';
 
@@ -72,14 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Variable product requirement
         if (($product['product_type'] ?? 'simple') === 'variable') {
             if (!$vid) {
-                if ($isAjax) $respondJson(false, 'Please select a variant combination before adding to cart.');
+                if ($isAjax) $respondJson(false, 'Please select an option before adding to cart.');
                 flash('warning', 'Please select an option before adding to cart.');
                 redirect(route('product', ['slug' => $product['slug']]));
             }
             $variant = variant_get($vid);
             if (!$variant || (int)$variant['product_id'] !== $pid || $variant['status'] !== 'active') {
-                if ($isAjax) $respondJson(false, 'Selected variant is not available.');
-                flash('warning', 'The selected variant is not available.');
+                if ($isAjax) $respondJson(false, 'The selected option is not available.');
+                flash('warning', 'The selected option is not available.');
                 redirect(route('product', ['slug' => $product['slug']]));
             }
             $avail = variant_available_qty($variant, $product);
@@ -165,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = coupon_validate($code, $cart['subtotal']);
         if ($res['valid']) {
             $_SESSION['applied_coupon'] = $res['coupon']['code'];
-            $msg = 'Coupon "' . htmlspecialchars($res['coupon']['code']) . '" applied! Discount: ' . format_price($res['discount']);
+            $msg = 'Coupon "' . htmlspecialchars($res['coupon']['code'], ENT_QUOTES, 'UTF-8') . '" applied! Discount: ' . format_price($res['discount']);
             if ($isAjax) $respondJson(true, $msg);
             flash('success', $msg);
         } else {
@@ -223,288 +228,320 @@ foreach ($shippingMethods as $sm) {
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<section class="section">
-  <div class="container">
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= e(route('home')) ?>">Home</a></li>
-        <li class="breadcrumb-item active">Cart</li>
-      </ol>
-    </nav>
+		<span class="stext-109 cl4">
+			Shopping Cart
+		</span>
+	</div>
+</div>
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-      <div>
-        <h2 class="mb-1">Your Cart</h2>
-        <p class="text-muted small mb-0"><?= count($cart['items']) ?> unique item<?= count($cart['items']) === 1 ? '' : 's' ?> (<?= cart_count() ?> total units)</p>
-      </div>
-      <div>
-        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary">
-          <?= icon('arrow-left', 'me-1') ?> Continue Shopping
-        </a>
-      </div>
-    </div>
+<!-- =================== COZASTORE SHOPPING CART =================== -->
+<div class="bg0 p-t-40 p-b-85">
+	<div class="container">
 
-    <?php if ($freeShippingThreshold !== null && $freeShippingThreshold > 0 && !empty($cart['items'])): ?>
-      <?php
-        $qualifies = ($totals['discounted_subtotal'] >= $freeShippingThreshold);
-        $diff = max(0, $freeShippingThreshold - $totals['discounted_subtotal']);
-        $pct = min(100, round(($totals['discounted_subtotal'] / $freeShippingThreshold) * 100));
-      ?>
-      <div class="card border-0 bg-light p-3 mb-4 rounded-3 shadow-sm">
-        <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
-          <span>
-            <?php if ($qualifies): ?>
-              <?= icon('check-circle', 'text-success me-1') ?> You unlocked <strong>FREE Delivery!</strong>
-            <?php else: ?>
-              <?= icon('truck', 'text-primary me-1') ?> Add <strong><?= e(price($diff)) ?></strong> more to qualify for <strong>FREE Delivery</strong>
-            <?php endif; ?>
-          </span>
-          <span class="text-muted"><?= $pct ?>%</span>
-        </div>
-        <div class="progress" style="height: 6px;">
-          <div class="progress-bar <?= $qualifies ? 'bg-success' : 'bg-primary' ?>" role="progressbar" style="width: <?= $pct ?>%;" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-      </div>
-    <?php endif; ?>
+		<!-- Flashes & Cart Notice Alerts -->
+		<?php foreach (get_flashes() as $f): ?>
+			<div class="alert alert-<?= htmlspecialchars($f['type'], ENT_QUOTES, 'UTF-8') ?> alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert">
+				<?= htmlspecialchars($f['message'], ENT_QUOTES, 'UTF-8') ?>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		<?php endforeach; ?>
 
-    <?php foreach (get_flashes() as $f): ?>
-      <div class="alert alert-<?= e($f['type']) ?> alert-dismissible fade show py-2 mb-3">
-        <?= e($f['message']) ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    <?php endforeach; ?>
+		<?php if (!empty($cart['alerts'])): ?>
+			<div class="alert alert-warning alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert">
+				<strong>Notice:</strong>
+				<ul class="m-t-5 m-b-0 p-l-20">
+					<?php foreach ($cart['alerts'] as $alt): ?>
+						<li><?= htmlspecialchars($alt, ENT_QUOTES, 'UTF-8') ?></li>
+					<?php endforeach; ?>
+				</ul>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		<?php endif; ?>
 
-    <?php if (!empty($cart['alerts'])): ?>
-      <div class="alert alert-warning alert-dismissible fade show py-2 mb-3">
-        <strong><?= icon('alert-circle', 'me-1') ?> Cart Notice:</strong>
-        <ul class="mb-0 mt-1 ps-3">
-          <?php foreach ($cart['alerts'] as $alt): ?>
-            <li><?= e($alt) ?></li>
-          <?php endforeach; ?>
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    <?php endif; ?>
+		<!-- Free Delivery Progress Bar -->
+		<?php if ($freeShippingThreshold !== null && $freeShippingThreshold > 0 && !empty($cart['items'])): ?>
+			<?php
+				$qualifies = ($totals['discounted_subtotal'] >= $freeShippingThreshold);
+				$diff = max(0, $freeShippingThreshold - $totals['discounted_subtotal']);
+				$pct = min(100, round(($totals['discounted_subtotal'] / $freeShippingThreshold) * 100));
+			?>
+			<div class="bor10 p-lr-25 p-tb-15 m-b-30 bg6" style="border-radius: 6px;">
+				<div class="flex-w flex-sb-m p-b-8">
+					<span class="stext-102 cl2 font-weight-bold">
+						<?php if ($qualifies): ?>
+							<i class="zmdi zmdi-check-circle cl1 m-r-6"></i> You unlocked <strong>FREE Delivery!</strong>
+						<?php else: ?>
+							<i class="zmdi zmdi-truck cl1 m-r-6"></i> Add <strong><?= price($diff) ?></strong> more to qualify for <strong>FREE Delivery</strong>
+						<?php endif; ?>
+					</span>
+					<span class="stext-102 cl6"><?= $pct ?>%</span>
+				</div>
+				<div class="progress" style="height: 6px;">
+					<div class="progress-bar <?= $qualifies ? 'bg-success' : 'bg-dark' ?>" role="progressbar" style="width: <?= $pct ?>%;" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+				</div>
+			</div>
+		<?php endif; ?>
 
-    <?php if (empty($cart['items'])): ?>
-      <div class="empty-state-card text-center py-5">
-        <div class="empty-state-icon mb-3"><?= icon('bag') ?></div>
-        <h3>Your cart is empty</h3>
-        <p class="text-muted">Explore our curated collection and add your favorite items.</p>
-        <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-primary mt-2">
-          <?= icon('bag', 'me-1') ?> Continue Shopping
-        </a>
-      </div>
-    <?php else: ?>
-      <div class="row g-4">
-        <div class="col-lg-8">
+		<?php if (empty($cart['items'])): ?>
+			<!-- Empty Cart State -->
+			<div class="text-center p-tb-100">
+				<i class="zmdi zmdi-shopping-cart-plus cl6 d-block m-b-20" style="font-size: 64px;"></i>
+				<h3 class="mtext-105 cl2 p-b-10">Your cart is currently empty</h3>
+				<p class="stext-115 cl6 p-b-30">Looks like you haven't added anything to your cart yet.</p>
+				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px;">
+					Start Shopping
+				</a>
+			</div>
+		<?php else: ?>
+			<div class="row">
+				<!-- Left Column: Cart Table & Actions -->
+				<div class="col-lg-10 col-xl-7 m-lr-auto m-b-50">
+					<div class="m-l-0 m-r--38 m-lr-0-xl">
+						<form method="post" id="cozaCartForm">
+							<?= csrf_field() ?>
+							<input type="hidden" name="action" value="update">
 
-          <form method="post" id="cartForm">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="update">
+							<div class="wrap-table-shopping-cart">
+								<table class="table-shopping-cart">
+									<tr class="table_head">
+										<th class="column-1">Product</th>
+										<th class="column-2"></th>
+										<th class="column-3">Price</th>
+										<th class="column-4">Quantity</th>
+										<th class="column-5">Total</th>
+										<th class="p-r-20"></th>
+									</tr>
 
-            <div class="card shadow-sm border-0">
-              <div class="card-body p-0">
-                <div class="table-responsive">
-                  <table class="table align-middle mb-0 cart-table">
-                    <thead class="table-light">
-                      <tr>
-                        <th colspan="2">Product</th>
-                        <th>Price</th>
-                        <th style="width:130px">Quantity</th>
-                        <th class="text-end">Total</th>
-                        <th style="width:46px"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <?php foreach ($cart['items'] as $i): $p = $i['product']; ?>
-                        <tr>
-                          <td style="width:84px">
-                            <img src="<?= e(product_image_url($i['image'])) ?>"
-                                 class="rounded border" width="64" height="64"
-                                 style="object-fit:cover" alt="<?= e($i['product_name']) ?>">
-                          </td>
-                          <td>
-                            <a href="<?= e(route('product', ['slug' => $p['slug']])) ?>"
-                               class="fw-semibold text-reset text-decoration-none">
-                              <?= e($i['product_name']) ?>
-                            </a>
-                            <?php if (!empty($i['variant_label'])): ?>
-                              <div class="small text-muted mt-1">
-                                <span class="badge bg-light text-dark border"><?= e($i['variant_label']) ?></span>
-                              </div>
-                            <?php endif; ?>
-                            <?php if (!empty($i['sku'])): ?>
-                              <div class="small text-muted">SKU: <code><?= e($i['sku']) ?></code></div>
-                            <?php endif; ?>
-                          </td>
-                          <td><?= e(price($i['unit_price'])) ?></td>
-                          <td>
-                            <div class="cart-qty-stepper" data-cart-key="<?= e($i['cart_key']) ?>">
-                              <button type="button" class="cart-qty-btn cart-qty-minus" aria-label="Decrease quantity" <?= (int)$i['qty'] <= 1 ? 'disabled' : '' ?>>&minus;</button>
-                              <input type="number" name="qty[<?= e($i['cart_key']) ?>]"
-                                     class="cart-qty-input"
-                                     value="<?= (int)$i['qty'] ?>"
-                                     min="1" max="<?= (int)$i['available_qty'] ?>"
-                                     data-cart-key="<?= e($i['cart_key']) ?>"
-                                     aria-label="Item quantity">
-                              <button type="button" class="cart-qty-btn cart-qty-plus" aria-label="Increase quantity" <?= (int)$i['qty'] >= (int)$i['available_qty'] ? 'disabled' : '' ?>>&plus;</button>
-                            </div>
-                            <div class="text-muted" style="font-size: 11px; margin-top: 4px;"><?= (int)$i['available_qty'] ?> in stock</div>
-                          </td>
-                          <td class="text-end fw-semibold" data-line-total-key="<?= e($i['cart_key']) ?>"><?= e(price($i['line_total'])) ?></td>
-                          <td class="text-end">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    name="remove_key" value="<?= e($i['cart_key']) ?>"
-                                    title="Remove" formnovalidate
-                                    onclick="return confirm('Remove this item from your cart?');">
-                              <?= icon('trash') ?>
-                            </button>
-                          </td>
-                        </tr>
-                      <?php endforeach; ?>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+									<?php foreach ($cart['items'] as $item): 
+										$p = $item['product'];
+										$cKey = (string)$item['cart_key'];
+										$pImg = product_image_url($item['image'] ?? null, 'thumbnail', (int)$item['product_id']);
+										$pUrl = !empty($p['slug']) ? route('product', ['slug' => $p['slug']]) : route('cart');
+									?>
+									<tr class="table_row" data-cart-row="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+										<td class="column-1">
+											<div class="how-itemcart1">
+												<img src="<?= htmlspecialchars($pImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>" style="width: 60px; height: 60px; object-fit: cover;">
+											</div>
+										</td>
 
-            <div class="d-flex gap-2 mt-3 flex-wrap justify-content-between align-items-center">
-              <div>
-                <a href="<?= e(route('shop')) ?>" class="btn btn-editorial-secondary">
-                  <?= icon('arrow-left', 'me-1') ?> Continue Shopping
-                </a>
-              </div>
-              <div>
-                <button type="submit" name="action" value="clear" class="btn btn-link text-danger text-decoration-none px-0"
-                        onclick="return confirm('Clear all items from your cart?');">
-                  <?= icon('trash', 'me-1') ?> Clear Cart
-                </button>
-              </div>
-            </div>
-          </form>
+										<td class="column-2">
+											<a href="<?= htmlspecialchars($pUrl, ENT_QUOTES, 'UTF-8') ?>" class="stext-104 cl2 hov-cl1 trans-04 font-weight-bold d-block">
+												<?= htmlspecialchars($item['product_name'], ENT_QUOTES, 'UTF-8') ?>
+											</a>
+											<?php if (!empty($item['variant_label'])): ?>
+												<span class="stext-109 cl6 d-block m-t-2">
+													<?= htmlspecialchars($item['variant_label'], ENT_QUOTES, 'UTF-8') ?>
+												</span>
+											<?php endif; ?>
+											<?php if (!empty($item['sku'])): ?>
+												<span class="stext-109 cl9 d-block fs-11">
+													SKU: <?= htmlspecialchars($item['sku'], ENT_QUOTES, 'UTF-8') ?>
+												</span>
+											<?php endif; ?>
+										</td>
 
-        </div>
+										<td class="column-3">
+											<?= price((float)$item['unit_price']) ?>
+										</td>
 
-        <div class="col-lg-4">
-          <div class="sticky-top" style="top: 90px;">
+										<td class="column-4">
+											<div class="wrap-num-product flex-w m-l-auto m-r-0" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+												<div class="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m cart-minus-btn pointer">
+													<i class="fs-16 zmdi zmdi-minus"></i>
+												</div>
 
-            <!-- Coupon Code: Right side, Top of Order Summary -->
-            <div class="card shadow-sm border-0 mb-3">
-              <div class="card-body p-3">
-                <h6 class="card-title fw-semibold mb-2 d-flex align-items-center gap-1" style="font-size: 0.875rem;">
-                  <?= icon('bag') ?> Have a Coupon Code?
-                </h6>
-                <?php if (!empty($totals['coupon'])): ?>
-                  <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: var(--bg-soft); border: 1px solid var(--line);">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="badge" style="background-color: var(--accent); color: #ffffff; letter-spacing: 0.05em; font-weight: 600; font-size: 11px; padding: 4px 8px;"><?= e($totals['coupon']['code']) ?></span>
-                      <span class="small fw-bold" style="color: var(--ok);">-<?= e(price($totals['discount'])) ?></span>
-                    </div>
-                    <form method="post" class="d-inline m-0">
-                      <?= csrf_field() ?>
-                      <input type="hidden" name="action" value="remove_coupon">
-                      <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;">Remove</button>
-                    </form>
-                  </div>
-                <?php else: ?>
-                  <form method="post" class="d-flex gap-2">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="apply_coupon">
-                    <input type="text" name="coupon_code" class="form-control form-control-sm" placeholder="Enter coupon code" required style="text-transform: uppercase;">
-                    <button type="submit" class="btn btn-editorial-secondary btn-sm flex-shrink-0">Apply</button>
-                  </form>
-                <?php endif; ?>
-              </div>
-            </div>
+												<input class="mtext-104 cl3 txt-center num-product cart-qty-input" type="number" name="qty[<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>]" value="<?= (int)$item['qty'] ?>" min="1" max="<?= (int)$item['available_qty'] ?>" data-cart-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
 
-            <!-- Order Summary Card -->
-            <div class="card shadow-sm border-0">
-              <div class="card-body">
-                <h5 class="card-title fw-semibold">Order Summary</h5>
-                <hr>
+												<div class="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m cart-plus-btn pointer">
+													<i class="fs-16 zmdi zmdi-plus"></i>
+												</div>
+											</div>
+										</td>
 
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted">Subtotal</span>
-                  <strong id="cartSummarySubtotal"><?= e(price($totals['subtotal'])) ?></strong>
-                </div>
+										<td class="column-5" data-line-total-key="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>">
+											<?= price((float)$item['line_total']) ?>
+										</td>
 
-                <?php if ($totals['discount'] > 0): ?>
-                  <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Coupon Discount</span>
-                    <strong style="color: var(--ok);">-<?= e(price($totals['discount'])) ?></strong>
-                  </div>
-                <?php endif; ?>
+										<td class="p-r-20 text-center">
+											<button type="submit" name="remove_key" value="<?= htmlspecialchars($cKey, ENT_QUOTES, 'UTF-8') ?>" class="btn-link text-danger border-0 bg-transparent pointer" title="Remove item" formnovalidate onclick="return confirm('Remove this item from your cart?');">
+												<i class="zmdi zmdi-delete fs-20"></i>
+											</button>
+										</td>
+									</tr>
+									<?php endforeach; ?>
+								</table>
+							</div>
 
-                <!-- Shipping estimate selector -->
-                <?php if (!empty($shippingMethods)): ?>
-                  <div class="mb-3 mt-3">
-                    <label class="form-label small fw-semibold text-muted text-uppercase mb-1">Shipping Estimate</label>
-                    <form method="post" id="shippingMethodForm">
-                      <?= csrf_field() ?>
-                      <input type="hidden" name="action" value="set_shipping">
-                      <select name="shipping_method_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <?php foreach ($shippingMethods as $sm): ?>
-                          <?php
-                            $isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
-                            $costStr = $isFree ? 'Free' : price($sm['cost']);
-                          ?>
-                          <option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
-                            <?= e($sm['name']) ?> (<?= $costStr ?>)
-                          </option>
-                        <?php endforeach; ?>
-                      </select>
-                    </form>
-                  </div>
-                <?php endif; ?>
+							<!-- Table Bottom Bar (Coupon & Update Cart) -->
+							<div class="flex-w flex-sb-m bor15 p-t-18 p-b-15 p-lr-40 p-lr-15-sm">
+								<div class="flex-w flex-m m-r-20 m-tb-5">
+									<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl2 size-119 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-r-10 m-tb-5">
+										Continue Shopping
+									</a>
+									<button type="submit" name="action" value="clear" class="flex-c-m stext-101 cl1 size-119 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-tb-5" onclick="return confirm('Clear your entire cart?');">
+										Clear Cart
+									</button>
+								</div>
 
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted">Estimated Shipping</span>
-                  <strong id="cartSummaryShipping">
-                    <?= $totals['shipping_fee'] > 0 ? e(price($totals['shipping_fee'])) : '<span class="text-success">Free</span>' ?>
-                  </strong>
-                </div>
+								<button type="submit" name="action" value="update" class="flex-c-m stext-101 cl0 size-119 bg1 bor1 hov-btn1 p-lr-15 trans-04 pointer m-tb-10">
+									Update Cart
+								</button>
+							</div>
+						</form>
 
-                <?php if ($totals['cod_fee'] > 0): ?>
-                  <div class="d-flex justify-content-between mb-2 text-muted">
-                    <span>Cash on Delivery Fee</span>
-                    <strong><?= e(price($totals['cod_fee'])) ?></strong>
-                  </div>
-                <?php endif; ?>
+						<!-- Coupon Bar -->
+						<div class="bor15 p-t-20 p-b-20 p-lr-40 p-lr-15-sm m-t-20 bg6">
+							<h5 class="stext-101 cl2 font-weight-bold m-b-10">Have a coupon?</h5>
+							<?php if (!empty($totals['coupon'])): ?>
+								<div class="flex-w flex-sb-m p-lr-15 p-tb-10 bg0 bor10">
+									<span class="stext-102 cl1 font-weight-bold">
+										Coupon "<?= htmlspecialchars($totals['coupon']['code'], ENT_QUOTES, 'UTF-8') ?>" applied! (-<?= price($totals['discount']) ?>)
+									</span>
+									<form method="post" class="m-0">
+										<?= csrf_field() ?>
+										<input type="hidden" name="action" value="remove_coupon">
+										<button type="submit" class="stext-109 cl1 hov-cl2 pointer bg-transparent border-0">
+											Remove
+										</button>
+									</form>
+								</div>
+							<?php else: ?>
+								<form method="post" class="flex-w flex-m">
+									<?= csrf_field() ?>
+									<input type="hidden" name="action" value="apply_coupon">
+									<input class="stext-104 cl2 plh4 size-117 bor13 p-lr-20 m-r-10 m-tb-5" type="text" name="coupon_code" placeholder="Enter coupon code" required style="text-transform: uppercase;">
+									<button type="submit" class="flex-c-m stext-101 cl2 size-118 bg8 bor13 hov-btn3 p-lr-15 trans-04 pointer m-tb-5">
+										Apply coupon
+									</button>
+								</form>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
 
-                <hr>
+				<!-- Right Column: Cart Totals Box -->
+				<div class="col-sm-10 col-lg-7 col-xl-5 m-lr-auto m-b-50">
+					<div class="bor10 p-lr-40 p-t-30 p-b-40 m-l-63 m-r-40 m-lr-0-xl p-lr-15-sm">
+						<h4 class="mtext-109 cl2 p-b-30">
+							Cart Totals
+						</h4>
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <span class="fs-5 fw-bold">Total</span>
-                  <span class="fs-4 fw-bold text-primary" id="cartSummaryTotal"><?= e(price($totals['total'])) ?></span>
-                </div>
+						<div class="flex-w flex-t bor12 p-b-13">
+							<div class="size-208">
+								<span class="stext-110 cl2">
+									Subtotal:
+								</span>
+							</div>
 
-                <a href="<?= e(route('checkout')) ?>" class="btn btn-editorial-primary btn-lg w-100">
-                  <?= icon('lock', 'me-1') ?> Proceed to Checkout
-                </a>
+							<div class="size-209">
+								<span class="mtext-110 cl2" id="cartSummarySubtotal">
+									<?= price($totals['subtotal']) ?>
+								</span>
+							</div>
+						</div>
 
-                <div class="text-center mt-3 text-muted small">
-                  <?= icon('shield', 'text-success me-1') ?> Cash on Delivery available at checkout
-                </div>
-              </div>
-            </div>
+						<?php if ($totals['discount'] > 0): ?>
+						<div class="flex-w flex-t bor12 p-tb-13">
+							<div class="size-208">
+								<span class="stext-110 cl1">
+									Coupon:
+								</span>
+							</div>
 
-          </div>
-        </div>
-      </div>
-    <?php endif; ?>
-  </div>
-</section>
+							<div class="size-209">
+								<span class="mtext-110 cl1 font-weight-bold">
+									-<?= price($totals['discount']) ?>
+								</span>
+							</div>
+						</div>
+						<?php endif; ?>
 
+						<!-- Shipping selector -->
+						<div class="flex-w flex-t bor12 p-t-15 p-b-30">
+							<div class="size-208 w-full-ssm">
+								<span class="stext-110 cl2">
+									Shipping:
+								</span>
+							</div>
+
+							<div class="size-209 p-r-18 p-r-0-sm w-full-ssm">
+								<?php if (!empty($shippingMethods)): ?>
+									<form method="post" id="cartShippingForm">
+										<?= csrf_field() ?>
+										<input type="hidden" name="action" value="set_shipping">
+										<div class="rs1-select2 rs2-select2 bor8 bg0 m-b-12 m-t-9">
+											<select class="js-select2" name="shipping_method_id" onchange="this.form.submit()">
+												<?php foreach ($shippingMethods as $sm): 
+													$isFree = ($sm['free_over'] !== null && (float)$sm['free_over'] > 0 && $totals['discounted_subtotal'] >= (float)$sm['free_over']);
+													$costStr = $isFree ? 'Free' : price((float)$sm['cost']);
+												?>
+													<option value="<?= (int)$sm['id'] ?>" <?= ((int)$sm['id'] === (int)$selectedShippingId) ? 'selected' : '' ?>>
+														<?= htmlspecialchars($sm['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $costStr ?>)
+													</option>
+												<?php endforeach; ?>
+											</select>
+											<div class="dropDownSelect2"></div>
+										</div>
+									</form>
+								<?php endif; ?>
+
+								<p class="stext-111 cl6 p-t-2" id="cartSummaryShipping">
+									<?= $totals['shipping_fee'] > 0 ? 'Estimated: ' . price($totals['shipping_fee']) : 'Free Shipping' ?>
+								</p>
+							</div>
+						</div>
+
+						<div class="flex-w flex-t p-t-27 p-b-33">
+							<div class="size-208">
+								<span class="mtext-101 cl2 font-weight-bold">
+									Total:
+								</span>
+							</div>
+
+							<div class="size-209 p-t-1">
+								<span class="mtext-110 cl1 font-weight-bold" id="cartSummaryTotal">
+									<?= price($totals['total']) ?>
+								</span>
+							</div>
+						</div>
+
+						<a href="<?= htmlspecialchars(route('checkout'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-116 bg3 bor14 hov-btn3 p-lr-15 trans-04 pointer">
+							Proceed to Checkout
+						</a>
+
+						<div class="text-center p-t-20 stext-102 cl6">
+							<i class="zmdi zmdi-shield-check cl1 m-r-4"></i> Cash on Delivery available at checkout
+						</div>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
+
+	</div>
+</div>
+
+<!-- Live AJAX Cart Updates Script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const cartForm = document.getElementById('cartForm');
+    var cartForm = document.getElementById('cozaCartForm');
     if (!cartForm) return;
 
-    let isUpdating = false;
-    let pendingUpdate = false;
-    let debounceTimer = null;
+    var isUpdating = false;
+    var pendingUpdate = false;
+    var debounceTimer = null;
 
     function applyCartUpdate(data) {
         if (!data || !data.ok) {
@@ -512,46 +549,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 1. Update line totals and stepper states
         if (Array.isArray(data.lines)) {
-            data.lines.forEach(item => {
-                const rowTotalEl = document.querySelector(`[data-line-total-key="${item.cart_key}"]`);
+            data.lines.forEach(function(item) {
+                var rowTotalEl = document.querySelector('[data-line-total-key="' + item.cart_key + '"]');
                 if (rowTotalEl && item.line_total_fmt) {
                     rowTotalEl.textContent = item.line_total_fmt;
                 }
-                const stepper = document.querySelector(`.cart-qty-stepper[data-cart-key="${item.cart_key}"]`);
-                if (stepper) {
-                    const input = stepper.querySelector('.cart-qty-input');
-                    const minusBtn = stepper.querySelector('.cart-qty-minus');
-                    const plusBtn = stepper.querySelector('.cart-qty-plus');
-                    if (input) input.value = item.qty;
-                    if (minusBtn) minusBtn.disabled = (item.qty <= 1);
-                    if (plusBtn) plusBtn.disabled = (item.qty >= item.available_qty);
+                var input = document.querySelector('input.cart-qty-input[data-cart-key="' + item.cart_key + '"]');
+                if (input) {
+                    input.value = item.qty;
                 }
             });
         }
 
-        // 2. Update summary totals
-        const subtotalEl = document.getElementById('cartSummarySubtotal');
+        var subtotalEl = document.getElementById('cartSummarySubtotal');
         if (subtotalEl && data.subtotal_fmt) {
             subtotalEl.textContent = data.subtotal_fmt;
         }
 
-        const totalEl = document.getElementById('cartSummaryTotal');
+        var totalEl = document.getElementById('cartSummaryTotal');
         if (totalEl && data.total_fmt) {
             totalEl.textContent = data.total_fmt;
         }
 
-        const shippingEl = document.getElementById('cartSummaryShipping');
+        var shippingEl = document.getElementById('cartSummaryShipping');
         if (shippingEl && data.shipping_fee_fmt) {
             shippingEl.textContent = data.shipping_fee_fmt;
         }
 
-        // 3. Update header cart badges
-        document.querySelectorAll('.cart-badge-count').forEach(b => {
-            b.textContent = data.count;
-            b.style.display = data.count > 0 ? 'inline-block' : 'none';
-        });
+        // Header notify badge
+        $('.js-show-cart').attr('data-notify', data.count);
     }
 
     function doAjaxUpdate() {
@@ -560,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         isUpdating = true;
-        const fd = new FormData(cartForm);
+        var fd = new FormData(cartForm);
         fd.set('action', 'update');
 
         fetch(window.location.pathname + '?ajax=1', {
@@ -570,8 +597,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             isUpdating = false;
             applyCartUpdate(data);
             if (pendingUpdate) {
@@ -579,61 +606,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 doAjaxUpdate();
             }
         })
-        .catch(() => {
+        .catch(function() {
             isUpdating = false;
             cartForm.submit();
         });
     }
 
-    // Handle plus and minus stepper clicks instantly
+    // Handle +/- clicks
     cartForm.addEventListener('click', function(e) {
-        const plusBtn = e.target.closest('.cart-qty-plus');
-        const minusBtn = e.target.closest('.cart-qty-minus');
+        var plusBtn = e.target.closest('.cart-plus-btn');
+        var minusBtn = e.target.closest('.cart-minus-btn');
 
         if (plusBtn) {
             e.preventDefault();
-            const stepper = plusBtn.closest('.cart-qty-stepper');
-            const input = stepper?.querySelector('.cart-qty-input');
+            var wrap = plusBtn.closest('.wrap-num-product');
+            var input = wrap ? wrap.querySelector('.cart-qty-input') : null;
             if (input) {
-                const max = parseInt(input.getAttribute('max') || '99', 10);
-                const cur = parseInt(input.value || '1', 10);
+                var max = parseInt(input.getAttribute('max') || '99', 10);
+                var cur = parseInt(input.value || '1', 10);
                 if (cur < max) {
                     input.value = cur + 1;
-                    if (minusBtn) minusBtn.disabled = false;
-                    if (cur + 1 >= max) plusBtn.disabled = true;
                     doAjaxUpdate();
                 }
             }
         } else if (minusBtn) {
             e.preventDefault();
-            const stepper = minusBtn.closest('.cart-qty-stepper');
-            const input = stepper?.querySelector('.cart-qty-input');
+            var wrap = minusBtn.closest('.wrap-num-product');
+            var input = wrap ? wrap.querySelector('.cart-qty-input') : null;
             if (input) {
-                const min = parseInt(input.getAttribute('min') || '1', 10);
-                const cur = parseInt(input.value || '1', 10);
+                var min = parseInt(input.getAttribute('min') || '1', 10);
+                var cur = parseInt(input.value || '1', 10);
                 if (cur > min) {
                     input.value = cur - 1;
-                    if (cur - 1 <= min) minusBtn.disabled = true;
-                    const plus = stepper.querySelector('.cart-qty-plus');
-                    if (plus) plus.disabled = false;
                     doAjaxUpdate();
                 }
             }
         }
     });
 
-    // Handle manual input change
     cartForm.addEventListener('change', function(e) {
         if (e.target.classList.contains('cart-qty-input')) {
             doAjaxUpdate();
         }
     });
 
-    // Rapid input typing with short 100ms debounce
     cartForm.addEventListener('input', function(e) {
         if (e.target.classList.contains('cart-qty-input')) {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(doAjaxUpdate, 120);
+            debounceTimer = setTimeout(doAjaxUpdate, 150);
         }
     });
 });
