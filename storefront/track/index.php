@@ -160,29 +160,29 @@ include __DIR__ . '/../../includes/partials/header.php';
     <div class="bg0 p-all-30 m-b-35" style="border: 1px solid #eef0f3; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.03);">
         <form method="get" class="row">
           <div class="col-md-6 m-b-20">
-            <label class="form-label fw-semibold small" style="color: #333; margin-bottom: 8px; font-size: 13px;">Order or Tracking Number <span class="text-danger">*</span></label>
-            <div class="pos-relative">
-              <input type="text" name="order_number" class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 46px; padding-right: 18px; border-radius: 8px;"
+            <label class="form-label fw-semibold small" style="color: #374151; margin-bottom: 8px; font-size: 13px;">Order or Tracking Number <span class="text-danger">*</span></label>
+            <div class="pos-relative" style="position: relative;">
+              <input type="text" name="order_number" class="stext-111 cl2 plh3" style="width: 100%; height: 50px; background: #ffffff; border: 1.5px solid #d1d5db; border-radius: 8px; padding-left: 46px; padding-right: 18px; font-size: 14.5px; color: #111827;"
                      value="<?= e($orderNumber) ?>"
                      placeholder="e.g. ORD-20261017-05000" required>
-              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
-                <i class="zmdi zmdi-shopping-basket fs-20"></i>
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; font-size: 19px; display: flex; align-items: center;">
+                <i class="zmdi zmdi-shopping-basket"></i>
               </div>
             </div>
           </div>
           <div class="col-md-6 m-b-20">
-            <label class="form-label fw-semibold small" style="color: #333; margin-bottom: 8px; font-size: 13px;">Phone or Email <span class="text-muted fw-normal">(Optional)</span></label>
-            <div class="pos-relative">
-              <input type="text" name="contact" class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 46px; padding-right: 18px; border-radius: 8px;"
+            <label class="form-label fw-semibold small" style="color: #374151; margin-bottom: 8px; font-size: 13px;">Phone or Email <span class="text-muted fw-normal font-weight-normal">(Optional)</span></label>
+            <div class="pos-relative" style="position: relative;">
+              <input type="text" name="contact" class="stext-111 cl2 plh3" style="width: 100%; height: 50px; background: #ffffff; border: 1.5px solid #d1d5db; border-radius: 8px; padding-left: 46px; padding-right: 18px; font-size: 14.5px; color: #111827;"
                      value="<?= e($contact) ?>"
                      placeholder="01712345678 or you@example.com">
-              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
-                <i class="zmdi zmdi-account fs-20"></i>
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; font-size: 19px; display: flex; align-items: center;">
+                <i class="zmdi zmdi-account"></i>
               </div>
             </div>
           </div>
           <div class="col-12 m-t-10">
-            <button type="submit" class="flex-c-m stext-101 cl0 size-116 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer w-full" style="border-radius: 8px; font-weight: 700; height: 50px;">
+            <button type="submit" class="flex-c-m stext-101 cl0 trans-04 pointer w-full hov-btn1" style="border-radius: 8px; font-weight: 700; height: 50px; background: #111827; color: #ffffff; font-size: 15px; border: none; letter-spacing: 0.3px;">
               <i class="zmdi zmdi-search m-r-8 fs-20"></i> Track Order Status
             </button>
           </div>

@@ -160,16 +160,18 @@
 }
 
 .checkout-custom-radio {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #d1d5db;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid #d1d5db;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.2s ease;
   background: #ffffff;
+  font-size: 13px;
+  color: #ffffff;
 }
 
 .checkout-option-card.active .checkout-custom-radio {
@@ -178,15 +180,14 @@
 }
 
 .checkout-custom-radio::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ffffff;
+  content: '✓';
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
   display: block;
   opacity: 0;
-  transform: scale(0.5);
-  transition: all 0.2s ease;
+  transform: scale(0.6);
+  transition: all 0.15s ease;
 }
 
 .checkout-option-card.active .checkout-custom-radio::after {
@@ -334,6 +335,8 @@
   color: #111827;
   flex-shrink: 0;
   white-space: nowrap;
+  text-align: right;
+  margin-left: 12px;
 }
 
 .summary-calc-row {
@@ -394,9 +397,9 @@
 }
 
 .btn-place-order:hover:not(:disabled) {
-  background: #2563eb;
+  background: #1f2937;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.2);
 }
 
 .btn-place-order:disabled {

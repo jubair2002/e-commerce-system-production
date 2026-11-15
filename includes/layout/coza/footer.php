@@ -26,15 +26,15 @@ try {
 				
 				<!-- Item 1: Nationwide COD -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
-					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div style="width: 44px; height: 44px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
 							<i class="zmdi zmdi-shield-check"></i>
 						</div>
-						<div style="flex: 1; min-width: 0;">
-							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div style="font-weight: 700; font-size: 13px; color: #111827; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; line-height: 1.25;">
 								<?= htmlspecialchars(setting('trust_item_1_title', 'Nationwide COD'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
-							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.45; margin: 0;">
 								<?= htmlspecialchars(setting('trust_item_1_desc', 'Cash on delivery across all 64 districts'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
 						</div>
@@ -43,15 +43,15 @@ try {
 
 				<!-- Item 2: Fast Dispatch -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
-					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div style="width: 44px; height: 44px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
 							<i class="zmdi zmdi-truck"></i>
 						</div>
-						<div style="flex: 1; min-width: 0;">
-							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div style="font-weight: 700; font-size: 13px; color: #111827; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; line-height: 1.25;">
 								<?= htmlspecialchars(setting('trust_item_2_title', 'Fast Dispatch'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
-							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.45; margin: 0;">
 								<?= htmlspecialchars(setting('trust_item_2_desc', '24h in Dhaka, 48-72h outside'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
 						</div>
@@ -60,15 +60,15 @@ try {
 
 				<!-- Item 3: 100% Authentic -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
-					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div style="width: 44px; height: 44px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
 							<i class="zmdi zmdi-badge-check"></i>
 						</div>
-						<div style="flex: 1; min-width: 0;">
-							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div style="font-weight: 700; font-size: 13px; color: #111827; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; line-height: 1.25;">
 								<?= htmlspecialchars(setting('trust_item_3_title', '100% Authentic'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
-							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.45; margin: 0;">
 								<?= htmlspecialchars(setting('trust_item_3_desc', 'Guaranteed genuine products direct from makers'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
 						</div>
@@ -77,15 +77,15 @@ try {
 
 				<!-- Item 4: Dedicated Support -->
 				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
-					<div class="d-flex align-items-center" style="gap: 14px;">
-						<div style="width: 46px; height: 46px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div style="width: 44px; height: 44px; border-radius: 10px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
 							<i class="zmdi zmdi-headset-mic"></i>
 						</div>
-						<div style="flex: 1; min-width: 0;">
-							<div style="font-weight: 700; font-size: 13.5px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; line-height: 1.2;">
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div style="font-weight: 700; font-size: 13px; color: #111827; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; line-height: 1.25;">
 								<?= htmlspecialchars(setting('trust_item_4_title', 'Dedicated Support'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
-							<div style="font-size: 12px; color: #6b7280; line-height: 1.4; margin: 0;">
+							<div style="font-size: 12px; color: #6b7280; line-height: 1.45; margin: 0;">
 								<?= htmlspecialchars(setting('trust_item_4_desc', 'Friendly phone & WhatsApp assistance'), ENT_QUOTES, 'UTF-8') ?>
 							</div>
 						</div>

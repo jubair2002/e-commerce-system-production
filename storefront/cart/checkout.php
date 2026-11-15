@@ -543,7 +543,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </span>
               <?php else: ?>
                 <a href="<?= e(route('login', ['next' => route('checkout')])) ?>" class="small text-muted" style="font-size: 13px;">
-                  Have an account? <span class="font-weight-bold" style="color: #4f46e5; text-decoration: underline;">Sign in</span>
+                  Have an account? <span class="font-weight-bold" style="color: #111827; text-decoration: underline;">Sign in</span>
                 </a>
               <?php endif; ?>
             </div>
@@ -551,8 +551,13 @@ include __DIR__ . '/../../includes/partials/header.php';
             <div class="row">
               <div class="col-md-6 m-b-18">
                 <label class="checkout-form-label">Full Name <span class="text-danger">*</span></label>
-                <input type="text" name="customer_name" class="checkout-input"
-                       value="<?= e($old['customer_name']) ?>" placeholder="e.g. Tanvir Ahmed" required>
+                <div class="pos-relative" style="position: relative;">
+                  <input type="text" name="customer_name" class="checkout-input" style="padding-left: 44px;"
+                         value="<?= e($old['customer_name']) ?>" placeholder="e.g. Tanvir Ahmed" required>
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-account fs-18"></i>
+                  </div>
+                </div>
               </div>
 
               <div class="col-md-6 m-b-18">
@@ -721,7 +726,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                       <div class="checkout-option-title">
                         Cash on Delivery (COD)
                         <?php if ($codFee > 0): ?>
-                          <span class="badge" style="background: #eef2ff; color: #4f46e5; font-size: 11px; margin-left: 6px;" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
+                          <span class="badge" style="background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; font-size: 11px; margin-left: 6px;" id="codBadge">+<?= e(price($codFee)) ?> handling fee</span>
                         <?php endif; ?>
                       </div>
                       <div class="checkout-option-sub">
@@ -803,7 +808,7 @@ include __DIR__ . '/../../includes/partials/header.php';
                 </div>
               <?php else: ?>
                 <div class="mb-3">
-                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary d-flex align-items-center gap-1" id="toggleCouponBtn">
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none d-flex align-items-center gap-1" style="color: #111827; font-weight: 600; font-size: 13.5px;" id="toggleCouponBtn">
                     <i class="zmdi zmdi-label m-r-4"></i> <span>Have a promo or coupon code?</span>
                   </button>
                   <div id="checkoutCouponRow" class="mt-2 d-none">

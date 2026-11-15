@@ -22,10 +22,8 @@ $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '
 	<!-- Block2 -->
 	<div class="block2">
 		<div class="block2-pic hov-img0 pos-relative">
-			<img src="<?= htmlspecialchars($primaryImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
-
-			<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
-				View Details
+			<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="dis-block" title="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>">
+				<img src="<?= htmlspecialchars($primaryImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
 			</a>
 
 			<?php if ($isSoldOut): ?>

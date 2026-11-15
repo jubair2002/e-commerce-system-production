@@ -163,8 +163,8 @@ svg.i {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .form-control:focus, .form-select:focus {
-  border-color: #717fe0;
-  box-shadow: 0 0 0 0.2rem rgba(113, 127, 224, 0.2);
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
 }
 
 /* 4. Auth Pages (Login, Register, Forgot Password) */
@@ -281,8 +281,8 @@ svg.i {
   border-color: #888888 !important;
 }
 .shipping-method-card.border-primary {
-  border-color: #717fe0 !important;
-  background-color: rgba(113, 127, 224, 0.05) !important;
+  border-color: #111827 !important;
+  background-color: #f9fafb !important;
 }
 
 /* 6. Account Portal */
@@ -416,8 +416,8 @@ svg.i {
   border-color: #222222;
 }
 .timeline-item.is-current .timeline-dot {
-  background: #717fe0;
-  border-color: #717fe0;
+  background: #111827;
+  border-color: #111827;
 }
 
 /* 8. Bootstrap 5 Utility Polyfills for BS4 Compatibility */

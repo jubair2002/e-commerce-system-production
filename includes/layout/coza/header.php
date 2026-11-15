@@ -59,7 +59,7 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 40px; width: auto; object-fit: contain;">
 						<?php else: ?>
 							<span class="brand-text-logo" style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; color: #222; display: flex; align-items: center;">
-								<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #717fe0; margin-left: 2px;">.</span>
+								<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #111827; margin-left: 2px;">.</span>
 							</span>
 						<?php endif; ?>
 					</a>
@@ -85,14 +85,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 										<?php endforeach; ?>
 									</ul>
 								<?php endif; ?>
-							</li>
-
-							<li class="<?= route_is('track') ? 'active-menu' : '' ?>">
-								<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>">Track Order</a>
-							</li>
-
-							<li class="<?= route_is('contact') ? 'active-menu' : '' ?>">
-								<a href="<?= htmlspecialchars(route('contact'), ENT_QUOTES, 'UTF-8') ?>">Contact</a>
 							</li>
 						</ul>
 					</div>	
@@ -128,7 +120,7 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 						<img src="<?= htmlspecialchars($storeLogoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 36px; width: auto; object-fit: contain;">
 					<?php else: ?>
 						<span class="brand-text-logo" style="font-size: 18px; font-weight: 800; text-transform: uppercase; color: #222; display: flex; align-items: center;">
-							<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #717fe0; margin-left: 1px;">.</span>
+							<?= htmlspecialchars($siteBrand, ENT_QUOTES, 'UTF-8') ?><span style="color: #111827; margin-left: 1px;">.</span>
 						</span>
 					<?php endif; ?>
 				</a>
@@ -217,14 +209,6 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							<i class="fa fa-angle-right" aria-hidden="true"></i>
 						</span>
 					<?php endif; ?>
-				</li>
-
-				<li>
-					<a href="<?= htmlspecialchars(route('track'), ENT_QUOTES, 'UTF-8') ?>">Track Order</a>
-				</li>
-
-				<li>
-					<a href="<?= htmlspecialchars(route('contact'), ENT_QUOTES, 'UTF-8') ?>">Contact</a>
 				</li>
 			</ul>
 		</div>

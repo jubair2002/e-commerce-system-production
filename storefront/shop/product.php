@@ -109,7 +109,17 @@ $mainImgFile = $gallery[0]['filename'] ?? ($product['image'] ?? null);
 $mainImgUrl  = product_image_url($mainImgFile);
 
 // Stock & Delivery
-$currentStock = product_available_qty($productId);
+$stockCount = (int)($product['stock'] ?? 0);
+try {
+    $stmtStock = $pdo->prepare("SELECT total_stock FROM v_product_stock WHERE product_id = ? LIMIT 1");
+    $stmtStock->execute([$productId]);
+    $vStock = $stmtStock->fetchColumn();
+    if ($vStock !== false && $vStock !== null) {
+        $stockCount = max(0, (int)$vStock);
+    }
+} catch (Throwable $e) {}
+
+$currentStock = $stockCount;
 $inStock      = $currentStock > 0;
 $deliveryEst  = shipping_delivery_estimate();
 
@@ -281,9 +291,13 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
 						</div>
 
-						<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>">
+						<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>" id="pdpStockBadge">
 							<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
-							<?= $inStock ? 'In Stock (Ready to Ship)' : 'Sold Out' ?>
+							<?php if ($inStock): ?>
+								In Stock (<?= (int)$currentStock ?> left)
+							<?php else: ?>
+								Sold Out
+							<?php endif; ?>
 						</span>
 
 						<?php if (!empty($product['sku'])): ?>
@@ -301,6 +315,30 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<span class="pdp-price-current" id="pdpPrice"><?= price((float)$product['price']) ?></span>
 						<?php endif; ?>
 					</div>
+
+					<!-- Real-Time Stock Status / Units Remaining Alert -->
+					<?php if ($inStock): ?>
+						<div class="pdp-stock-left-box" id="pdpStockLeftBox">
+							<div class="pdp-stock-left-header">
+								<span class="pdp-stock-left-text" id="pdpStockLeftText">
+									<i class="zmdi zmdi-fire m-r-6 fs-18" style="color: #ef4444;"></i>
+									<?php if ($currentStock <= 5): ?>
+										<span style="color: #b91c1c;">Hurry! Only&nbsp;<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;left in stock</span>
+									<?php elseif ($currentStock <= 15): ?>
+										Only&nbsp;<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;left in stock - order soon!
+									<?php else: ?>
+										<strong id="stockNum"><?= (int)$currentStock ?></strong>&nbsp;items available in stock
+									<?php endif; ?>
+								</span>
+								<span class="pdp-stock-left-badge">
+									Ready to ship
+								</span>
+							</div>
+							<div class="pdp-stock-progress-track">
+								<div id="pdpStockBar" style="background: <?= $currentStock <= 5 ? '#ef4444' : '#111827' ?>; height: 100%; border-radius: 4px; width: <?= min(100, max(12, ($currentStock / 30) * 100)) ?>%; transition: width 0.3s ease;"></div>
+							</div>
+						</div>
+					<?php endif; ?>
 
 					<?php if (!empty($product['short_description'])): ?>
 						<p class="pdp-short-desc">
@@ -615,6 +653,83 @@ document.addEventListener('DOMContentLoaded', function() {
 			closeOnContentClick: true,
 			mainClass: 'mfp-img-mobile',
 			image: { verticalFit: true }
+		});
+	}
+
+	// Real-Time Variant Option & Stock Updates
+	var variantsData = <?= json_encode($variants) ?>;
+	if (variantsData && variantsData.length > 0) {
+		$('.option-select').on('change', function() {
+			var selectedOpts = {};
+			$('.option-select').each(function() {
+				var optId = $(this).data('option-id');
+				var valId = parseInt($(this).val(), 10);
+				if (valId) selectedOpts[optId] = valId;
+			});
+
+			var match = null;
+			for (var i = 0; i < variantsData.length; i++) {
+				var v = variantsData[i];
+				var isMatch = true;
+				for (var optId in selectedOpts) {
+					if (v.option_value_ids && v.option_value_ids[optId] != selectedOpts[optId]) {
+						isMatch = false;
+						break;
+					}
+				}
+				if (isMatch && Object.keys(selectedOpts).length > 0) {
+					match = v;
+					break;
+				}
+			}
+
+			if (match) {
+				var vIdInput = document.getElementById('selectedVariantId');
+				if (vIdInput) vIdInput.value = match.id;
+
+				var priceElem = document.getElementById('pdpPrice');
+				var pVal = parseFloat(match.sale_price || match.price || 0);
+				if (priceElem && pVal > 0) {
+					var curSym = <?= json_encode(setting('currency_symbol', '৳')) ?>;
+					priceElem.textContent = curSym + pVal.toFixed(2);
+				}
+
+				var vStock = parseInt(match.stock, 10);
+				var stockBadge = document.getElementById('pdpStockBadge');
+				var stockLeftBox = document.getElementById('pdpStockLeftBox');
+				var stockBar = document.getElementById('pdpStockBar');
+				var addBtn = document.getElementById('pdpAddBtn');
+				var buyBtn = document.getElementById('pdpBuyNowBtn');
+				var qtyInput = document.getElementById('pdpQtyInput');
+
+				if (vStock > 0) {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge in-stock';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock (' + vStock + ' left)';
+					}
+					if (stockLeftBox) {
+						stockLeftBox.style.display = 'block';
+						var txt = (vStock <= 5) ? '<span style="color:#b91c1c;">Hurry! Only <strong>' + vStock + '</strong> left in stock</span>' : (vStock <= 15 ? 'Only <strong>' + vStock + '</strong> left in stock - order soon!' : '<strong>' + vStock + '</strong> items available in stock');
+						var leftText = document.getElementById('pdpStockLeftText');
+						if (leftText) leftText.innerHTML = '<i class="zmdi zmdi-fire m-r-6 fs-18" style="color: #ef4444;"></i> ' + txt;
+						if (stockBar) {
+							stockBar.style.background = (vStock <= 5) ? '#ef4444' : '#111827';
+							stockBar.style.width = Math.min(100, Math.max(12, (vStock / 30) * 100)) + '%';
+						}
+					}
+					if (addBtn) addBtn.disabled = false;
+					if (buyBtn) buyBtn.disabled = false;
+					if (qtyInput) qtyInput.max = vStock;
+				} else {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge out-of-stock';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+					}
+					if (stockLeftBox) stockLeftBox.style.display = 'none';
+					if (addBtn) addBtn.disabled = true;
+					if (buyBtn) buyBtn.disabled = true;
+				}
+			}
 		});
 	}
 
