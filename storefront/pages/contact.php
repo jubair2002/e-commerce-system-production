@@ -1,6 +1,8 @@
 <?php
 /**
- * Contact Us Page (Form + Store Information + Anti-Spam)
+ * Contact Us Page (Cozastore Edition).
+ * Cozastore contact layout with top banner, contact message form, anti-spam honeypot,
+ * and store info cards (Address, Phone, Email).
  */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 require_once __DIR__ . '/../../includes/mailer.php';
@@ -12,7 +14,7 @@ $pageDescription = 'Get in touch with our customer support team for inquiries, o
 $errors = [];
 $successMessage = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_csrf();
 
     // Honeypot anti-spam check
@@ -66,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'email'        => $email,
                         'phone'        => $phone ?: 'N/A',
                         'order_number' => $orderNumber ?: 'N/A',
-                        'message'      => nl2br(e($message)),
+                        'message'      => nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')),
                     ]);
                 }
             }
@@ -80,98 +82,166 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $storeName = setting('site_name', APP_NAME);
-$storeEmail = setting('contact_email', setting('store_email', 'support@example.com'));
-$storePhone = setting('contact_phone', setting('store_phone', ''));
-$storeAddress = setting('store_address', '');
-
-$breadcrumbs = [
-    ['label' => 'Contact Us', 'url' => null]
-];
+$storeEmail = setting('contact_email', setting('store_email', 'support@jinishpotro.store'));
+$storePhone = setting('contact_phone', setting('store_phone', '+880 1700-000000'));
+$storeAddress = setting('store_address', 'Dhaka, Bangladesh');
 
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="container py-4 py-md-5">
-  <div class="mx-auto" style="max-width: 960px;">
-    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
+<!-- Title Banner -->
+<section class="bg-img1 txt-center p-lr-15 p-tb-92" style="background-image: url('<?= htmlspecialchars(url('assets/coza/images/bg-01.jpg'), ENT_QUOTES, 'UTF-8') ?>');">
+	<h2 class="ltext-105 cl0 txt-center">
+		Contact
+	</h2>
+</section>
 
-    <div class="mb-4 pb-2 border-bottom">
-      <h1 class="h2 fw-bold mb-1">Get in Touch</h1>
-      <p class="text-muted small mb-0">Have questions about an order, products, or deliveries? We are here to help.</p>
-    </div>
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <?php foreach (get_flashes() as $f): ?>
-      <div class="alert alert-<?= e($f['type']) ?> py-3 mb-4 rounded-2">
-        <?= icon('check-circle', 'me-2') ?><?= e($f['message']) ?>
-      </div>
-    <?php endforeach; ?>
-
-    <?php if (!empty($errors)): ?>
-      <div class="alert alert-danger py-3 mb-4 rounded-2">
-        <div class="fw-semibold mb-1"><?= icon('alert-circle', 'me-2') ?>Please fix the following:</div>
-        <ul class="mb-0 ps-3 small">
-          <?php foreach ($errors as $err): ?>
-            <li><?= e($err) ?></li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
-    <?php endif; ?>
-
-    <div class="row justify-content-center">
-      <!-- Contact Form -->
-      <div class="col-lg-8 col-xl-7">
-        <div class="card border shadow-sm p-4 p-md-5 rounded-4">
-          <form method="post" action="<?= e(route('contact')) ?>" novalidate>
-            <?= csrf_field() ?>
-
-            <!-- Honeypot -->
-            <div style="display: none !important;">
-              <input type="text" name="website_hp" value="" tabindex="-1" autocomplete="off">
-            </div>
-
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-secondary">Your Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control" required value="<?= e($_POST['name'] ?? '') ?>" placeholder="John Doe">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-secondary">Email Address <span class="text-danger">*</span></label>
-                <input type="email" name="email" class="form-control" required value="<?= e($_POST['email'] ?? '') ?>" placeholder="you@example.com">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-secondary">Phone Number</label>
-                <input type="tel" name="phone" class="form-control" value="<?= e($_POST['phone'] ?? '') ?>" placeholder="017xxxxxxxx">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold text-secondary">Order Number <span class="text-muted fw-normal">(If applicable)</span></label>
-                <input type="text" name="order_number" class="form-control" value="<?= e($_POST['order_number'] ?? '') ?>" placeholder="ORD-XXXXX">
-              </div>
-
-              <div class="col-12">
-                <label class="form-label small fw-semibold text-secondary">Subject</label>
-                <input type="text" name="subject" class="form-control" value="<?= e($_POST['subject'] ?? '') ?>" placeholder="Inquiry about delivery, return, etc.">
-              </div>
-
-              <div class="col-12">
-                <label class="form-label small fw-semibold text-secondary">Your Message <span class="text-danger">*</span></label>
-                <textarea name="message" class="form-control" rows="5" required placeholder="How can we help you today?"><?= e($_POST['message'] ?? '') ?></textarea>
-              </div>
-
-              <div class="col-12">
-                <button type="submit" class="btn btn-editorial-primary px-4 py-2">
-                  <?= icon('arrow-right', 'me-1') ?> Send Message
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+		<span class="stext-109 cl4">
+			Contact
+		</span>
+	</div>
 </div>
 
-<?php
-include __DIR__ . '/../../includes/partials/footer.php';
+<!-- =================== COZASTORE CONTACT SECTION =================== -->
+<section class="bg0 p-t-30 p-b-116">
+	<div class="container">
+
+		<!-- Flashes -->
+		<?php foreach (get_flashes() as $f): ?>
+			<div class="alert alert-<?= htmlspecialchars($f['type'], ENT_QUOTES, 'UTF-8') ?> alert-dismissible fade show p-lr-20 p-tb-12 m-b-25" role="alert">
+				<?= htmlspecialchars($f['message'], ENT_QUOTES, 'UTF-8') ?>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		<?php endforeach; ?>
+
+		<!-- Errors -->
+		<?php if (!empty($errors)): ?>
+			<div class="alert alert-danger alert-dismissible fade show p-lr-20 p-tb-12 m-b-25" role="alert">
+				<strong>Please fix the following:</strong>
+				<ul class="m-t-5 m-b-0 p-l-20">
+					<?php foreach ($errors as $err): ?>
+						<li><?= htmlspecialchars($err, ENT_QUOTES, 'UTF-8') ?></li>
+					<?php endforeach; ?>
+				</ul>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		<?php endif; ?>
+
+		<div class="flex-w flex-tr">
+			<!-- Contact Form Column -->
+			<div class="size-210 bor10 p-lr-70 p-t-55 p-b-70 p-lr-15-lg w-full-md">
+				<form method="post" action="<?= htmlspecialchars(route('contact'), ENT_QUOTES, 'UTF-8') ?>" novalidate>
+					<?= csrf_field() ?>
+
+					<!-- Honeypot -->
+					<div style="display: none !important;">
+						<input type="text" name="website_hp" value="" tabindex="-1" autocomplete="off">
+					</div>
+
+					<h4 class="mtext-105 cl2 txt-center p-b-30">
+						Send Us A Message
+					</h4>
+
+					<div class="bor8 m-b-20 how-pos4-parent">
+						<input class="stext-111 cl2 plh3 size-116 p-l-25 p-r-30" type="text" name="name" placeholder="Your Name *" required value="<?= htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					</div>
+
+					<div class="bor8 m-b-20 how-pos4-parent">
+						<input class="stext-111 cl2 plh3 size-116 p-l-62 p-r-30" type="email" name="email" placeholder="Your Email Address *" required value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						<img class="how-pos4 pointer-none" src="<?= htmlspecialchars(url('assets/coza/images/icons/icon-email.png'), ENT_QUOTES, 'UTF-8') ?>" alt="ICON">
+					</div>
+
+					<div class="row">
+						<div class="col-sm-6 bor8 m-b-20 how-pos4-parent" style="border: 1px solid #e6e6e6;">
+							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="tel" name="phone" placeholder="Phone Number" value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						</div>
+						<div class="col-sm-6 bor8 m-b-20 how-pos4-parent" style="border: 1px solid #e6e6e6;">
+							<input class="stext-111 cl2 plh3 size-116 p-lr-20" type="text" name="order_number" placeholder="Order # (Optional)" value="<?= htmlspecialchars($_POST['order_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+						</div>
+					</div>
+
+					<div class="bor8 m-b-20 how-pos4-parent">
+						<input class="stext-111 cl2 plh3 size-116 p-lr-25" type="text" name="subject" placeholder="Subject" value="<?= htmlspecialchars($_POST['subject'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+					</div>
+
+					<div class="bor8 m-b-30">
+						<textarea class="stext-111 cl2 plh3 size-120 p-lr-25 p-tb-20" name="message" placeholder="How Can We Help You? *" required minlength="10"><?= htmlspecialchars($_POST['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+					</div>
+
+					<button type="submit" class="flex-c-m stext-101 cl0 size-121 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer">
+						Submit Message
+					</button>
+				</form>
+			</div>
+
+			<!-- Contact Info Column -->
+			<div class="size-210 bor10 flex-w flex-col-m p-lr-93 p-tb-30 p-lr-15-lg w-full-md">
+				<div class="flex-w w-full p-b-42">
+					<span class="fs-18 cl5 txt-center size-211">
+						<span class="lnr lnr-map-marker fs-24 cl1"></span>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Address
+						</span>
+
+						<p class="stext-115 cl6 size-213 p-t-10">
+							<?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
+						</p>
+					</div>
+				</div>
+
+				<div class="flex-w w-full p-b-42">
+					<span class="fs-18 cl5 txt-center size-211">
+						<span class="lnr lnr-phone-handset fs-24 cl1"></span>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Phone Support
+						</span>
+
+						<p class="stext-115 cl1 size-213 p-t-10">
+							<a href="tel:<?= htmlspecialchars($storePhone, ENT_QUOTES, 'UTF-8') ?>" class="cl1 hov-cl2">
+								<?= htmlspecialchars($storePhone, ENT_QUOTES, 'UTF-8') ?>
+							</a>
+						</p>
+					</div>
+				</div>
+
+				<div class="flex-w w-full">
+					<span class="fs-18 cl5 txt-center size-211">
+						<span class="lnr lnr-envelope fs-24 cl1"></span>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Sales &amp; Customer Care
+						</span>
+
+						<p class="stext-115 cl1 size-213 p-t-10">
+							<a href="mailto:<?= htmlspecialchars($storeEmail, ENT_QUOTES, 'UTF-8') ?>" class="cl1 hov-cl2">
+								<?= htmlspecialchars($storeEmail, ENT_QUOTES, 'UTF-8') ?>
+							</a>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>

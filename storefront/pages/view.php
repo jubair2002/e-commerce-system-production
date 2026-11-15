@@ -1,6 +1,7 @@
 <?php
 /**
- * Dynamic Content Page View (About, Shipping & Returns, FAQ, Privacy, Terms, Size Guide, etc.)
+ * Dynamic Content Page View (Cozastore Edition).
+ * Clean editorial presentation for CMS pages (About, Terms, Privacy, FAQ, etc.)
  */
 require_once __DIR__ . '/../../includes/shop_bootstrap.php';
 
@@ -28,29 +29,43 @@ if (!$page) {
 $pageTitle = !empty($page['meta_title']) ? $page['meta_title'] : $page['title'];
 $pageDescription = !empty($page['meta_description']) ? $page['meta_description'] : mb_substr(strip_tags($page['content']), 0, 155);
 
-$breadcrumbs = [
-    ['label' => $page['title'], 'url' => null]
-];
-
 include __DIR__ . '/../../includes/partials/header.php';
 ?>
 
-<div class="container py-4 py-md-5">
-  <div class="mx-auto" style="max-width: 820px;">
-    <?php include __DIR__ . '/../../includes/partials/breadcrumb.php'; ?>
+<!-- Title Banner -->
+<section class="bg-img1 txt-center p-lr-15 p-tb-92" style="background-image: url('<?= htmlspecialchars(url('assets/coza/images/bg-01.jpg'), ENT_QUOTES, 'UTF-8') ?>');">
+	<h2 class="ltext-105 cl0 txt-center">
+		<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
+	</h2>
+</section>
 
-    <header class="mb-4 pb-3 border-bottom">
-      <h1 class="h2 fw-bold mb-2"><?= e($page['title']) ?></h1>
-      <div class="small text-muted">
-        Updated <?= date('F j, Y', strtotime($page['updated_at'])) ?>
-      </div>
-    </header>
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="<?= htmlspecialchars(route('home'), ENT_QUOTES, 'UTF-8') ?>" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
 
-    <article class="content-page-body prose lh-lg">
-      <?= $page['content'] ?>
-    </article>
-  </div>
+		<span class="stext-109 cl4">
+			<?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?>
+		</span>
+	</div>
 </div>
 
-<?php
-include __DIR__ . '/../../includes/partials/footer.php';
+<!-- =================== CMS PAGE CONTENT =================== -->
+<section class="bg0 p-t-30 p-b-120">
+	<div class="container">
+		<div class="p-b-20 m-b-30 bor12">
+			<span class="stext-109 cl9">
+				Last updated: <?= date('F j, Y', strtotime($page['updated_at'])) ?>
+			</span>
+		</div>
+
+		<article class="stext-102 cl6" style="line-height: 2.0; font-size: 15px;">
+			<?= $page['content'] ?>
+		</article>
+	</div>
+</section>
+
+<?php include __DIR__ . '/../../includes/partials/footer.php'; ?>
