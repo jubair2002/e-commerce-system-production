@@ -336,25 +336,31 @@ include __DIR__ . '/../../includes/partials/header.php';
 		</div>
 
 		<!-- Product Grid -->
-		<div class="row isotope-grid">
-			<?php if (!empty($products)): ?>
+		<?php if (!empty($products)): ?>
+			<div class="row isotope-grid">
 				<?php foreach ($products as $p): ?>
 					<?php include __DIR__ . '/../../includes/partials/product_card.php'; ?>
 				<?php endforeach; ?>
-			<?php else: ?>
-				<div class="col-12 text-center p-tb-80">
-					<i class="zmdi zmdi-shopping-basket cl6 fs-50 d-block m-b-15" style="font-size: 56px;"></i>
-					<h4 class="mtext-105 cl2 p-b-10">No products in this category</h4>
-					<p class="stext-115 cl6 p-b-25">We are currently restocking this category. Check back soon or explore our full collection.</p>
-					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 200px;">
+			</div>
+
+			<!-- Cozastore Numbered Circular Pagination -->
+			<?= render_coza_pagination($page, $pages, $_GET) ?>
+		<?php else: ?>
+			<div class="row">
+				<div class="col-12 text-center p-tb-80 empty-products-state">
+					<div class="empty-state-icon m-b-20">
+						<i class="zmdi zmdi-shopping-basket cl6" style="font-size: 64px;"></i>
+					</div>
+					<h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No products in this category</h4>
+					<p class="stext-115 cl6 p-b-25" style="max-width: 520px; margin: 0 auto 25px auto;">
+						We are currently restocking this category. Check back soon or explore our full collection.
+					</p>
+					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px; border-radius: 25px;">
 						Browse Full Shop
 					</a>
 				</div>
-			<?php endif; ?>
-		</div>
-
-		<!-- Cozastore Numbered Circular Pagination -->
-		<?= render_coza_pagination($page, $pages, $_GET) ?>
+			</div>
+		<?php endif; ?>
 
 	</div>
 </div>

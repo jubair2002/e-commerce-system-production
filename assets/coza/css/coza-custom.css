@@ -987,6 +987,47 @@ svg.i {
   z-index: 4 !important;
 }
 
+/* 11b. Empty Products State Styling */
+.empty-products-state {
+  padding: 60px 20px 80px 20px !important;
+  width: 100% !important;
+  clear: both !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 320px !important;
+}
+.empty-products-state .empty-state-icon i {
+  color: #94a3b8 !important;
+  display: inline-block !important;
+  line-height: 1 !important;
+}
+.empty-products-state h4 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  letter-spacing: -0.3px !important;
+}
+.empty-products-state p {
+  color: #64748b !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+.empty-products-state a.hov-btn1 {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-radius: 25px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 12px 28px !important;
+  height: 46px !important;
+}
+.empty-products-state a.hov-btn1:hover {
+  background: #374151 !important;
+  color: #ffffff !important;
+}
+
 /* 12. Mobile Responsive Shopping Cart (< 768px) */
 @media (max-width: 768px) {
   .wrap-table-shopping-cart {
@@ -2035,6 +2076,25 @@ svg.i {
 [data-theme="dark"] .input-group:focus-within .input-group-append .btn-pw-toggle {
   border-color: #6366f1 !important;
   color: #f8fafc !important;
+}
+
+/* Dark Mode Empty Products State */
+[data-theme="dark"] .empty-products-state h4 {
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .empty-products-state p {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .empty-products-state .empty-state-icon i {
+  color: #64748b !important;
+}
+[data-theme="dark"] .empty-products-state a.hov-btn1 {
+  background: #f8fafc !important;
+  color: #111827 !important;
+}
+[data-theme="dark"] .empty-products-state a.hov-btn1:hover {
+  background: #e2e8f0 !important;
+  color: #000000 !important;
 }
 
 /* ==========================================================================

@@ -485,25 +485,36 @@ include __DIR__ . '/includes/partials/header.php';
 			</div>
 		</div>
 
-		<div class="row isotope-grid">
-			<?php if (!empty($overviewProducts)): ?>
+		<?php if (!empty($overviewProducts)): ?>
+			<div class="row isotope-grid">
 				<?php foreach ($overviewProducts as $pid => $p): 
 					$productCardExtraClass = implode(' ', $productTags[$pid] ?? []);
 					include __DIR__ . '/includes/partials/product_card.php';
 				endforeach; ?>
-			<?php else: ?>
-				<div class="col-12 text-center p-tb-50">
-					<p class="stext-115 cl6">No products found at this time.</p>
-				</div>
-			<?php endif; ?>
-		</div>
+			</div>
 
-		<!-- Load more -->
-		<div class="flex-c-m flex-w w-full p-t-45">
-			<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="view-all-products-btn flex-c-m stext-101 trans-04">
-				View All Products <i class="zmdi zmdi-arrow-right m-l-8 fs-16"></i>
-			</a>
-		</div>
+			<!-- Load more -->
+			<div class="flex-c-m flex-w w-full p-t-45">
+				<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="view-all-products-btn flex-c-m stext-101 trans-04">
+					View All Products <i class="zmdi zmdi-arrow-right m-l-8 fs-16"></i>
+				</a>
+			</div>
+		<?php else: ?>
+			<div class="row">
+				<div class="col-12 text-center p-tb-80 empty-products-state">
+					<div class="empty-state-icon m-b-20">
+						<i class="zmdi zmdi-shopping-basket cl6" style="font-size: 64px;"></i>
+					</div>
+					<h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No products found</h4>
+					<p class="stext-115 cl6 p-b-25" style="max-width: 520px; margin: 0 auto 25px auto;">
+						Check back soon as we restock new items daily.
+					</p>
+					<a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px; border-radius: 25px;">
+						Browse Shop
+					</a>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
 </section>
 

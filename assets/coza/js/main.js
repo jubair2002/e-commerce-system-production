@@ -140,19 +140,37 @@
         
     });
 
-    // init Isotope
+    // init Isotope only if items exist
     $(window).on('load', function () {
-        var $grid = $topeContainer.each(function () {
-            $(this).isotope({
-                itemSelector: '.isotope-item',
-                layoutMode: 'masonry',
-                percentPosition: true,
-                animationEngine : 'best-available',
-                masonry: {
-                    columnWidth: '.isotope-item'
-                }
-            });
+        $topeContainer.each(function () {
+            if ($(this).find('.isotope-item').length > 0) {
+                $(this).isotope({
+                    itemSelector: '.isotope-item',
+                    layoutMode: 'masonry',
+                    percentPosition: true,
+                    animationEngine : 'best-available',
+                    masonry: {
+                        columnWidth: '.isotope-item'
+                    }
+                });
+            }
         });
+    });
+
+    // Handle 0 filtered items dynamically
+    $topeContainer.on('arrangeComplete', function (event, filteredItems) {
+        var $parent = $(this).parent();
+        var $emptyMsg = $parent.find('.isotope-empty-msg');
+        if (filteredItems.length === 0) {
+            if ($emptyMsg.length === 0) {
+                $emptyMsg = $('<div class="col-12 text-center p-tb-60 empty-products-state isotope-empty-msg"><div class="empty-state-icon m-b-15"><i class="zmdi zmdi-shopping-basket cl6" style="font-size: 56px;"></i></div><h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No products found</h4><p class="stext-115 cl6">No products match this category right now.</p></div>');
+                $(this).after($emptyMsg);
+            } else {
+                $emptyMsg.show();
+            }
+        } else {
+            $emptyMsg.hide();
+        }
     });
 
     var isotopeButton = $('.filter-tope-group button');
