@@ -109,11 +109,9 @@ include __DIR__ . '/../../includes/partials/header.php';
                    autocomplete="current-password"
                    required
                    placeholder="Enter your password">
-            <div class="input-group-append">
-              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="loginPassword" aria-label="Toggle password visibility">
-                <?= icon('eye') ?>
-              </button>
-            </div>
+            <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="loginPassword" aria-label="Toggle password visibility">
+              <?= icon('eye') ?>
+            </button>
           </div>
         </div>
 

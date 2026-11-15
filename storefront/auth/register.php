@@ -163,11 +163,9 @@ include __DIR__ . '/../../includes/partials/header.php';
                      autocomplete="new-password"
                      required
                      placeholder="At least 8 characters">
-              <div class="input-group-append">
-                <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regPassword" aria-label="Toggle password visibility">
-                  <?= icon('eye') ?>
-                </button>
-              </div>
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regPassword" aria-label="Toggle password visibility">
+                <?= icon('eye') ?>
+              </button>
             </div>
             <div class="password-meter-wrap mt-1">
               <div class="password-meter-bar" id="pwStrengthBar"></div>
@@ -189,11 +187,9 @@ include __DIR__ . '/../../includes/partials/header.php';
                      autocomplete="new-password"
                      required
                      placeholder="Re-enter your password">
-              <div class="input-group-append">
-                <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regConfirm" aria-label="Toggle password visibility">
-                  <?= icon('eye') ?>
-                </button>
-              </div>
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regConfirm" aria-label="Toggle password visibility">
+                <?= icon('eye') ?>
+              </button>
             </div>
             <?php if (isset($errors['confirm_password'])): ?>
               <div class="invalid-feedback d-block small"><?= e($errors['confirm_password']) ?></div>

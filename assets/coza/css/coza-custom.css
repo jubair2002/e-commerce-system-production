@@ -57,23 +57,27 @@ svg.i {
   display: inline-block;
   flex-shrink: 0;
 }
-.btn-pw-toggle svg.i {
-  width: 1em;
-  height: 1em;
+.btn-pw-toggle svg.i,
+.btn-pw-toggle svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+  fill: currentColor !important;
 }
 .btn-pw-toggle {
   border: 1px solid #e5e7eb;
   border-left: 0;
-  background: #ffffff;
-  color: #6b7280;
+  background: #f9fafb;
+  color: #64748b;
   padding: 0 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: 44px;
 }
 .btn-pw-toggle:hover {
-  background: #f9fafb;
-  color: #111827;
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 /* 2. Cozastore Palette & Button Harmonization */
@@ -536,6 +540,8 @@ svg.i {
   font-size: 14px;
   color: #333333;
   padding: 10px 14px;
+  height: 44px;
+  line-height: 1.5;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .form-control:focus, .form-select:focus {
@@ -911,25 +917,74 @@ svg.i {
 }
 
 /* 11. Unified Input Group Styling (Password Toggle & Appended Addons) */
-.input-group .form-control {
+.input-group {
+  position: relative !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+.input-group > .form-control {
+  position: relative !important;
+  flex: 1 1 auto !important;
+  width: 1% !important;
+  min-width: 0 !important;
+  margin-bottom: 0 !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
+  border-color: #e6e6e6 !important;
+  height: 44px !important;
 }
-.input-group .input-group-append .btn-pw-toggle,
-.input-group .input-group-append .btn {
+.input-group-append {
+  display: flex !important;
+  align-items: stretch !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.input-group > .btn-pw-toggle,
+.input-group-append .btn-pw-toggle,
+.input-group > .btn.btn-pw-toggle,
+.input-group-append .btn {
+  position: relative !important;
+  z-index: 2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  width: 46px !important;
+  padding: 0 !important;
+  margin: 0 !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  border-color: #ced4da;
-  background-color: #f8f9fa;
-  color: #6c757d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  border: 1px solid #e6e6e6 !important;
+  border-left: 0 !important;
+  background-color: #f8f9fa !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
 }
-.input-group .input-group-append .btn-pw-toggle:hover {
-  background-color: #e9ecef;
-  color: #212529;
+.input-group > .btn-pw-toggle:hover,
+.input-group-append .btn-pw-toggle:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #d1d5db !important;
+}
+.input-group:focus-within > .form-control {
+  border-color: #111827 !important;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08) !important;
+  z-index: 3 !important;
+}
+.input-group:focus-within > .btn-pw-toggle,
+.input-group:focus-within .input-group-append .btn-pw-toggle {
+  border-color: #111827 !important;
+  color: #111827 !important;
+  z-index: 4 !important;
 }
 
 /* 12. Mobile Responsive Shopping Cart (< 768px) */
@@ -1950,14 +2005,36 @@ svg.i {
 [data-theme="dark"] .auth-card .text-muted {
   color: #94a3b8 !important;
 }
-[data-theme="dark"] .input-group .input-group-append .btn-pw-toggle {
-  background-color: #1f2937 !important;
+[data-theme="dark"] .input-group > .form-control {
+  background-color: #111827 !important;
   border-color: #374151 !important;
-  color: #cbd5e1 !important;
+  color: #f8fafc !important;
 }
-[data-theme="dark"] .input-group .input-group-append .btn-pw-toggle:hover {
-  background-color: #374151 !important;
+[data-theme="dark"] .input-group > .form-control::placeholder {
+  color: #64748b !important;
+}
+[data-theme="dark"] .input-group > .btn-pw-toggle,
+[data-theme="dark"] .input-group-append .btn-pw-toggle,
+[data-theme="dark"] .btn-pw-toggle {
+  background-color: #1e293b !important;
+  border-color: #374151 !important;
+  border-left: 0 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .input-group > .btn-pw-toggle:hover,
+[data-theme="dark"] .input-group-append .btn-pw-toggle:hover,
+[data-theme="dark"] .btn-pw-toggle:hover {
+  background-color: #334155 !important;
   color: #ffffff !important;
+}
+[data-theme="dark"] .input-group:focus-within > .form-control {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+[data-theme="dark"] .input-group:focus-within > .btn-pw-toggle,
+[data-theme="dark"] .input-group:focus-within .input-group-append .btn-pw-toggle {
+  border-color: #6366f1 !important;
+  color: #f8fafc !important;
 }
 
 /* ==========================================================================

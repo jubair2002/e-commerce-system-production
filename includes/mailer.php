@@ -315,6 +315,26 @@ function mail_queue_template(
 }
 
 /**
+ * Convenience wrapper to enqueue templated emails with placeholder variables.
+ *
+ * @param string $templateSlug Template slug in email_templates table
+ * @param string $toEmail Recipient email address
+ * @param array $vars Placeholder replacement variables
+ * @param string|null $toName Recipient name (optional)
+ * @param array $meta Additional metadata (optional)
+ * @return int|null Queue item ID or null on failure
+ */
+function enqueue_mail(
+    string $templateSlug,
+    string $toEmail,
+    array $vars = [],
+    ?string $toName = null,
+    array $meta = []
+): ?int {
+    return mail_queue_template($templateSlug, $toEmail, $toName, $vars, $meta);
+}
+
+/**
  * Process a single queue item by ID.
  */
 function mail_process_queue_item(int $id): bool
