@@ -21,14 +21,15 @@ ErrorDocument 500 storefront/errors/500.php
     RewriteEngine On
 
     # -----------------------------------------------------------------
-    # Force HTTPS (AWS ALB, ELB, CloudFront, Cloudflare & Apache SSL aware)
+    # Optional: Force HTTPS (Only enable after SSL is active on Port 443 / CloudFront / ALB)
+    # Enable by setting FORCE_HTTPS=true in .env or uncommenting below
     # -----------------------------------------------------------------
-    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
-    RewriteCond %{HTTPS} !=on
-    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
-    RewriteCond %{HTTP:CloudFront-Forwarded-Proto} !https [NC]
-    RewriteCond %{HTTP:X-Forwarded-SSL} !on [NC]
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    # RewriteCond %{HTTP:CloudFront-Forwarded-Proto} !https [NC]
+    # RewriteCond %{HTTP:X-Forwarded-SSL} !on [NC]
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # Dynamic uploads delivery (delivers from external UPLOADS_PATH when not on disk)
     RewriteCond %{REQUEST_FILENAME} !-f
