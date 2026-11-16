@@ -89,9 +89,47 @@ foreach ($candidatePaths as $candidate) {
     }
 }
 
+// Graceful fallback for responsive image variants (e.g. *_thumb.webp, *_card.webp)
 if (!$filePath) {
-    http_response_code(404);
-    exit('File not found.');
+    $variantPattern = '/_(thumb|thumbnail|card|detail)\.webp$/i';
+    $prefixPattern  = '#(^|/)(?:thumb|thumbnail|card|detail)_(.+)#i';
+
+    $baseCandidateName = null;
+    if (preg_match($variantPattern, $requested)) {
+        $baseCandidateName = preg_replace($variantPattern, '', $requested);
+    } elseif (preg_match($prefixPattern, $requested, $pm)) {
+        $dir = dirname($requested);
+        $baseCandidateName = ($dir !== '.' ? $dir . '/' : '') . $pm[2];
+        $baseCandidateName = ltrim($baseCandidateName, './');
+    }
+
+    if (!empty($baseCandidateName)) {
+        $possibleExts = ['.webp', '.jpg', '.jpeg', '.png'];
+        $baseCandidates = [];
+        $baseWithoutExt = preg_replace('/\.[a-z0-9]+$/i', '', $baseCandidateName);
+
+        foreach ($possibleExts as $ext) {
+            $baseCandidates[] = UPLOADS_PATH . '/' . $baseWithoutExt . $ext;
+            $baseCandidates[] = ROOT_PATH . '/assets/uploads/' . $baseWithoutExt . $ext;
+            $baseCandidates[] = UPLOADS_PATH . '/products/' . $baseWithoutExt . $ext;
+            $baseCandidates[] = ROOT_PATH . '/assets/uploads/products/' . $baseWithoutExt . $ext;
+        }
+
+        foreach ($baseCandidates as $bc) {
+            if (file_exists($bc) && is_file($bc)) {
+                $filePath = $bc;
+                break;
+            }
+        }
+    }
+}
+
+if (!$filePath) {
+    // Deliver subtle, high-performance placeholder SVG instead of broken image box
+    header('Content-Type: image/svg+xml; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200"><rect width="200" height="200" fill="#f1f5f9"/><path d="M70 85 L130 85 L125 140 L75 140 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5" stroke-linejoin="round"/><path d="M85 85 C85 70 115 70 115 85" fill="none" stroke="#cbd5e1" stroke-width="2.5"/></svg>';
+    exit;
 }
 
 // MIME type detection

@@ -631,7 +631,7 @@ function token_revoke_all(int $customerId, ?string $type = null): void
  */
 function remember_me_cookie_set(string $rawToken, int $days): void
 {
-    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') == 443;
+    $isSecure = function_exists('is_https') ? is_https() : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') == 443);
     setcookie('customer_remember', $rawToken, [
         'expires'  => time() + ($days * 86400),
         'path'     => '/',
@@ -643,7 +643,7 @@ function remember_me_cookie_set(string $rawToken, int $days): void
 
 function remember_me_cookie_clear(): void
 {
-    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') == 443;
+    $isSecure = function_exists('is_https') ? is_https() : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') == 443);
     setcookie('customer_remember', '', [
         'expires'  => time() - 3600,
         'path'     => '/',

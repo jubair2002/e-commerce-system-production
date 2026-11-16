@@ -25,6 +25,71 @@ define('APP_ENV',  (string)env('APP_ENV', 'development')); // 'development' or '
 // Application Encryption Key (used for encrypting sensitive credentials like SMTP passwords).
 define('APP_KEY', (string)env('APP_KEY', 'CHANGE_ME_TO_64_RANDOM_CHARS'));
 
+/**
+ * Detect whether the current request is HTTPS, including behind AWS ALB, ELB, CloudFront, Cloudflare, or reverse proxies.
+ */
+if (!function_exists('is_https')) {
+    function is_https(): bool
+    {
+        $force = function_exists('env') ? env('FORCE_HTTPS') : null;
+        if ($force === true || $force === 'true' || $force === '1' || $force === 1) {
+            return true;
+        }
+
+        if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+            return true;
+        }
+
+        if (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) {
+            return true;
+        }
+
+        $forwardedProto = $_SERVER['HTTP_X_FORWARDED_PROTO']
+            ?? $_SERVER['HTTP_CLOUDFRONT_FORWARDED_PROTO']
+            ?? $_SERVER['HTTP_X_FORWARDED_PROTOCOL']
+            ?? '';
+
+        if ($forwardedProto !== '') {
+            $protos = explode(',', strtolower($forwardedProto));
+            if (trim($protos[0]) === 'https') {
+                return true;
+            }
+        }
+
+        if (isset($_SERVER['HTTP_CLOUDFRONT_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_CLOUDFRONT_FORWARDED_PROTO']) === 'https') {
+            return true;
+        }
+
+        if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') {
+            return true;
+        }
+
+        if (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower((string)$_SERVER['HTTP_FRONT_END_HTTPS']) !== 'off') {
+            return true;
+        }
+
+        if (isset($_SERVER['HTTP_CF_VISITOR'])) {
+            $cf = json_decode((string)$_SERVER['HTTP_CF_VISITOR'], true);
+            if (isset($cf['scheme']) && strtolower($cf['scheme']) === 'https') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+// Optional: Force HTTPS redirect when FORCE_HTTPS=true in production
+$forceHttps = function_exists('env') ? env('FORCE_HTTPS', false) : false;
+if (($forceHttps === true || $forceHttps === 'true' || $forceHttps === '1') && !is_https() && PHP_SAPI !== 'cli') {
+    $currentHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    if (!in_array($currentHost, ['localhost', '127.0.0.1'], true) && !str_starts_with($currentHost, 'localhost:') && !str_starts_with($currentHost, '127.0.0.1:')) {
+        $dest = 'https://' . $currentHost . ($_SERVER['REQUEST_URI'] ?? '/');
+        header('Location: ' . $dest, true, 301);
+        exit;
+    }
+}
+
 // Auto-detect project root URL or use .env override
 $envBaseUrl = env('BASE_URL');
 if (!empty($envBaseUrl)) {
@@ -56,13 +121,15 @@ if (!empty($envBaseUrl)) {
 define('ADMIN_URL', BASE_URL . 'admin/');
 
 // Absolute site URL (used in emails and background tasks)
+$isHttps = is_https();
 $envSiteUrl = env('SITE_URL');
 if (!empty($envSiteUrl)) {
-    define('SITE_URL', rtrim((string)$envSiteUrl, '/') . '/');
+    $siteUrl = rtrim((string)$envSiteUrl, '/') . '/';
+    if ($isHttps && str_starts_with(strtolower($siteUrl), 'http://')) {
+        $siteUrl = 'https://' . substr($siteUrl, 7);
+    }
+    define('SITE_URL', $siteUrl);
 } else {
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
     $scheme  = $isHttps ? 'https://' : 'http://';
     $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
     define('SITE_URL', rtrim($scheme . $host . BASE_URL, '/') . '/');
@@ -78,6 +145,9 @@ define('UPLOADS_PATH',  !empty($envUploadsPath) ? rtrim($envUploadsPath, '/') : 
 if (!empty($envUploadsUrl)) {
     $rawUrl = (string)$envUploadsUrl;
     if (preg_match('#^https?://#i', $rawUrl)) {
+        if ($isHttps && str_starts_with(strtolower($rawUrl), 'http://')) {
+            $rawUrl = 'https://' . substr($rawUrl, 7);
+        }
         define('UPLOADS_URL', rtrim($rawUrl, '/') . '/');
     } else {
         $trimmed = trim($rawUrl, '/');

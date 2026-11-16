@@ -658,6 +658,9 @@ function product_image_url(?string $image, string $size = 'full', ?int $productI
 {
     if (!empty($image)) {
         if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://') || str_starts_with($image, 'data:')) {
+            if (function_exists('is_https') && is_https() && str_starts_with($image, 'http://')) {
+                $image = 'https://' . substr($image, 7);
+            }
             return $image;
         }
 
@@ -666,10 +669,16 @@ function product_image_url(?string $image, string $size = 'full', ?int $productI
             try {
                 $storageUrl = storage()->getUrl($image, ['size' => $size]);
                 if (!empty($storageUrl) && !str_contains($storageUrl, 'assets/uploads/' . $image)) {
+                    if (function_exists('is_https') && is_https() && str_starts_with($storageUrl, 'http://')) {
+                        $storageUrl = 'https://' . substr($storageUrl, 7);
+                    }
                     return $storageUrl;
                 }
                 // If storage returned a valid URL and local file doesn't exist, use storage URL
                 if (!empty($storageUrl) && str_starts_with($storageUrl, 'http') && !file_exists(UPLOADS_PATH . '/products/' . ltrim($image, '/'))) {
+                    if (function_exists('is_https') && is_https() && str_starts_with($storageUrl, 'http://')) {
+                        $storageUrl = 'https://' . substr($storageUrl, 7);
+                    }
                     return $storageUrl;
                 }
             } catch (Throwable $e) {}

@@ -20,6 +20,16 @@ ErrorDocument 500 storefront/errors/500.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # -----------------------------------------------------------------
+    # Force HTTPS (AWS ALB, ELB, CloudFront, Cloudflare & Apache SSL aware)
+    # -----------------------------------------------------------------
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    RewriteCond %{HTTP:CloudFront-Forwarded-Proto} !https [NC]
+    RewriteCond %{HTTP:X-Forwarded-SSL} !on [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Dynamic uploads delivery (delivers from external UPLOADS_PATH when not on disk)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(?:assets/)?uploads/(.+)$ uploads.php?file=$1 [L,QSA]

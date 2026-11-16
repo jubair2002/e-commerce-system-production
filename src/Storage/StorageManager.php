@@ -461,6 +461,9 @@ class StorageManager
         if (is_string($fileOrId)) {
             $key = trim($fileOrId);
             if (str_starts_with($key, 'http://') || str_starts_with($key, 'https://') || str_starts_with($key, 'data:')) {
+                if (function_exists('is_https') && is_https() && str_starts_with($key, 'http://')) {
+                    $key = 'https://' . substr($key, 7);
+                }
                 return $key;
             }
 
@@ -474,7 +477,11 @@ class StorageManager
             }
 
             // Backwards compatibility: deliver via Primary driver public URL or local URL
-            return $this->getPrimaryDriver()->publicUrl($key);
+            $pubUrl = $this->getPrimaryDriver()->publicUrl($key);
+            if (function_exists('is_https') && is_https() && str_starts_with($pubUrl, 'http://')) {
+                $pubUrl = 'https://' . substr($pubUrl, 7);
+            }
+            return $pubUrl;
         }
 
         return $opts['fallback'] ?? '';
@@ -490,17 +497,23 @@ class StorageManager
             $sizeLabel = ($opts['size'] === 'thumbnail') ? 'thumb' : $opts['size'];
             $pathInfo = pathinfo($key);
             $variantKey = "{$pathInfo['dirname']}/{$pathInfo['filename']}_{$sizeLabel}.webp";
-            // Product variants are generated deterministically during upload and sync
-            if (($row['purpose'] ?? '') === 'product' || $driver->exists($variantKey)) {
+            // Only use variant key if it actually exists in storage; otherwise fall back safely to original key
+            if ($driver->exists($variantKey)) {
                 $key = $variantKey;
             }
         }
 
         if (($row['visibility'] ?? 'public') === 'private') {
             $ttl = (int)($opts['ttl'] ?? 3600);
-            return $driver->signedUrl($key, $ttl);
+            $url = $driver->signedUrl($key, $ttl);
+        } else {
+            $url = $driver->publicUrl($key);
         }
 
-        return $driver->publicUrl($key);
+        if (function_exists('is_https') && is_https() && str_starts_with($url, 'http://')) {
+            $url = 'https://' . substr($url, 7);
+        }
+
+        return $url;
     }
 }

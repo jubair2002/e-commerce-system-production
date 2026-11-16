@@ -12,8 +12,12 @@ $stock       = (int)($p['stock'] ?? 0);
 $lowThresh   = (int)($p['low_stock_threshold'] ?? 5);
 $isSoldOut   = ($stock <= 0 && empty($p['allow_backorder']));
 
-$primaryImg  = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
-$productUrl  = route('product', ['slug' => $p['slug']]);
+$primaryImg   = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
+$fullImg      = product_image_url($p['image'] ?? null, 'full', $pid);
+$secondImgRaw = !empty($p['second_image']) ? $p['second_image'] : (function_exists('product_second_image') ? product_second_image($pid) : null);
+$secondImg    = !empty($secondImgRaw) ? product_image_url($secondImgRaw, 'thumbnail', $pid) : null;
+$secondFull   = !empty($secondImgRaw) ? product_image_url($secondImgRaw, 'full', $pid) : null;
+$productUrl   = route('product', ['slug' => $p['slug']]);
 $catSlug     = !empty($p['category_slug']) ? $p['category_slug'] : 'all';
 $itemCol     = !empty($productCardCol) ? $productCardCol : 'col-6 col-md-4 col-lg-3';
 $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '';
@@ -23,7 +27,20 @@ $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '
 	<div class="block2">
 		<div class="block2-pic hov-img0 pos-relative">
 			<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="dis-block" title="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>">
-				<img src="<?= htmlspecialchars($primaryImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" style="width: 100%; aspect-ratio: 1/1; object-fit: cover;">
+				<img src="<?= htmlspecialchars($primaryImg, ENT_QUOTES, 'UTF-8') ?>"
+				     alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?>"
+				     class="block2-img-primary dis-block w-full trans-04"
+				     loading="lazy"
+				     style="width: 100%; aspect-ratio: 1/1; object-fit: cover;"
+				     onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='<?= htmlspecialchars($fullImg, ENT_QUOTES, 'UTF-8') ?>';}">
+				<?php if ($secondImg): ?>
+				<img src="<?= htmlspecialchars($secondImg, ENT_QUOTES, 'UTF-8') ?>"
+				     alt="<?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?> - alternate"
+				     class="block2-img-hover pos-absolute ab-t-l dis-block w-full h-full trans-04"
+				     loading="lazy"
+				     style="width: 100%; aspect-ratio: 1/1; object-fit: cover;"
+				     onerror="if(!this.dataset.fallback && '<?= htmlspecialchars($secondFull, ENT_QUOTES, 'UTF-8') ?>'){this.dataset.fallback='1';this.src='<?= htmlspecialchars($secondFull, ENT_QUOTES, 'UTF-8') ?>';}">
+				<?php endif; ?>
 			</a>
 
 			<?php if ($isSoldOut): ?>
