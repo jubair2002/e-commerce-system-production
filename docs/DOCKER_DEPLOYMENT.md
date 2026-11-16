@@ -73,59 +73,36 @@ Grafana is provisioned via `docker/grafana/provisioning/` and includes two produ
 
 ---
 
-## 4. Subdomain Reverse Proxy Setup (`grafana.domain.com`)
+## 4. Production SSL & Domain Setup (`jinishpotro.store`)
 
-When you are ready to point your public domain (`yourdomain.com` and `grafana.domain.com`) to the server:
+The Docker container runs a high-performance Apache 2.4 server with native SSL (`mod_ssl`) and URL rewriting (`mod_rewrite`) enabled.
 
-### Option A: Using Nginx on the Host Server
-An Nginx template is provided in [`docker/nginx/conf.d/jinispotro.conf`](../docker/nginx/conf.d/jinispotro.conf):
-
-```nginx
-# 1. Main Storefront & Admin Panel
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    client_max_body_size 64M;
-
-    location / {
-        proxy_pass http://127.0.0.1:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-
-# 2. Grafana Monitoring Subdomain
-server {
-    listen 80;
-    server_name grafana.domain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $http_host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket support for live panel updates
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-To secure both domains with free SSL certificates via Certbot:
+### Direct Docker Deployment (Recommended)
+The container binds directly to ports `80` and `443` and automatically detects Let's Encrypt certificates located in `/etc/letsencrypt/`:
 ```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com -d grafana.domain.com
+# 1. Stop host Apache or Nginx if running to free ports 80 and 443:
+sudo systemctl stop apache2 && sudo systemctl disable apache2
+sudo systemctl stop nginx && sudo systemctl disable nginx
+
+# 2. Launch the Jinishpotro stack:
+docker compose up -d --build
 ```
 
-### Option B: Using Cloudflare Tunnel
-If using Cloudflare Tunnels (Zero Trust):
-1. In Cloudflare Zero Trust Dashboard &rarr; Access &rarr; Tunnels.
-2. Route `yourdomain.com` &rarr; `http://localhost:80`.
-3. Route `grafana.domain.com` &rarr; `http://localhost:3000`.
+### Option A: Using Certbot on EC2 Host
+To generate Let's Encrypt certificates directly on your EC2 host:
+```bash
+sudo apt update && sudo apt install -y certbot
+sudo certbot certonly --standalone -d jinishpotro.store -d www.jinishpotro.store
+
+# Restart the app container to immediately load the new SSL certificates:
+docker compose restart app
+```
+
+### Option B: Using Cloudflare or AWS ALB / CloudFront
+If using Cloudflare or AWS Application Load Balancer / CloudFront:
+1. Terminate SSL at Cloudflare/ALB.
+2. Forward traffic to EC2 port `80`.
+3. The application automatically detects `X-Forwarded-Proto: https` and upgrades all URLs seamlessly.
 
 ---
 

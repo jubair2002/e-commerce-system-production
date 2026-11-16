@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     curl \
+    openssl \
+    ssl-cert \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure & Install PHP extensions
@@ -28,7 +30,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
         opcache
 
 # Enable Apache modules
-RUN a2enmod rewrite headers expires deflate remoteip
+RUN a2enmod rewrite headers expires deflate remoteip ssl
 
 # Copy PHP and Apache configurations
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
@@ -62,7 +64,7 @@ RUN mkdir -p /var/www/html/assets/uploads /var/www/html/storage/cache \
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 80
+EXPOSE 80 443
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["apache2-foreground"]
