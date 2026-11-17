@@ -603,6 +603,11 @@ function switchPdpImage(el, url) {
 <!-- PDP AJAX Add to Cart & Review Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	// Ensure no duplicate jQuery listeners from legacy template scripts
+	if (typeof $ !== 'undefined') {
+		$('.btn-num-product-down, .btn-num-product-up').off('click');
+	}
+
 	// Stepper increment / decrement and input validation handler
 	var downBtn = document.querySelector('.btn-num-product-down');
 	var upBtn = document.querySelector('.btn-num-product-up');
@@ -629,20 +634,30 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	if (downBtn && qtyInput) {
-		downBtn.addEventListener('click', function() {
+		downBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 			var current = parseInt(qtyInput.value, 10) || 1;
 			var min = parseInt(qtyInput.min, 10) || 1;
 			if (current > min) {
 				qtyInput.value = current - 1;
+				qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+				qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
 			}
 		});
 	}
 	if (upBtn && qtyInput) {
-		upBtn.addEventListener('click', function() {
+		upBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 			var current = parseInt(qtyInput.value, 10) || 1;
 			var max = parseInt(qtyInput.max, 10) || 999;
 			if (current < max) {
 				qtyInput.value = current + 1;
+				qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+				qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
 			} else {
 				if (typeof swal === 'function') {
 					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'info');

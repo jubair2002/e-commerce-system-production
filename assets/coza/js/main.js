@@ -231,16 +231,11 @@
     });
 
     /*==================================================================
-    [ +/- num product ]*/
-    $('.btn-num-product-down').on('click', function(){
-        var numProduct = Number($(this).next().val());
-        if(numProduct > 0) $(this).next().val(numProduct - 1);
-    });
-
-    $('.btn-num-product-up').on('click', function(){
-        var numProduct = Number($(this).prev().val());
-        $(this).prev().val(numProduct + 1);
-    });
+    [ +/- num product ]
+    Quantity stepping is handled authoritatively by dedicated page handlers
+    (e.g. storefront/shop/product.php, storefront/cart/index.php) to prevent
+    duplicate increments and enforce stock limits.
+    ==================================================================*/
 
     /*==================================================================
     [ Rating ]*/

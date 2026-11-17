@@ -62,7 +62,7 @@
 		});
 	</script>
 <!--===============================================================================================-->
-	<script src="<?= htmlspecialchars(url('assets/coza/js/main.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+	<script src="<?= htmlspecialchars(url('assets/coza/js/main.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= file_exists(__DIR__ . '/../../../assets/coza/js/main.js') ? filemtime(__DIR__ . '/../../../assets/coza/js/main.js') : time() ?>"></script>
 
 	<!-- Cozastore Real Storefront Integration Script -->
 	<script>
