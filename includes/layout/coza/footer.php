@@ -229,9 +229,7 @@ try {
 				</div>
 
 				<p class="stext-107 cl6 txt-center">
-					<!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-Copyright &copy;<?= date('Y') ?> <?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?>. All rights reserved | Made with <i class="fa fa-heart-o" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank" rel="noopener">Colorlib</a> &amp; distributed by <a href="https://themewagon.com" target="_blank" rel="noopener">ThemeWagon</a>
-<!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
+					Copyright &copy;<?= date('Y') ?> <?= htmlspecialchars(setting('site_name', APP_NAME), ENT_QUOTES, 'UTF-8') ?>. All rights reserved.
 				</p>
 			</div>
 		</div>
