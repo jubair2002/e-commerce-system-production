@@ -312,7 +312,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 						<?php endif; ?>
 					</div>
 
-					<?php if (!empty($product['short_description'])): ?>
+					<?php if (!empty($product['short_description']) && trim((string)$product['short_description']) !== trim((string)$product['description'])): ?>
 						<p class="pdp-short-desc">
 							<?= htmlspecialchars($product['short_description'], ENT_QUOTES, 'UTF-8') ?>
 						</p>
@@ -379,19 +379,38 @@ include __DIR__ . '/../../includes/partials/header.php';
 							</div>
 						</div>	
 					</form>
+
+					<!-- Product Description (Immediately after Add to Cart & Buy Now) -->
+					<?php
+					$pdpDesc = trim((string)($product['description'] ?? ''));
+					if ($pdpDesc === '') {
+						$pdpDesc = trim((string)($product['short_description'] ?? ''));
+					}
+					if ($pdpDesc === '') {
+						$pdpDesc = 'Crafted with premium materials and verified for enduring durability.';
+					}
+					?>
+					<div class="pdp-description-box">
+						<h5 class="pdp-desc-heading">Product Description</h5>
+						<div class="pdp-desc-text">
+							<?php
+							if (strip_tags($pdpDesc) !== $pdpDesc) {
+								echo strip_tags($pdpDesc, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
+							} else {
+								echo nl2br(htmlspecialchars($pdpDesc, ENT_QUOTES, 'UTF-8'));
+							}
+							?>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Details Tabs (Description, Information, Reviews) -->
+		<!-- Details Tabs (Specifications, Reviews) -->
 		<div class="pdp-tabs-wrap">
 			<ul class="nav pdp-tabs-nav" role="tablist">
 				<li class="nav-item">
-					<a class="pdp-tab-item active" data-toggle="tab" href="#description" role="tab" id="tabLinkDesc">Product Description</a>
-				</li>
-
-				<li class="nav-item">
-					<a class="pdp-tab-item" data-toggle="tab" href="#information" role="tab" id="tabLinkInfo">Specifications</a>
+					<a class="pdp-tab-item active" data-toggle="tab" href="#information" role="tab" id="tabLinkInfo">Specifications</a>
 				</li>
 
 				<li class="nav-item">
@@ -401,55 +420,39 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 			<!-- Tab panes -->
 			<div class="tab-content">
-				<!-- Tab 1: Description -->
-				<div class="tab-pane fade show active" id="description" role="tabpanel">
-					<div class="col-lg-10 m-lr-auto">
-						<div class="stext-102 cl6" style="line-height: 1.85; font-size: 15px;">
-							<?php
-							$desc = $product['description'] ?: $product['short_description'] ?: 'Crafted with premium materials and verified for enduring durability.';
-							if (strip_tags($desc) !== $desc) {
-								echo strip_tags($desc, '<p><br><ul><ol><li><strong><em><b><i><h2><h3><h4><span><a>');
-							} else {
-								echo nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'));
-							}
-							?>
-						</div>
-					</div>
-				</div>
-
-				<!-- Tab 2: Specifications -->
-				<div class="tab-pane fade" id="information" role="tabpanel">
+				<!-- Tab 1: Specifications -->
+				<div class="tab-pane fade show active" id="information" role="tabpanel">
 					<div class="col-lg-8 m-lr-auto">
-						<div class="table-responsive bg0" style="border: 1px solid #eef0f3; border-radius: 12px; overflow: hidden;">
-							<table class="table table-borderless m-b-0" style="font-size: 14px;">
+						<div class="table-responsive pdp-spec-table-wrap">
+							<table class="table table-borderless pdp-spec-table">
 								<tbody>
-									<tr style="border-bottom: 1px solid #f3f4f6;">
-										<td class="font-weight-bold p-all-15" style="width: 35%; color: #374151; background: #fafbfc;">Product SKU</td>
-										<td class="p-all-15 cl6"><?= htmlspecialchars($product['sku'] ?: 'PROD-' . str_pad((string)$productId, 5, '0', STR_PAD_LEFT), ENT_QUOTES, 'UTF-8') ?></td>
+									<tr>
+										<td class="pdp-spec-label">Product SKU</td>
+										<td class="pdp-spec-value"><?= htmlspecialchars($product['sku'] ?: 'PROD-' . str_pad((string)$productId, 5, '0', STR_PAD_LEFT), ENT_QUOTES, 'UTF-8') ?></td>
 									</tr>
-									<tr style="border-bottom: 1px solid #f3f4f6;">
-										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Product Type</td>
-										<td class="p-all-15 cl6"><?= ucfirst(htmlspecialchars($product['product_type'], ENT_QUOTES, 'UTF-8')) ?></td>
+									<tr>
+										<td class="pdp-spec-label">Product Type</td>
+										<td class="pdp-spec-value"><?= ucfirst(htmlspecialchars($product['product_type'], ENT_QUOTES, 'UTF-8')) ?></td>
 									</tr>
 									<?php if (!empty($product['category_name'])): ?>
-									<tr style="border-bottom: 1px solid #f3f4f6;">
-										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Category</td>
-										<td class="p-all-15 cl6"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></td>
+									<tr>
+										<td class="pdp-spec-label">Category</td>
+										<td class="pdp-spec-value"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></td>
 									</tr>
 									<?php endif; ?>
 									<?php if (!empty($product['brand'])): ?>
-									<tr style="border-bottom: 1px solid #f3f4f6;">
-										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Brand</td>
-										<td class="p-all-15 cl6"><?= htmlspecialchars($product['brand'], ENT_QUOTES, 'UTF-8') ?></td>
+									<tr>
+										<td class="pdp-spec-label">Brand</td>
+										<td class="pdp-spec-value"><?= htmlspecialchars($product['brand'], ENT_QUOTES, 'UTF-8') ?></td>
 									</tr>
 									<?php endif; ?>
-									<tr style="border-bottom: 1px solid #f3f4f6;">
-										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Authenticity</td>
-										<td class="p-all-15 cl6">100% Original and Brand New</td>
+									<tr>
+										<td class="pdp-spec-label">Authenticity</td>
+										<td class="pdp-spec-value">100% Original and Brand New</td>
 									</tr>
 									<tr>
-										<td class="font-weight-bold p-all-15" style="color: #374151; background: #fafbfc;">Delivery Time</td>
-										<td class="p-all-15 cl6">24h inside Dhaka, 48-72h outside Dhaka</td>
+										<td class="pdp-spec-label">Delivery Time</td>
+										<td class="pdp-spec-value">24h inside Dhaka, 48-72h outside Dhaka</td>
 									</tr>
 								</tbody>
 							</table>
@@ -457,7 +460,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 					</div>
 				</div>
 
-				<!-- Tab 3: Reviews -->
+				<!-- Tab 2: Reviews -->
 				<div class="tab-pane fade" id="reviews" role="tabpanel">
 					<div class="col-lg-8 m-lr-auto">
 						<div class="p-b-30">

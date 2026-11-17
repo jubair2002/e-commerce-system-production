@@ -418,6 +418,94 @@
   background: #fef2f2;
 }
 
+/* Product Description Section (Immediately after Add-To-Cart & Buy Now) */
+.pdp-description-box {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #eef0f3;
+}
+
+.pdp-desc-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+
+.pdp-desc-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.pdp-desc-text p {
+  margin-bottom: 12px;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.pdp-desc-text ul,
+.pdp-desc-text ol {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.pdp-desc-text li {
+  margin-bottom: 6px;
+}
+
+.pdp-desc-text ul li {
+  list-style: disc;
+}
+
+.pdp-desc-text ol li {
+  list-style: decimal;
+}
+
+.pdp-desc-text strong,
+.pdp-desc-text b {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Specifications Table */
+.pdp-spec-table-wrap {
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.pdp-spec-table {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.pdp-spec-table tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pdp-spec-table tr:last-child {
+  border-bottom: none;
+}
+
+.pdp-spec-label {
+  width: 35%;
+  font-weight: 600;
+  color: #374151;
+  background: #fafbfc;
+  padding: 14px 18px !important;
+}
+
+.pdp-spec-value {
+  color: #4b5563;
+  padding: 14px 18px !important;
+  background: #ffffff;
+}
+
 /* Trust & Assurance Feature Grid */
 .pdp-trust-box {
   border: 1px solid #eef0f3;
@@ -700,4 +788,44 @@
 
 [data-theme="dark"] .pdp-tabs-wrap {
   border-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-description-box {
+  border-top-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-desc-heading {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-desc-text {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pdp-desc-text p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pdp-desc-text strong,
+[data-theme="dark"] .pdp-desc-text b {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pdp-spec-table-wrap {
+  border-color: #1f2937 !important;
+  background: #111827 !important;
+}
+
+[data-theme="dark"] .pdp-spec-table tr {
+  border-bottom-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .pdp-spec-label {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .pdp-spec-value {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
 }
