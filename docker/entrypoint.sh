@@ -42,14 +42,16 @@ php bin/migrate.php up
 
 # 4. Ensure upload, cache, and log files exist with correct permissions
 mkdir -p /var/www/html/assets/uploads /var/www/html/storage/cache
-touch /var/log/storage-sync.log
-chown -R www-data:www-data /var/www/html/assets/uploads /var/www/html/storage /var/log/storage-sync.log
+touch /var/log/storage-sync.log /var/log/collect-metrics.log
+chown -R www-data:www-data /var/www/html/assets/uploads /var/www/html/storage /var/log/storage-sync.log /var/log/collect-metrics.log
 chmod -R 775 /var/www/html/assets/uploads /var/www/html/storage
-chmod 0664 /var/log/storage-sync.log
+chmod 0664 /var/log/storage-sync.log /var/log/collect-metrics.log
 
-# 5. Start background cron service
+# 5. Start background cron service & collect initial system metrics
 echo "Starting background cron daemon..."
 service cron start
+echo "Collecting initial system metrics..."
+php /var/www/html/cron/collect_metrics.php 2>/dev/null || true
 
 # 6. Configure SSL Certificate for Apache (Port 443)
 echo "Configuring SSL for Apache web server..."

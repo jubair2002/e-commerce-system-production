@@ -123,14 +123,109 @@ try {
     $newMessagesCount = (int) db()->query("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'")->fetchColumn();
 } catch (Throwable $e) {}
 
-// Recent Activity
+// Activity Feed Formatter & Query
+if (!function_exists('dash_format_activity')) {
+    function dash_format_activity(array $act): array {
+        $action = (string)($act['action'] ?? '');
+        $rawDesc = (string)($act['description'] ?? '');
+        $user = (string)($act['user_name'] ?: 'System');
+
+        $icon = 'bi-activity';
+        $badgeColor = '#4f46e5';
+        $badgeBg = '#eef2ff';
+        $actionLabel = 'Activity';
+        $title = $rawDesc;
+        $details = '';
+
+        if ($action === 'login') {
+            $icon = 'bi-box-arrow-in-right';
+            $badgeColor = '#10b981';
+            $badgeBg = '#ecfdf5';
+            $actionLabel = 'Sign In';
+            $title = 'Signed into admin panel';
+        } elseif ($action === 'logout') {
+            $icon = 'bi-box-arrow-right';
+            $badgeColor = '#64748b';
+            $badgeBg = '#f1f5f9';
+            $actionLabel = 'Sign Out';
+            $title = 'Signed out of session';
+        } elseif (str_starts_with($action, 'settings')) {
+            $icon = 'bi-sliders2';
+            $badgeColor = '#3b82f6';
+            $badgeBg = '#eff6ff';
+            $actionLabel = 'Settings';
+            if (preg_match('/tab:\s*([^;]+);\s*changed keys:\s*(.*)/i', $rawDesc, $m)) {
+                $tab = ucfirst(trim($m[1]));
+                $keys = array_filter(array_map('trim', explode(',', $m[2])));
+                $title = "Updated {$tab} settings";
+                $details = implode(', ', $keys);
+            } elseif (str_contains($rawDesc, 'storage layer')) {
+                $title = 'Updated storage settings';
+                $details = 'Primary: S3, Fallback: local';
+            } else {
+                $title = !empty($rawDesc) ? $rawDesc : 'Settings updated';
+            }
+        } elseif (str_starts_with($action, 'product')) {
+            $icon = 'bi-box-seam';
+            $badgeColor = '#06b6d4';
+            $badgeBg = '#ecfeff';
+            $actionLabel = 'Catalog';
+            if (preg_match('/Saved product\s+(.*?)\s*\(/i', $rawDesc, $m)) {
+                $title = 'Saved product "' . trim($m[1]) . '"';
+            } else {
+                $title = !empty($rawDesc) ? $rawDesc : 'Product updated';
+            }
+        } elseif (str_starts_with($action, 'order')) {
+            $icon = 'bi-bag-check';
+            $badgeColor = '#f59e0b';
+            $badgeBg = '#fffbeb';
+            $actionLabel = 'Order';
+            $title = !empty($rawDesc) ? $rawDesc : 'Order status updated';
+        } elseif (str_starts_with($action, 'category')) {
+            $icon = 'bi-tags';
+            $badgeColor = '#0d9488';
+            $badgeBg = '#ccfbf1';
+            $actionLabel = 'Category';
+            $title = !empty($rawDesc) ? $rawDesc : 'Category updated';
+        } elseif (str_starts_with($action, 'coupon')) {
+            $icon = 'bi-ticket-perforated';
+            $badgeColor = '#db2777';
+            $badgeBg = '#fce7f3';
+            $actionLabel = 'Coupon';
+            $title = !empty($rawDesc) ? $rawDesc : 'Coupon updated';
+        } elseif (str_starts_with($action, 'review')) {
+            $icon = 'bi-star';
+            $badgeColor = '#d97706';
+            $badgeBg = '#fef3c7';
+            $actionLabel = 'Review';
+            $title = !empty($rawDesc) ? $rawDesc : 'Review moderated';
+        } elseif (str_starts_with($action, 'monitoring')) {
+            $icon = 'bi-speedometer2';
+            $badgeColor = '#8b5cf6';
+            $badgeBg = '#f5f3ff';
+            $actionLabel = 'System';
+            $title = !empty($rawDesc) ? $rawDesc : 'System check performed';
+        }
+
+        return [
+            'icon' => $icon,
+            'badgeColor' => $badgeColor,
+            'badgeBg' => $badgeBg,
+            'actionLabel' => $actionLabel,
+            'title' => $title,
+            'details' => $details,
+            'user' => $user,
+        ];
+    }
+}
+
 $recentActivity = [];
 try {
     $recentActivity = db()->query(
         "SELECT a.*, u.name AS user_name
          FROM activity_log a
          LEFT JOIN users u ON u.id = a.user_id
-         ORDER BY a.created_at DESC LIMIT 6"
+         ORDER BY a.created_at DESC LIMIT 10"
     )->fetchAll();
 } catch (Throwable $e) {}
 
@@ -309,7 +404,85 @@ include __DIR__ . '/includes/header.php';
   flex: 1 1 auto;
   padding: 0;
   overflow-y: auto;
+  overflow-x: hidden !important;
   position: relative;
+}
+
+/* Custom sleek scrollbar for dashboard scrollable bodies */
+.dash-lower-body::-webkit-scrollbar {
+  width: 5px;
+}
+.dash-lower-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dash-lower-body::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+.dash-lower-body::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Store Activity Feed Styling */
+.dash-activity-timeline {
+  display: flex;
+  flex-direction: column;
+}
+.dash-activity-item {
+  border: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 0.5rem;
+}
+.dash-activity-item:last-child {
+  margin-bottom: 0;
+}
+.dash-activity-item:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  transform: translateX(2px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+.dash-activity-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.dash-activity-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: inline-block;
+  line-height: 1.2;
+}
+.dash-activity-title {
+  color: #334155;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.dash-activity-meta {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* Table and Timeline Elements */
@@ -362,7 +535,7 @@ include __DIR__ . '/includes/header.php';
       </span>
       <span class="text-white-50 small">&middot; <?= date('l, F j, Y') ?></span>
     </div>
-    <h2 class="h3 fw-bold mb-1 text-white">Welcome back, <?= e(current_user()['name']) ?> 👋</h2>
+    <h2 class="h3 fw-bold mb-1 text-white">Welcome back, <?= e(current_user()['name'] ?? ($_SESSION['user_name'] ?? 'Admin')) ?> 👋</h2>
     <p class="text-white-50 small mb-0">Here is your executive store performance overview and operational health.</p>
   </div>
   <div class="d-flex flex-wrap align-items-center gap-2">
@@ -696,34 +869,45 @@ include __DIR__ . '/includes/header.php';
         <h5 class="dash-card-title">
           <i class="bi bi-clock-history text-primary"></i> Store Activity Feed
         </h5>
-        <a href="<?= e(admin_url('activity.php')) ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <a href="<?= e(admin_url('activity.php')) ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;">
           All Logs
         </a>
       </div>
-      <div class="dash-lower-body p-3">
+      <div class="dash-lower-body">
         <?php if (!empty($recentActivity)): ?>
-          <div class="d-flex flex-column gap-3">
+          <div class="dash-activity-timeline p-3">
             <?php foreach ($recentActivity as $act): ?>
-              <div class="d-flex align-items-start gap-2 pb-2 border-bottom">
-                <div class="mt-1">
-                  <span class="badge bg-light text-secondary border rounded-circle p-1" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-dot" style="font-size: 1.4rem;"></i>
-                  </span>
+              <?php $p = dash_format_activity($act); ?>
+              <div class="dash-activity-item d-flex align-items-start gap-2.5">
+                <div class="dash-activity-icon-box" style="background-color: <?= $p['badgeBg'] ?>; color: <?= $p['badgeColor'] ?>;">
+                  <i class="bi <?= $p['icon'] ?>"></i>
                 </div>
-                <div class="flex-grow-1 min-w-0">
-                  <div class="d-flex align-items-baseline justify-content-between gap-1">
-                    <span class="small fw-semibold text-dark"><?= e($act['user_name'] ?: 'System') ?></span>
-                    <span class="text-muted" style="font-size: 10px;"><?= e(format_date($act['created_at'])) ?></span>
+                <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere; word-break: break-word;">
+                  <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                    <div class="d-flex align-items-center gap-1.5" style="min-width: 0;">
+                      <span class="fw-bold text-dark text-truncate" style="font-size: 12.5px;"><?= e($p['user']) ?></span>
+                      <span class="dash-activity-badge text-truncate" style="background-color: <?= $p['badgeBg'] ?>; color: <?= $p['badgeColor'] ?>;">
+                        <?= e($p['actionLabel']) ?>
+                      </span>
+                    </div>
+                    <span class="text-muted text-nowrap flex-shrink-0" style="font-size: 10.5px;">
+                      <?= e(format_date($act['created_at'])) ?>
+                    </span>
                   </div>
-                  <p class="mb-0 text-muted small text-truncate" style="font-size: 12px;">
-                    <?= e($act['description']) ?>
-                  </p>
+                  <div class="dash-activity-title">
+                    <?= e($p['title']) ?>
+                  </div>
+                  <?php if (!empty($p['details'])): ?>
+                    <div class="dash-activity-meta mt-1.5" title="<?= e($p['details']) ?>">
+                      <i class="bi bi-sliders me-1 opacity-75"></i><?= e($p['details']) ?>
+                    </div>
+                  <?php endif; ?>
                 </div>
               </div>
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center py-4 text-muted">
+          <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center py-5 text-muted">
             <i class="bi bi-journal-text fs-2 d-block mb-2 text-muted"></i>
             <span class="small">No recent activity logged.</span>
           </div>
