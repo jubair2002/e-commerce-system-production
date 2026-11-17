@@ -29,14 +29,22 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $isVariable = ($product['product_type'] ?? 'simple') === 'variable';
     $variant = null;
-    if ($variantId !== null) {
+    if ($isVariable) {
+        if ($variantId === null || $variantId <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Please select product options before adding to cart.']);
+            exit;
+        }
         $variant = variant_get($variantId);
-        if (!$variant || $variant['status'] !== 'active') {
+        if (!$variant || (int)($variant['product_id'] ?? 0) !== $productId || $variant['status'] !== 'active') {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Selected combination is not available.']);
             exit;
         }
+    } else {
+        $variantId = null;
     }
 
     $availQty = ($variant !== null)
@@ -70,7 +78,23 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    cart_add($productId, $qty, $variantId);
+    cart_add($productId, $variantId, $qty);
+
+    // Verify item was stored in cart and not discarded by validation
+    $checkCart = cart_load();
+    $foundInCart = false;
+    foreach ($checkCart['items'] as $ci) {
+        if ($ci['cart_key'] === $cartKey) {
+            $foundInCart = true;
+            break;
+        }
+    }
+    if (!$foundInCart) {
+        http_response_code(400);
+        $errMsg = !empty($checkCart['alerts']) ? end($checkCart['alerts']) : 'Could not add product to cart.';
+        echo json_encode(['ok' => false, 'error' => $errMsg]);
+        exit;
+    }
 } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $cartKey = trim((string)($_POST['cart_key'] ?? ''));
     $qty     = max(1, (int)($_POST['quantity'] ?? 1));
@@ -110,6 +134,8 @@ $response['cart_count'] = cart_count();
 $response['subtotal']   = $cart['subtotal'];
 $response['subtotal_fmt'] = price($cart['subtotal']);
 $response['alerts']     = $cart['alerts'];
+$response['items']      = $cart['items'];
+$response['coza_html']  = function_exists('coza_render_mini_cart') ? coza_render_mini_cart($cart) : '';
 
 // Render mini-cart items HTML
 ob_start();

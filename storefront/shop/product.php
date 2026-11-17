@@ -323,7 +323,7 @@ include __DIR__ . '/../../includes/partials/header.php';
 						<?= csrf_field() ?>
 						<input type="hidden" name="action" value="add">
 						<input type="hidden" name="product_id" value="<?= $productId ?>">
-						<input type="hidden" name="variant_id" id="selectedVariantId" value="<?= ($isVariable && !empty($variants[0]['id'])) ? (int)$variants[0]['id'] : '' ?>">
+						<input type="hidden" name="variant_id" id="selectedVariantId" value="<?= ($isVariable && empty($options) && !empty($variants[0]['id'])) ? (int)$variants[0]['id'] : '' ?>">
 
 						<!-- Variant Option Selectors -->
 						<?php if ($isVariable && !empty($options)): ?>
@@ -663,6 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Real-Time Variant Option & Stock Updates
 	var variantsData = <?= json_encode($variants) ?>;
+	var totalOptionsCount = <?= count($options ?? []) ?>;
 	if (variantsData && variantsData.length > 0) {
 		$('.option-select').on('change', function() {
 			var selectedOpts = {};
@@ -672,27 +673,35 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (valId) selectedOpts[optId] = valId;
 			});
 
+			var selectedCount = Object.keys(selectedOpts).length;
 			var match = null;
-			for (var i = 0; i < variantsData.length; i++) {
-				var v = variantsData[i];
-				var isMatch = true;
-				for (var optId in selectedOpts) {
-					if (v.option_value_ids && v.option_value_ids[optId] != selectedOpts[optId]) {
-						isMatch = false;
+			if (selectedCount === totalOptionsCount && totalOptionsCount > 0) {
+				for (var i = 0; i < variantsData.length; i++) {
+					var v = variantsData[i];
+					var isMatch = true;
+					for (var optId in selectedOpts) {
+						if (v.option_value_ids && v.option_value_ids[optId] != selectedOpts[optId]) {
+							isMatch = false;
+							break;
+						}
+					}
+					if (isMatch) {
+						match = v;
 						break;
 					}
 				}
-				if (isMatch && Object.keys(selectedOpts).length > 0) {
-					match = v;
-					break;
-				}
 			}
 
+			var vIdInput = document.getElementById('selectedVariantId');
+			var priceElem = document.getElementById('pdpPrice');
+			var stockBadge = document.getElementById('pdpStockBadge');
+			var addBtn = document.getElementById('pdpAddBtn');
+			var buyBtn = document.getElementById('pdpBuyNowBtn');
+			var qtyInput = document.getElementById('pdpQtyInput');
+
 			if (match) {
-				var vIdInput = document.getElementById('selectedVariantId');
 				if (vIdInput) vIdInput.value = match.id;
 
-				var priceElem = document.getElementById('pdpPrice');
 				var pVal = parseFloat(match.sale_price || match.price || 0);
 				if (priceElem && pVal > 0) {
 					var curSym = <?= json_encode(setting('currency_symbol', '৳')) ?>;
@@ -700,11 +709,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 
 				var vStock = parseInt(match.stock, 10);
-				var stockBadge = document.getElementById('pdpStockBadge');
-				var addBtn = document.getElementById('pdpAddBtn');
-				var buyBtn = document.getElementById('pdpBuyNowBtn');
-				var qtyInput = document.getElementById('pdpQtyInput');
-
 				if (vStock > 0) {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge in-stock';
@@ -721,6 +725,12 @@ document.addEventListener('DOMContentLoaded', function() {
 					if (addBtn) addBtn.disabled = true;
 					if (buyBtn) buyBtn.disabled = true;
 				}
+			} else {
+				if (vIdInput) vIdInput.value = '';
+				if (stockBadge && totalOptionsCount > 0) {
+					stockBadge.className = 'pdp-stock-badge out-of-stock';
+					stockBadge.innerHTML = '<i class="zmdi zmdi-help-outline m-r-4"></i> Select Options';
+				}
 			}
 		});
 	}
@@ -730,6 +740,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	if (addBtn) {
 		addBtn.addEventListener('click', function(e) {
 			e.preventDefault();
+			var isVar = <?= $isVariable ? 'true' : 'false' ?>;
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+
+			if (isVar && !vid) {
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before adding to cart.', 'warning');
+				} else {
+					alert('Please choose all available product options before adding to cart.');
+				}
+				return;
+			}
+
 			var pid = <?= (int)$productId ?>;
 			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
 			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
@@ -740,8 +763,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (qtyInput) qtyInput.value = max;
 				return;
 			}
-			var vidInput = document.getElementById('selectedVariantId');
-			var vid = vidInput ? vidInput.value : '';
 			var pName = <?= json_encode($product['name']) ?>;
 
 			if (typeof window.cozaAddToCart === 'function') {
@@ -761,13 +782,15 @@ document.addEventListener('DOMContentLoaded', function() {
 				.then(function(r) { return r.json(); })
 				.then(function(res) {
 					if (res && res.ok) {
+						if (typeof window.cozaUpdateCartUI === 'function') {
+							window.cozaUpdateCartUI(res);
+						} else if (res.cart_count !== undefined) {
+							$('.js-show-cart').attr('data-notify', res.cart_count);
+						}
 						if (typeof swal === 'function') {
 							swal(pName, 'has been added to your cart!', 'success');
 						} else {
 							alert(pName + ' has been added to your cart!');
-						}
-						if (res.cart_count !== undefined) {
-							$('.js-show-cart').attr('data-notify', res.cart_count);
 						}
 					} else {
 						var msg = (res && res.error) ? res.error : 'Could not add product to cart.';
@@ -786,6 +809,18 @@ document.addEventListener('DOMContentLoaded', function() {
 	var buyBtn = document.getElementById('pdpBuyNowBtn');
 	if (buyBtn) {
 		buyBtn.addEventListener('click', function(e) {
+			var isVar = <?= $isVariable ? 'true' : 'false' ?>;
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+			if (isVar && !vid) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before proceeding.', 'warning');
+				} else {
+					alert('Please choose all available product options before proceeding.');
+				}
+				return;
+			}
 			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
 			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
 			if (qty > max) {
@@ -802,6 +837,18 @@ document.addEventListener('DOMContentLoaded', function() {
 	var pdpForm = document.getElementById('pdpAddToCartForm');
 	if (pdpForm) {
 		pdpForm.addEventListener('submit', function(e) {
+			var isVar = <?= $isVariable ? 'true' : 'false' ?>;
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+			if (isVar && !vid) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before adding to cart.', 'warning');
+				} else {
+					alert('Please choose all available product options before adding to cart.');
+				}
+				return;
+			}
 			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
 			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
 			if (qty > max) {

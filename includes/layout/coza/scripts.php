@@ -69,6 +69,18 @@
 	(function($) {
 		'use strict';
 
+		// Real-time mini-cart drawer and header badge synchronization
+		window.cozaUpdateCartUI = function(resp) {
+			if (!resp) return;
+			if (resp.cart_count !== undefined) {
+				$('.js-show-cart').attr('data-notify', resp.cart_count);
+				$('#cozaMiniCartTitle').text('Your Cart (' + resp.cart_count + ')');
+			}
+			if (resp.coza_html) {
+				$('#cozaMiniCartContent').html(resp.coza_html);
+			}
+		};
+
 		// Real AJAX Add to Cart handler
 		window.cozaAddToCart = function(productId, qty, variantId, productName, callback) {
 			productId = parseInt(productId, 10);
@@ -92,14 +104,10 @@
 				dataType: 'json',
 				success: function(resp) {
 					if (resp && resp.ok) {
-						// Update badge
-						$('.js-show-cart').attr('data-notify', resp.cart_count);
+						// Update badge and slide-out mini-cart drawer
+						window.cozaUpdateCartUI(resp);
 						// SweetAlert success
 						swal(productName || 'Product', 'has been added to your cart!', 'success');
-						// Trigger mini-cart refresh if available
-						if (resp.items && typeof renderMiniCart === 'function') {
-							renderMiniCart(resp);
-						}
 						if (typeof callback === 'function') callback(null, resp);
 					} else {
 						var msg = (resp && resp.error) ? resp.error : 'Could not add product to cart.';
@@ -113,6 +121,26 @@
 				}
 			});
 		};
+
+		// Mini-Cart Drawer item removal
+		$(document).on('click', '.header-cart-item-img', function(e) {
+			e.preventDefault();
+			var $item = $(this).closest('.header-cart-item');
+			var cartKey = $item.data('cart-key');
+			if (!cartKey) return;
+
+			$.ajax({
+				url: window.SHOP_BASE_URL + 'api/cart_ajax.php',
+				type: 'POST',
+				data: { action: 'remove', cart_key: cartKey, _csrf: window.SHOP_CSRF_TOKEN },
+				dataType: 'json',
+				success: function(resp) {
+					if (resp && resp.ok) {
+						window.cozaUpdateCartUI(resp);
+					}
+				}
+			});
+		});
 
 		// Real AJAX Wishlist Toggle handler
 		window.cozaToggleWishlist = function(productId, btnElem) {

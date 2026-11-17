@@ -213,27 +213,47 @@ function cart_add(int $productId, $arg2 = 1, $arg3 = null): int
     $qty = 1;
 
     if ($isVariable) {
-        // If either arg2 or arg3 corresponds to an existing variant of this product
-        if ($arg2 !== null && variant_get((int)$arg2)) {
-            $variantId = (int)$arg2;
-            $qty = ($arg3 !== null) ? max(1, (int)$arg3) : 1;
-        } elseif ($arg3 !== null && variant_get((int)$arg3)) {
-            $variantId = (int)$arg3;
-            $qty = ($arg2 !== null) ? max(1, (int)$arg2) : 1;
+        $v2 = ($arg2 !== null && is_numeric($arg2) && (int)$arg2 > 0) ? variant_get((int)$arg2) : null;
+        $isV2 = ($v2 && (int)($v2['product_id'] ?? 0) === $productId);
+
+        $v3 = ($arg3 !== null && is_numeric($arg3) && (int)$arg3 > 0) ? variant_get((int)$arg3) : null;
+        $isV3 = ($v3 && (int)($v3['product_id'] ?? 0) === $productId);
+
+        if ($isV2 && !$isV3) {
+            // cart_add($productId, $variantId, $qty)
+            $variantId = (int)$v2['id'];
+            $qty = ($arg3 !== null && is_numeric($arg3)) ? max(1, (int)$arg3) : 1;
+        } elseif ($isV3 && !$isV2) {
+            // cart_add($productId, $qty, $variantId)
+            $variantId = (int)$v3['id'];
+            $qty = ($arg2 !== null && is_numeric($arg2)) ? max(1, (int)$arg2) : 1;
+        } elseif ($isV2 && $isV3) {
+            // Both IDs happen to belong to variants of this product. Standard convention ($pid, $variantId, $qty)
+            $variantId = (int)$v2['id'];
+            $qty = max(1, (int)$arg3);
         } else {
-            $variantId = ($arg2 !== null && $arg2 > 0) ? (int)$arg2 : null;
-            $qty = ($arg3 !== null) ? max(1, (int)$arg3) : 1;
+            // Neither belongs to this product.
+            if ($arg3 !== null && is_numeric($arg3)) {
+                if ($arg2 === null || (int)$arg2 <= 0) {
+                    $variantId = null;
+                    $qty = max(1, (int)$arg3);
+                } else {
+                    $variantId = (int)$arg2;
+                    $qty = max(1, (int)$arg3);
+                }
+            } else {
+                $variantId = null;
+                $qty = ($arg2 !== null && is_numeric($arg2)) ? max(1, (int)$arg2) : 1;
+            }
         }
     } else {
-        if ($arg2 !== null && is_numeric($arg2) && $arg3 === null) {
+        $variantId = null;
+        if ($arg3 !== null && is_numeric($arg3)) {
+            $qty = max(1, (int)$arg3);
+        } elseif ($arg2 !== null && is_numeric($arg2)) {
             $qty = max(1, (int)$arg2);
-            $variantId = null;
-        } elseif ($arg3 !== null) {
-            $qty = max(1, (int)($arg3 ?: $arg2 ?: 1));
-            $variantId = null;
         } else {
             $qty = 1;
-            $variantId = null;
         }
     }
 
@@ -538,6 +558,76 @@ function cart_load(): array
         'alerts'   => $alerts,
         'warnings' => $alerts,
     ];
+}
+
+/**
+ * Render the slide-out mini-cart drawer content for Cozastore.
+ */
+function coza_render_mini_cart(array $cart): string
+{
+    $items = $cart['items'] ?? [];
+    $subtotal = (float)($cart['subtotal'] ?? 0.0);
+
+    ob_start();
+    if (empty($items)): ?>
+        <div class="w-full text-center p-t-50 p-b-50">
+            <i class="zmdi zmdi-shopping-cart-plus fs-50 cl6 d-block m-b-15" style="font-size: 48px;"></i>
+            <p class="stext-107 cl6 m-b-20">Your cart is currently empty.</p>
+            <a href="<?= htmlspecialchars(route('shop'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-107 bg3 bor2 hov-btn3 p-lr-15 trans-04 m-auto">
+                Start Shopping
+            </a>
+        </div>
+    <?php else: ?>
+        <ul class="header-cart-wrapitem w-full" id="cozaMiniCartList">
+            <?php foreach ($items as $cartKey => $item): ?>
+                <?php
+                $pImg = product_image_url($item['image'] ?? null, 'thumbnail', (int)($item['product_id'] ?? 0));
+                $slug = !empty($item['product']['slug']) ? $item['product']['slug'] : ($item['slug'] ?? '');
+                $pUrl = !empty($slug) ? route('product', ['slug' => $slug]) : route('cart');
+                $itemQty = (int)($item['qty'] ?? 1);
+                $itemPrice = (float)($item['unit_price'] ?? 0.0);
+                ?>
+                <li class="header-cart-item flex-w flex-t m-b-12" data-cart-key="<?= htmlspecialchars((string)($item['cart_key'] ?? $cartKey), ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="header-cart-item-img" title="Remove item">
+                        <img src="<?= htmlspecialchars($pImg, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['product_name'] ?? 'Product', ENT_QUOTES, 'UTF-8') ?>" style="width: 60px; height: 60px; object-fit: cover;">
+                    </div>
+
+                    <div class="header-cart-item-txt p-t-8">
+                        <a href="<?= htmlspecialchars($pUrl, ENT_QUOTES, 'UTF-8') ?>" class="header-cart-item-name m-b-6 hov-cl1 trans-04 text-truncate d-block" style="max-width: 170px;">
+                            <?= htmlspecialchars($item['product_name'] ?? 'Product', ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+
+                        <?php if (!empty($item['variant_label'])): ?>
+                            <span class="stext-109 cl6 d-block fs-12 m-b-4">
+                                <?= htmlspecialchars($item['variant_label'], ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <span class="header-cart-item-info">
+                            <?= $itemQty ?> &times; <?= price($itemPrice) ?>
+                        </span>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+
+        <div class="w-full">
+            <div class="header-cart-total w-full p-tb-30 fs-18 fw-bold">
+                Subtotal: <span class="cl1" id="cozaMiniCartTotal"><?= price($subtotal) ?></span>
+            </div>
+
+            <div class="header-cart-buttons flex-w w-full">
+                <a href="<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-107 bg3 bor2 hov-btn3 p-lr-15 trans-04 m-r-8 m-b-10">
+                    View Cart
+                </a>
+
+                <a href="<?= htmlspecialchars(route('checkout'), ENT_QUOTES, 'UTF-8') ?>" class="flex-c-m stext-101 cl0 size-107 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-b-10">
+                    Checkout
+                </a>
+            </div>
+        </div>
+    <?php endif;
+    return ob_get_clean();
 }
 
 /**
