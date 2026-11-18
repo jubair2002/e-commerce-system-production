@@ -179,7 +179,7 @@ $canSeeConfig = has_permission(
       <?php if (has_permission('users.view', 'users.manage') || has_role('admin')): ?>
         <a href="<?= e(admin_url('users.php')) ?>"
            class="nav-link <?= active_if($current === 'users.php' || $current === 'user_form.php') ?>">
-          <i class="bi bi-people-fill"></i><span>Admin Users</span>
+          <i class="bi bi-people-fill"></i><span>Users & Permissions</span>
         </a>
       <?php endif; ?>
 

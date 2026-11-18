@@ -11,7 +11,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_permission('users.view', 'users.manage');
 
-$pageTitle = 'Admin Users';
+$pageTitle = 'Users & Permissions';
 $pdo = db();
 $me = current_user();
 
@@ -152,7 +152,7 @@ include __DIR__ . '/includes/header.php';
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
   <div>
-    <h3 class="mb-1">Admin Users & Permissions</h3>
+    <h3 class="mb-1">Users & Permissions</h3>
     <p class="text-muted small mb-0">
       Manage administrative staff, assign pre-built roles, or configure granular module permissions.
     </p>
@@ -161,7 +161,7 @@ include __DIR__ . '/includes/header.php';
     <div>
       <a href="<?= e(admin_url('user_form.php')) ?>" class="btn btn-primary d-inline-flex align-items-center gap-2">
         <i class="bi bi-person-plus-fill"></i>
-        <span>Add Admin User</span>
+        <span>Add User</span>
       </a>
     </div>
   <?php endif; ?>

@@ -16,7 +16,7 @@ $me = current_user();
 
 $id = (int)($_GET['id'] ?? 0);
 $isEdit = ($id > 0);
-$pageTitle = $isEdit ? 'Edit Admin User' : 'New Admin User';
+$pageTitle = $isEdit ? 'Edit User' : 'New User';
 
 $rolesCatalog = admin_roles_catalog();
 $permCatalog  = admin_permissions_catalog();
@@ -245,8 +245,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 refresh_user_session();
             }
 
-            log_activity('user.update', "Updated admin user #{$id} ({$email}) with role '{$role}'");
-            flash('success', "Admin user '{$name}' has been updated successfully.");
+            log_activity('user.update', "Updated user #{$id} ({$email}) with role '{$role}'");
+            flash('success', "User '{$name}' has been updated successfully.");
             admin_redirect('users.php');
         } else {
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
@@ -272,8 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             $newId = (int)$pdo->lastInsertId();
-            log_activity('user.create', "Created new admin user #{$newId} ({$email}) with role '{$role}'");
-            flash('success', "Admin user '{$name}' created successfully.");
+            log_activity('user.create', "Created new user #{$newId} ({$email}) with role '{$role}'");
+            flash('success', "User '{$name}' created successfully.");
             admin_redirect('users.php');
         }
     }
@@ -300,10 +300,10 @@ include __DIR__ . '/includes/header.php';
 <div class="mb-4">
   <div class="d-flex align-items-center gap-2 mb-2">
     <a href="<?= e(admin_url('users.php')) ?>" class="text-decoration-none text-muted small">
-      <i class="bi bi-arrow-left me-1"></i> Back to Admin Users
+      <i class="bi bi-arrow-left me-1"></i> Back to Users & Permissions
     </a>
   </div>
-  <h3 class="mb-1"><?= $isEdit ? 'Edit Admin User: ' . e($user['name']) : 'Create New Admin User' ?></h3>
+  <h3 class="mb-1"><?= $isEdit ? 'Edit User: ' . e($user['name']) : 'Create New User' ?></h3>
   <p class="text-muted small mb-0">
     Configure user identity, assigned role preset, and fine-grained module permissions.
   </p>
@@ -593,7 +593,7 @@ include __DIR__ . '/includes/header.php';
       <!-- Action Buttons -->
       <div class="d-flex align-items-center gap-2 mb-5">
         <button type="submit" class="btn btn-primary px-4 py-2">
-          <i class="bi bi-check-lg me-1"></i> <?= $isEdit ? 'Update Admin User' : 'Create Admin User' ?>
+          <i class="bi bi-check-lg me-1"></i> <?= $isEdit ? 'Update User' : 'Create User' ?>
         </button>
         <a href="<?= e(admin_url('users.php')) ?>" class="btn btn-outline-secondary px-4 py-2">
           Cancel
@@ -615,7 +615,7 @@ include __DIR__ . '/includes/header.php';
         </div>
         <div class="card-body text-center">
           <div class="mb-3">
-            <img src="<?= e(avatar_url($user['avatar'] ?? null, $user['name'] ?: 'Admin User')) ?>"
+            <img src="<?= e(avatar_url($user['avatar'] ?? null, $user['name'] ?: 'User')) ?>"
                  id="avatarPreview"
                  class="rounded-circle border shadow-sm"
                  width="110" height="110"

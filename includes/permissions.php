@@ -164,20 +164,20 @@ function admin_permissions_catalog(): array
             ],
         ],
         'users' => [
-            'label' => 'Staff & Permission Management',
+            'label' => 'Users & Permissions',
             'icon'  => 'bi-shield-lock',
             'permissions' => [
                 'users.view'   => [
-                    'label'       => 'View Admin Users',
-                    'description' => 'View staff user accounts and their assigned role and permissions.',
+                    'label'       => 'View Users & Permissions',
+                    'description' => 'View user accounts and their assigned role and permissions.',
                 ],
                 'users.manage' => [
-                    'label'       => 'Manage Admin Users',
-                    'description' => 'Create new admin accounts, edit credentials, roles, and configure permission sets.',
+                    'label'       => 'Manage Users & Permissions',
+                    'description' => 'Create new user accounts, edit credentials, roles, and configure permission sets.',
                 ],
                 'users.delete' => [
-                    'label'       => 'Delete Admin Users',
-                    'description' => 'Delete staff and admin user accounts.',
+                    'label'       => 'Delete Users',
+                    'description' => 'Delete user accounts.',
                 ],
             ],
         ],
