@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('pages.manage');
 
 $pdo = db();
 $id = (int)($_GET['id'] ?? 0);

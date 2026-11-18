@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('orders.view', 'orders.manage');
 
 $pageTitle = 'Orders';
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('orders.delete');
         $id = (int)($_POST['id'] ?? 0);
         $stmt = db()->prepare('SELECT order_number FROM orders WHERE id = :id');
         $stmt->execute([':id' => $id]);
@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'bulk_status') {
+        require_permission('orders.manage');
         $orderIds = $_POST['selected_orders'] ?? [];
         $targetStatus = trim((string)($_POST['bulk_status_target'] ?? ''));
         $allowedStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];

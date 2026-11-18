@@ -4,7 +4,7 @@
  * Admin-only, cache-inhibited JSON/CSV feed.
  */
 require_once __DIR__ . '/../includes/auth.php';
-require_role('admin');
+require_permission('monitoring.view');
 
 $range = strtolower(trim((string)($_GET['range'] ?? '1h')));
 $allowedRanges = ['live', '1h', '6h', '24h', '7d', '30d'];

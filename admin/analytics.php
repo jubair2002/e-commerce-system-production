@@ -4,12 +4,7 @@
  * Products, sales, funnel, customers, and traffic intelligence.
  */
 require_once __DIR__ . '/includes/auth.php';
-require_login();
-
-if (!has_role('admin', 'editor')) {
-    flash('danger', 'You do not have permission to access Analytics.');
-    redirect(admin_url('dashboard.php'));
-}
+require_permission('analytics.view');
 
 $pageTitle = 'Analytics Dashboard';
 $pdo = db();

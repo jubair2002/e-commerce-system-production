@@ -1,13 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('categories.manage');
 
 $pageTitle = 'Categories';
 
 // Delete handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     require_csrf();
-    require_role('admin');
+    require_permission('categories.manage');
 
     $id = (int)($_POST['id'] ?? 0);
     $stmt = db()->prepare('SELECT name FROM categories WHERE id = :id');

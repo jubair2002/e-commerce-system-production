@@ -168,6 +168,10 @@ $siteName  = setting('site_name', APP_NAME);
             <li><h6 class="dropdown-header"><?= e($me['email']) ?></h6></li>
             <li><a class="dropdown-item" href="<?= e(admin_url('profile.php')) ?>">
               <i class="bi bi-person"></i> Profile</a></li>
+            <?php if (has_permission('users.view', 'users.manage')): ?>
+              <li><a class="dropdown-item" href="<?= e(admin_url('users.php')) ?>">
+                <i class="bi bi-people-fill"></i> Admin Users</a></li>
+            <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger" href="<?= e(admin_url('logout.php')) ?>">
               <i class="bi bi-box-arrow-right"></i> Logout</a></li>

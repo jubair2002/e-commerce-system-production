@@ -4,16 +4,16 @@
  * Single optimized query with order aggregation, filters, pagination, bulk actions, and CSV export.
  */
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('customers.view', 'customers.manage');
 
 $pageTitle = 'Customers';
 $pdo = db();
 
 // Handle CSV Export (Admin only)
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-    if (!has_role('admin')) {
+    if (!has_permission('analytics.export') && !has_role('admin')) {
         http_response_code(403);
-        flash('danger', 'Access denied. Only administrators can export customer data.');
+        flash('danger', 'Access denied. You do not have permission to export customer data.');
         admin_redirect('customers.php');
     }
 
@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? ($_POST['bulk_action'] ?? ''));
 
     // Role check for destructive / mutation actions
-    if (!has_role('admin')) {
-        flash('danger', 'Access denied. Only administrators can perform this action.');
+    if (!has_permission('customers.manage', 'customers.delete') && !has_role('admin')) {
+        flash('danger', 'Access denied. You do not have permission to perform this action.');
         admin_redirect('customers.php');
     }
 

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('products.create', 'products.edit');
 
 $id        = (int)($_GET['id'] ?? 0);
 $pageTitle = $id ? 'Edit product' : 'Add product';

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('orders.view', 'orders.manage');
 
 $id = (int)($_GET['id'] ?? 0);
 
@@ -26,6 +26,7 @@ $validTransitions = [
 
 // ----- POST Actions: Status update & Shipping/Tracking details -----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_permission('orders.manage');
     require_csrf();
     $action = $_POST['action'] ?? '';
 

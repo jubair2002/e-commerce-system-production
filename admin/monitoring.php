@@ -4,7 +4,7 @@
  * Real-time CPU, RAM, Disk, Network, Bandwidth, Database & PHP health.
  */
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin');
+require_permission('monitoring.view');
 
 $pageTitle = 'Server Monitoring';
 $pdo = db();

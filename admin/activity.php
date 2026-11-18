@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_login();
+require_permission('activity.view');
 
 $pageTitle = 'Activity log';
 

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('inventory.view', 'inventory.manage');
 
 $pageTitle = 'Inventory & Stock Ledger';
 
@@ -13,6 +13,7 @@ if (!in_array($subTab, ['overview', 'ledger', 'import'], true)) {
 // POST Action 1: Inline Stock Adjustment via stock_adjust()
 // -----------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'adjust_stock') {
+    require_permission('inventory.manage');
     require_csrf();
     $productId = (int)($_POST['product_id'] ?? 0);
     $variantId = !empty($_POST['variant_id']) ? (int)$_POST['variant_id'] : null;

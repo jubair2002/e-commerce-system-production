@@ -4,12 +4,7 @@
  * Detailed metrics, variant breakdown, traffic sources, order history, and stock ledger.
  */
 require_once __DIR__ . '/includes/auth.php';
-require_login();
-
-if (!has_role('admin', 'editor')) {
-    flash('danger', 'You do not have permission to view product analytics.');
-    redirect(admin_url('analytics.php'));
-}
+require_permission('analytics.view');
 
 $productId = (int)($_GET['id'] ?? 0);
 if ($productId <= 0) {

@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../includes/catalog.php';
 require_once __DIR__ . '/../../includes/inventory.php';
 require_once __DIR__ . '/../../includes/mailer.php';
 require_once __DIR__ . '/../../includes/analytics.php';
+require_once __DIR__ . '/../../includes/permissions.php';
 
 function attempt_login(string $email, string $password): bool
 {
@@ -34,12 +35,24 @@ function attempt_login(string $email, string $password): bool
     // Prevent session fixation.
     session_regenerate_id(true);
 
+    $permissions = [];
+    if (!empty($user['permissions'])) {
+        $decoded = is_string($user['permissions']) ? json_decode($user['permissions'], true) : $user['permissions'];
+        if (is_array($decoded)) {
+            $permissions = $decoded;
+        }
+    }
+    if ($user['role'] === 'admin' && !in_array('*', $permissions, true)) {
+        $permissions[] = '*';
+    }
+
     $_SESSION['user'] = [
-        'id'     => (int)$user['id'],
-        'name'   => $user['name'],
-        'email'  => $user['email'],
-        'role'   => $user['role'],
-        'avatar' => $user['avatar'],
+        'id'          => (int)$user['id'],
+        'name'        => $user['name'],
+        'email'       => $user['email'],
+        'role'        => $user['role'],
+        'permissions' => $permissions,
+        'avatar'      => $user['avatar'],
     ];
 
     log_activity('login', 'User logged in');
@@ -72,7 +85,12 @@ function is_logged_in(): bool
 function has_role(string ...$roles): bool
 {
     $user = current_user();
-    return $user && in_array($user['role'], $roles, true);
+    if (!$user) return false;
+    $role = (string)($user['role'] ?? '');
+    if ($role === 'admin') return true;
+    if (in_array($role, $roles, true)) return true;
+    if (in_array('editor', $roles, true) && $role === 'manager') return true;
+    return false;
 }
 
 function require_login(): void
@@ -99,15 +117,26 @@ function require_role(string ...$roles): void
 function refresh_user_session(): void
 {
     if (!is_logged_in()) return;
-    $stmt = db()->prepare('SELECT id, name, email, role, avatar FROM users WHERE id = :id');
+    $stmt = db()->prepare('SELECT id, name, email, role, permissions, avatar FROM users WHERE id = :id');
     $stmt->execute([':id' => $_SESSION['user']['id']]);
     if ($u = $stmt->fetch()) {
+        $permissions = [];
+        if (!empty($u['permissions'])) {
+            $decoded = is_string($u['permissions']) ? json_decode($u['permissions'], true) : $u['permissions'];
+            if (is_array($decoded)) {
+                $permissions = $decoded;
+            }
+        }
+        if ($u['role'] === 'admin' && !in_array('*', $permissions, true)) {
+            $permissions[] = '*';
+        }
         $_SESSION['user'] = [
-            'id'     => (int)$u['id'],
-            'name'   => $u['name'],
-            'email'  => $u['email'],
-            'role'   => $u['role'],
-            'avatar' => $u['avatar'],
+            'id'          => (int)$u['id'],
+            'name'        => $u['name'],
+            'email'       => $u['email'],
+            'role'        => $u['role'],
+            'permissions' => $permissions,
+            'avatar'      => $u['avatar'],
         ];
     }
 }

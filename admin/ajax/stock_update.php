@@ -3,7 +3,7 @@
  * AJAX handler for Quick Stock adjustments from admin products list.
  */
 require_once __DIR__ . '/../includes/auth.php';
-require_role('admin', 'editor');
+require_permission('inventory.view', 'inventory.manage', 'products.edit');
 
 header('Content-Type: application/json; charset=utf-8');
 

@@ -1,13 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('subscribers.manage');
 
 $pageTitle = 'Newsletter Subscribers';
 $pdo = db();
 
 // Handle CSV Export
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-    require_role('admin');
+    require_permission('subscribers.manage', 'analytics.export');
     $statusFilter = $_GET['status'] ?? 'all';
     $where = [];
     $params = [];
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('subscribers.manage');
         $id = (int)($_POST['id'] ?? 0);
         $pdo->prepare("DELETE FROM newsletter_subscribers WHERE id = ?")->execute([$id]);
         log_activity('subscriber.delete', "Deleted subscriber #{$id}");

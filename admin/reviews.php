@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('reviews.view', 'reviews.manage');
 
 $pageTitle = 'Product Reviews';
 $pdo = db();
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('reviews.manage');
         $id = (int)($_POST['id'] ?? 0);
         $st = $pdo->prepare("SELECT product_id FROM product_reviews WHERE id = ?");
         $st->execute([$id]);

@@ -3,7 +3,7 @@
  * AJAX handler for Option Presets (Size, Color, Material, etc.).
  */
 require_once __DIR__ . '/../includes/auth.php';
-require_role('admin', 'editor');
+require_permission('products.create', 'products.edit');
 
 header('Content-Type: application/json; charset=utf-8');
 

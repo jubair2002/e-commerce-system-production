@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('messages.manage');
 
 $pageTitle = 'Customer Messages';
 $pdo = db();
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('messages.manage');
         $id = (int)($_POST['id'] ?? 0);
         $pdo->prepare("DELETE FROM contact_messages WHERE id = ?")->execute([$id]);
         log_activity('message.delete', "Deleted contact message #{$id}");

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin');
+require_permission('settings.general', 'settings.storage', 'coupons.manage');
 
 $pageTitle = 'Settings & CMS';
 

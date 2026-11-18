@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('products.view', 'products.create', 'products.edit');
 
 $pageTitle = 'Products';
 
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Single product delete
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('products.delete');
         $id = (int)($_POST['id'] ?? 0);
         $stmt = db()->prepare('SELECT id, name, image, file_id FROM products WHERE id = :id');
         $stmt->execute([':id' => $id]);
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 log_activity('product.bulk_deactivate', 'Deactivated ' . count($selectedIds) . ' products');
                 flash('success', count($selectedIds) . ' products deactivated.');
             } elseif ($bulkOp === 'delete') {
-                require_role('admin');
+                require_permission('products.delete');
                 $stmtImgs = db()->query("SELECT id, image, file_id FROM products WHERE id IN ($inClause)");
                 while ($pRow = $stmtImgs->fetch()) {
                     if (!empty($pRow['file_id']) && function_exists('storage')) {

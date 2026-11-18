@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
-require_role('admin', 'editor');
+require_permission('pages.manage');
 
 $pageTitle = 'Content Pages';
 $pdo = db();
@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'delete') {
-        require_role('admin');
+        require_permission('pages.manage');
         $id = (int)($_POST['id'] ?? 0);
         $st = $pdo->prepare("SELECT title FROM pages WHERE id = ?");
         $st->execute([$id]);
