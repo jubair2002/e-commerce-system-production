@@ -91,7 +91,7 @@ $canSeeConfig = has_permission(
 
       <?php if (has_permission('products.view', 'products.create', 'products.edit') || has_role('admin', 'editor')): ?>
         <a href="<?= e(admin_url('products.php')) ?>"
-           class="nav-link <?= active_if($current === 'products.php' || $current === 'product_form.php') ?>">
+           class="nav-link <?= active_if($current === 'products.php' || $current === 'product_form.php' || $current === 'product_import.php') ?>">
           <i class="bi bi-box-seam"></i><span>Products</span>
         </a>
       <?php endif; ?>

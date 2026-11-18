@@ -272,9 +272,16 @@ include __DIR__ . '/includes/header.php';
           </label>
         </div>
 
-        <a class="btn btn-primary" href="<?= e(admin_url('product_form.php')) ?>">
-          <i class="bi bi-plus-lg"></i> Add product
-        </a>
+        <div class="d-flex align-items-center gap-2">
+          <?php if (has_permission('products.create') || has_role('admin', 'editor')): ?>
+            <a class="btn btn-outline-primary" href="<?= e(admin_url('product_import.php')) ?>">
+              <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
+            </a>
+            <a class="btn btn-primary" href="<?= e(admin_url('product_form.php')) ?>">
+              <i class="bi bi-plus-lg me-1"></i> Add product
+            </a>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="table-responsive">
