@@ -297,16 +297,35 @@ foreach ($rolesCatalog as $rKey => $rData) {
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="mb-4">
-  <div class="d-flex align-items-center gap-2 mb-2">
-    <a href="<?= e(admin_url('users.php')) ?>" class="text-decoration-none text-muted small">
-      <i class="bi bi-arrow-left me-1"></i> Back to Users & Permissions
-    </a>
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4 pb-2 border-bottom">
+  <div>
+    <div class="mb-2">
+      <a href="<?= e(admin_url('users.php')) ?>" class="btn-back">
+        <i class="bi bi-arrow-left"></i>
+        <span>Back to Users & Permissions</span>
+      </a>
+    </div>
+    <h3 class="mb-1"><?= $isEdit ? 'Edit User: ' . e($user['name']) : 'Create New User' ?></h3>
+    <p class="text-muted small mb-0">
+      Configure user identity, assigned role preset, and fine-grained module permissions.
+    </p>
   </div>
-  <h3 class="mb-1"><?= $isEdit ? 'Edit User: ' . e($user['name']) : 'Create New User' ?></h3>
-  <p class="text-muted small mb-0">
-    Configure user identity, assigned role preset, and fine-grained module permissions.
-  </p>
+  <?php if ($isEdit): ?>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge <?= e($rolesCatalog[$user['role']]['badge_class'] ?? 'role-custom') ?> text-uppercase px-3 py-2 fs-6">
+        <?= e($rolesCatalog[$user['role']]['label'] ?? ucfirst($user['role'])) ?>
+      </span>
+      <?php if ($user['status'] === 'active'): ?>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+          <i class="bi bi-check-circle me-1"></i>Active
+        </span>
+      <?php else: ?>
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 fs-6">
+          <i class="bi bi-pause-circle me-1"></i>Inactive
+        </span>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
 </div>
 
 <?php if (!empty($errors)): ?>

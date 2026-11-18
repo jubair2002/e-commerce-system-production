@@ -271,6 +271,48 @@ body {
 .badge.status-active   { background:#10b981; color:#fff; }
 .badge.status-inactive { background:#9ca3af; color:#fff; }
 
+/* ---------- Back Navigation Button ---------- */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+    background-color: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.btn-back:hover {
+    color: #0f172a;
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    transform: translateX(-3px);
+}
+.btn-back i {
+    font-size: 0.95rem;
+    transition: transform 0.2s ease;
+}
+.btn-back:hover i {
+    transform: translateX(-2px);
+}
+[data-bs-theme="dark"] .btn-back {
+    color: #cbd5e1;
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+[data-bs-theme="dark"] .btn-back:hover {
+    color: #f8fafc;
+    background-color: #334155;
+    border-color: #475569;
+}
+
 /* ---------- Permission Matrix Cards ---------- */
 .permission-module-card {
     border: 1px solid rgba(0,0,0,.08);
