@@ -60,6 +60,15 @@ services:
       start_period: 30s
     networks:
       - jinispotro_net
+    labels:
+      - "application_name=laravel_app"
+      - "stream=laravel_app"
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "${GRAYLOG_ENDPOINT:-udp://172.31.47.132:12202}"
+        tag: "laravel_app"
+        labels: "application_name,stream"
 
   # ----------------------------------------------------------------------------
   # 2. Database Service (MySQL 8.0)
@@ -91,6 +100,15 @@ services:
       start_period: 25s
     networks:
       - jinispotro_net
+    labels:
+      - "application_name=laravel_app"
+      - "stream=laravel_app"
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "${GRAYLOG_ENDPOINT:-udp://172.31.47.132:12202}"
+        tag: "laravel_app"
+        labels: "application_name,stream"
 
 volumes:
   db_data:
