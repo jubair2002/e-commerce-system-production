@@ -1,0 +1,834 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Modern PDP Stylesheet -->
+<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/pdp-modern.css') }}">
+
+<!-- JSON-LD Structured Data for SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": {{ product.name | json_encode() | safe }},
+  "image": {{ main_img_url | json_encode() | safe }},
+  "description": {{ page_description | json_encode() | safe }},
+  "sku": {{ product.sku | default(value=product.id) | json_encode() | safe }},
+  "offers": {
+    "@type": "Offer",
+    "url": {{ route(name='product', slug=product.slug) | json_encode() | safe }},
+    "priceCurrency": "BDT",
+    "price": {{ display_price | json_encode() | safe }},
+    "availability": "{% if in_stock %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "itemCondition": "https://schema.org/NewCondition"
+  }{% if total_reviews > 0 %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ avg_rating | round(method='ceil', precision=1) }}",
+    "reviewCount": "{{ total_reviews }}"
+  }{% endif %}
+}
+</script>
+
+<!-- Breadcrumb -->
+<div class="container m-t-20 m-b-20">
+	<div class="bread-crumb flex-w p-l-0 p-r-15 p-t-15 p-lr-0-lg">
+		<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+			Home
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
+
+		<a href="{{ route(name='shop') }}" class="stext-109 cl8 hov-cl1 trans-04">
+			Shop
+			<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+		</a>
+
+		{% if product.category_name and product.category_slug %}
+			<a href="{{ route(name='category', slug=product.category_slug) }}" class="stext-109 cl8 hov-cl1 trans-04">
+				{{ product.category_name }}
+				<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+		{% endif %}
+
+		<span class="stext-109 cl4">
+			{{ product.name }}
+		</span>
+	</div>
+</div>
+
+<!-- =================== CLEAN & MODERN PRODUCT DETAIL SHOWCASE =================== -->
+<section class="sec-product-detail bg0 p-t-20 p-b-60">
+	<div class="container">
+		<div class="row">
+			<!-- Gallery Column (Left) -->
+			<div class="col-lg-6 p-b-30">
+				<div class="pdp-gallery-card">
+					<div class="pdp-main-image-wrap pos-relative">
+						{% if on_sale %}
+							<span class="pdp-badge-discount">-{{ discount_percent }}% OFF</span>
+						{% endif %}
+
+						<a class="pdp-zoom-btn js-gallery-zoom" href="{{ main_img_url }}" title="Zoom Image">
+							<i class="zmdi zmdi-fullscreen"></i>
+						</a>
+
+						<img id="pdpMainImg" src="{{ main_img_url }}" alt="{{ product.name }}" class="pdp-main-img">
+					</div>
+
+					{% if gallery | length > 1 %}
+						<div class="pdp-thumbnails-strip">
+							{% for img in gallery %}
+							<div class="pdp-thumb-item {% if loop.first %}active{% endif %}" data-large="{{ img.url }}" onclick="switchPdpImage(this, '{{ img.url }}')">
+								<img src="{{ img.thumb_url }}" alt="{{ product.name }}">
+							</div>
+							{% endfor %}
+						</div>
+					{% endif %}
+				</div>
+			</div>
+				
+			<!-- Product Info & Purchase Column (Right) -->
+			<div class="col-lg-6 p-b-30">
+				<div class="pdp-info-card">
+					{% if product.category_name and product.category_slug %}
+						<div class="m-b-8">
+							<a href="{{ route(name='category', slug=product.category_slug) }}" class="pdp-category-pill">
+								{{ product.category_name }}
+							</a>
+						</div>
+					{% endif %}
+
+					<h1 class="pdp-product-title">
+						{{ product.name }}
+					</h1>
+
+					<div class="pdp-meta-row">
+						<div class="d-flex align-items-center">
+							<span class="pdp-stars">
+								{% for i in [1, 2, 3, 4, 5] %}
+									<i class="zmdi {% if avg_rating >= i %}zmdi-star{% else %}zmdi-star-outline{% endif %}"></i>
+								{% endfor %}
+							</span>
+							<span class="pdp-rating-num">{% if total_reviews > 0 %}{{ avg_rating | round(method='ceil', precision=1) }}{% else %}5.0{% endif %}</span>
+							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">({{ total_reviews }} review{% if total_reviews != 1 %}s{% endif %})</a>
+						</div>
+
+						<span class="pdp-stock-badge {% if in_stock %}in-stock{% else %}out-of-stock{% endif %}" id="pdpStockBadge">
+							<i class="zmdi {% if in_stock %}zmdi-check-circle{% else %}zmdi-alert-circle-o{% endif %} m-r-4"></i>
+							{% if in_stock %}In Stock: {{ current_stock }}{% else %}Sold Out{% endif %}
+						</span>
+
+						{% if product.sku %}
+							<span class="pdp-sku-badge">SKU: <strong>{{ product.sku }}</strong></span>
+						{% endif %}
+					</div>
+
+					<!-- Pricing Box -->
+					<div class="pdp-price-box">
+						{% if on_sale %}
+							<span class="pdp-price-current" id="pdpPrice">{{ product.sale_price | money }}</span>
+							<span class="pdp-price-original" id="pdpOldPrice">{{ product.price | money }}</span>
+							<span class="pdp-discount-tag">Save {{ discount_percent }}%</span>
+						{% else %}
+							<span class="pdp-price-current" id="pdpPrice">{{ product.price | money }}</span>
+						{% endif %}
+					</div>
+
+					{% if product.short_description and product.short_description != product.description %}
+						<p class="pdp-short-desc">
+							{{ product.short_description }}
+						</p>
+					{% endif %}
+
+					<!-- Purchase Form -->
+					<form method="post" action="{{ route(name='cart') }}" id="pdpAddToCartForm">
+						<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+						<input type="hidden" name="action" value="add">
+						<input type="hidden" name="product_id" value="{{ product.id }}">
+						<input type="hidden" name="variant_id" id="selectedVariantId" value="{% if is_variable and not options and variants %}{{ variants[0].id }}{% endif %}">
+
+						<!-- Variant Option Selectors -->
+						{% if is_variable and options %}
+							<div class="pdp-options-wrap m-b-20">
+								{% for opt in options %}
+									{% set disp_type = opt.display_type | default(value='button') %}
+									{% set opt_id = opt.id %}
+									<div class="pdp-option-group m-b-18" data-option-id="{{ opt_id }}">
+										<div class="d-flex align-items-center justify-content-between mb-2">
+											<label class="pdp-option-label fw-bold mb-0 text-dark">
+												{{ opt.name }}:
+												<span class="pdp-selected-val text-primary fw-semibold ms-1" id="opt_label_{{ opt_id }}"></span>
+											</label>
+										</div>
+
+										{% if disp_type == 'swatch' %}
+											<!-- Color Swatch UI -->
+											<div class="pdp-swatch-list d-flex flex-wrap" style="gap: 12px; margin-top: 8px; margin-bottom: 8px;">
+												{% for val in opt.values %}
+													{% set hex = val.swatch_hex | default(value='#3b82f6') %}
+													{% set is_white = hex == '#fff' or hex == '#ffffff' or hex == 'white' or hex == '#fafafa' or hex == '#f8fafc' or hex == '#f1f5f9' %}
+													<button type="button" 
+													        class="pdp-swatch-btn js-pdp-opt-btn"
+													        data-option-id="{{ opt_id }}"
+													        data-val-id="{{ val.id }}"
+													        data-val-name="{{ val.value }}"
+													        title="{{ val.value }}"
+													        style="background-color: {{ hex }}; width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%; {% if is_white %}border: 2px solid #cbd5e1 !important;{% endif %}">
+														<i class="zmdi zmdi-check pdp-swatch-check {% if is_white %}text-dark{% else %}text-white{% endif %}" style="display: none; font-size: 20px;"></i>
+													</button>
+												{% endfor %}
+											</div>
+											<input type="hidden" class="option-select" data-option-id="{{ opt_id }}" value="">
+
+										{% elif disp_type == 'button' %}
+											<!-- Buttons Pill UI -->
+											<div class="pdp-pill-list d-flex flex-wrap gap-2">
+												{% for val in opt.values %}
+													<button type="button"
+													        class="pdp-pill-btn js-pdp-opt-btn"
+													        data-option-id="{{ opt_id }}"
+													        data-val-id="{{ val.id }}"
+													        data-val-name="{{ val.value }}">
+														{{ val.value }}
+													</button>
+												{% endfor %}
+											</div>
+											<input type="hidden" class="option-select" data-option-id="{{ opt_id }}" value="">
+
+										{% elif disp_type == 'radio' %}
+											<!-- Radio UI -->
+											<div class="pdp-radio-list d-flex flex-wrap gap-3">
+												{% for val in opt.values %}
+													<label class="pdp-radio-pill d-inline-flex align-items-center gap-1 cursor-pointer">
+														<input type="radio" 
+														       name="opt_radio_{{ opt_id }}"
+														       class="form-check-input js-pdp-radio-val"
+														       data-option-id="{{ opt_id }}"
+														       data-val-id="{{ val.id }}"
+														       data-val-name="{{ val.value }}">
+														<span class="small fw-semibold ms-1">{{ val.value }}</span>
+													</label>
+												{% endfor %}
+											</div>
+											<input type="hidden" class="option-select" data-option-id="{{ opt_id }}" value="">
+
+										{% else %}
+											<!-- Dropdown UI -->
+											<div class="rs1-select2 bor8 bg0" style="border-radius: 8px;">
+												<select class="js-select2 option-select" data-option-id="{{ opt_id }}">
+													<option value="">Choose {{ opt.name }}</option>
+													{% for val in opt.values %}
+														<option value="{{ val.id }}">
+															{{ val.value }}
+														</option>
+													{% endfor %}
+												</select>
+												<div class="dropDownSelect2"></div>
+											</div>
+										{% endif %}
+									</div>
+								{% endfor %}
+							</div>
+						{% endif %}
+
+						<!-- Quantity Controls, Add To Cart & Buy Now Buttons -->
+						<div class="pdp-actions-panel">
+							<div class="pdp-actions-row">
+								<div class="pdp-quantity-stepper">
+									<button type="button" class="btn-num-product-down pdp-qty-btn" aria-label="Decrease quantity">
+										<i class="fs-16 zmdi zmdi-minus"></i>
+									</button>
+
+									<input class="num-product pdp-qty-val" type="number" name="quantity" id="pdpQtyInput" value="1" min="1" max="{% if current_stock > 0 %}{{ current_stock }}{% else %}1{% endif %}">
+
+									<button type="button" class="btn-num-product-up pdp-qty-btn" aria-label="Increase quantity">
+										<i class="fs-16 zmdi zmdi-plus"></i>
+									</button>
+								</div>
+
+								<!-- Add to Cart (AJAX - stays on page) -->
+								<button type="button" class="pdp-btn-cart" id="pdpAddBtn" {% if not in_stock %}disabled{% endif %}>
+									<i class="zmdi zmdi-shopping-cart-plus m-r-8 fs-18"></i> Add to Cart
+								</button>
+
+								<!-- Buy Now (Direct Checkout) -->
+								<button type="submit" name="action_type" value="buy_now" class="pdp-btn-buy" id="pdpBuyNowBtn" {% if not in_stock %}disabled{% endif %}>
+									<i class="zmdi zmdi-flash m-r-8 fs-18"></i> Buy Now
+								</button>
+
+								<!-- Wishlist Button -->
+								<button type="button" class="pdp-btn-wish" onclick="window.cozaToggleWishlist({{ product.id }}, this); return false;" title="Add to Wishlist" aria-label="Add to Wishlist">
+									<i class="zmdi zmdi-favorite-outline fs-20"></i>
+								</button>
+							</div>
+						</div>	
+					</form>
+
+					<!-- Product Description -->
+					<div class="pdp-description-box">
+						<h5 class="pdp-desc-heading">Product Description</h5>
+						<div class="pdp-desc-text">
+							{% if product.description %}
+								{{ product.description | safe }}
+							{% elif product.short_description %}
+								{{ product.short_description }}
+							{% else %}
+								Crafted with premium materials and verified for enduring durability.
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Details Tabs (Specifications, Reviews) -->
+		<div class="pdp-tabs-wrap">
+			<ul class="nav pdp-tabs-nav" role="tablist">
+				<li class="nav-item">
+					<a class="pdp-tab-item active" data-toggle="tab" href="#information" role="tab" id="tabLinkInfo">Specifications</a>
+				</li>
+
+				<li class="nav-item">
+					<a class="pdp-tab-item" data-toggle="tab" href="#reviews" role="tab" id="tabLinkReviews">Verified Reviews ({{ total_reviews }})</a>
+				</li>
+			</ul>
+
+			<!-- Tab panes -->
+			<div class="tab-content">
+				<!-- Tab 1: Specifications -->
+				<div class="tab-pane fade show active" id="information" role="tabpanel">
+					<div class="col-lg-8 m-lr-auto">
+						<div class="table-responsive pdp-spec-table-wrap">
+							<table class="table table-borderless pdp-spec-table">
+								<tbody>
+									<tr>
+										<td class="pdp-spec-label">Product SKU</td>
+										<td class="pdp-spec-value">{{ product.sku | default(value="PROD-" ~ product.id) }}</td>
+									</tr>
+									<tr>
+										<td class="pdp-spec-label">Product Type</td>
+										<td class="pdp-spec-value">{{ product.product_type | capitalize }}</td>
+									</tr>
+									{% if product.category_name %}
+									<tr>
+										<td class="pdp-spec-label">Category</td>
+										<td class="pdp-spec-value">{{ product.category_name }}</td>
+									</tr>
+									{% endif %}
+									{% if product.brand %}
+									<tr>
+										<td class="pdp-spec-label">Brand</td>
+										<td class="pdp-spec-value">{{ product.brand }}</td>
+									</tr>
+									{% endif %}
+									<tr>
+										<td class="pdp-spec-label">Authenticity</td>
+										<td class="pdp-spec-value">100% Original and Brand New</td>
+									</tr>
+									<tr>
+										<td class="pdp-spec-label">Delivery Time</td>
+										<td class="pdp-spec-value">24h inside Dhaka, 48-72h outside Dhaka</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+
+				<!-- Tab 2: Reviews -->
+				<div class="tab-pane fade" id="reviews" role="tabpanel">
+					<div class="col-lg-8 m-lr-auto">
+						<div class="p-b-30">
+							<!-- Review list -->
+							{% if reviews %}
+								{% for rev in reviews %}
+									<div class="p-all-20 m-b-20 bg0" style="border: 1px solid #eef0f3; border-radius: 12px;">
+										<div class="flex-w flex-sb-m p-b-10">
+											<div class="flex-m">
+												<div class="wrap-pic-s size-109 bor0 of-hidden m-r-12">
+													<img src="https://ui-avatars.com/api/?name={{ rev.author_name | urlencode }}&background=f1f5f9&color=334155" alt="{{ rev.author_name }}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;">
+												</div>
+												<div>
+													<span class="font-weight-bold cl2 d-block" style="font-size: 15px;">
+														{{ rev.author_name }}
+													</span>
+													<span class="badge" style="background: #ecfdf5; color: #059669; font-size: 11px; font-weight: 600;">Verified Customer</span>
+												</div>
+											</div>
+
+											<span class="fs-14" style="color: #f59e0b;">
+												{% for i in [1, 2, 3, 4, 5] %}
+													{% if rev.rating >= i %}<i class="zmdi zmdi-star"></i>{% endif %}
+												{% endfor %}
+											</span>
+										</div>
+
+										<h5 class="font-weight-bold cl2 m-b-6" style="font-size: 15px;">
+											{{ rev.title }}
+										</h5>
+
+										<p class="stext-102 cl6" style="line-height: 1.6;">
+											{{ rev.body | linebreaksbr | safe }}
+										</p>
+
+										{% if rev.admin_reply %}
+											<div class="p-all-15 m-t-15 bg6" style="border-left: 3px solid #111; border-radius: 6px;">
+												<span class="stext-102 font-weight-bold cl2 d-block">Store Response:</span>
+												<span class="stext-102 cl6">{{ rev.admin_reply | linebreaksbr | safe }}</span>
+											</div>
+										{% endif %}
+									</div>
+								{% endfor %}
+							{% else %}
+								<div class="text-center p-tb-30 text-muted bg0 p-all-30 m-b-25" style="border: 1px dashed #d1d5db; border-radius: 12px;">
+									<i class="zmdi zmdi-comment-text-alt fs-36 d-block m-b-10" style="color: #9ca3af; font-size: 40px;"></i>
+									<p class="stext-102 cl6 mb-0">No customer reviews yet. Be the first to share your experience!</p>
+								</div>
+							{% endif %}
+							
+							<!-- Add review form -->
+							<div class="bg0 p-all-25 m-t-20" style="border: 1px solid #eef0f3; border-radius: 14px;">
+								<form class="w-full" id="writeReviewForm" method="post" action="{{ url(path='api/review.php') }}">
+									<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+									<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+									<input type="hidden" name="product_id" value="{{ product.id }}">
+									<input type="hidden" name="form_time" value="{{ now_ts }}">
+									<div style="display:none;"><input type="text" name="website_hp" value=""></div>
+
+									<h5 class="mtext-108 cl2 p-b-15 font-weight-bold">
+										Write a Customer Review
+									</h5>
+
+									<div class="flex-w flex-m p-b-20">
+										<span class="stext-102 cl3 m-r-16 font-weight-bold">
+											Your Rating:
+										</span>
+
+										<span class="wrap-rating fs-18 cl11 pointer" style="cursor: pointer;">
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<i class="item-rating pointer zmdi zmdi-star-outline" style="color: #f59e0b;"></i>
+											<input class="dis-none" type="number" name="rating" value="5" required>
+										</span>
+									</div>
+
+									<div class="row p-b-15">
+										<div class="col-12 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="reviewTitle">Review Title</label>
+											<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="reviewTitle" type="text" name="title" placeholder="e.g. Excellent quality, fast delivery!" required maxlength="120" style="border-radius: 8px;">
+										</div>
+
+										<div class="col-12 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="review">Your Review Details</label>
+											<textarea class="size-110 bor8 stext-102 cl2 p-lr-20 p-tb-10" id="review" name="body" placeholder="Share your experience with this product..." required minlength="10" maxlength="2000" style="border-radius: 8px; height: 110px;"></textarea>
+										</div>
+
+										<div class="col-sm-6 p-b-15">
+											<label class="stext-102 cl3 font-weight-bold" for="name">Your Name</label>
+											<input class="size-111 bor8 stext-102 cl2 p-lr-20" id="name" type="text" name="author_name" value="{% if customer %}{{ customer.name }}{% endif %}" placeholder="Your name" style="border-radius: 8px;">
+										</div>
+									</div>
+
+									<button type="submit" id="submitReviewBtn" class="flex-c-m stext-101 cl0 size-112 bg3 bor1 hov-btn3 p-lr-25 trans-04 pointer" style="border-radius: 8px; font-weight: 700; height: 46px;">
+										Submit Review
+									</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Related Products Carousel -->
+	{% if related %}
+	<div class="bg6 m-t-60 p-t-50 p-b-70">
+		<div class="container">
+			<div class="p-b-35 text-center">
+				<h3 class="ltext-103 cl5 font-weight-bold">
+					Related Products
+				</h3>
+			</div>
+
+			<div class="row isotope-grid">
+				{% for p in related %}
+					{% include "partials/product_card.html" %}
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+	{% endif %}
+</section>
+
+<!-- Switch PDP Main Image Function & Enhanced Controls -->
+<script>
+function switchPdpImage(el, url) {
+	var thumbs = document.querySelectorAll('.pdp-thumb-item');
+	thumbs.forEach(function(item) { item.classList.remove('active'); });
+	if (el) el.classList.add('active');
+	var main = document.getElementById('pdpMainImg');
+	if (main) main.src = url;
+	var zoom = document.querySelector('.js-gallery-zoom');
+	if (zoom) zoom.href = url;
+}
+</script>
+
+<!-- PDP AJAX Add to Cart & Review Handler -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	if (typeof $ !== 'undefined') {
+		$('.btn-num-product-down, .btn-num-product-up').off('click');
+	}
+
+	var downBtn = document.querySelector('.btn-num-product-down');
+	var upBtn = document.querySelector('.btn-num-product-up');
+	var qtyInput = document.getElementById('pdpQtyInput');
+
+	function validatePdpQty() {
+		if (!qtyInput) return;
+		var val = parseInt(qtyInput.value, 10);
+		var max = parseInt(qtyInput.max, 10) || 999;
+		var min = parseInt(qtyInput.min, 10) || 1;
+		if (isNaN(val) || val < min) {
+			qtyInput.value = min;
+		} else if (val > max) {
+			qtyInput.value = max;
+			if (typeof swal === 'function') {
+				swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+			}
+		}
+	}
+
+	if (qtyInput) {
+		qtyInput.addEventListener('change', validatePdpQty);
+		qtyInput.addEventListener('input', validatePdpQty);
+	}
+
+	if (downBtn && qtyInput) {
+		downBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+			var current = parseInt(qtyInput.value, 10) || 1;
+			var min = parseInt(qtyInput.min, 10) || 1;
+			if (current > min) {
+				qtyInput.value = current - 1;
+				qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+				qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+			}
+		});
+	}
+	if (upBtn && qtyInput) {
+		upBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+			var current = parseInt(qtyInput.value, 10) || 1;
+			var max = parseInt(qtyInput.max, 10) || 999;
+			if (current < max) {
+				qtyInput.value = current + 1;
+				qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+				qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+			} else {
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'info');
+				}
+			}
+		});
+	}
+
+	if (typeof $ !== 'undefined' && typeof $.fn.magnificPopup === 'function') {
+		$('.js-gallery-zoom').magnificPopup({
+			type: 'image',
+			closeOnContentClick: true,
+			mainClass: 'mfp-img-mobile',
+			image: { verticalFit: true }
+		});
+	}
+
+	$('.js-pdp-opt-btn').on('click', function(e) {
+		e.preventDefault();
+		var $btn = $(this);
+		var optId = $btn.data('option-id');
+		var valId = $btn.data('val-id');
+		var valName = $btn.data('val-name');
+
+		var $group = $btn.closest('.pdp-option-group');
+		$group.find('.js-pdp-opt-btn').removeClass('active');
+		$group.find('.pdp-swatch-check').hide();
+
+		$btn.addClass('active');
+		$btn.find('.pdp-swatch-check').show();
+
+		$('#opt_label_' + optId).text(valName);
+
+		var $hiddenInput = $group.find('input.option-select');
+		$hiddenInput.val(valId).trigger('change');
+	});
+
+	$('.js-pdp-radio-val').on('change', function() {
+		var $radio = $(this);
+		var optId = $radio.data('option-id');
+		var valId = $radio.data('val-id');
+		var valName = $radio.data('val-name');
+
+		$('#opt_label_' + optId).text(valName);
+
+		var $hiddenInput = $radio.closest('.pdp-option-group').find('input.option-select');
+		$hiddenInput.val(valId).trigger('change');
+	});
+
+	var variantsData = {{ variants | json_encode() | safe }};
+	var totalOptionsCount = {% if options %}{{ options | length }}{% else %}0{% endif %};
+	if (variantsData && variantsData.length > 0) {
+		$('.option-select').on('change', function() {
+			var selectedOpts = {};
+			$('.option-select').each(function() {
+				var optId = $(this).data('option-id');
+				var valId = parseInt($(this).val(), 10);
+				if (valId) selectedOpts[optId] = valId;
+			});
+
+			var selectedCount = Object.keys(selectedOpts).length;
+			var match = null;
+			if (selectedCount === totalOptionsCount && totalOptionsCount > 0) {
+				for (var i = 0; i < variantsData.length; i++) {
+					var v = variantsData[i];
+					var isMatch = true;
+					for (var optId in selectedOpts) {
+						if (v.option_value_ids && v.option_value_ids[optId] != selectedOpts[optId]) {
+							isMatch = false;
+							break;
+						}
+					}
+					if (isMatch) {
+						match = v;
+						break;
+					}
+				}
+			}
+
+			var vIdInput = document.getElementById('selectedVariantId');
+			var priceElem = document.getElementById('pdpPrice');
+			var stockBadge = document.getElementById('pdpStockBadge');
+			var addBtn = document.getElementById('pdpAddBtn');
+			var buyBtn = document.getElementById('pdpBuyNowBtn');
+			var qtyInput = document.getElementById('pdpQtyInput');
+
+			if (match) {
+				if (vIdInput) vIdInput.value = match.id;
+
+				var pVal = parseFloat(match.sale_price || match.price || 0);
+				if (priceElem && pVal > 0) {
+					var curSym = {{ setting(key='currency_symbol', default='৳') | json_encode() | safe }};
+					priceElem.textContent = curSym + pVal.toFixed(2);
+				}
+
+				var vStock = parseInt(match.stock, 10);
+				if (vStock > 0) {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge in-stock';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;
+					}
+					if (addBtn) addBtn.disabled = false;
+					if (buyBtn) buyBtn.disabled = false;
+					if (qtyInput) qtyInput.max = vStock;
+				} else {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge out-of-stock';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+					}
+					if (addBtn) addBtn.disabled = true;
+					if (buyBtn) buyBtn.disabled = true;
+				}
+			} else {
+				if (vIdInput) vIdInput.value = '';
+				if (stockBadge && totalOptionsCount > 0) {
+					stockBadge.className = 'pdp-stock-badge out-of-stock';
+					stockBadge.innerHTML = '<i class="zmdi zmdi-help-outline m-r-4"></i> Select Options';
+				}
+			}
+		});
+
+		$('.pdp-option-group').each(function() {
+			var $firstBtn = $(this).find('.js-pdp-opt-btn').first();
+			if ($firstBtn.length) {
+				$firstBtn.trigger('click');
+			} else {
+				var $firstRadio = $(this).find('.js-pdp-radio-val').first();
+				if ($firstRadio.length) {
+					$firstRadio.prop('checked', true).trigger('change');
+				}
+			}
+		});
+	}
+
+	var addBtn = document.getElementById('pdpAddBtn');
+	if (addBtn) {
+		addBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var isVar = {% if is_variable %}true{% else %}false{% endif %};
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+
+			if (isVar && !vid) {
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before adding to cart.', 'warning');
+				} else {
+					alert('Please choose all available product options before adding to cart.');
+				}
+				return;
+			}
+
+			var pid = {{ product.id }};
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
+			}
+			var pName = {{ product.name | json_encode() | safe }};
+
+			if (typeof window.cozaAddToCart === 'function') {
+				window.cozaAddToCart(pid, qty, vid, pName);
+			} else {
+				var fd = new FormData();
+				fd.append('action', 'add');
+				fd.append('product_id', pid);
+				if (vid) fd.append('variant_id', vid);
+				fd.append('quantity', qty);
+				fd.append('_csrf', window.SHOP_CSRF_TOKEN || '');
+				fetch((window.SHOP_BASE_URL || '/') + 'api/cart_ajax.php', {
+					method: 'POST',
+					body: fd,
+					headers: { 'X-Requested-With': 'XMLHttpRequest' }
+				})
+				.then(function(r) { return r.json(); })
+				.then(function(res) {
+					if (res && res.ok) {
+						if (typeof window.cozaUpdateCartUI === 'function') {
+							window.cozaUpdateCartUI(res);
+						} else if (res.cart_count !== undefined) {
+							$('.js-show-cart').attr('data-notify', res.cart_count);
+						}
+						if (typeof swal === 'function') {
+							swal(pName, 'has been added to your cart!', 'success');
+						} else {
+							alert(pName + ' has been added to your cart!');
+						}
+					} else {
+						var msg = (res && res.error) ? res.error : 'Could not add product to cart.';
+						if (typeof swal === 'function') swal('Notice', msg, 'error');
+						else alert(msg);
+					}
+				})
+				.catch(function() {
+					if (typeof swal === 'function') swal('Notice', 'Could not add to cart.', 'error');
+				});
+			}
+		});
+	}
+
+	var buyBtn = document.getElementById('pdpBuyNowBtn');
+	if (buyBtn) {
+		buyBtn.addEventListener('click', function(e) {
+			var isVar = {% if is_variable %}true{% else %}false{% endif %};
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+			if (isVar && !vid) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before proceeding.', 'warning');
+				} else {
+					alert('Please choose all available product options before proceeding.');
+				}
+				return;
+			}
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
+			}
+		});
+	}
+
+	var pdpForm = document.getElementById('pdpAddToCartForm');
+	if (pdpForm) {
+		pdpForm.addEventListener('submit', function(e) {
+			var isVar = {% if is_variable %}true{% else %}false{% endif %};
+			var vidInput = document.getElementById('selectedVariantId');
+			var vid = vidInput ? vidInput.value : '';
+			if (isVar && !vid) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Please Select Options', 'Please choose all available product options before adding to cart.', 'warning');
+				} else {
+					alert('Please choose all available product options before adding to cart.');
+				}
+				return;
+			}
+			var max = parseInt(qtyInput ? qtyInput.max : 999, 10) || 999;
+			var qty = parseInt(document.getElementById('pdpQtyInput').value, 10) || 1;
+			if (qty > max) {
+				e.preventDefault();
+				if (typeof swal === 'function') {
+					swal('Stock Limit', 'Only ' + max + ' units available in stock.', 'warning');
+				}
+				if (qtyInput) qtyInput.value = max;
+				return;
+			}
+		});
+	}
+
+	var reviewForm = document.getElementById('writeReviewForm');
+	if (reviewForm) {
+		reviewForm.addEventListener('submit', function(e) {
+			e.preventDefault();
+			var btn = document.getElementById('submitReviewBtn');
+			if (btn) {
+				btn.disabled = true;
+				btn.textContent = 'Submitting...';
+			}
+
+			var formData = new FormData(this);
+			fetch(this.action, {
+				method: 'POST',
+				body: formData,
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			})
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				if (btn) {
+					btn.disabled = false;
+					btn.textContent = 'Submit Review';
+				}
+				if (data && data.success) {
+					swal('Thank you!', data.message || 'Your review has been submitted for moderation.', 'success');
+					reviewForm.reset();
+				} else {
+					var err = (data && data.error) ? data.error : 'Failed to submit review.';
+					swal('Notice', err, 'error');
+				}
+			})
+			.catch(function() {
+				if (btn) {
+					btn.disabled = false;
+					btn.textContent = 'Submit Review';
+				}
+				swal('Error', 'Network error. Please try again.', 'error');
+			});
+		});
+	}
+});
+</script>
+{% endblock content %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="account-wrapper">
+  <div class="container">
+
+    <!-- Mobile Navigation Tabs -->
+    <div class="account-nav-mobile" role="navigation" aria-label="Account Navigation">
+      <a href="{{ route(name='account') }}" class="account-nav-pill {% if active_tab == 'overview' %}active{% endif %}">
+        {{ icon(name='grid', class='me-1') | safe }} Overview
+      </a>
+      <a href="{{ route(name='account_orders') }}" class="account-nav-pill {% if active_tab == 'orders' %}active{% endif %}">
+        {{ icon(name='box', class='me-1') | safe }} Orders
+      </a>
+      <a href="{{ route(name='account_wishlist') }}" class="account-nav-pill {% if active_tab == 'wishlist' %}active{% endif %}">
+        {{ icon(name='heart', class='me-1') | safe }} Wishlist
+      </a>
+      <a href="{{ route(name='account_addresses') }}" class="account-nav-pill {% if active_tab == 'addresses' %}active{% endif %}">
+        {{ icon(name='map-pin', class='me-1') | safe }} Addresses
+      </a>
+      <a href="{{ route(name='account_profile') }}" class="account-nav-pill {% if active_tab == 'profile' %}active{% endif %}">
+        {{ icon(name='user', class='me-1') | safe }} Profile
+      </a>
+      <a href="{{ route(name='account_security') }}" class="account-nav-pill {% if active_tab == 'security' %}active{% endif %}">
+        {{ icon(name='shield', class='me-1') | safe }} Security
+      </a>
+    </div>
+
+    <div class="row g-4">
+      <!-- Desktop Sidebar -->
+      <div class="col-lg-3 d-none d-lg-block">
+        <div class="account-sidebar-card">
+          <div class="account-user-badge">
+            <div class="avatar-circle">
+              {% if customer.avatar_url %}
+                <img src="{{ customer.avatar_url }}" alt="{{ customer.name }}">
+              {% else %}
+                <span>{{ customer.initials | default(value='C') }}</span>
+              {% endif %}
+            </div>
+            <div class="overflow-hidden">
+              <div class="fw-bold text-truncate" title="{{ customer.name }}">{{ customer.name }}</div>
+              <div class="small text-muted text-truncate" title="{{ customer.email }}" style="font-size: 0.8rem;">{{ customer.email }}</div>
+            </div>
+          </div>
+
+          <ul class="account-nav">
+            <li>
+              <a href="{{ route(name='account') }}" class="account-nav-link {% if active_tab == 'overview' %}active{% endif %}">
+                {{ icon(name='grid', class='me-2 text-secondary') | safe }} Overview
+              </a>
+            </li>
+            <li>
+              <a href="{{ route(name='account_orders') }}" class="account-nav-link {% if active_tab == 'orders' %}active{% endif %}">
+                {{ icon(name='box', class='me-2 text-secondary') | safe }} Orders
+              </a>
+            </li>
+            <li>
+              <a href="{{ route(name='account_wishlist') }}" class="account-nav-link {% if active_tab == 'wishlist' %}active{% endif %}">
+                {{ icon(name='heart', class='me-2 text-secondary') | safe }} Wishlist
+              </a>
+            </li>
+            <li>
+              <a href="{{ route(name='account_addresses') }}" class="account-nav-link {% if active_tab == 'addresses' %}active{% endif %}">
+                {{ icon(name='map-pin', class='me-2 text-secondary') | safe }} Addresses
+              </a>
+            </li>
+            <li>
+              <a href="{{ route(name='account_profile') }}" class="account-nav-link {% if active_tab == 'profile' %}active{% endif %}">
+                {{ icon(name='user', class='me-2 text-secondary') | safe }} Profile
+              </a>
+            </li>
+            <li>
+              <a href="{{ route(name='account_security') }}" class="account-nav-link {% if active_tab == 'security' %}active{% endif %}">
+                {{ icon(name='shield', class='me-2 text-secondary') | safe }} Security
+              </a>
+            </li>
+            <li class="pt-2 mt-2 border-top">
+              <form method="post" action="{{ route(name='logout') }}" class="m-0 p-0">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <button type="submit" class="account-nav-link text-danger border-0 bg-transparent w-100 text-start">
+                  {{ icon(name='logout', class='me-2 text-danger') | safe }} Sign Out
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="col-lg-9">
+        {% block account_content %}{% endblock account_content %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,70 @@
+{% extends "account/layout.html" %}
+
+{% block title %}Delete Account - {{ setting(key='site_name', default='Jinish Potro') }}{% endblock title %}
+
+{% block account_content %}
+<div class="account-card" style="max-width: 600px;">
+  <div class="account-card-header border-danger">
+    <h2 class="account-card-title text-danger">{{ icon(name='alert-circle', class='i-sm me-2 text-danger') | safe }} Delete Customer Account</h2>
+  </div>
+
+  <div class="alert alert-danger bg-danger bg-opacity-10 border-danger small mb-4">
+    <strong>Warning: This action is permanent and cannot be undone.</strong>
+    <ul class="mb-0 mt-2 ps-3">
+      <li>Your personal information, profile photo, and delivery addresses will be permanently erased.</li>
+      <li>Saved wishlist items and preferences will be deleted.</li>
+      <li>Your past order history will be unlinked and retained anonymously for accounting and tax records.</li>
+    </ul>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger small py-2 mb-3">
+      {{ icon(name='alert-circle', class='i-sm me-1') | safe }} {{ error }}
+    </div>
+  {% endif %}
+
+  <form method="post" action="{{ route(name='account_delete') }}" class="auth-form" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+    <div class="form-group mb-3">
+      <label for="delPassword" class="form-label small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+      <div class="input-group">
+        <input type="password"
+               name="password"
+               id="delPassword"
+               class="form-control"
+               required
+               autocomplete="current-password"
+               placeholder="Enter your password">
+        <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="delPassword" aria-label="Toggle password visibility">
+          {{ icon(name='eye', class='i-sm') | safe }}
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group mb-4">
+      <label for="confirmWord" class="form-label small fw-semibold">
+        Type <span class="badge bg-danger">DELETE</span> to confirm <span class="text-danger">*</span>
+      </label>
+      <input type="text"
+             name="confirm_word"
+             id="confirmWord"
+             class="form-control"
+             required
+             autocomplete="off"
+             placeholder="Type DELETE in capital letters">
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button type="submit" class="btn btn-danger">
+        {{ icon(name='trash', class='i-sm me-1') | safe }} Permanently Delete Account
+      </button>
+      <a href="{{ route(name='account_security') }}" class="btn btn-outline-secondary btn-sm">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+
+<script src="{{ url(path='assets/js/auth.js') }}"></script>
+{% endblock account_content %}

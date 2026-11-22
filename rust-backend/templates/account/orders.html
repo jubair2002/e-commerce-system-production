@@ -1,0 +1,132 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 fw-bold mb-1">My Orders</h1>
+    <p class="text-muted small mb-0">View all your past and active orders, track status, and re-order essentials.</p>
+  </div>
+  <div>
+    <a href="{{ route(name='shop') }}" class="btn btn-editorial-primary btn-sm">
+      {{ icon(name='bag', class='me-1') | safe }} Start New Order
+    </a>
+  </div>
+</div>
+
+<!-- Search & Status Filter Bar -->
+<div class="account-card p-3 mb-4">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap gap-1">
+        <a href="{{ route(name='account_orders') }}{% if search_query %}?q={{ search_query | urlencode }}{% endif %}"
+           class="btn btn-sm {% if not status_filter %}btn-editorial-primary{% else %}btn-editorial-secondary{% endif %}">
+          All ({{ all_orders_count }})
+        </a>
+        {% for st in ['pending', 'processing', 'shipped', 'delivered', 'cancelled'] %}
+          <a href="{{ route(name='account_orders') }}?status={{ st }}{% if search_query %}&q={{ search_query | urlencode }}{% endif %}"
+             class="btn btn-sm {% if status_filter == st %}btn-editorial-primary{% else %}btn-editorial-secondary{% endif %} text-capitalize">
+            {{ st }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-md-5">
+      <form method="get" action="{{ route(name='account_orders') }}" class="d-flex gap-2">
+        {% if status_filter %}
+          <input type="hidden" name="status" value="{{ status_filter }}">
+        {% endif %}
+        <div class="input-group input-group-sm">
+          <input type="text"
+                 name="q"
+                 class="form-control"
+                 placeholder="Search by order #"
+                 value="{{ search_query | default(value='') }}">
+          <button type="submit" class="btn btn-editorial-primary" aria-label="Search orders">
+            {{ icon(name='search') | safe }}
+          </button>
+          {% if search_query %}
+            <a href="{{ route(name='account_orders') }}{% if status_filter %}?status={{ status_filter }}{% endif %}" class="btn btn-editorial-secondary" aria-label="Clear search">
+              {{ icon(name='x') | safe }}
+            </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Orders Table / List -->
+{% if not orders %}
+  <div class="account-card text-center py-5">
+    <div class="empty-state-icon mb-3" style="width: 52px; height: 52px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: var(--surface-muted); border-radius: 50%; color: var(--ink-2);">
+      {{ icon(name='box') | safe }}
+    </div>
+    <h3 class="h5 fw-bold mb-1">No Orders Found</h3>
+    <p class="text-muted small mb-3">
+      {% if status_filter or search_query %}No orders matched your active filters.{% else %}You have not placed any orders yet.{% endif %}
+    </p>
+    {% if status_filter or search_query %}
+      <a href="{{ route(name='account_orders') }}" class="btn btn-editorial-secondary btn-sm">Clear Filters</a>
+    {% else %}
+      <a href="{{ route(name='shop') }}" class="btn btn-editorial-primary btn-sm">Browse Products</a>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="account-card p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3 py-3 small text-uppercase">Order #</th>
+            <th class="py-3 small text-uppercase">Date</th>
+            <th class="py-3 small text-uppercase">Items</th>
+            <th class="py-3 small text-uppercase">Status</th>
+            <th class="py-3 small text-uppercase">Total</th>
+            <th class="pe-3 py-3 small text-uppercase text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+            <tr>
+              <td class="ps-3">
+                <a href="{{ route(name='account_orders') }}/{{ o.order_number }}" class="fw-bold text-ink text-decoration-none">
+                  {{ o.order_number }}
+                </a>
+              </td>
+              <td class="small text-muted">{{ o.created_at }}</td>
+              <td class="small">{{ o.item_count }} {% if o.item_count == 1 %}item{% else %}items{% endif %}</td>
+              <td>
+                <span class="badge {% if o.status == 'completed' or o.status == 'delivered' %}bg-success{% elif o.status == 'processing' or o.status == 'shipped' %}bg-info text-dark{% elif o.status == 'cancelled' %}bg-danger{% elif o.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %} text-uppercase" style="font-size: 0.72rem;">
+                  {{ o.status }}
+                </span>
+              </td>
+              <td class="fw-bold">{{ o.total | money }}</td>
+              <td class="pe-3 text-end">
+                <a href="{{ route(name='account_orders') }}/{{ o.order_number }}" class="btn btn-editorial-secondary btn-sm py-1 px-3" style="font-size: 0.8rem;">
+                  View
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="account-orders-pagination d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 border-top">
+      <span class="small text-muted">
+        {% if total_orders > 0 %}
+          Showing page {{ page }} of {{ total_pages }} ({{ total_orders }} total {% if total_orders == 1 %}order{% else %}orders{% endif %})
+        {% else %}
+          No orders
+        {% endif %}
+      </span>
+      {% if total_pages > 1 %}
+        <div class="account-pagination-box">
+          {% include "partials/pagination.html" %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock account_content %}

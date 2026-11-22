@@ -1,0 +1,52 @@
+[package]
+name = "rust-backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros", "multipart"] }
+tokio = { version = "1.40", features = ["full"] }
+sqlx = { version = "0.8", default-features = false, features = ["mysql", "runtime-tokio-rustls", "chrono", "rust_decimal", "macros"] }
+tera = "1.20"
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["fs", "trace", "cors", "compression-full", "set-header"] }
+tower-sessions = "0.13.0"
+tower-sessions-sqlx-store = { version = "0.14.0", features = ["mysql"] }
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+rust_decimal = { version = "1.36", features = ["serde", "maths"] }
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = { version = "0.10", features = ["serde"] }
+bcrypt = "0.16"
+sha2 = "0.10"
+hmac = "0.12"
+aes-gcm = "0.10"
+aes = "0.8"
+cbc = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+moka = { version = "0.12", features = ["future"] }
+dashmap = "6.1"
+aws-sdk-s3 = "1.55"
+aws-config = "1.5"
+image = "0.25"
+webp = "0.3"
+infer = "0.16"
+validator = { version = "0.18", features = ["derive"] }
+rand = "0.8"
+dotenvy = "0.15"
+hex = "0.4"
+base64 = "0.22"
+md-5 = "0.10"
+async-stream = "0.3"
+tokio-stream = "0.1"
+futures = "0.3"
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["json", "cookies"] }
+
+[lints.cargo]
+unused_dependencies = "allow"
+

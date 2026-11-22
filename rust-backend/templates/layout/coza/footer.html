@@ -1,0 +1,218 @@
+	<!-- Pre-footer Trust Strip (Customer Commitments) -->
+	<section class="sec-trust-bar p-t-35 p-b-35" aria-label="Customer Commitments">
+		<div class="container">
+			<div class="row p-tb-25 p-lr-15 trust-bar-container">
+				
+				<!-- Item 1: Nationwide COD -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div class="trust-bar-icon-box">
+							<i class="zmdi zmdi-shield-check"></i>
+						</div>
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div class="trust-bar-title">
+								{{ setting(key='trust_item_1_title', default='Nationwide COD') }}
+							</div>
+							<div class="trust-bar-desc">
+								{{ setting(key='trust_item_1_desc', default='Cash on delivery across all 64 districts') }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 2: Fast Dispatch -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div class="trust-bar-icon-box">
+							<i class="zmdi zmdi-truck"></i>
+						</div>
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div class="trust-bar-title">
+								{{ setting(key='trust_item_2_title', default='Fast Dispatch') }}
+							</div>
+							<div class="trust-bar-desc">
+								{{ setting(key='trust_item_2_desc', default='24h in Dhaka, 48-72h outside') }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 3: 100% Authentic -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div class="trust-bar-icon-box">
+							<i class="zmdi zmdi-badge-check"></i>
+						</div>
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div class="trust-bar-title">
+								{{ setting(key='trust_item_3_title', default='100% Authentic') }}
+							</div>
+							<div class="trust-bar-desc">
+								{{ setting(key='trust_item_3_desc', default='Guaranteed genuine products direct from makers') }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Item 4: Dedicated Support -->
+				<div class="col-12 col-sm-6 col-lg-3 p-tb-12">
+					<div class="d-flex align-items-start" style="gap: 14px;">
+						<div class="trust-bar-icon-box">
+							<i class="zmdi zmdi-headset-mic"></i>
+						</div>
+						<div style="flex: 1; min-width: 0; padding-top: 2px;">
+							<div class="trust-bar-title">
+								{{ setting(key='trust_item_4_title', default='Dedicated Support') }}
+							</div>
+							<div class="trust-bar-desc">
+								{{ setting(key='trust_item_4_desc', default='Friendly phone & WhatsApp assistance') }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer class="bg3 p-t-75 p-b-32">
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-6 col-lg-3 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Categories
+					</h4>
+
+					<ul>
+						{% if categories %}
+							{% for fc in categories | slice(end=5) %}
+								<li class="p-b-10">
+									<a href="{{ route(name='category', slug=fc.slug) }}" class="stext-107 cl7 hov-cl1 trans-04">
+										{{ fc.name }}
+									</a>
+								</li>
+							{% endfor %}
+						{% else %}
+							<li class="p-b-10">
+								<a href="{{ route(name='shop') }}" class="stext-107 cl7 hov-cl1 trans-04">All Products</a>
+							</li>
+						{% endif %}
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-3 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Customer Care
+					</h4>
+
+					<ul>
+						<li class="p-b-10">
+							<a href="{{ route(name='track') }}" class="stext-107 cl7 hov-cl1 trans-04">
+								Track Your Order
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="{{ route(name='contact') }}" class="stext-107 cl7 hov-cl1 trans-04">
+								Contact & Support
+							</a>
+						</li>
+
+						{% if footer_cms_pages %}
+							{% for fp in footer_cms_pages %}
+								<li class="p-b-10">
+									<a href="{{ route(name='page', slug=fp.slug) }}" class="stext-107 cl7 hov-cl1 trans-04">
+										{{ fp.title }}
+									</a>
+								</li>
+							{% endfor %}
+						{% endif %}
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-3 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						GET IN TOUCH
+					</h4>
+
+					<p class="stext-107 cl7 size-201">
+						{{ setting(key='store_address', default='Dhaka, Bangladesh') }}<br>
+						Phone: {{ setting(key='store_phone', default='+880 1700-000000') }}<br>
+						Email: {{ setting(key='site_email', default='support@jinishpotro.store') }}
+					</p>
+
+					<div class="p-t-27">
+						{% if social_fb %}
+							<a href="{{ social_fb }}" target="_blank" rel="noopener" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+								<i class="fa fa-facebook"></i>
+							</a>
+						{% endif %}
+
+						{% if social_ig %}
+							<a href="{{ social_ig }}" target="_blank" rel="noopener" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+								<i class="fa fa-instagram"></i>
+							</a>
+						{% endif %}
+
+						{% if social_wa %}
+							<a href="https://wa.me/{{ social_wa }}" target="_blank" rel="noopener" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+								<i class="fa fa-whatsapp"></i>
+							</a>
+						{% endif %}
+					</div>
+				</div>
+
+				<div class="col-sm-6 col-lg-3 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Newsletter
+					</h4>
+
+					<form action="{{ route(name='newsletter') }}" method="post">
+						<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+						<div class="wrap-input1 w-full p-b-4">
+							<input class="input1 bg-none plh1 stext-107 cl7" type="email" name="email" placeholder="email@example.com" required>
+							<div class="focus-input1 trans-04"></div>
+						</div>
+
+						<div class="p-t-18">
+							<button type="submit" class="flex-c-m stext-101 cl0 size-103 bg1 bor1 hov-btn2 p-lr-15 trans-04">
+								Subscribe
+							</button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<div class="p-t-40">
+				<div class="flex-c-m flex-w p-b-18">
+					<span class="m-all-1">
+						<img src="{{ url(path='assets/coza/images/icons/icon-pay-01.png') }}" alt="ICON-PAY">
+					</span>
+					<span class="m-all-1">
+						<img src="{{ url(path='assets/coza/images/icons/icon-pay-02.png') }}" alt="ICON-PAY">
+					</span>
+					<span class="m-all-1">
+						<img src="{{ url(path='assets/coza/images/icons/icon-pay-03.png') }}" alt="ICON-PAY">
+					</span>
+					<span class="m-all-1">
+						<img src="{{ url(path='assets/coza/images/icons/icon-pay-04.png') }}" alt="ICON-PAY">
+					</span>
+					<span class="m-all-1">
+						<img src="{{ url(path='assets/coza/images/icons/icon-pay-05.png') }}" alt="ICON-PAY">
+					</span>
+				</div>
+
+				<p class="stext-107 cl6 txt-center">
+					Copyright &copy; 2026 {{ setting(key='site_name', default='Jinish Potro') }}. All rights reserved.
+				</p>
+			</div>
+		</div>
+	</footer>
+
+	<!-- Back to top -->
+	<div class="btn-back-to-top" id="myBtn">
+		<span class="symbol-btn-back-to-top">
+			<i class="zmdi zmdi-chevron-up"></i>
+		</span>
+	</div>

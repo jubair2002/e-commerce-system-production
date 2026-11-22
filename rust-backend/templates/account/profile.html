@@ -1,0 +1,127 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+<div class="account-card">
+  <div class="account-card-header">
+    <h2 class="account-card-title">Profile Information</h2>
+  </div>
+
+  {% if errors and errors.general %}
+    <div class="alert alert-danger small py-2 mb-3">
+      {{ icon(name='alert-circle', class='i-sm me-1') | safe }} {{ errors.general }}
+    </div>
+  {% endif %}
+
+  {% if flashes %}
+    {% for f in flashes %}
+      <div class="alert alert-{{ f.type }} small py-2 mb-3">
+        {{ f.message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" action="{{ route(name='account_profile') }}" class="auth-form" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+    <!-- Avatar Upload & Preview -->
+    <div class="d-flex align-items-center gap-4 mb-4 pb-3 border-bottom">
+      <div class="avatar-circle" style="width: 72px; height: 72px; font-size: 26px;">
+        {% if customer.avatar_url %}
+          <img src="{{ customer.avatar_url }}" alt="{{ customer.name }}">
+        {% else %}
+          <span>{{ customer.initials | default(value='C') }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <label for="avatarInput" class="form-label small fw-semibold mb-1">Profile Photo</label>
+        <input type="file" name="avatar" id="avatarInput" class="form-control form-control-sm {% if errors and errors.avatar %}is-invalid{% endif %}" accept="image/jpeg,image/png,image/webp">
+        <div class="form-text" style="font-size: 0.75rem;">JPG, PNG, or WEBP &bull; Max 2 MB &bull; Square cropped automatically</div>
+        {% if errors and errors.avatar %}
+          <div class="invalid-feedback">{{ errors.avatar }}</div>
+        {% endif %}
+
+        {% if customer.avatar_url %}
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="remove_avatar" value="1" id="removeAvatarCheck">
+            <label class="form-check-label small text-danger" for="removeAvatarCheck">
+              Remove custom photo and use initials
+            </label>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Name & Phone -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label for="profName" class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+        <input type="text"
+               name="name"
+               id="profName"
+               class="form-control {% if errors and errors.name %}is-invalid{% endif %}"
+               value="{{ customer.name }}"
+               required
+               autocomplete="name">
+        {% if errors and errors.name %}
+          <div class="invalid-feedback">{{ errors.name }}</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <label for="profPhone" class="form-label small fw-semibold">Mobile Phone (BD)</label>
+        <input type="tel"
+               name="phone"
+               id="profPhone"
+               class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+               value="{{ customer.phone | default(value='') }}"
+               placeholder="01712345678"
+               autocomplete="tel">
+        {% if errors and errors.phone %}
+          <div class="invalid-feedback">{{ errors.phone }}</div>
+        {% endif %}
+        <div class="form-text" style="font-size: 0.75rem;">Used for parcel delivery notifications.</div>
+      </div>
+    </div>
+
+    <!-- Email Address (Read-only with link to Security) -->
+    <div class="form-group mb-3">
+      <label class="form-label small fw-semibold">Email Address</label>
+      <div class="input-group">
+        <input type="email" class="form-control bg-light" value="{{ customer.email }}" readonly>
+        <a href="{{ route(name='account_security') }}#email" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+          Change Email
+        </a>
+      </div>
+      <div class="form-text" style="font-size: 0.75rem;">
+        Email changes require password verification in the Security tab.
+      </div>
+    </div>
+
+    <!-- Marketing Preferences -->
+    <div class="form-check mb-4 pt-2">
+      <input class="form-check-input" type="checkbox" name="marketing_opt_in" value="1" id="mktOptIn" {% if customer.marketing_opt_in %}checked{% endif %}>
+      <label class="form-check-label small" for="mktOptIn">
+        Receive exclusive offers, new product announcements, and seasonal discount codes via email.
+      </label>
+    </div>
+
+    <!-- Metadata Section -->
+    <div class="p-3 bg-light rounded border mb-4 text-muted small">
+      <div class="row g-2">
+        <div class="col-sm-6 d-flex align-items-center gap-1">
+          {{ icon(name='box', class='i-sm text-muted') | safe }} Member since: <strong>{{ customer.created_at }}</strong>
+        </div>
+        <div class="col-sm-6 d-flex align-items-center gap-1">
+          {{ icon(name='rotate-ccw', class='i-sm text-muted') | safe }} Last sign in: <strong>{{ customer.last_login_at | default(value='Recent session') }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-editorial-primary">
+        Save Profile Changes
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock account_content %}

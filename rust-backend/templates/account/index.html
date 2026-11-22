@@ -1,0 +1,207 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+<!-- Welcome Banner -->
+<div class="account-welcome-banner mb-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <span class="account-badge-pill mb-2 d-inline-block">Customer Dashboard</span>
+      <h1 class="h3 fw-bold mb-1">Welcome back, {{ first_name | default(value='there') }}</h1>
+      <p class="text-muted small mb-0">From your portal you can track live orders, manage saved shipping addresses, and control security settings.</p>
+    </div>
+    <div>
+      <a href="{{ route(name='shop') }}" class="btn btn-editorial-primary btn-sm">
+        {{ icon(name='bag', class='me-1') | safe }} Browse Shop
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Email Verification Alert Banner -->
+{% if not customer.verified %}
+  <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-4 rounded-3 border" role="alert">
+    <div class="d-flex align-items-center gap-3">
+      <div class="text-warning flex-shrink-0">{{ icon(name='alert-circle') | safe }}</div>
+      <div>
+        <strong class="d-block">Verify your email address</strong>
+        <div class="small text-muted">We sent an activation link to <strong>{{ customer.email }}</strong>. Verify your email to ensure uninterrupted account access.</div>
+      </div>
+    </div>
+    <form method="post" action="{{ route(name='resend_verification') }}" class="m-0">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-editorial-secondary btn-sm">
+        {{ icon(name='mail', class='me-1') | safe }} Resend Link
+      </button>
+    </form>
+  </div>
+{% endif %}
+
+<!-- Stats Overview Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-md-4">
+    <div class="account-stat-card">
+      <div class="account-stat-icon neutral">
+        {{ icon(name='box') | safe }}
+      </div>
+      <div>
+        <div class="small text-muted fw-medium">Recent Orders</div>
+        <div class="fs-5 fw-bold text-ink">{{ latest_orders | length }} {% if latest_orders | length == 1 %}active{% else %}orders{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-md-4">
+    <div class="account-stat-card">
+      <div class="account-stat-icon rose">
+        {{ icon(name='heart') | safe }}
+      </div>
+      <div>
+        <div class="small text-muted fw-medium">Saved in Wishlist</div>
+        <div class="fs-5 fw-bold text-ink">{{ wishlist_count }} {% if wishlist_count == 1 %}item{% else %}items{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-12 col-md-4">
+    <div class="account-stat-card">
+      <div class="account-stat-icon emerald">
+        {{ icon(name='check-circle') | safe }}
+      </div>
+      <div>
+        <div class="small text-muted fw-medium">Account Status</div>
+        <div class="fs-5 fw-bold text-success d-flex align-items-center gap-1">
+          Active
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Orders Section -->
+<div class="account-card mb-4">
+  <div class="account-card-header">
+    <h2 class="account-card-title">
+      {{ icon(name='box', class='text-primary') | safe }} Recent Orders
+    </h2>
+    <a href="{{ route(name='account_orders') }}" class="small text-decoration-none fw-semibold">
+      View All Orders
+    </a>
+  </div>
+
+  {% if not latest_orders %}
+    <div class="text-center py-5">
+      <div class="empty-state-icon mb-3" style="width: 52px; height: 52px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: var(--surface-muted); border-radius: 50%; color: var(--ink-2);">
+        {{ icon(name='box') | safe }}
+      </div>
+      <h3 class="h5 fw-bold mb-1">No Orders Yet</h3>
+      <p class="text-muted small mb-3">You haven't placed any orders with this account yet.</p>
+      <a href="{{ route(name='shop') }}" class="btn btn-editorial-primary btn-sm">
+        {{ icon(name='bag', class='me-1') | safe }} Discover Collection
+      </a>
+    </div>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="small text-uppercase">Order</th>
+            <th class="small text-uppercase">Date</th>
+            <th class="small text-uppercase">Status</th>
+            <th class="small text-uppercase">Total</th>
+            <th class="small text-uppercase text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in latest_orders %}
+            <tr>
+              <td class="fw-bold">
+                <a href="{{ route(name='account_orders') }}/{{ o.order_number }}" class="text-decoration-none text-ink">
+                  {{ o.order_number }}
+                </a>
+                <div class="small text-muted">{{ o.item_count }} {% if o.item_count == 1 %}item{% else %}items{% endif %}</div>
+              </td>
+              <td class="small text-muted">{{ o.created_at }}</td>
+              <td>
+                <span class="badge {% if o.status == 'completed' or o.status == 'delivered' %}bg-success{% elif o.status == 'processing' or o.status == 'shipped' %}bg-info text-dark{% elif o.status == 'cancelled' %}bg-danger{% elif o.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %} text-uppercase" style="font-size: 0.72rem;">
+                  {{ o.status }}
+                </span>
+              </td>
+              <td class="fw-semibold">{{ o.total | money }}</td>
+              <td class="text-end">
+                <a href="{{ route(name='account_orders') }}/{{ o.order_number }}" class="btn btn-editorial-secondary btn-sm py-1 px-2" style="font-size: 0.8rem;">
+                  Details
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Default Address & Quick Links Row -->
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="account-card h-100">
+      <div class="account-card-header">
+        <h2 class="account-card-title">
+          {{ icon(name='map-pin', class='text-primary') | safe }} Shipping Address
+        </h2>
+        <a href="{{ route(name='account_addresses') }}" class="small text-decoration-none fw-semibold">
+          Manage
+        </a>
+      </div>
+      {% if default_address %}
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <strong class="text-ink">{{ default_address.full_name }}</strong>
+            <span class="badge bg-light text-dark border small" style="font-size: 0.7rem;">{{ default_address.label | default(value='Default') }}</span>
+          </div>
+          <div class="text-muted small mb-1">{{ icon(name='phone', class='me-1') | safe }} {{ default_address.phone }}</div>
+          <div class="text-muted small">
+            {{ default_address.address | linebreaksbr | safe }}<br>
+            {{ default_address.city }}{% if default_address.zip %} - {{ default_address.zip }}{% endif %}<br>
+            {{ default_address.country | default(value='Bangladesh') }}
+          </div>
+        </div>
+      {% else %}
+        <p class="text-muted small mb-3">No default address saved yet. Save an address for one-click checkout.</p>
+        <a href="{{ route(name='account_addresses') }}" class="btn btn-editorial-secondary btn-sm">
+          {{ icon(name='map-pin', class='me-1') | safe }} Add Address
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="account-card h-100">
+      <div class="account-card-header">
+        <h2 class="account-card-title">
+          {{ icon(name='shield', class='text-primary') | safe }} Security &amp; Access
+        </h2>
+        <a href="{{ route(name='account_security') }}" class="small text-decoration-none fw-semibold">
+          Settings
+        </a>
+      </div>
+      <p class="text-muted small mb-3">Keep your customer profile secure and manage authentication credentials.</p>
+      <div class="d-flex flex-column gap-2">
+        <a href="{{ route(name='account_security') }}#password" class="account-quick-action">
+          <span class="d-flex align-items-center gap-2">
+            {{ icon(name='lock', class='text-muted') | safe }}
+            <span>Update Password</span>
+          </span>
+          <i class="bi bi-chevron-right text-muted small"></i>
+        </a>
+        <a href="{{ route(name='account_security') }}#email" class="account-quick-action">
+          <span class="d-flex align-items-center gap-2">
+            {{ icon(name='mail', class='text-muted') | safe }}
+            <span>Email Preferences</span>
+          </span>
+          <i class="bi bi-chevron-right text-muted small"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock account_content %}

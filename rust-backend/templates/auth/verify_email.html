@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5 text-center" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <div class="fs-1 text-danger mb-3">
+        {{ icon(name='x', class='text-danger', title='Error') | safe }}
+      </div>
+      <h1 class="h4 fw-bold mb-2">Verification Failed</h1>
+      <p class="text-muted small mb-4">
+        {{ error | default(value='This email verification link is invalid, expired, or has already been used.') }}
+      </p>
+
+      <div class="d-grid gap-2">
+        <a href="{{ route(name='resend_verification') }}" class="btn btn-editorial-primary">
+          Resend Verification Link
+        </a>
+        <a href="{{ route(name='login') }}" class="btn btn-editorial-secondary btn-sm">
+          Go to Sign In
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

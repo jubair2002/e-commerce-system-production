@@ -62,3 +62,8 @@ assets/uploads/cache/*
 # Downloaded template originals
 _template/
 
+# Rust build artifacts
+target/
+rust-backend/target/
+
+

@@ -1,0 +1,192 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+<!-- Header with Order Status and Action Buttons -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <h1 class="h3 fw-bold mb-0">Order {{ order.order_number }}</h1>
+      <span class="badge {% if order.status == 'completed' or order.status == 'delivered' %}bg-success{% elif order.status == 'processing' or order.status == 'shipped' %}bg-info text-dark{% elif order.status == 'cancelled' %}bg-danger{% elif order.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %} text-uppercase">{{ order.status }}</span>
+    </div>
+    <div class="text-muted small">
+      Placed on {{ order.created_at }} &bull; Payment: {{ order.payment_method | upper }} ({{ order.payment_status | capitalize }})
+    </div>
+  </div>
+
+  <!-- Action Buttons Toolbar -->
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <!-- Track Order Button -->
+    <a href="{{ route(name='track') }}?order_number={{ order.order_number }}&phone={{ order.customer_phone | urlencode }}" class="btn btn-outline-dark btn-sm">
+      {{ icon(name='map-pin', class='i-sm me-1') | safe }} Track Order
+    </a>
+
+    <!-- Print Invoice Button -->
+    <a href="{{ route(name='account_orders') }}/{{ order.order_number }}/invoice" target="_blank" class="btn btn-outline-secondary btn-sm">
+      {{ icon(name='printer', class='i-sm me-1') | safe }} Print Invoice
+    </a>
+
+    <!-- Buy Again Form -->
+    <form method="post" action="{{ route(name='account_orders') }}/{{ order.order_number }}" class="m-0">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="action" value="buy_again">
+      <button type="submit" class="btn btn-editorial-primary btn-sm">
+        {{ icon(name='rotate-ccw', class='i-sm me-1') | safe }} Buy Again
+      </button>
+    </form>
+
+    <!-- Cancel Order Button (Only if pending & allowed) -->
+    {% if can_cancel %}
+      <form method="post" action="{{ route(name='account_orders') }}/{{ order.order_number }}" class="m-0" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be reversed.');">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="cancel_order">
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+          {{ icon(name='x', class='i-sm me-1') | safe }} Cancel Order
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Items and Timeline -->
+  <div class="col-lg-8">
+
+    <!-- Order Items Card -->
+    <div class="account-card p-0 overflow-hidden mb-4">
+      <div class="account-card-header p-3 border-bottom m-0">
+        <h2 class="account-card-title fs-6">Order Items ({{ items | length }})</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3 py-2 small text-uppercase">Product</th>
+              <th class="py-2 small text-uppercase text-end">Price</th>
+              <th class="py-2 small text-uppercase text-center">Qty</th>
+              <th class="pe-3 py-2 small text-uppercase text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in items %}
+              <tr>
+                <td class="ps-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <img src="{{ it.product_image | product_img }}" alt="{{ it.product_name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="border">
+                    <div>
+                      {% if it.product_slug %}
+                        <a href="{{ route(name='product', slug=it.product_slug) }}" class="fw-semibold text-ink text-decoration-none">
+                          {{ it.product_name }}
+                        </a>
+                      {% else %}
+                        <span class="fw-semibold text-ink">{{ it.product_name }}</span>
+                      {% endif %}
+                      {% if it.variant_label %}
+                        <div class="small text-muted">{{ it.variant_label }}</div>
+                      {% endif %}
+                      {% if it.variant_sku or it.product_sku %}
+                        <div class="text-muted" style="font-size: 0.72rem;">SKU: {{ it.variant_sku | default(value=it.product_sku) }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td class="text-end small">{{ it.unit_price | money }}</td>
+                <td class="text-center small">{{ it.quantity }}</td>
+                <td class="pe-3 text-end fw-bold">{{ it.line_total | money }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Status Timeline Card -->
+    <div class="account-card">
+      <div class="account-card-header">
+        <h2 class="account-card-title fs-6">{{ icon(name='rotate-ccw', class='i-sm me-2 text-primary') | safe }} Status Timeline</h2>
+      </div>
+
+      {% if not status_history %}
+        <p class="text-muted small mb-0">Order received on {{ order.created_at }}.</p>
+      {% else %}
+        <ul class="order-timeline">
+          {% for h in status_history %}
+            <li class="order-timeline-item">
+              <div class="order-timeline-dot {% if loop.last %}active{% endif %}"></div>
+              <div class="fw-bold small text-capitalize mb-0">{{ h.status }}</div>
+              <div class="text-muted small" style="font-size: 0.78rem;">
+                {{ h.created_at }}
+                {% if h.note %}
+                  &bull; {{ h.note }}
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Right Column: Delivery Details & Payment Summary -->
+  <div class="col-lg-4">
+
+    <!-- Payment Summary -->
+    <div class="account-card mb-4">
+      <div class="account-card-header">
+        <h2 class="account-card-title fs-6">Order Summary</h2>
+      </div>
+      <div class="d-flex justify-content-between small text-muted mb-2">
+        <span>Subtotal</span>
+        <span class="text-ink fw-semibold">{{ order.subtotal | money }}</span>
+      </div>
+      {% if order.discount_total and order.discount_total > 0 %}
+        <div class="d-flex justify-content-between small text-success mb-2">
+          <span>Discount {% if order.coupon_code %}({{ order.coupon_code }}){% endif %}</span>
+          <span class="fw-semibold">-{{ order.discount_total | money }}</span>
+        </div>
+      {% endif %}
+      <div class="d-flex justify-content-between small text-muted mb-2">
+        <span>Shipping ({{ order.shipping_method_name | default(value='Standard') }})</span>
+        <span class="text-ink fw-semibold">{% if order.shipping_fee and order.shipping_fee > 0 %}{{ order.shipping_fee | money }}{% else %}Free{% endif %}</span>
+      </div>
+      {% if order.cod_fee and order.cod_fee > 0 %}
+        <div class="d-flex justify-content-between small text-muted mb-2">
+          <span>COD Handling Fee</span>
+          <span class="text-ink fw-semibold">{{ order.cod_fee | money }}</span>
+        </div>
+      {% endif %}
+      <hr class="my-2">
+      <div class="d-flex justify-content-between fs-6 fw-bold mb-3">
+        <span>Total</span>
+        <span class="text-primary">{{ order.total | money }}</span>
+      </div>
+      <div class="p-2 bg-light rounded text-center small text-muted">
+        Payment: <strong>{{ order.payment_method | upper }}</strong> &bull; Status: <strong class="text-capitalize">{{ order.payment_status }}</strong>
+      </div>
+    </div>
+
+    <!-- Shipping Address & Courier Tracking -->
+    <div class="account-card">
+      <div class="account-card-header">
+        <h2 class="account-card-title fs-6">Delivery Information</h2>
+      </div>
+      <div class="fw-bold mb-1">{{ order.customer_name }}</div>
+      <div class="text-muted small mb-1">{{ icon(name='phone', class='i-sm me-1') | safe }} {{ order.customer_phone }}</div>
+      <div class="text-muted small mb-3">
+        {{ order.shipping_address | linebreaksbr | safe }}<br>
+        {{ order.shipping_city }}{% if order.shipping_zip %} - {{ order.shipping_zip }}{% endif %}<br>
+        {{ order.shipping_country | default(value='Bangladesh') }}
+      </div>
+
+      {% if order.tracking_number %}
+        <div class="p-3 bg-light rounded border">
+          <div class="small fw-bold mb-1">{{ icon(name='truck', class='i-sm me-1') | safe }} Courier Tracking</div>
+          <div class="small text-muted">Courier: <strong>{{ order.courier | default(value='Standard Courier') }}</strong></div>
+          <div class="small text-muted">Tracking #: <strong>{{ order.tracking_number }}</strong></div>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock account_content %}

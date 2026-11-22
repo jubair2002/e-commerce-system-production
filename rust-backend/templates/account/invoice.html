@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice - {{ order.order_number }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #212529;
+      background: #f8f9fa;
+      padding: 24px;
+    }
+    .invoice-card {
+      background: #ffffff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .cod-collect-banner {
+      background: #fff3cd;
+      border: 2px dashed #ffc107;
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .invoice-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Action Toolbar -->
+  <div class="container text-center mb-4 no-print" style="max-width: 860px;">
+    <button onclick="window.print()" class="btn btn-dark btn-lg px-4 me-2">
+      {{ icon(name='printer', class='i-sm me-2') | safe }} Print Invoice
+    </button>
+    <a href="{{ route(name='account_orders') }}/{{ order.order_number }}" class="btn btn-outline-secondary btn-lg">
+      {{ icon(name='arrow-left', class='i-sm me-1') | safe }} Back to Order Details
+    </a>
+  </div>
+
+  <div class="invoice-card">
+    <!-- Header -->
+    <div class="row align-items-center mb-4 pb-3 border-bottom">
+      <div class="col-7">
+        {% if store_logo_url %}
+          <img src="{{ store_logo_url }}" alt="{{ site_name | default(value='Jinish Potro') }}" style="max-height: 50px; margin-bottom: 8px;">
+        {% else %}
+          <h3 class="fw-bold mb-1">{{ site_name | default(value='Jinish Potro') }}</h3>
+        {% endif %}
+        <div class="text-muted small">
+          {% if store_address %}
+            {{ store_address | linebreaksbr | safe }}<br>
+          {% endif %}
+          {% if store_phone %}
+            Phone: {{ store_phone }} &bull;
+          {% endif %}
+          {% if store_email %}
+            Email: {{ store_email }}
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-5 text-end">
+        <h2 class="h3 fw-bold text-uppercase mb-1">Invoice</h2>
+        <div class="fs-6 fw-semibold text-primary mb-1">{{ order.order_number }}</div>
+        <div class="text-muted small">Date: {{ order.created_at }}</div>
+        <div class="text-muted small">Status: <span class="badge bg-secondary text-uppercase">{{ order.status }}</span></div>
+      </div>
+    </div>
+
+    <!-- COD Banner -->
+    {% if order.payment_method == 'cod' %}
+      <div class="cod-collect-banner">
+        <div class="fs-5 fw-bold text-ink d-flex align-items-center">
+          {{ icon(name='cash', class='i-md text-warning me-2') | safe }}
+          Cash on Delivery Amount: {{ order.total | money }}
+        </div>
+        <div class="text-muted small mt-1">Please keep this amount ready to hand to the delivery courier.</div>
+      </div>
+    {% endif %}
+
+    <!-- Bill To / Deliver To -->
+    <div class="row mb-4">
+      <div class="col-6">
+        <h6 class="text-uppercase text-muted small fw-bold mb-2">Deliver To</h6>
+        <div class="fw-bold">{{ order.customer_name }}</div>
+        <div>{{ order.shipping_address | linebreaksbr | safe }}</div>
+        <div>{{ order.shipping_city }}{% if order.shipping_zip %}, {{ order.shipping_zip }}{% endif %}</div>
+        <div>{{ order.shipping_country | default(value='Bangladesh') }}</div>
+        <div class="mt-2 text-muted small">{{ icon(name='phone', class='i-sm me-1') | safe }} {{ order.customer_phone }}</div>
+        {% if order.customer_email %}
+          <div class="text-muted small">{{ icon(name='mail', class='i-sm me-1') | safe }} {{ order.customer_email }}</div>
+        {% endif %}
+      </div>
+      <div class="col-6 text-end">
+        <h6 class="text-uppercase text-muted small fw-bold mb-2">Order Information</h6>
+        <div class="small">Payment Method: <strong>{{ order.payment_method | upper }}</strong></div>
+        <div class="small">Payment Status: <strong>{{ order.payment_status | capitalize }}</strong></div>
+        <div class="small">Shipping: <strong>{{ order.shipping_method_name | default(value='Standard') }}</strong></div>
+        {% if order.tracking_number %}
+          <div class="small mt-1">
+            Tracking #: <strong>{{ order.tracking_number }}</strong>
+            {% if order.courier %}({{ order.courier }}){% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Line Items Table -->
+    <table class="table table-bordered align-middle mb-4">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 50px;" class="text-center">#</th>
+          <th>Item Description</th>
+          <th style="width: 120px;" class="text-end">Price</th>
+          <th style="width: 70px;" class="text-center">Qty</th>
+          <th style="width: 120px;" class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+          <tr>
+            <td class="text-center small text-muted">{{ loop.index }}</td>
+            <td>
+              <div class="fw-semibold">{{ it.product_name }}</div>
+              {% if it.variant_label %}
+                <div class="small text-muted">{{ it.variant_label }}</div>
+              {% endif %}
+              {% if it.variant_sku or it.product_sku %}
+                <div class="text-muted" style="font-size: 0.75rem;">SKU: {{ it.variant_sku | default(value=it.product_sku) }}</div>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ it.unit_price | money }}</td>
+            <td class="text-center">{{ it.quantity }}</td>
+            <td class="text-end fw-semibold">{{ it.line_total | money }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" class="text-end text-muted">Subtotal</td>
+          <td class="text-end fw-semibold">{{ order.subtotal | money }}</td>
+        </tr>
+        {% if order.discount_total and order.discount_total > 0 %}
+          <tr class="text-success">
+            <td colspan="4" class="text-end">Discount {% if order.coupon_code %}({{ order.coupon_code }}){% endif %}</td>
+            <td class="text-end fw-semibold">-{{ order.discount_total | money }}</td>
+          </tr>
+        {% endif %}
+        <tr>
+          <td colspan="4" class="text-end text-muted">Shipping Fee</td>
+          <td class="text-end">{% if order.shipping_fee and order.shipping_fee > 0 %}{{ order.shipping_fee | money }}{% else %}Free{% endif %}</td>
+        </tr>
+        {% if order.cod_fee and order.cod_fee > 0 %}
+          <tr>
+            <td colspan="4" class="text-end text-muted">COD Handling Fee</td>
+            <td class="text-end">{{ order.cod_fee | money }}</td>
+          </tr>
+        {% endif %}
+        <tr class="fs-5 fw-bold table-light">
+          <td colspan="4" class="text-end">Total</td>
+          <td class="text-end text-primary">{{ order.total | money }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="text-center text-muted small mt-4 pt-3 border-top">
+      Thank you for shopping with {{ site_name | default(value='Jinish Potro') }}! If you have questions about your order, please contact our support team.
+    </div>
+  </div>
+
+</body>
+</html>

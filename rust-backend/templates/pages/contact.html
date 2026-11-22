@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+			Contact Us
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Contact
+			</span>
+		</div>
+	</div>
+</section>
+
+<!-- =================== COZASTORE CONTACT SECTION =================== -->
+<section class="bg0 p-t-30 p-b-116">
+	<div class="container">
+
+		<!-- Flashes -->
+		{% if flashes %}
+			{% for f in flashes %}
+				<div class="alert alert-{{ f.type }} alert-dismissible fade show p-lr-20 p-tb-12 m-b-25" role="alert">
+					{{ f.message }}
+					<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+			{% endfor %}
+		{% endif %}
+
+		<!-- Errors -->
+		{% if errors %}
+			<div class="alert alert-danger alert-dismissible fade show p-lr-20 p-tb-12 m-b-25" role="alert">
+				<strong>Please fix the following:</strong>
+				<ul class="m-t-5 m-b-0 p-l-20">
+					{% for err in errors %}
+						<li>{{ err }}</li>
+					{% endfor %}
+				</ul>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		{% endif %}
+
+		<div class="flex-w flex-tr">
+			<!-- Contact Form Column -->
+			<div class="size-210 bor10 p-lr-70 p-t-55 p-b-70 p-lr-15-lg w-full-md">
+				<form method="post" action="{{ route(name='contact') }}" novalidate>
+					<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+					<!-- Honeypot -->
+					<div style="display: none !important;">
+						<input type="text" name="website_hp" value="" tabindex="-1" autocomplete="off">
+					</div>
+
+					<h4 class="mtext-105 cl2 txt-center p-b-30">
+						Send Us A Message
+					</h4>
+
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="text" name="name" placeholder="Your Name *" required value="{{ old.name | default(value='') }}">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-account fs-20"></i>
+						</div>
+					</div>
+
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="email" name="email" placeholder="Your Email Address *" required value="{{ old.email | default(value='') }}">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-email fs-20"></i>
+						</div>
+					</div>
+
+					<div class="row m-lr-0 m-b-20" style="gap: 15px;">
+						<div class="col-sm p-lr-0 pos-relative">
+							<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 18px; border-radius: 8px;" type="tel" name="phone" placeholder="Phone Number" value="{{ old.phone | default(value='') }}">
+							<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+								<i class="zmdi zmdi-phone fs-20"></i>
+							</div>
+						</div>
+						<div class="col-sm p-lr-0 pos-relative">
+							<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 18px; border-radius: 8px;" type="text" name="order_number" placeholder="Order # (Optional)" value="{{ old.order_number | default(value='') }}">
+							<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+								<i class="zmdi zmdi-receipt fs-20"></i>
+							</div>
+						</div>
+					</div>
+
+					<div class="pos-relative m-b-20">
+						<input class="stext-111 cl2 plh3 size-116 bor8" style="width: 100%; padding-left: 48px; padding-right: 20px; border-radius: 8px;" type="text" name="subject" placeholder="Subject" value="{{ old.subject | default(value='') }}">
+						<div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+							<i class="zmdi zmdi-comment-text fs-20"></i>
+						</div>
+					</div>
+
+					<div class="m-b-30">
+						<textarea class="stext-111 cl2 plh3 size-120 bor8 p-lr-20 p-tb-16" style="width: 100%; border-radius: 8px;" name="message" placeholder="How Can We Help You? *" required minlength="10">{{ old.message | default(value='') }}</textarea>
+					</div>
+
+					<button type="submit" class="flex-c-m stext-101 cl0 size-121 bg3 bor1 hov-btn3 p-lr-15 trans-04 pointer" style="border-radius: 8px; font-weight: 700;">
+						<i class="zmdi zmdi-mail-send m-r-8 fs-20"></i> Submit Message
+					</button>
+				</form>
+			</div>
+
+			<!-- Contact Info Column -->
+			<div class="size-210 bor10 flex-w flex-col-m p-lr-93 p-tb-30 p-lr-15-lg w-full-md">
+				<div class="flex-w w-full p-b-42">
+					<span class="fs-18 cl5 txt-center size-211">
+						<i class="zmdi zmdi-pin fs-28 cl1"></i>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Address
+						</span>
+
+						<p class="stext-115 cl6 size-213 p-t-10">
+							{{ store_address | default(value='Dhaka, Bangladesh') }}
+						</p>
+					</div>
+				</div>
+
+				<div class="flex-w w-full p-b-42">
+					<span class="fs-18 cl5 txt-center size-211">
+						<i class="zmdi zmdi-phone fs-28 cl1"></i>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Phone Support
+						</span>
+
+						<p class="stext-115 cl1 size-213 p-t-10">
+							<a href="tel:{{ store_phone }}" class="cl1 hov-cl2">
+								{{ store_phone | default(value='+880 1700-000000') }}
+							</a>
+						</p>
+					</div>
+				</div>
+
+				<div class="flex-w w-full">
+					<span class="fs-18 cl5 txt-center size-211">
+						<i class="zmdi zmdi-email fs-28 cl1"></i>
+					</span>
+
+					<div class="size-212 p-t-2">
+						<span class="mtext-110 cl2 font-weight-bold">
+							Sales &amp; Customer Care
+						</span>
+
+						<p class="stext-115 cl1 size-213 p-t-10">
+							<a href="mailto:{{ store_email }}" class="cl1 hov-cl2">
+								{{ store_email | default(value='support@jinishpotro.store') }}
+							</a>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+{% endblock content %}

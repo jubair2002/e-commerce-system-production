@@ -1,0 +1,218 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Delivery Addresses</h1>
+    <p class="text-muted small mb-0">Manage your shipping destinations for faster checkout (up to 10 saved addresses).</p>
+  </div>
+  {% if addresses | length < 10 and not edit_address %}
+    <button type="button" class="btn btn-editorial-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addressFormCollapse" aria-expanded="{% if errors %}true{% else %}false{% endif %}">
+      + Add New Address
+    </button>
+  {% endif %}
+</div>
+
+<!-- Add / Edit Address Form Collapse -->
+<div class="collapse {% if edit_address or errors %}show{% endif %} mb-4" id="addressFormCollapse">
+  <div class="account-card border-primary">
+    <div class="account-card-header">
+      <h2 class="account-card-title">{% if edit_address %}Edit Delivery Address{% else %}Add New Delivery Address{% endif %}</h2>
+      {% if edit_address %}
+        <a href="{{ route(name='account_addresses') }}" class="btn btn-editorial-secondary btn-sm">Cancel Edit</a>
+      {% else %}
+        <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#addressFormCollapse" aria-label="Close form"></button>
+      {% endif %}
+    </div>
+
+    {% if errors and errors.general %}
+      <div class="alert alert-danger small py-2 mb-3">
+        {{ icon(name='alert-circle', class='me-1') | safe }} {{ errors.general }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{{ route(name='account_addresses') }}" class="auth-form" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="action" value="save">
+      <input type="hidden" name="address_id" value="{% if edit_address %}{{ edit_address.id }}{% else %}0{% endif %}">
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="addrLabel" class="form-label small fw-semibold">Address Label</label>
+          <select name="label" id="addrLabel" class="form-select form-select-sm">
+            {% set current_label = edit_address.label | default(value='Home') %}
+            {% for lbl in ['Home', 'Office', 'Other'] %}
+              <option value="{{ lbl }}" {% if current_label == lbl %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label for="addrName" class="form-label small fw-semibold">Recipient Full Name <span class="text-danger">*</span></label>
+          <input type="text"
+                 name="full_name"
+                 id="addrName"
+                 class="form-control form-control-sm {% if errors and errors.full_name %}is-invalid{% endif %}"
+                 value="{% if edit_address %}{{ edit_address.full_name }}{% else %}{{ customer.name }}{% endif %}"
+                 required>
+          {% if errors and errors.full_name %}
+            <div class="invalid-feedback">{{ errors.full_name }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label for="addrPhone" class="form-label small fw-semibold">Contact Phone <span class="text-danger">*</span></label>
+          <input type="tel"
+                 name="phone"
+                 id="addrPhone"
+                 class="form-control form-control-sm {% if errors and errors.phone %}is-invalid{% endif %}"
+                 value="{% if edit_address %}{{ edit_address.phone }}{% else %}{{ customer.phone | default(value='') }}{% endif %}"
+                 placeholder="01712345678"
+                 required>
+          {% if errors and errors.phone %}
+            <div class="invalid-feedback">{{ errors.phone }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-12">
+          <label for="addrStreet" class="form-label small fw-semibold">Street Address / House / Flat <span class="text-danger">*</span></label>
+          <textarea name="address"
+                    id="addrStreet"
+                    class="form-control form-control-sm {% if errors and errors.address %}is-invalid{% endif %}"
+                    rows="2"
+                    placeholder="House #, Road #, Sector / Area"
+                    required>{% if edit_address %}{{ edit_address.address }}{% endif %}</textarea>
+          {% if errors and errors.address %}
+            <div class="invalid-feedback">{{ errors.address }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label for="addrCity" class="form-label small fw-semibold">City / District <span class="text-danger">*</span></label>
+          <input type="text"
+                 name="city"
+                 id="addrCity"
+                 class="form-control form-control-sm {% if errors and errors.city %}is-invalid{% endif %}"
+                 value="{% if edit_address %}{{ edit_address.city }}{% else %}Dhaka{% endif %}"
+                 placeholder="e.g. Dhaka"
+                 required>
+          {% if errors and errors.city %}
+            <div class="invalid-feedback">{{ errors.city }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-4">
+          <label for="addrArea" class="form-label small fw-semibold">Thana / Area</label>
+          <input type="text"
+                 name="area"
+                 id="addrArea"
+                 class="form-control form-control-sm"
+                 value="{% if edit_address %}{{ edit_address.area | default(value='') }}{% endif %}"
+                 placeholder="e.g. Dhanmondi">
+        </div>
+
+        <div class="col-md-4">
+          <label for="addrZip" class="form-label small fw-semibold">Postal Code</label>
+          <input type="text"
+                 name="zip"
+                 id="addrZip"
+                 class="form-control form-control-sm"
+                 value="{% if edit_address %}{{ edit_address.zip | default(value='') }}{% endif %}"
+                 placeholder="e.g. 1205">
+        </div>
+
+        <div class="col-12">
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="is_default"
+                   value="1"
+                   id="isDefaultCheck"
+                   {% if (edit_address and edit_address.is_default) or not addresses %}checked{% endif %}>
+            <label class="form-check-label small" for="isDefaultCheck">
+              Set as my default shipping address
+            </label>
+          </div>
+        </div>
+
+        <div class="col-12 pt-2">
+          <button type="submit" class="btn btn-editorial-primary btn-sm">
+            {% if edit_address %}Update Address{% else %}Save Address{% endif %}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Saved Addresses List -->
+{% if not addresses %}
+  <div class="account-card text-center py-5">
+    <div class="empty-state-icon mb-3" style="width: 52px; height: 52px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: var(--surface-muted); border-radius: 50%; color: var(--ink-2);">
+      {{ icon(name='map-pin') | safe }}
+    </div>
+    <h3 class="h5 fw-bold mb-1">No Delivery Addresses Saved</h3>
+    <p class="text-muted small mb-3">Add your home or office address to save time when checking out.</p>
+  </div>
+{% else %}
+  <div class="row g-3">
+    {% for addr in addresses %}
+      <div class="col-md-6">
+        <div class="account-card h-100 position-relative {% if addr.is_default %}border-primary{% endif %}">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-light text-dark border fw-semibold">{{ addr.label | default(value='Address') }}</span>
+              {% if addr.is_default %}
+                <span class="badge bg-primary text-white">{{ icon(name='check') | safe }} Default</span>
+              {% endif %}
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-light border-0 py-0 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                &vellip;
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
+                <li>
+                  <a class="dropdown-item" href="{{ route(name='account_addresses') }}?edit={{ addr.id }}">
+                    {{ icon(name='edit', class='me-2 text-secondary') | safe }} Edit
+                  </a>
+                </li>
+                {% if not addr.is_default %}
+                  <li>
+                    <form method="post" action="{{ route(name='account_addresses') }}" class="m-0">
+                      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                      <input type="hidden" name="action" value="set_default">
+                      <input type="hidden" name="address_id" value="{{ addr.id }}">
+                      <button type="submit" class="dropdown-item">
+                        {{ icon(name='check-circle', class='me-2 text-secondary') | safe }} Set as Default
+                      </button>
+                    </form>
+                  </li>
+                {% endif %}
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                  <form method="post" action="{{ route(name='account_addresses') }}" class="m-0" onsubmit="return confirm('Delete this address?');">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="address_id" value="{{ addr.id }}">
+                    <button type="submit" class="dropdown-item text-danger">
+                      {{ icon(name='trash', class='me-2 text-danger') | safe }} Delete
+                    </button>
+                  </form>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="fw-bold fs-6 mb-1 text-ink">{{ addr.full_name }}</div>
+          <div class="text-muted small mb-2">{{ icon(name='phone', class='me-1') | safe }} {{ addr.phone }}</div>
+          <div class="text-muted small">
+            {{ addr.address | linebreaksbr | safe }}<br>
+            {{ addr.city }}{% if addr.area %}, {{ addr.area }}{% endif %}{% if addr.zip %} - {{ addr.zip }}{% endif %}<br>
+            {{ addr.country | default(value='Bangladesh') }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock account_content %}

@@ -1,0 +1,247 @@
+{% extends "account/layout.html" %}
+
+{% block account_content %}
+{% if flashes %}
+  {% for f in flashes %}
+    <div class="alert alert-{{ f.type }} small py-2 mb-3">
+      {{ f.message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- 1. Change Password Section -->
+<div class="account-card mb-4" id="password">
+  <div class="account-card-header">
+    <h2 class="account-card-title">{{ icon(name='lock', class='me-2 text-primary') | safe }} Change Password</h2>
+  </div>
+
+  {% if pw_errors and pw_errors.general %}
+    <div class="alert alert-danger small py-2 mb-3">
+      {{ icon(name='alert-circle', class='me-1') | safe }} {{ pw_errors.general }}
+    </div>
+  {% endif %}
+
+  <form method="post" action="{{ route(name='account_security') }}" class="auth-form" novalidate id="changePasswordForm">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="change_password">
+
+    <div class="form-group mb-3">
+      <label for="currentPassword" class="form-label small fw-semibold">Current Password <span class="text-danger">*</span></label>
+      <div class="input-group">
+        <input type="password"
+               name="current_password"
+               id="currentPassword"
+               class="form-control {% if pw_errors and pw_errors.current_password %}is-invalid{% endif %}"
+               required
+               autocomplete="current-password">
+        <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="currentPassword" aria-label="Toggle password visibility">
+          {{ icon(name='eye') | safe }}
+        </button>
+        {% if pw_errors and pw_errors.current_password %}
+          <div class="invalid-feedback">{{ pw_errors.current_password }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label for="resetPassword" class="form-label small fw-semibold">New Password <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input type="password"
+                 name="new_password"
+                 id="resetPassword"
+                 class="form-control {% if pw_errors and pw_errors.new_password %}is-invalid{% endif %}"
+                 required
+                 autocomplete="new-password">
+          <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="resetPassword" aria-label="Toggle password visibility">
+            {{ icon(name='eye') | safe }}
+          </button>
+          {% if pw_errors and pw_errors.new_password %}
+            <div class="invalid-feedback">{{ pw_errors.new_password }}</div>
+          {% endif %}
+        </div>
+        <div class="password-meter-wrapper mt-2">
+          <div class="progress" style="height: 4px;">
+            <div class="progress-bar password-meter-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="password-meter-text small text-muted" style="font-size: 0.75rem;">Password strength</span>
+            <span class="password-rules small text-muted" style="font-size: 0.75rem;">Min. 8 chars</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="newPasswordConfirm" class="form-label small fw-semibold">Confirm New Password <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input type="password"
+                 name="new_password_confirm"
+                 id="newPasswordConfirm"
+                 class="form-control {% if pw_errors and pw_errors.new_password_confirm %}is-invalid{% endif %}"
+                 required
+                 autocomplete="new-password">
+          <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="newPasswordConfirm" aria-label="Toggle password visibility">
+            {{ icon(name='eye') | safe }}
+          </button>
+          {% if pw_errors and pw_errors.new_password_confirm %}
+            <div class="invalid-feedback">{{ pw_errors.new_password_confirm }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-editorial-primary btn-sm">
+        Update Password
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- 2. Change Email Section -->
+<div class="account-card" id="email">
+  <div class="account-card-header">
+    <h2 class="account-card-title">{{ icon(name='mail', class='me-2 text-primary') | safe }} Change Email Address</h2>
+  </div>
+
+  <p class="text-muted small mb-3">
+    Your current primary email is <strong>{{ customer.email }}</strong>.
+    When changing your email, a confirmation link will be sent to the new address and will only become active once confirmed.
+  </p>
+
+  <form method="post" action="{{ route(name='account_security') }}" class="auth-form" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="change_email">
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label for="newEmailInput" class="form-label small fw-semibold">New Email Address <span class="text-danger">*</span></label>
+        <input type="email"
+               name="new_email"
+               id="newEmailInput"
+               class="form-control {% if email_errors and email_errors.new_email %}is-invalid{% endif %}"
+               required
+               autocomplete="email"
+               placeholder="new-address@example.com">
+        {% if email_errors and email_errors.new_email %}
+          <div class="invalid-feedback">{{ email_errors.new_email }}</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <label for="emailPassInput" class="form-label small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input type="password"
+                 name="email_change_password"
+                 id="emailPassInput"
+                 class="form-control {% if email_errors and email_errors.email_change_password %}is-invalid{% endif %}"
+                 required
+                 autocomplete="current-password"
+                 placeholder="Your current password">
+          <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="emailPassInput" aria-label="Toggle password visibility">
+            {{ icon(name='eye') | safe }}
+          </button>
+          {% if email_errors and email_errors.email_change_password %}
+            <div class="invalid-feedback">{{ email_errors.email_change_password }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-editorial-primary btn-sm">
+        Send Email Change Confirmation
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- 3. Signed-in Devices Section -->
+<div class="account-card" id="devices">
+  <div class="account-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h2 class="account-card-title">{{ icon(name='shield', class='me-2 text-primary') | safe }} Signed-in Devices</h2>
+    {% if devices %}
+      <form method="post" action="{{ route(name='account_security') }}" class="m-0" onsubmit="return confirm('Sign out all other devices?');">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="revoke_all_devices">
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+          {{ icon(name='logout', class='me-1') | safe }} Sign Out Everywhere
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <p class="text-muted small mb-3">These are browser sessions that used "Remember Me" to stay signed in to your account.</p>
+
+  {% if not devices %}
+    <div class="p-3 bg-light rounded text-center small text-muted">
+      No other persistent browser sessions active.
+    </div>
+  {% else %}
+    <div class="list-group list-group-flush border rounded">
+      {% for dev in devices %}
+        <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="fs-3 text-secondary">{{ icon(name='user') | safe }}</div>
+            <div>
+              <div class="fw-semibold small">{{ dev.browser }}</div>
+              <div class="text-muted small" style="font-size: 0.78rem;">
+                IP: {{ dev.ip }} &bull; Active since: {{ dev.created_at }}
+              </div>
+            </div>
+          </div>
+          <form method="post" action="{{ route(name='account_security') }}" class="m-0">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="revoke_device">
+            <input type="hidden" name="token_id" value="{{ dev.id }}">
+            <button type="submit" class="btn btn-light btn-sm border text-danger">
+              Revoke Access
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- 4. Privacy & Data Rights Section -->
+<div class="account-card">
+  <div class="account-card-header">
+    <h2 class="account-card-title">{{ icon(name='shield', class='me-2 text-primary') | safe }} Privacy &amp; Data Rights</h2>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3 border rounded h-100 d-flex flex-column justify-content-between">
+        <div>
+          <h6 class="fw-bold mb-1">{{ icon(name='arrow-right', class='me-1 text-primary') | safe }} Download My Data</h6>
+          <p class="text-muted small mb-3">Export all your personal data, past order histories, saved addresses, and wishlist items in standard JSON format.</p>
+        </div>
+        <div>
+          <a href="{{ route(name='account_export') }}" class="btn btn-editorial-secondary btn-sm">
+            Export Data (JSON)
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% if allow_delete %}
+      <div class="col-md-6">
+        <div class="p-3 border border-danger border-opacity-25 rounded bg-danger bg-opacity-10 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <h6 class="fw-bold text-danger mb-1">{{ icon(name='trash', class='me-1') | safe }} Delete Account</h6>
+            <p class="text-muted small mb-3">Permanently close and anonymize your account and personal details. Past completed orders are retained anonymously for accounting records.</p>
+          </div>
+          <div>
+            <a href="{{ route(name='account_delete') }}" class="btn btn-danger btn-sm">
+              Delete Account
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="{{ url(path='assets/js/auth.js') }}"></script>
+{% endblock account_content %}

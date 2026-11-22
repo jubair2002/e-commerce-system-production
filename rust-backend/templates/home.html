@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- =================== HERO SLIDER =================== -->
+{% if show_hero %}
+<section class="section-slide">
+	<div class="wrap-slick1">
+		<div class="slick1">
+			{% if hero_banners and hero_banners | length > 0 %}
+				{% for b in hero_banners %}
+				<div class="item-slick1" style="{% if b.image %}background-image: url('{{ b.image | product_img }}');{% else %}background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);{% endif %}">
+					<div class="container h-full">
+						<div class="flex-col-l-m h-full p-t-70 p-b-30 respon5">
+							<div class="layer-slick1 animated visible-false" data-appear="fadeInDown" data-delay="0">
+								<span class="stext-101 respon2" style="color: {% if b.image %}#ffffff{% else %}#64748b{% endif %}; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">
+									{{ b.subtitle | default(value=setting(key='store_tagline', default='Curated collections crafted with intention.')) }}
+								</span>
+							</div>
+								
+							<div class="layer-slick1 animated visible-false" data-appear="fadeInUp" data-delay="800">
+								<h2 class="ltext-201 respon1" style="color: {% if b.image %}#ffffff{% else %}#111827{% endif %}; font-size: 52px; font-weight: 800; letter-spacing: -1px; padding-top: 14px; padding-bottom: 32px; line-height: 1.15;">
+									{{ b.title }}
+								</h2>
+							</div>
+								
+							<div class="layer-slick1 animated visible-false" data-appear="zoomIn" data-delay="1600">
+								<a href="{{ b.button_url | default(value=route(name='shop')) }}" class="hero-shop-btn flex-c-m stext-101 trans-04">
+									{{ b.button_text | default(value='Shop Now') }}
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% endfor %}
+			{% else %}
+				<!-- Clean Brand Hero Banner (Modern Obsidian Light Palette) -->
+				<div class="item-slick1" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%); border-bottom: 1px solid #eef0f3;">
+					<div class="container h-full">
+						<div class="flex-col-l-m h-full p-t-70 p-b-30 respon5">
+							<div class="layer-slick1 animated visible-false" data-appear="fadeInDown" data-delay="0">
+								<span class="stext-101 respon2" style="color: #64748b; font-size: 14px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;">
+									Quality Essentials
+								</span>
+							</div>
+								
+							<div class="layer-slick1 animated visible-false" data-appear="fadeInUp" data-delay="800">
+								<h2 class="ltext-201 respon1" style="color: #111827; font-size: 54px; font-weight: 800; letter-spacing: -1.5px; padding-top: 14px; padding-bottom: 32px; line-height: 1.15;">
+									{{ site_brand | default(value='Jinish Potro') }}
+								</h2>
+							</div>
+								
+							<div class="layer-slick1 animated visible-false" data-appear="zoomIn" data-delay="1600">
+								<a href="{{ route(name='shop') }}" class="hero-shop-btn flex-c-m stext-101 trans-04">
+									Shop Now
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			{% endif %}
+		</div>
+	</div>
+</section>
+{% endif %}
+
+<!-- =================== CATEGORY BANNER CARDS =================== -->
+{% if show_categories and categories %}
+<div class="sec-banner bg0 p-t-80 p-b-50">
+	<div class="container">
+		<div class="row">
+			{% if category_banners and category_banners | length > 0 %}
+				{% for b in category_banners %}
+				<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
+					<!-- Block1 -->
+					<div class="block1 wrap-pic-w">
+						{% if b.image %}
+							<img src="{{ b.image | product_img }}" alt="{{ b.title }}" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+						{% else %}
+							<div class="block1-fallback-box" style="width: 100%; aspect-ratio: 4/3; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center;">
+								<span style="font-size: 16px; font-weight: 700; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase;">{{ b.title }}</span>
+							</div>
+						{% endif %}
+
+						<a href="{{ b.button_url | default(value=route(name='shop')) }}" class="block1-txt ab-t-l s-full flex-col-l-sb p-lr-38 p-tb-34 trans-03 respon3">
+							<div class="block1-txt-child1 flex-col-l">
+								<span class="block1-name ltext-102 trans-04 p-b-8">
+									{{ b.title }}
+								</span>
+
+								{% if b.subtitle %}
+								<span class="block1-info stext-102 trans-04">
+									{{ b.subtitle }}
+								</span>
+								{% endif %}
+							</div>
+
+							<div class="block1-txt-child2 p-b-4 trans-05">
+								<div class="block1-link stext-101 cl0 trans-09">
+									{{ b.button_text | default(value='Shop Now') }}
+								</div>
+							</div>
+						</a>
+					</div>
+				</div>
+				{% endfor %}
+			{% else %}
+				{% for cat in categories | slice(end=3) %}
+				<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
+					<!-- Block1 -->
+					<div class="block1 wrap-pic-w">
+						<img src="{{ cat.image | product_img }}" alt="{{ cat.name }}" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+
+						<a href="{{ route(name='category', slug=cat.slug) }}" class="block1-txt ab-t-l s-full flex-col-l-sb p-lr-38 p-tb-34 trans-03 respon3">
+							<div class="block1-txt-child1 flex-col-l">
+								<span class="block1-name ltext-102 trans-04 p-b-8">
+									{{ cat.name }}
+								</span>
+
+								<span class="block1-info stext-102 trans-04">
+									{% if cat.product_count == 1 %}1 Product{% else %}{{ cat.product_count }} Products{% endif %}
+								</span>
+							</div>
+
+							<div class="block1-txt-child2 p-b-4 trans-05">
+								<div class="block1-link stext-101 cl0 trans-09">
+									Shop Now
+								</div>
+							</div>
+						</a>
+					</div>
+				</div>
+				{% endfor %}
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endif %}
+
+<!-- =================== NEW ARRIVALS SECTION =================== -->
+{% if show_new_arrivals %}
+<section class="bg0 p-t-23 p-b-140">
+	<div class="container">
+		<div class="p-b-10">
+			<h3 class="ltext-103 cl5">
+				{{ setting(key='home_new_arrivals_title', default='New Arrivals') }}
+			</h3>
+		</div>
+
+		<div class="flex-w flex-sb-m p-b-52">
+			<div class="flex-w flex-l-m filter-tope-group m-tb-10">
+				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5 how-active1" data-filter="*">
+					All
+				</button>
+
+				{% for cat in categories %}
+				<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".{{ cat.slug }}">
+					{{ cat.name }}
+				</button>
+				{% endfor %}
+			</div>
+
+			<div class="flex-w flex-c-m m-tb-10">
+				<div class="flex-c-m stext-106 cl6 size-104 bor4 pointer hov-btn3 trans-04 m-r-8 m-tb-4 js-show-filter">
+					<i class="icon-filter cl2 m-r-6 fs-15 trans-04 zmdi zmdi-filter-list"></i>
+					<i class="icon-close-filter cl2 m-r-6 fs-15 trans-04 zmdi zmdi-close dis-none"></i>
+					 Filter
+				</div>
+
+				<div class="flex-c-m stext-106 cl6 size-105 bor4 pointer hov-btn3 trans-04 m-tb-4 js-show-search">
+					<i class="icon-search cl2 m-r-6 fs-15 trans-04 zmdi zmdi-search"></i>
+					<i class="icon-close-search cl2 m-r-6 fs-15 trans-04 zmdi zmdi-close dis-none"></i>
+					Search
+				</div>
+			</div>
+			
+			<!-- Search product -->
+			<div class="dis-none panel-search w-full p-t-10 p-b-15">
+				<form action="{{ route(name='shop') }}" method="GET" class="bor8 dis-flex p-l-15">
+					<button type="submit" class="size-113 flex-c-m fs-16 cl2 hov-cl1 trans-04">
+						<i class="zmdi zmdi-search"></i>
+					</button>
+
+					<input class="mtext-107 cl2 size-114 plh2 p-r-15" type="text" name="q" placeholder="Search products...">
+				</form>	
+			</div>
+
+			<!-- Filter Drawer -->
+			<div class="dis-none panel-filter w-full p-t-10">
+				<div class="wrap-filter flex-w bg6 w-full p-lr-40 p-t-27 p-lr-15-sm">
+					<div class="filter-col1 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Sort By
+						</div>
+						<ul>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?sort=newest" class="filter-link stext-106 trans-04">Newness</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?sort=best_selling" class="filter-link stext-106 trans-04">Popularity</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?sort=price_asc" class="filter-link stext-106 trans-04">Price: Low to High</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?sort=price_desc" class="filter-link stext-106 trans-04">Price: High to Low</a>
+							</li>
+						</ul>
+					</div>
+
+					<div class="filter-col2 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Price Range
+						</div>
+						<ul>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}" class="filter-link stext-106 trans-04">All Prices</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?min_price=0&max_price=500" class="filter-link stext-106 trans-04">Under 500</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?min_price=500&max_price=1500" class="filter-link stext-106 trans-04">500 - 1,500</a>
+							</li>
+							<li class="p-b-6">
+								<a href="{{ route(name='shop') }}?min_price=1500" class="filter-link stext-106 trans-04">1,500+</a>
+							</li>
+						</ul>
+					</div>
+
+					<div class="filter-col3 p-r-15 p-b-27">
+						<div class="mtext-102 cl2 p-b-15">
+							Categories
+						</div>
+						<ul>
+							{% for cat in categories %}
+							<li class="p-b-6">
+								<a href="{{ route(name='category', slug=cat.slug) }}" class="filter-link stext-106 trans-04">
+									{{ cat.name }}
+								</a>
+							</li>
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{% if new_arrivals and new_arrivals | length > 0 %}
+			<div class="row isotope-grid">
+				{% for p in new_arrivals %}
+					{% include "partials/product_card.html" %}
+				{% endfor %}
+			</div>
+
+			<!-- View All Products -->
+			<div class="flex-c-m flex-w w-full p-t-45">
+				<a href="{{ route(name='shop') }}?sort=newest" class="view-all-products-btn flex-c-m stext-101 trans-04">
+					View All Products <i class="zmdi zmdi-arrow-right m-l-8 fs-16"></i>
+				</a>
+			</div>
+		{% else %}
+			<div class="row">
+				<div class="col-12 text-center p-tb-80 empty-products-state">
+					<div class="empty-state-icon m-b-20">
+						<i class="zmdi zmdi-shopping-basket cl6" style="font-size: 64px;"></i>
+					</div>
+					<h4 class="mtext-105 cl2 p-b-10 font-weight-bold">No new arrivals yet</h4>
+					<p class="stext-115 cl6 p-b-25" style="max-width: 520px; margin: 0 auto 25px auto;">
+						We are preparing our latest collection drops. Check back soon or explore our full catalog.
+					</p>
+					<a href="{{ route(name='shop') }}" class="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 m-auto" style="max-width: 220px; border-radius: 25px;">
+						Browse Shop
+					</a>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+</section>
+{% endif %}
+
+<!-- =================== CUSTOMER REVIEWS STRIP =================== -->
+{% if show_reviews and reviews and reviews | length > 0 %}
+<section class="sec-reviews bg0 p-b-100" aria-label="Customer Reviews">
+  <div class="container">
+    <div class="p-b-32 text-center">
+      <h3 class="ltext-103 cl5">
+        Loved by Our Community
+      </h3>
+      <p class="stext-102 cl6 p-t-6">Real experiences from verified shoppers</p>
+    </div>
+
+    <div class="row">
+      {% for hr in reviews %}
+        <div class="col-sm-6 col-lg-3 p-b-30">
+          <div class="bor10 bg0 p-lr-25 p-tb-25 h-full flex-col-sb" style="border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+            <div>
+              <div class="cl1 fs-14 m-b-10">
+                {% for i in range(end=hr.rating) %}
+                  <i class="zmdi zmdi-star" style="color: #f59e0b;"></i>
+                {% endfor %}
+              </div>
+              <h4 class="stext-101 cl2 font-weight-bold m-b-8">
+                "{{ hr.title | default(value='Great product') }}"
+              </h4>
+              <p class="stext-102 cl6 m-b-16" style="line-height: 1.6;">
+                {{ hr.body }}
+              </p>
+            </div>
+            <div class="flex-w flex-sb-m p-t-15 bor12">
+              <span class="stext-111 cl2 font-weight-bold">{{ hr.author_name }}</span>
+              <a href="{{ route(name='product', slug=hr.product_slug) }}" class="stext-111 cl8 hov-cl1 trans-04 text-truncate" style="max-width: 110px;" title="{{ hr.product_name }}">
+                {{ hr.product_name }}
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock content %}

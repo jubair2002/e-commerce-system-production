@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5" style="max-width: 480px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <div class="auth-header text-center mb-4">
+        <h1 class="h3 fw-bold mb-2">Create an Account</h1>
+        <p class="text-muted small">Join us today to manage orders, track deliveries, and save your favorites.</p>
+      </div>
+
+      {% if not registration_enabled %}
+        <div class="alert alert-warning text-center small mb-4">
+          {{ icon(name='info', class='me-1') | safe }} Customer registration is temporarily disabled. Please check back later.
+        </div>
+        <div class="text-center">
+          <a href="{{ route(name='home') }}" class="btn btn-outline-dark btn-sm">Return to Store</a>
+        </div>
+      {% elif success_message %}
+        <div class="alert alert-success text-center mb-4">
+          <div class="fs-4 mb-2">{{ icon(name='mail') | safe }}</div>
+          <h6 class="fw-bold mb-1">Check Your Email</h6>
+          <p class="small mb-0">{{ success_message }}</p>
+        </div>
+        <div class="d-grid gap-2">
+          <a href="{{ route(name='login') }}" class="btn btn-primary">
+            Proceed to Sign In
+          </a>
+        </div>
+      {% else %}
+        {% if errors and errors.general %}
+          <div class="alert alert-danger small py-2 mb-3">
+            {{ icon(name='alert-circle', class='me-1') | safe }} {{ errors.general }}
+          </div>
+        {% endif %}
+
+        <form method="post" action="{{ route(name='register') }}{% if next and next != 'account/' %}?next={{ next | urlencode }}{% endif %}" class="auth-form" novalidate id="registerForm">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          <input type="hidden" name="_render_ts" value="{{ now_ts }}">
+          <input type="hidden" name="next" value="{{ next | default(value='') }}">
+
+          <!-- Honeypot anti-spam field -->
+          <div style="display:none;" aria-hidden="true">
+            <label for="website_url">Website</label>
+            <input type="text" name="website_url" id="website_url" tabindex="-1" autocomplete="off">
+          </div>
+
+          <!-- Full Name -->
+          <div class="form-group mb-3">
+            <label for="regName" class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+            <input type="text"
+                   name="name"
+                   id="regName"
+                   class="form-control {% if errors and errors.name %}is-invalid{% endif %}"
+                   value="{{ form.name | default(value='') }}"
+                   autocomplete="name"
+                   required
+                   placeholder="e.g. Tanvir Ahmed">
+            {% if errors and errors.name %}
+              <div class="invalid-feedback small">{{ errors.name }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Email Address -->
+          <div class="form-group mb-3">
+            <label for="regEmail" class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
+            <input type="email"
+                   name="email"
+                   id="regEmail"
+                   class="form-control {% if errors and errors.email %}is-invalid{% endif %}"
+                   value="{{ form.email | default(value='') }}"
+                   autocomplete="email"
+                   inputmode="email"
+                   required
+                   placeholder="tanvir@example.com">
+            {% if errors and errors.email %}
+              <div class="invalid-feedback small">{{ errors.email }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Phone Number -->
+          <div class="form-group mb-3">
+            <label for="regPhone" class="form-label small fw-semibold">Phone Number <span class="text-muted fw-normal">(Optional)</span></label>
+            <input type="tel"
+                   name="phone"
+                   id="regPhone"
+                   class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+                   value="{{ form.phone | default(value='') }}"
+                   autocomplete="tel"
+                   inputmode="tel"
+                   placeholder="01712345678">
+            {% if errors and errors.phone %}
+              <div class="invalid-feedback small">{{ errors.phone }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Password -->
+          <div class="form-group mb-3">
+            <label for="regPassword" class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="password"
+                     name="password"
+                     id="regPassword"
+                     class="form-control {% if errors and errors.password %}is-invalid{% endif %}"
+                     autocomplete="new-password"
+                     required
+                     placeholder="At least 8 characters">
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regPassword" aria-label="Toggle password visibility">
+                {{ icon(name='eye') | safe }}
+              </button>
+            </div>
+            <div class="password-meter-wrap mt-1">
+              <div class="password-meter-bar" id="pwStrengthBar"></div>
+            </div>
+            <div class="form-text small text-muted" id="pwStrengthText">Use at least 8 characters with letters and numbers.</div>
+            {% if errors and errors.password %}
+              <div class="invalid-feedback d-block small">{{ errors.password }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group mb-3">
+            <label for="regConfirm" class="form-label small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="password"
+                     name="confirm_password"
+                     id="regConfirm"
+                     class="form-control {% if errors and errors.confirm_password %}is-invalid{% endif %}"
+                     autocomplete="new-password"
+                     required
+                     placeholder="Re-enter your password">
+              <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="regConfirm" aria-label="Toggle password visibility">
+                {{ icon(name='eye') | safe }}
+              </button>
+            </div>
+            {% if errors and errors.confirm_password %}
+              <div class="invalid-feedback d-block small">{{ errors.confirm_password }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Marketing Opt-in -->
+          {% if marketing_checkbox %}
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="marketing_opt_in" value="1" id="mktOptIn" {% if form and form.marketing_opt_in %}checked{% endif %}>
+              <label class="form-check-label small text-muted" for="mktOptIn">
+                Subscribe to newsletter for exclusive deals and product drops.
+              </label>
+            </div>
+          {% endif %}
+
+          <!-- Terms Agreement -->
+          {% if terms_url %}
+            <div class="form-check mb-3">
+              <input class="form-check-input {% if errors and errors.agree_terms %}is-invalid{% endif %}" type="checkbox" name="agree_terms" value="1" id="agreeTerms" required>
+              <label class="form-check-label small text-muted" for="agreeTerms">
+                I agree to the <a href="{{ terms_url }}" target="_blank" class="text-dark text-decoration-underline">Terms of Service</a> &amp; Privacy Policy.
+              </label>
+              {% if errors and errors.agree_terms %}
+                <div class="invalid-feedback small">{{ errors.agree_terms }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary py-2 fw-semibold" id="btnSubmitRegister">
+              Create Account
+            </button>
+          </div>
+        </form>
+
+        <div class="auth-footer text-center mt-4 pt-3 border-top">
+          <span class="small text-muted">Already have an account?</span>
+          <a href="{{ route(name='login') }}{% if next and next != 'account/' %}?next={{ next | urlencode }}{% endif %}" class="small fw-semibold text-primary ms-1">
+            Sign In
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script src="{{ url(path='assets/js/auth.js') }}"></script>
+{% endblock content %}

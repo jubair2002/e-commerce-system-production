@@ -1,0 +1,144 @@
+<!--===============================================================================================-->	
+	<script src="{{ url(path='assets/coza/vendor/jquery/jquery-3.2.1.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/animsition/js/animsition.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/bootstrap/js/popper.js') }}"></script>
+	<script src="{{ url(path='assets/coza/vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/select2/select2.min.js') }}"></script>
+	<script>
+		$(".js-select2").each(function(){
+			$(this).select2({
+				minimumResultsForSearch: 20,
+				dropdownParent: $(this).next('.dropDownSelect2')
+			});
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/daterangepicker/moment.min.js') }}"></script>
+	<script src="{{ url(path='assets/coza/vendor/daterangepicker/daterangepicker.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/slick/slick.min.js') }}"></script>
+	<script src="{{ url(path='assets/coza/js/slick-custom.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/parallax100/parallax100.js') }}"></script>
+	<script>
+        if (typeof $('.parallax100').parallax100 === 'function') {
+            $('.parallax100').parallax100();
+        }
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/MagnificPopup/jquery.magnific-popup.min.js') }}"></script>
+	<script>
+		$('.gallery-lb').each(function() {
+			$(this).magnificPopup({
+		        delegate: 'a',
+		        type: 'image',
+		        gallery: { enabled: true },
+		        mainClass: 'mfp-fade'
+		    });
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/isotope/isotope.pkgd.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/sweetalert/sweetalert.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/vendor/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
+	<script>
+		$('.js-pscroll').each(function(){
+			$(this).css('position','relative');
+			$(this).css('overflow','hidden');
+			var ps = new PerfectScrollbar(this, {
+				wheelSpeed: 1,
+				scrollingThreshold: 1000,
+				wheelPropagation: false,
+			});
+
+			$(window).on('resize', function(){
+				ps.update();
+			})
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url(path='assets/coza/js/main.js') }}"></script>
+
+	<!-- Cozastore Real Storefront Integration Script -->
+	<script>
+	(function($) {
+		'use strict';
+
+		// Real-time mini-cart drawer and header badge synchronization
+		window.cozaUpdateCartUI = function(resp) {
+			if (!resp) return;
+			if (resp.cart_count !== undefined) {
+				$('.js-show-cart').attr('data-notify', resp.cart_count);
+				$('#cozaMiniCartTitle').text('Your Cart (' + resp.cart_count + ')');
+			}
+			if (resp.coza_html) {
+				$('#cozaMiniCartContent').html(resp.coza_html);
+			}
+		};
+
+		// Real AJAX Add to Cart handler
+		window.cozaAddToCart = function(productId, qty, variantId, productName, callback) {
+			productId = parseInt(productId, 10);
+			qty = parseInt(qty, 10) || 1;
+			variantId = variantId ? parseInt(variantId, 10) : null;
+
+			var postData = {
+				action: 'add',
+				product_id: productId,
+				quantity: qty,
+				_csrf: window.SHOP_CSRF_TOKEN
+			};
+			if (variantId) {
+				postData.variant_id = variantId;
+			}
+
+			$.ajax({
+				url: '/api/cart_ajax.php',
+				type: 'POST',
+				data: postData,
+				dataType: 'json',
+				success: function(resp) {
+					if (resp && resp.ok) {
+						window.cozaUpdateCartUI(resp);
+						swal(productName || "Product", "is added to cart !", "success");
+						if (typeof callback === 'function') callback(true, resp);
+					} else {
+						var msg = (resp && resp.error) ? resp.error : "Could not add item to cart.";
+						swal("Notice", msg, "warning");
+						if (typeof callback === 'function') callback(false, resp);
+					}
+				},
+				error: function() {
+					swal("Error", "Network error occurred while updating cart.", "error");
+					if (typeof callback === 'function') callback(false);
+				}
+			});
+		};
+
+		// Quick View Modal
+		$(document).on('click', '.js-show-modal1', function(e) {
+			e.preventDefault();
+			var pid = $(this).data('product-id');
+			var slug = $(this).data('product-slug');
+			if (slug) {
+				window.location.href = '/product/' + encodeURIComponent(slug);
+			}
+		});
+
+		// Theme toggle
+		$(document).on('click', '[data-theme-toggle]', function() {
+			var cur = document.documentElement.getAttribute('data-theme') || 'light';
+			var next = cur === 'dark' ? 'light' : 'dark';
+			document.documentElement.setAttribute('data-theme', next);
+			try { localStorage.setItem('jinispotro_theme', next); } catch (e) {}
+		});
+
+	})(jQuery);
+	</script>
+</body>
+</html>

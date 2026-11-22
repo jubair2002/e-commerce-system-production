@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-page-wrapper py-5 d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 200px); background-color: var(--bg-soft);">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card card shadow-sm p-4 p-sm-5" style="max-width: 440px; width: 100%; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line);">
+      <div class="auth-header text-center mb-4">
+        <h1 class="h3 fw-bold mb-2">Verify Your Email</h1>
+        <p class="text-muted small">Need another verification link? We can send a new one to your inbox.</p>
+      </div>
+
+    {% if success_message %}
+      <div class="alert alert-success text-center mb-4">
+        <div class="fs-4 mb-2">{{ icon(name='mail', class='text-success') | safe }}</div>
+        <h6 class="fw-bold mb-1">Link Sent</h6>
+        <p class="small mb-0">{{ success_message }}</p>
+      </div>
+      <div class="d-grid gap-2">
+        <a href="{{ route(name='login') }}" class="btn btn-editorial-primary">
+          Back to Sign In
+        </a>
+      </div>
+    {% else %}
+      {% if error %}
+        <div class="alert alert-danger small py-2 mb-3" role="alert">
+          {{ icon(name='alert-circle', class='me-1') | safe }} {{ error }}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{{ route(name='resend_verification') }}" class="auth-form" novalidate>
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+        {% if customer %}
+          <div class="alert alert-info small mb-3">
+            Currently logged in as <strong>{{ customer.email }}</strong>.
+          </div>
+        {% else %}
+          <div class="form-group mb-3">
+            <label for="resendEmail" class="form-label small fw-semibold">Email Address</label>
+            <input type="email"
+                   name="email"
+                   id="resendEmail"
+                   class="form-control"
+                   value="{{ email | default(value='') }}"
+                   autocomplete="email"
+                   inputmode="email"
+                   required
+                   placeholder="you@example.com">
+          </div>
+        {% endif %}
+
+        <div class="d-grid gap-2 mb-3">
+          <button type="submit" class="btn btn-editorial-primary py-2 fw-semibold">
+            Send New Verification Link
+          </button>
+        </div>
+
+        <div class="text-center pt-2">
+          <a href="{{ route(name='login') }}" class="btn btn-editorial-secondary btn-sm">
+            {{ icon(name='arrow-left', class='me-1') | safe }} Back to Sign In
+          </a>
+        </div>
+      </form>
+    {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

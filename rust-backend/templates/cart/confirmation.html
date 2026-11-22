@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section py-5">
+  <div class="container" style="max-width: 840px;">
+
+    {% if not is_authorized or not order %}
+      <div class="card shadow-sm border-0 text-center p-5">
+        <div class="text-warning display-4 mb-3">{{ icon(name='shield', class='text-warning', title='Security') | safe }}</div>
+        <h3>Order Confirmation Unavailable</h3>
+        <p class="text-muted">
+          We could not verify the security token for this order, or the order does not exist.<br>
+          If you placed this order recently, you can easily look it up on our tracking page.
+        </p>
+        <div class="mt-3">
+          <a href="{{ route(name='track') }}" class="btn btn-editorial-primary me-2">
+            {{ icon(name='search', class='me-1') | safe }} Track Your Order
+          </a>
+          <a href="{{ route(name='shop') }}" class="btn btn-editorial-secondary">
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+    {% else %}
+
+      <div class="text-center mb-4">
+        <div class="display-3 text-success mb-2">{{ icon(name='check-circle', class='text-success', title='Success') | safe }}</div>
+        <h2 class="fw-bold">Thank You for Your Order!</h2>
+        <p class="lead text-muted mb-3">
+          Your order <strong id="orderNumberVal">{{ order.order_number }}</strong> has been received and is being processed.
+          <button type="button" class="btn btn-sm btn-editorial-secondary ms-2 py-0 px-2" id="btnCopyOrder" title="Copy Order Number">
+            {{ icon(name='copy', class='me-1') | safe }} Copy
+          </button>
+        </p>
+        <div class="d-inline-flex align-items-center gap-2 bg-light px-3 py-2 rounded border">
+          <span class="text-muted small">Status:</span>
+          <span class="badge bg-primary text-uppercase">{{ order.status }}</span>
+          <span class="text-muted small ms-2">Placed:</span>
+          <span class="fw-semibold small">{{ order.created_at }}</span>
+        </div>
+      </div>
+
+      {% if order.payment_method == 'cod' %}
+        <!-- COD Amount to prepare callout -->
+        <div class="card mb-4 shadow-sm" style="background-color: #fffbeb !important; border: 1px solid #fde68a !important; border-radius: 12px; color: #78350f !important;">
+          <div class="card-body p-4 d-flex align-items-center">
+            <div class="fs-1 me-3 flex-shrink-0" style="color: #d97706 !important;">
+              {{ icon(name='cash') | safe }}
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1" style="color: #92400e !important;">Cash on Delivery Reminder</h5>
+              <p class="mb-0" style="color: #78350f !important;">
+                Please keep <strong style="color: #111827 !important;">{{ order.total | money }}</strong> in cash ready to hand over to the delivery courier when your parcel arrives.
+              </p>
+            </div>
+          </div>
+        </div>
+      {% elif order.payment_method == 'bank_transfer' %}
+        <div class="card mb-4 shadow-sm" style="background-color: #f0f9ff !important; border: 1px solid #bae6fd !important; border-radius: 12px; color: #0369a1 !important;">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-2" style="color: #075985 !important;">{{ icon(name='info', class='me-2') | safe }} Bank Transfer Instructions</h5>
+            <p class="mb-0" style="color: #0c4a6e !important;">
+              {{ bank_instructions | default(value='Please transfer the total amount to our bank account. Use your order number as reference.') | linebreaksbr | safe }}
+            </p>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if guest_account_created %}
+        <div class="card mb-4 shadow-sm" style="background-color: #ecfdf5 !important; border: 1px solid #a7f3d0 !important; border-radius: 12px; color: #065f46 !important;">
+          <div class="card-body p-4 d-flex align-items-center">
+            <div class="fs-1 me-3" style="color: #059669 !important;">{{ icon(name='check-circle') | safe }}</div>
+            <div>
+              <h5 class="fw-bold mb-1" style="color: #065f46 !important;">Account Ready &amp; Linked!</h5>
+              <p class="mb-0" style="color: #047857 !important;">
+                This order has been linked to your account. You can now track its progress and view your past orders in your customer dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      {% elif order and not order.customer_id and not customer %}
+        <div class="card mb-4 shadow-sm" style="background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 12px; color: #1e293b !important;">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center mb-2">
+              <div class="me-2" style="color: #3b82f6 !important; font-size: 1.5rem;">{{ icon(name='user') | safe }}</div>
+              <h5 class="fw-bold mb-0 text-dark">Create an Account to Track This Order</h5>
+            </div>
+            <p class="text-secondary small mb-3">
+              {% if order.customer_email %}
+                We already have your name (<strong class="text-dark">{{ order.customer_name }}</strong>) and email (<strong class="text-dark">{{ order.customer_email }}</strong>). Just choose a password to track this delivery and save your information for next time.
+              {% else %}
+                We already have your name (<strong class="text-dark">{{ order.customer_name }}</strong>). Provide your email and choose a password to track this delivery and access your account anytime.
+              {% endif %}
+            </p>
+
+            {% if guest_account_error %}
+              <div class="alert alert-danger small py-2 mb-3">
+                {{ icon(name='alert-circle', class='me-1') | safe }} {{ guest_account_error }}
+              </div>
+            {% endif %}
+
+            <form method="post" action="{{ route(name='order_confirmation') }}?o={{ order.order_number }}&t={{ token }}" class="row g-2 align-items-end" novalidate>
+              <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+              <input type="hidden" name="create_guest_account" value="1">
+              {% if not order.customer_email %}
+                <div class="col-md-4">
+                  <label for="guestEmail" class="form-label small fw-semibold text-dark">Email Address</label>
+                  <input type="email" name="email" id="guestEmail" class="form-control" placeholder="your@email.com" required value="{{ post_email | default(value='') }}">
+                </div>
+                <div class="col-md-4">
+                  <label for="guestPass" class="form-label small fw-semibold text-dark">Choose a Password</label>
+                  <div class="input-group">
+                    <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                    <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                      {{ icon(name='eye') | safe }}
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <button type="submit" class="btn btn-editorial-primary w-100">
+                    Create Account &amp; Link Order
+                  </button>
+                </div>
+              {% else %}
+                <div class="col-md-7">
+                  <label for="guestPass" class="form-label small fw-semibold text-dark">Choose a Password</label>
+                  <div class="input-group">
+                    <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                    <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                      {{ icon(name='eye') | safe }}
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-5">
+                  <button type="submit" class="btn btn-editorial-primary w-100">
+                    Create Account &amp; Link Order
+                  </button>
+                </div>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Order Details Cards -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header py-3 border-bottom">
+              <h6 class="mb-0 fw-semibold">{{ icon(name='map-pin', class='text-primary me-2') | safe }} Delivery Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="fw-bold">{{ order.customer_name }}</div>
+              <div>{{ icon(name='phone', class='text-muted me-1') | safe }} {{ order.customer_phone }}</div>
+              {% if order.customer_email %}
+                <div>{{ icon(name='mail', class='text-muted me-1') | safe }} {{ order.customer_email }}</div>
+              {% endif %}
+              <hr class="my-2">
+              <div class="text-muted small">Address:</div>
+              <div>{{ order.shipping_address | linebreaksbr | safe }}</div>
+              <div>{{ order.shipping_city }}{% if order.shipping_zip %}, {{ order.shipping_zip }}{% endif %}</div>
+              <div class="mt-2 text-muted small">
+                Shipping via: <strong>{{ order.shipping_method_name | default(value='Standard Delivery') }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header py-3 border-bottom">
+              <h6 class="mb-0 fw-semibold">{{ icon(name='info', class='text-primary me-2') | safe }} Need Help?</h6>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+              <p class="text-muted small">
+                If you have any questions about this order, please feel free to reach out to our customer care team:
+              </p>
+              <div class="d-flex flex-column gap-2">
+                {% if store_whatsapp %}
+                  <a href="https://wa.me/{{ store_whatsapp }}?text=Hello,%20I%20have%20an%20inquiry%20about%20order%20{{ order.order_number }}"
+                     target="_blank" rel="noopener" class="btn btn-outline-success btn-sm text-start">
+                    {{ icon(name='phone', class='me-2') | safe }} Chat on WhatsApp ({{ store_whatsapp }})
+                  </a>
+                {% endif %}
+                {% if store_phone %}
+                  <a href="tel:{{ store_phone }}" class="btn btn-editorial-secondary btn-sm text-start">
+                    {{ icon(name='phone', class='me-2') | safe }} Call: {{ store_phone }}
+                  </a>
+                {% endif %}
+                {% if store_email %}
+                  <a href="mailto:{{ store_email }}" class="btn btn-editorial-secondary btn-sm text-start">
+                    {{ icon(name='mail', class='me-2') | safe }} Email: {{ store_email }}
+                  </a>
+                {% endif %}
+              </div>
+              <div class="mt-3 text-muted" style="font-size: 11px;">
+                Support hours: 9:00 AM – 8:00 PM, Saturday to Thursday.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items Breakdown -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header py-3 border-bottom">
+          <h6 class="mb-0 fw-semibold">{{ icon(name='bag', class='text-primary me-2') | safe }} Purchased Items</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th class="text-center" style="width: 80px;">Qty</th>
+                  <th class="text-end" style="width: 130px;">Unit Price</th>
+                  <th class="text-end" style="width: 130px;">Line Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ item.product_name }}</div>
+                      {% if item.variant_label %}
+                        <div class="small"><span class="badge bg-light text-dark border">{{ item.variant_label }}</span></div>
+                      {% endif %}
+                      {% if item.variant_sku or item.product_sku %}
+                        <div class="small text-muted">SKU: <code>{{ item.variant_sku | default(value=item.product_sku) }}</code></div>
+                      {% endif %}
+                    </td>
+                    <td class="text-center fw-medium">{{ item.quantity }}</td>
+                    <td class="text-end">{{ item.unit_price | money }}</td>
+                    <td class="text-end fw-semibold">{{ item.line_total | money }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="3" class="text-end text-muted">Subtotal</td>
+                  <td class="text-end fw-semibold">{{ order.subtotal | money }}</td>
+                </tr>
+                {% if order.discount_total and order.discount_total > 0 %}
+                  <tr class="text-success">
+                    <td colspan="3" class="text-end">Coupon Discount {% if order.coupon_code %}({{ order.coupon_code }}){% endif %}</td>
+                    <td class="text-end fw-semibold">-{{ order.discount_total | money }}</td>
+                  </tr>
+                {% endif %}
+                <tr>
+                  <td colspan="3" class="text-end text-muted">Shipping Fee</td>
+                  <td class="text-end">
+                    {% if order.shipping_fee and order.shipping_fee > 0 %}{{ order.shipping_fee | money }}{% else %}<span class="text-success">Free</span>{% endif %}
+                  </td>
+                </tr>
+                {% if order.cod_fee and order.cod_fee > 0 %}
+                  <tr>
+                    <td colspan="3" class="text-end text-muted">Cash on Delivery Fee</td>
+                    <td class="text-end">{{ order.cod_fee | money }}</td>
+                  </tr>
+                {% endif %}
+                <tr class="fs-5 fw-bold">
+                  <td colspan="3" class="text-end">Grand Total</td>
+                  <td class="text-end text-primary">{{ order.total | money }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex gap-2">
+          <a href="{{ route(name='track') }}?order_number={{ order.order_number }}&phone={{ order.customer_phone | urlencode }}"
+             class="btn btn-editorial-secondary btn-lg">
+            {{ icon(name='map-pin', class='me-1') | safe }} Track Order Status
+          </a>
+          <button type="button" onclick="window.print()" class="btn btn-editorial-secondary btn-lg d-none d-sm-inline-flex align-items-center">
+            {{ icon(name='printer', class='me-1') | safe }} Print Receipt
+          </button>
+        </div>
+        <a href="{{ route(name='shop') }}" class="btn btn-editorial-primary btn-lg">
+          {{ icon(name='bag', class='me-1') | safe }} Continue Shopping
+        </a>
+      </div>
+
+    {% endif %}
+
+  </div>
+</section>
+
+<script>
+document.getElementById('btnCopyOrder')?.addEventListener('click', function() {
+    const num = document.getElementById('orderNumberVal')?.textContent?.trim();
+    if (num && navigator.clipboard) {
+        navigator.clipboard.writeText(num).then(() => {
+            this.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+            setTimeout(() => { this.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+        });
+    }
+});
+</script>
+<script src="{{ url(path='assets/js/auth.js') }}"></script>
+{% endblock content %}

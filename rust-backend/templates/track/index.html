@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+			Track Your Order
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Track Order
+			</span>
+		</div>
+	</div>
+</section>
+
+<section class="section p-b-80">
+  <div class="container" style="max-width: 960px;">
+
+    <div class="section-header text-center mb-4">
+      <p class="stext-115 cl6">Enter your order reference number or tracking ID below to check live delivery progress.</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg0 p-all-30 m-b-35" style="border: 1px solid #eef0f3; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.03);">
+        <form method="get" class="row">
+          <div class="col-md-6 m-b-20">
+            <label class="form-label fw-semibold small" style="color: #374151; margin-bottom: 8px; font-size: 13px;">Order or Tracking Number <span class="text-danger">*</span></label>
+            <div class="pos-relative" style="position: relative;">
+              <input type="text" name="order_number" class="stext-111 cl2 plh3" style="width: 100%; height: 50px; background: #ffffff; border: 1.5px solid #d1d5db; border-radius: 8px; padding-left: 46px; padding-right: 18px; font-size: 14.5px; color: #111827;"
+                     value="{{ order_number | default(value='') }}"
+                     placeholder="e.g. ORD-20261017-05000" required>
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; font-size: 19px; display: flex; align-items: center;">
+                <i class="zmdi zmdi-shopping-basket"></i>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 m-b-20">
+            <label class="form-label fw-semibold small" style="color: #374151; margin-bottom: 8px; font-size: 13px;">Phone or Email <span class="text-muted fw-normal font-weight-normal">(Optional)</span></label>
+            <div class="pos-relative" style="position: relative;">
+              <input type="text" name="contact" class="stext-111 cl2 plh3" style="width: 100%; height: 50px; background: #ffffff; border: 1.5px solid #d1d5db; border-radius: 8px; padding-left: 46px; padding-right: 18px; font-size: 14.5px; color: #111827;"
+                     value="{{ contact | default(value='') }}"
+                     placeholder="01712345678 or you@example.com">
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; font-size: 19px; display: flex; align-items: center;">
+                <i class="zmdi zmdi-account"></i>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 m-t-10">
+            <button type="submit" class="flex-c-m stext-101 cl0 trans-04 pointer w-full hov-btn1" style="border-radius: 8px; font-weight: 700; height: 50px; background: #111827; color: #ffffff; font-size: 15px; border: none; letter-spacing: 0.3px;">
+              <i class="zmdi zmdi-search m-r-8 fs-20"></i> Track Order Status
+            </button>
+          </div>
+        </form>
+    </div>
+
+    {% if errors %}
+      <div class="alert alert-danger alert-dismissible fade show mb-4">
+        {{ icon(name='alert-circle', class='me-2') | safe }}
+        {{ errors[0] }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endif %}
+
+    {% if order %}
+      {% set is_cancelled = order.status == 'cancelled' %}
+
+      <!-- Order Status Summary Card -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+              <span class="text-muted small">Tracking Order:</span>
+              <h4 class="fw-bold mb-0">{{ order.order_number }}</h4>
+            </div>
+            <div>
+              <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'processing' %}bg-info{% elif order.status == 'shipped' %}bg-primary{% elif order.status == 'completed' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %} fs-6 px-3 py-2 text-uppercase">
+                {{ order.status }}
+              </span>
+            </div>
+          </div>
+
+          <div class="text-muted small mb-4">
+            Placed on {{ order.created_at }}
+            · Customer: <strong>{{ order.customer_name }}</strong>
+          </div>
+
+          {% if is_cancelled %}
+            <div class="alert alert-danger mb-0">
+              <h6 class="fw-bold mb-1">{{ icon(name='x', class='me-1') | safe }} This order was cancelled</h6>
+              <p class="mb-0 small">
+                If you have questions regarding this cancellation, please contact our support team.
+              </p>
+            </div>
+          {% else %}
+            <!-- Visual Timeline Progress -->
+            <div class="py-3">
+              <div class="d-flex justify-content-between position-relative">
+                <div class="position-absolute top-50 start-0 translate-middle-y w-100" style="height: 4px; z-index: 1; background-color: var(--line);"></div>
+                <div class="position-absolute top-50 start-0 translate-middle-y"
+                     style="height: 4px; z-index: 1; background-color: var(--accent); width: {{ progress_pct | default(value=25) }}%;"></div>
+
+                <div class="text-center position-relative" style="z-index: 2;">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                       style="width: 44px; height: 44px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm); {% if step_idx >= 0 %}background-color: var(--accent); color: #ffffff;{% else %}background-color: var(--surface-muted); color: var(--muted); border: 2px solid var(--line);{% endif %}">
+                    {{ icon(name='bag') | safe }}
+                  </div>
+                  <div class="small fw-semibold {% if step_idx == 0 %}text-primary{% elif step_idx > 0 %}text-body{% else %}text-muted{% endif %}">
+                    Order Placed
+                  </div>
+                </div>
+
+                <div class="text-center position-relative" style="z-index: 2;">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                       style="width: 44px; height: 44px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm); {% if step_idx >= 1 %}background-color: var(--accent); color: #ffffff;{% else %}background-color: var(--surface-muted); color: var(--muted); border: 2px solid var(--line);{% endif %}">
+                    {{ icon(name='bag') | safe }}
+                  </div>
+                  <div class="small fw-semibold {% if step_idx == 1 %}text-primary{% elif step_idx > 1 %}text-body{% else %}text-muted{% endif %}">
+                    Processing
+                  </div>
+                </div>
+
+                <div class="text-center position-relative" style="z-index: 2;">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                       style="width: 44px; height: 44px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm); {% if step_idx >= 2 %}background-color: var(--accent); color: #ffffff;{% else %}background-color: var(--surface-muted); color: var(--muted); border: 2px solid var(--line);{% endif %}">
+                    {{ icon(name='truck') | safe }}
+                  </div>
+                  <div class="small fw-semibold {% if step_idx == 2 %}text-primary{% elif step_idx > 2 %}text-body{% else %}text-muted{% endif %}">
+                    Shipped
+                  </div>
+                </div>
+
+                <div class="text-center position-relative" style="z-index: 2;">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                       style="width: 44px; height: 44px; font-size: 18px; border: 3px solid var(--surface); box-shadow: var(--shadow-sm); {% if step_idx >= 3 %}background-color: var(--accent); color: #ffffff;{% else %}background-color: var(--surface-muted); color: var(--muted); border: 2px solid var(--line);{% endif %}">
+                    {{ icon(name='check-circle') | safe }}
+                  </div>
+                  <div class="small fw-semibold {% if step_idx == 3 %}text-primary{% else %}text-muted{% endif %}">
+                    Delivered
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Courier & Tracking Info -->
+      {% if order.courier or order.tracking_number %}
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body p-4">
+            <h6 class="fw-bold mb-2">{{ icon(name='truck', class='text-primary me-2') | safe }} Courier Shipment Details</h6>
+            <div class="row g-2">
+              {% if order.courier %}
+                <div class="col-sm-6">
+                  <span class="text-muted small">Delivery Partner:</span>
+                  <div class="fw-semibold fs-6">{{ order.courier }}</div>
+                </div>
+              {% endif %}
+              {% if order.tracking_number %}
+                <div class="col-sm-6">
+                  <span class="text-muted small">Tracking / Consignment Number:</span>
+                  <div class="fw-semibold fs-6"><code>{{ order.tracking_number }}</code></div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Detailed Status History Logs -->
+      {% if history %}
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header py-3 border-bottom">
+            <h6 class="mb-0 fw-semibold">{{ icon(name='rotate-ccw', class='text-primary me-2') | safe }} Status Timeline Logs</h6>
+          </div>
+          <div class="card-body p-4">
+            <ul class="list-unstyled mb-0 position-relative ps-3" style="border-left: 2px solid var(--line);">
+              {% for h in history %}
+                <li class="mb-3 position-relative ps-3">
+                  <div class="position-absolute rounded-circle"
+                       style="width: 10px; height: 10px; left: -18px; top: 6px; background-color: var(--accent);"></div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge {% if h.status == 'pending' %}bg-warning{% elif h.status == 'processing' %}bg-info{% elif h.status == 'shipped' %}bg-primary{% elif h.status == 'completed' %}bg-success{% elif h.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %} text-uppercase">
+                      {{ h.status }}
+                    </span>
+                    <span class="text-muted small">
+                      {{ h.created_at }}
+                    </span>
+                  </div>
+                  {% if h.note %}
+                    <div class="text-muted small mt-1">{{ h.note }}</div>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Items in Order -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header py-3 border-bottom">
+          <h6 class="mb-0 fw-semibold">{{ icon(name='bag', class='text-primary me-2') | safe }} Items in This Order</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th class="text-center" style="width: 80px;">Qty</th>
+                  <th class="text-end" style="width: 120px;">Price</th>
+                  <th class="text-end" style="width: 120px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ item.product_name }}</div>
+                      {% if item.variant_label %}
+                        <div class="small"><span class="badge bg-light text-dark border">{{ item.variant_label }}</span></div>
+                      {% endif %}
+                      {% if item.variant_sku or item.product_sku %}
+                        <div class="small text-muted">SKU: <code>{{ item.variant_sku | default(value=item.product_sku) }}</code></div>
+                      {% endif %}
+                    </td>
+                    <td class="text-center fw-medium">{{ item.quantity }}</td>
+                    <td class="text-end">{{ item.unit_price | money }}</td>
+                    <td class="text-end fw-semibold">{{ item.line_total | money }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="3" class="text-end text-muted">Total Amount</td>
+                  <td class="text-end fw-bold fs-6 text-primary">{{ order.total | money }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    {% endif %}
+
+  </div>
+</section>
+{% endblock content %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+			{{ page.title }}
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				{{ page.title }}
+			</span>
+		</div>
+	</div>
+</section>
+
+<!-- =================== CMS PAGE CONTENT =================== -->
+<section class="bg0 p-t-30 p-b-120">
+	<div class="container">
+		<div class="p-b-20 m-b-30 bor12">
+			<span class="stext-109 cl9">
+				Last updated: {{ page.updated_at }}
+			</span>
+		</div>
+
+		<article class="stext-102 cl6" style="line-height: 2.0; font-size: 15px;">
+			{{ page.content | safe }}
+		</article>
+	</div>
+</section>
+{% endblock content %}

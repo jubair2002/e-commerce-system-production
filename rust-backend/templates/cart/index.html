@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Modern Cart Stylesheet -->
+<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/cart-modern.css') }}">
+
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35" style="background: #f9fafb; border-bottom: 1px solid #eef0f3;">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+			Shopping Cart
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Shopping Cart
+			</span>
+		</div>
+	</div>
+</section>
+
+<!-- =================== MODERN SHOPPING CART =================== -->
+<div class="sec-cart-page">
+	<div class="container">
+
+		<!-- Flashes & Cart Notice Alerts -->
+		{% if flashes %}
+			{% for f in flashes %}
+				<div class="alert alert-{{ f.type }} alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert" style="border-radius: 10px;">
+					{{ f.message }}
+					<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+			{% endfor %}
+		{% endif %}
+
+		{% if cart.alerts %}
+			<div class="alert alert-warning alert-dismissible fade show p-lr-20 p-tb-12 m-b-20" role="alert" style="border-radius: 10px;">
+				<strong>Notice:</strong>
+				<ul class="m-t-5 m-b-0 p-l-20">
+					{% for alt in cart.alerts %}
+						<li>{{ alt }}</li>
+					{% endfor %}
+				</ul>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		{% endif %}
+
+		<!-- Free Delivery Progress Bar -->
+		{% if free_shipping_threshold and free_shipping_threshold > 0 and cart.items %}
+			<div class="cart-free-shipping-card">
+				<div class="cart-free-shipping-header">
+					<span class="cart-free-shipping-title">
+						{% if free_shipping_qualifies %}
+							<i class="zmdi zmdi-check-circle fs-18 text-success"></i> You unlocked <strong>FREE Delivery!</strong>
+						{% else %}
+							<i class="zmdi zmdi-truck fs-18" style="color: #111827;"></i> Add <strong>{{ free_shipping_diff | money }}</strong> more to qualify for <strong>FREE Delivery</strong>
+						{% endif %}
+					</span>
+					<span class="cart-free-shipping-pct">{{ free_shipping_pct }}%</span>
+				</div>
+				<div class="cart-free-shipping-track">
+					<div class="cart-free-shipping-bar" style="width: {{ free_shipping_pct }}%; background-color: {% if free_shipping_qualifies %}#10b981{% else %}#111827{% endif %};"></div>
+				</div>
+			</div>
+		{% endif %}
+
+		{% if not cart.items %}
+			<!-- Empty Cart State -->
+			<div class="cart-empty-card">
+				<div class="cart-empty-icon">
+					<i class="zmdi zmdi-shopping-cart"></i>
+				</div>
+				<h2 class="cart-empty-title">Your cart is currently empty</h2>
+				<p class="cart-empty-text">Looks like you haven't added anything to your cart yet.</p>
+				<a href="{{ route(name='shop') }}" class="cart-empty-btn">
+					<i class="zmdi zmdi-shopping-basket"></i> Start Shopping
+				</a>
+			</div>
+		{% else %}
+			<div class="row">
+				<!-- Left Column: Cart Table & Actions -->
+				<div class="col-lg-8 m-b-40">
+					<form method="post" id="cozaCartForm">
+						<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+						<input type="hidden" name="action" value="update">
+
+						<div class="cart-items-card">
+							<table class="cart-table">
+								<thead>
+									<tr>
+										<th>Product</th>
+										<th class="text-right">Price</th>
+										<th class="text-center">Quantity</th>
+										<th class="text-right">Total</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for item in cart.items %}
+									<tr data-cart-row="{{ item.cart_key }}">
+										<td class="cart-product-cell-td">
+											<div class="cart-product-cell">
+												<a href="{{ route(name='product', slug=item.product.slug) }}" class="cart-product-thumb">
+													<img src="{{ item.image | product_img }}" alt="{{ item.product_name }}">
+												</a>
+												<div class="cart-product-info">
+													<a href="{{ route(name='product', slug=item.product.slug) }}" class="cart-product-title">
+														{{ item.product_name }}
+													</a>
+													{% if item.variant_label %}
+														<span class="cart-product-variant">
+															{{ item.variant_label }}
+														</span>
+													{% endif %}
+													{% if item.sku %}
+														<span class="cart-product-sku">
+															SKU: {{ item.sku }}
+														</span>
+													{% endif %}
+												</div>
+											</div>
+										</td>
+
+										<td class="cart-price-cell-td text-right">
+											<span class="cart-price-cell">
+												{{ item.unit_price | money }}
+											</span>
+										</td>
+
+										<td class="cart-stepper-cell-td text-center">
+											<div class="cart-stepper wrap-num-product" data-cart-key="{{ item.cart_key }}">
+												<button type="button" class="cart-stepper-btn cart-minus-btn" aria-label="Decrease quantity">
+													<i class="zmdi zmdi-minus"></i>
+												</button>
+
+												<input class="cart-stepper-input cart-qty-input" type="number" name="qty[{{ item.cart_key }}]" value="{{ item.qty }}" min="1" max="{{ item.available_qty }}" data-cart-key="{{ item.cart_key }}">
+
+												<button type="button" class="cart-stepper-btn cart-plus-btn" aria-label="Increase quantity">
+													<i class="zmdi zmdi-plus"></i>
+												</button>
+											</div>
+										</td>
+
+										<td class="cart-total-cell-td text-right">
+											<span class="cart-total-cell" data-line-total-key="{{ item.cart_key }}">
+												{{ item.line_total | money }}
+											</span>
+										</td>
+
+										<td class="cart-remove-cell-td text-center">
+											<button type="submit" name="remove_key" value="{{ item.cart_key }}" class="cart-remove-btn" title="Remove item" formnovalidate onclick="return confirm('Remove this item from your cart?');">
+												<i class="zmdi zmdi-delete"></i>
+											</button>
+										</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+
+							<!-- Table Bottom Actions Bar -->
+							<div class="cart-actions-bar">
+								<div class="cart-actions-left">
+									<a href="{{ route(name='shop') }}" class="cart-continue-btn">
+										<i class="zmdi zmdi-arrow-left"></i> Continue Shopping
+									</a>
+									<button type="submit" name="action" value="clear" class="cart-clear-btn" onclick="return confirm('Are you sure you want to clear your entire cart?');">
+										<i class="zmdi zmdi-delete"></i> Clear Cart
+									</button>
+								</div>
+
+								<button type="submit" name="action" value="update" class="cart-update-btn">
+									<i class="zmdi zmdi-refresh"></i> Update Cart
+								</button>
+							</div>
+						</div>
+					</form>
+
+					<!-- Coupon Box -->
+					<div class="cart-coupon-card">
+						<h5 class="cart-coupon-title">
+							<i class="zmdi zmdi-label fs-16"></i> Have a promo or coupon code?
+						</h5>
+						{% if totals.coupon %}
+							<div class="cart-coupon-applied">
+								<span class="cart-coupon-applied-text">
+									<i class="zmdi zmdi-check-circle fs-16"></i> Coupon <strong>"{{ totals.coupon.code }}"</strong> applied! (-{{ totals.discount | money }})
+								</span>
+								<form method="post" class="m-0">
+									<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+									<input type="hidden" name="action" value="remove_coupon">
+									<button type="submit" class="cart-coupon-remove-btn">
+										Remove
+									</button>
+								</form>
+							</div>
+						{% else %}
+							<form method="post" class="cart-coupon-form">
+								<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+								<input type="hidden" name="action" value="apply_coupon">
+								<input class="cart-coupon-input" type="text" name="coupon_code" placeholder="Enter coupon code" required>
+								<button type="submit" class="cart-coupon-btn">
+									Apply Coupon
+								</button>
+							</form>
+						{% endif %}
+					</div>
+				</div>
+
+				<!-- Right Column: Order Summary (Sticky Sidebar) -->
+				<div class="col-lg-4 m-b-50">
+					<div class="cart-summary-card">
+						<h3 class="cart-summary-title">
+							Order Summary
+						</h3>
+
+						<div class="cart-summary-row">
+							<span class="cart-summary-label">Subtotal</span>
+							<span class="cart-summary-val" id="cartSummarySubtotal">{{ totals.subtotal | money }}</span>
+						</div>
+
+						{% if totals.discount and totals.discount > 0 %}
+						<div class="cart-summary-row">
+							<span class="cart-summary-discount-label">Coupon Discount</span>
+							<span class="cart-summary-discount-val">-{{ totals.discount | money }}</span>
+						</div>
+						{% endif %}
+
+						<!-- Shipping selector -->
+						<div style="margin-top: 14px; margin-bottom: 14px;">
+							<div class="d-flex justify-content-between align-items-center">
+								<span class="cart-summary-label">Shipping</span>
+								<span class="cart-summary-val" id="cartSummaryShipping">
+									{% if totals.shipping_fee and totals.shipping_fee > 0 %}
+										{{ totals.shipping_fee | money }}
+									{% else %}
+										<span class="text-success font-weight-bold">Free</span>
+									{% endif %}
+								</span>
+							</div>
+
+							{% if shipping_methods %}
+								<form method="post" id="cartShippingForm">
+									<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+									<input type="hidden" name="action" value="set_shipping">
+									<select class="cart-shipping-select" name="shipping_method_id" onchange="this.form.submit()">
+										{% for sm in shipping_methods %}
+											<option value="{{ sm.id }}" {% if sm.id == selected_shipping_id %}selected{% endif %}>
+												{{ sm.name }} ({% if sm.is_free %}Free{% else %}{{ sm.cost | money }}{% endif %})
+											</option>
+										{% endfor %}
+									</select>
+								</form>
+							{% endif %}
+						</div>
+
+						<hr class="cart-summary-divider">
+
+						<div class="cart-summary-total-row">
+							<span class="cart-summary-total-label">Total</span>
+							<span class="cart-summary-total-val" id="cartSummaryTotal">{{ totals.total | money }}</span>
+						</div>
+
+						<a href="{{ route(name='checkout') }}" class="cart-checkout-btn">
+							<i class="zmdi zmdi-lock fs-18"></i> Proceed to Checkout
+						</a>
+
+						<div class="cart-trust-note">
+							<i class="zmdi zmdi-shield-check text-success fs-16"></i>
+							<span>Cash on Delivery available at checkout</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+
+	</div>
+</div>
+
+<!-- Live AJAX Cart Updates Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var cartForm = document.getElementById('cozaCartForm');
+    if (!cartForm) return;
+
+    var isUpdating = false;
+    var pendingUpdate = false;
+    var debounceTimer = null;
+
+    function applyCartUpdate(data) {
+        if (!data || !data.ok) {
+            cartForm.submit();
+            return;
+        }
+
+        if (Array.isArray(data.lines)) {
+            data.lines.forEach(function(item) {
+                var rowTotalEl = document.querySelector('[data-line-total-key="' + item.cart_key + '"]');
+                if (rowTotalEl && item.line_total_fmt) {
+                    rowTotalEl.textContent = item.line_total_fmt;
+                }
+                var input = document.querySelector('input.cart-qty-input[data-cart-key="' + item.cart_key + '"]');
+                if (input) {
+                    input.value = item.qty;
+                }
+            });
+        }
+
+        var subtotalEl = document.getElementById('cartSummarySubtotal');
+        if (subtotalEl && data.subtotal_fmt) {
+            subtotalEl.textContent = data.subtotal_fmt;
+        }
+
+        var totalEl = document.getElementById('cartSummaryTotal');
+        if (totalEl && data.total_fmt) {
+            totalEl.textContent = data.total_fmt;
+        }
+
+        var shippingEl = document.getElementById('cartSummaryShipping');
+        if (shippingEl && data.shipping_fee_fmt) {
+            shippingEl.textContent = data.shipping_fee_fmt;
+        }
+
+        $('.js-show-cart').attr('data-notify', data.count);
+    }
+
+    function doAjaxUpdate() {
+        if (isUpdating) {
+            pendingUpdate = true;
+            return;
+        }
+        isUpdating = true;
+        var fd = new FormData(cartForm);
+        fd.set('action', 'update');
+
+        fetch(window.location.pathname + '?ajax=1', {
+            method: 'POST',
+            body: fd,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            isUpdating = false;
+            applyCartUpdate(data);
+            if (pendingUpdate) {
+                pendingUpdate = false;
+                doAjaxUpdate();
+            }
+        })
+        .catch(function() {
+            isUpdating = false;
+            cartForm.submit();
+        });
+    }
+
+    cartForm.addEventListener('click', function(e) {
+        var plusBtn = e.target.closest('.cart-plus-btn');
+        var minusBtn = e.target.closest('.cart-minus-btn');
+
+        if (plusBtn) {
+            e.preventDefault();
+            var wrap = plusBtn.closest('.wrap-num-product');
+            var input = wrap ? wrap.querySelector('.cart-qty-input') : null;
+            if (input) {
+                var max = parseInt(input.getAttribute('max') || '99', 10);
+                var cur = parseInt(input.value || '1', 10);
+                if (cur < max) {
+                    input.value = cur + 1;
+                    doAjaxUpdate();
+                }
+            }
+        } else if (minusBtn) {
+            e.preventDefault();
+            var wrap = minusBtn.closest('.wrap-num-product');
+            var input = wrap ? wrap.querySelector('.cart-qty-input') : null;
+            if (input) {
+                var min = parseInt(input.getAttribute('min') || '1', 10);
+                var cur = parseInt(input.value || '1', 10);
+                if (cur > min) {
+                    input.value = cur - 1;
+                    doAjaxUpdate();
+                }
+            }
+        }
+    });
+
+    cartForm.addEventListener('change', function(e) {
+        if (e.target.classList.contains('cart-qty-input')) {
+            doAjaxUpdate();
+        }
+    });
+
+    cartForm.addEventListener('input', function(e) {
+        if (e.target.classList.contains('cart-qty-input')) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(doAjaxUpdate, 150);
+        }
+    });
+});
+</script>
+{% endblock content %}

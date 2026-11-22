@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ full_title | default(value="Jinish Potro") }}</title>
+	<meta name="description" content="{{ meta_description | default(value="Shop unique Chinese imported products in Bangladesh at Jinishpotro.store.") }}">
+	{% if meta_keywords %}
+	<meta name="keywords" content="{{ meta_keywords }}">
+	{% endif %}
+	<meta name="robots" content="{% if robots_allow %}index, follow{% else %}noindex, nofollow{% endif %}">
+
+	<!-- Theme Flash Prevention -->
+	<script>
+		(function() {
+			try {
+				var t = localStorage.getItem('jinispotro_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-theme', t);
+			} catch (e) {}
+		})();
+	</script>
+
+	{% if favicon_url %}
+	<link rel="icon" type="image/png" href="{{ favicon_url }}">
+	{% else %}
+	<link rel="icon" type="image/png" href="{{ url(path='assets/coza/images/icons/favicon.png') }}">
+	{% endif %}
+
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/bootstrap/css/bootstrap.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/font-awesome-4.7.0/css/font-awesome.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/iconic/css/material-design-iconic-font.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/linearicons-v1.0.0/icon-font.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animate/animate.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/css-hamburgers/hamburgers.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animsition/css/animsition.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/select2/select2.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/daterangepicker/daterangepicker.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/slick/slick.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/MagnificPopup/magnific-popup.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/perfect-scrollbar/perfect-scrollbar.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/util.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/main.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/coza-custom.css') }}">
+<!--===============================================================================================-->
+
+	<script>
+		window.SHOP_BASE_URL = "{{ base_url }}";
+		window.SHOP_CART_URL = "{{ route(name='cart') }}";
+		window.SHOP_CHECKOUT_URL = "{{ route(name='checkout') }}";
+		window.SHOP_CSRF_TOKEN = "{{ csrf_token }}";
+		window.CUSTOMER_LOGGED_IN = {% if customer %}true{% else %}false{% endif %};
+	</script>
+	<style>
+		/* Progressive enhancement: Instant paint, prevent white flash */
+		body.animsition, .animsition {
+			opacity: 1 !important;
+			-webkit-animation: none !important;
+			animation: none !important;
+		}
+		.animsition-loading-1 {
+			display: none !important;
+		}
+	</style>
+</head>
+<body class="animsition">

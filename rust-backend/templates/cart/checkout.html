@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Modern Checkout Stylesheet -->
+<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/checkout-modern.css') }}">
+
+<!-- Unified Clean Page Header -->
+<section class="sec-page-header p-tb-35">
+	<div class="container text-center">
+		<h1 class="page-title m-b-6">
+			Checkout
+		</h1>
+		<div class="bread-crumb flex-w flex-c-m">
+			<a href="{{ route(name='home') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Home <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<a href="{{ route(name='cart') }}" class="stext-109 cl8 hov-cl1 trans-04">
+				Cart <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			<span class="stext-109 cl4">
+				Checkout
+			</span>
+		</div>
+	</div>
+</section>
+
+<section class="sec-checkout">
+  <div class="container">
+
+    {% if errors %}
+      <div class="alert alert-danger alert-dismissible fade show mb-4" style="border-radius: 10px;">
+        <strong><i class="zmdi zmdi-alert-circle m-r-6 fs-18"></i> Please check the following:</strong>
+        <ul class="mb-0 mt-2 ps-3" style="padding-left: 20px;">
+          {% for err in errors %}
+            <li>{{ err }}</li>
+          {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endif %}
+
+    <form method="post" id="checkoutForm" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="checkout_token" value="{{ checkout_token }}">
+      <input type="hidden" name="checkout_rendered_at" value="{{ now_ts }}">
+
+      <!-- Anti-spam Honeypot -->
+      <div style="display:none !important;" aria-hidden="true">
+        <label for="website_url">Website</label>
+        <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="row">
+        <!-- Left: Customer and Delivery Details -->
+        <div class="col-lg-7">
+
+          <!-- 1. Contact & Delivery Information -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-icon"><i class="zmdi zmdi-pin"></i></span>
+                <span>Delivery &amp; Contact Information</span>
+              </h2>
+              {% if customer %}
+                <span class="checkout-customer-badge">
+                  <i class="zmdi zmdi-check-circle me-1"></i> {{ customer.name }}
+                </span>
+              {% else %}
+                <a href="{{ route(name='login') }}?next={{ route(name='checkout') | urlencode }}" class="checkout-signin-link">
+                  Have an account? <span>Sign in</span>
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">Full Name <span class="text-danger">*</span></label>
+                <div class="pos-relative" style="position: relative;">
+                  <input type="text" name="customer_name" class="checkout-input" style="padding-left: 44px;"
+                         value="{{ old.customer_name | default(value='') }}" placeholder="e.g. Tanvir Ahmed" required>
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-account fs-18"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">
+                  Phone Number {% if require_phone %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                <div class="pos-relative" style="position: relative;">
+                  <input type="tel" name="customer_phone" class="checkout-input" style="padding-left: 44px;"
+                         value="{{ old.customer_phone | default(value='') }}" placeholder="01712345678" {% if require_phone %}required{% endif %}>
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-phone fs-18"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 m-b-18">
+                <label class="checkout-form-label">
+                  Email Address {% if require_email %}<span class="text-danger">*</span>{% else %}<span class="text-muted fw-normal font-weight-normal" style="font-size: 12px;">(Optional - for digital receipt)</span>{% endif %}
+                </label>
+                <div class="pos-relative" style="position: relative;">
+                  <input type="email" name="customer_email" class="checkout-input" style="padding-left: 44px;"
+                         value="{{ old.customer_email | default(value='') }}" placeholder="tanvir@example.com" {% if require_email %}required{% endif %}>
+                  <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888;">
+                    <i class="zmdi zmdi-email fs-18"></i>
+                  </div>
+                </div>
+              </div>
+
+              {% if saved_addresses %}
+                <div class="col-12 m-b-18">
+                  <label class="checkout-form-label d-flex justify-content-between align-items-center">
+                    <span><i class="zmdi zmdi-bookmark text-primary me-1"></i> Saved Delivery Addresses</span>
+                    <a href="{{ route(name='account_addresses') }}" target="_blank" class="small text-decoration-none">Manage addresses</a>
+                  </label>
+                  <div class="d-flex flex-column gap-2" id="savedAddressSelector">
+                    {% for sa in saved_addresses %}
+                      <label class="border rounded-3 p-2 px-3 d-flex align-items-start gap-2 bg-light cursor-pointer saved-addr-item {% if loop.first %}border-primary bg-primary-subtle{% endif %}" style="cursor:pointer; border-radius: 8px;">
+                        <input type="radio" name="saved_address_id" value="{{ sa.id }}" class="form-check-input mt-1" {% if loop.first %}checked{% endif %}
+                          data-name="{{ sa.full_name }}"
+                          data-phone="{{ sa.phone }}"
+                          data-addr="{{ sa.address }}"
+                          data-city="{{ sa.city }}"
+                          data-zip="{{ sa.zip | default(value='') }}"
+                        >
+                        <div class="small flex-grow-1">
+                          <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="badge bg-secondary">{{ sa.label }}</span>
+                            {% if sa.is_default %}
+                              <span class="badge bg-success-subtle text-success border border-success-subtle">Default</span>
+                            {% endif %}
+                            <strong class="ms-1">{{ sa.full_name }}</strong>
+                            <span class="text-muted ms-1">({{ sa.phone }})</span>
+                          </div>
+                          <div class="text-secondary">{{ sa.address }}, {{ sa.city }}{% if sa.zip %} - {{ sa.zip }}{% endif %}</div>
+                        </div>
+                      </label>
+                    {% endfor %}
+                    <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 bg-light cursor-pointer saved-addr-item" style="cursor:pointer; border-radius: 8px;">
+                      <input type="radio" name="saved_address_id" value="new" class="form-check-input">
+                      <span class="small fw-semibold text-primary"><i class="zmdi zmdi-plus-circle me-1"></i> Add new delivery address</span>
+                    </label>
+                  </div>
+                </div>
+              {% endif %}
+
+              <div class="col-12 m-b-18" id="addressInputWrap">
+                <label class="checkout-form-label">Street Address / House / Flat <span class="text-danger">*</span></label>
+                <textarea name="shipping_address" id="shippingAddressInput" class="checkout-textarea" rows="2"
+                          placeholder="House #, Road #, Area / Thana" required>{{ old.shipping_address | default(value='') }}</textarea>
+              </div>
+
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label" for="shippingCityInput">City / District <span class="text-danger">*</span></label>
+                <select name="shipping_city" id="shippingCityInput" class="checkout-select" required>
+                  <option value="">-- Select District (64 Districts) --</option>
+                  {% for dist in bd_districts %}
+                    <option value="{{ dist.name }}" data-zone="{{ dist.zone }}" {% if old.shipping_city == dist.name or (not old.shipping_city and dist.name == 'Dhaka') %}selected{% endif %}>
+                      {{ dist.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-6 m-b-18">
+                <label class="checkout-form-label">Postal Code</label>
+                <input type="text" name="shipping_zip" id="shippingZipInput" class="checkout-input"
+                       value="{{ old.shipping_zip | default(value='') }}" placeholder="e.g. 1205">
+              </div>
+
+              <div class="col-12 m-b-10">
+                <label class="checkout-form-label">Delivery Instructions <span class="text-muted fw-normal font-weight-normal" style="font-size: 12px;">(Optional)</span></label>
+                <input type="text" name="notes" class="checkout-input"
+                       value="{{ old.notes | default(value='') }}" placeholder="e.g. Call before delivery, ring doorbell">
+              </div>
+
+              {% if customer %}
+                <div class="col-12 mt-1" id="saveAddressCheckWrap" style="{% if saved_addresses %}display:none;{% endif %}">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="save_address" value="1" id="saveAddressCheck" {% if not saved_addresses %}checked{% endif %}>
+                    <label class="form-check-label small" for="saveAddressCheck">
+                      Save this address to my account for future orders
+                    </label>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 2. Shipping Method Selection -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-icon"><i class="zmdi zmdi-truck"></i></span>
+                <span>Shipping Method</span>
+              </h2>
+            </div>
+            <div id="shippingMethodsList">
+              {% for sm in shipping_methods %}
+                {% set is_checked = sm.id == selected_shipping_id or (loop.first and not selected_shipping_id) %}
+                <label class="checkout-option-card shipping-method-card {% if is_checked %}active{% endif %}">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title">{{ sm.name }}</div>
+                      <div class="checkout-option-sub">
+                        {{ sm.zone }} &bull; Estimated {{ sm.min_days | default(value=1) }}–{{ sm.max_days | default(value=3) }} business days
+                      </div>
+                    </div>
+                  </div>
+                  <div class="checkout-option-price {% if sm.is_free %}is-free{% endif %}">
+                    {% if sm.is_free %}FREE{% else %}{{ sm.cost | money }}{% endif %}
+                  </div>
+                  <input class="shipping-radio sr-only" type="radio" name="shipping_method_id" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="{{ sm.id }}"
+                         data-cost="{{ sm.cost }}"
+                         data-is-free="{% if sm.is_free %}1{% else %}0{% endif %}"
+                         data-name="{{ sm.name }}"
+                         data-zone="{{ sm.zone }}"
+                         data-cod-allowed="{{ sm.cod_allowed }}"
+                         {% if is_checked %}checked{% endif %}>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- 3. Payment Method Selection -->
+          <div class="checkout-card">
+            <div class="checkout-card-header">
+              <h2 class="checkout-card-title">
+                <span class="checkout-step-icon"><i class="zmdi zmdi-card"></i></span>
+                <span>Payment Method</span>
+              </h2>
+            </div>
+            <div>
+              {% if cod_enabled %}
+                <label class="checkout-option-card payment-method-card {% if old.payment_method == 'cod' %}active{% endif %}" id="codOptionWrapper">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title">
+                        Cash on Delivery (COD)
+                        {% if cod_fee and cod_fee > 0 %}
+                          <span class="badge" style="background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; font-size: 11px; margin-left: 6px;" id="codBadge">+{{ cod_fee | money }} handling fee</span>
+                        {% endif %}
+                      </div>
+                      <div class="checkout-option-sub">
+                        Pay in cash directly to courier upon receiving your parcel at your doorstep.
+                      </div>
+                    </div>
+                  </div>
+                  <input class="payment-radio sr-only" type="radio" name="payment_method" id="pay_cod" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="cod" {% if old.payment_method == 'cod' %}checked{% endif %}>
+                </label>
+              {% endif %}
+
+              {% if bank_enabled %}
+                <label class="checkout-option-card payment-method-card {% if old.payment_method == 'bank_transfer' %}active{% endif %}">
+                  <div class="checkout-option-left">
+                    <span class="checkout-custom-radio"></span>
+                    <div class="checkout-option-info">
+                      <div class="checkout-option-title">
+                        Direct Bank Transfer
+                      </div>
+                      <div class="checkout-option-sub">
+                        {{ bank_instructions | default(value='Bank account details will be shown upon placing the order.') | linebreaksbr | safe }}
+                      </div>
+                    </div>
+                  </div>
+                  <input class="payment-radio sr-only" type="radio" name="payment_method" id="pay_bank" style="position: absolute; opacity: 0; pointer-events: none;"
+                         value="bank_transfer" {% if old.payment_method == 'bank_transfer' %}checked{% endif %}>
+                </label>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: Clean Order Summary Sidebar -->
+        <div class="col-lg-5">
+          <div class="checkout-summary-box">
+            <div class="summary-header">
+              <h3 class="summary-title">Order Summary</h3>
+              <span class="summary-badge">{{ cart_count }} item{% if cart_count != 1 %}s{% endif %}</span>
+            </div>
+
+            <!-- Scrollable Items List -->
+            <div class="summary-items-list">
+              {% for item in cart.items %}
+                <div class="summary-item-row">
+                  <img src="{{ item.image | product_img }}"
+                       class="summary-item-img"
+                       alt="{{ item.product_name }}">
+                  <div class="summary-item-details">
+                    <div class="summary-item-name">{{ item.product_name }}</div>
+                    {% if item.variant_label %}
+                      <div class="summary-item-variant">{{ item.variant_label }}</div>
+                    {% endif %}
+                    <div class="summary-item-qty">{{ item.qty }} &times; {{ item.unit_price | money }}</div>
+                  </div>
+                  <div class="summary-item-price">
+                    {{ item.line_total | money }}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="p-t-15" style="border-top: 1px solid #f3f4f6;">
+              <div class="summary-calc-row">
+                <span class="summary-calc-label">Subtotal</span>
+                <span class="summary-calc-val">{{ totals.subtotal | money }}</span>
+              </div>
+
+              {% if totals.discount and totals.discount > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-2 small text-success p-2 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+                  <span class="d-flex align-items-center gap-1">
+                    <i class="zmdi zmdi-label m-r-4"></i> Coupon (<code>{{ totals.coupon.code }}</code>)
+                  </span>
+                  <div class="d-flex align-items-center gap-2">
+                    <strong style="font-family: var(--font-mono);">-{{ totals.discount | money }}</strong>
+                    <button type="submit" name="checkout_action" value="remove_coupon" class="btn-close" style="font-size: 0.65rem;" title="Remove coupon" aria-label="Remove coupon" formnovalidate></button>
+                  </div>
+                </div>
+              {% else %}
+                <div class="mb-3">
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none d-flex align-items-center gap-1 checkout-coupon-toggle" style="color: inherit; font-weight: 600; font-size: 13.5px;" id="toggleCouponBtn">
+                    <i class="zmdi zmdi-label m-r-4"></i> <span>Have a promo or coupon code?</span>
+                  </button>
+                  <div id="checkoutCouponRow" class="mt-2 d-none">
+                    <div class="input-group input-group-sm">
+                      <input type="text" name="coupon_code" id="checkoutCouponInput" class="form-control" placeholder="Enter coupon code" style="text-transform: uppercase;">
+                      <div class="input-group-append">
+                        <button type="submit" name="checkout_action" value="apply_coupon" class="btn btn-dark" formnovalidate>Apply</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+
+              <div class="summary-calc-row">
+                <span class="summary-calc-label">Shipping</span>
+                <span class="summary-calc-val" id="summaryShipping">
+                  {% if totals.shipping_fee and totals.shipping_fee > 0 %}
+                    {{ totals.shipping_fee | money }}
+                  {% else %}
+                    <span class="text-success font-weight-bold">Free</span>
+                  {% endif %}
+                </span>
+              </div>
+
+              <div id="summaryCodRow" class="summary-calc-row {% if not totals.cod_fee or totals.cod_fee <= 0 %}d-none{% endif %}">
+                <span class="summary-calc-label">Cash on Delivery Fee</span>
+                <span class="summary-calc-val" id="summaryCodFee">{{ totals.cod_fee | money }}</span>
+              </div>
+
+              <div class="summary-total-row">
+                <span class="summary-total-label">Total</span>
+                <span id="summaryTotal" class="summary-total-val">{{ totals.total | money }}</span>
+              </div>
+
+              <button type="submit" id="btnSubmitOrder" class="btn-place-order">
+                <i class="zmdi zmdi-lock fs-18 m-r-8"></i> Place Order Now
+              </button>
+
+              <div class="checkout-trust-note">
+                <i class="zmdi zmdi-shield-check text-success fs-16"></i>
+                <span>100% Cash on Delivery &bull; Zero prepayment required</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const subtotal = {{ totals.subtotal }};
+    const discount = {{ totals.discount }};
+    const codFeeRate = {{ cod_fee | default(value=0) }};
+    const currencySymbol = {{ setting(key='currency_symbol', default='৳') | json_encode() | safe }};
+
+    const shippingRadios = document.querySelectorAll('.shipping-radio');
+    const paymentRadios = document.querySelectorAll('.payment-radio');
+    const cityInput = document.getElementById('shippingCityInput');
+    const summaryShipping = document.getElementById('summaryShipping');
+    const summaryCodRow = document.getElementById('summaryCodRow');
+    const summaryCodFee = document.getElementById('summaryCodFee');
+    const summaryTotal = document.getElementById('summaryTotal');
+    const codOptionWrapper = document.getElementById('codOptionWrapper');
+    const payCodInput = document.getElementById('pay_cod');
+    const payBankInput = document.getElementById('pay_bank');
+
+    function formatMoney(amount) {
+        return currencySymbol + parseFloat(amount).toFixed(2);
+    }
+
+    function recalculate() {
+        let selectedShipping = document.querySelector('.shipping-radio:checked');
+        if (!selectedShipping && shippingRadios.length > 0) {
+            shippingRadios[0].checked = true;
+            selectedShipping = shippingRadios[0];
+        }
+
+        const isFree = selectedShipping ? selectedShipping.getAttribute('data-is-free') === '1' : false;
+        const shippingCost = selectedShipping ? parseFloat(selectedShipping.getAttribute('data-cost') || 0) : 0;
+        const codAllowed = selectedShipping ? selectedShipping.getAttribute('data-cod-allowed') === '1' : true;
+
+        document.querySelectorAll('.shipping-method-card').forEach(card => {
+            const rad = card.querySelector('.shipping-radio');
+            if (rad && rad.checked) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+            }
+        });
+
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            const rad = card.querySelector('.payment-radio');
+            if (rad && rad.checked) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+            }
+        });
+
+        if (codOptionWrapper) {
+            if (!codAllowed) {
+                codOptionWrapper.classList.add('opacity-50');
+                if (payCodInput && payCodInput.checked && payBankInput) {
+                    payBankInput.checked = true;
+                }
+                if (payCodInput) payCodInput.disabled = true;
+            } else {
+                codOptionWrapper.classList.remove('opacity-50');
+                if (payCodInput) payCodInput.disabled = false;
+            }
+        }
+
+        const selectedPayment = document.querySelector('.payment-radio:checked');
+        const isCod = selectedPayment && selectedPayment.value === 'cod';
+        const activeCodFee = isCod ? codFeeRate : 0;
+
+        if (summaryShipping) {
+            summaryShipping.innerHTML = isFree ? '<span class="text-success">Free</span>' : (shippingCost > 0 ? formatMoney(shippingCost) : '<span class="text-success">Free</span>');
+        }
+
+        if (summaryCodRow && summaryCodFee) {
+            if (activeCodFee > 0) {
+                summaryCodFee.textContent = formatMoney(activeCodFee);
+                summaryCodRow.classList.remove('d-none');
+            } else {
+                summaryCodRow.classList.add('d-none');
+            }
+        }
+
+        const total = Math.max(0, subtotal - discount + (isFree ? 0 : shippingCost) + activeCodFee);
+        if (summaryTotal) {
+            summaryTotal.textContent = formatMoney(total);
+        }
+    }
+
+    shippingRadios.forEach(r => r.addEventListener('change', recalculate));
+    paymentRadios.forEach(r => r.addEventListener('change', recalculate));
+
+    const toggleCoupon = document.getElementById('toggleCouponBtn');
+    if (toggleCoupon) {
+        toggleCoupon.addEventListener('click', function() {
+            const row = document.getElementById('checkoutCouponRow');
+            if (row) row.classList.toggle('d-none');
+        });
+    }
+
+    const savedAddrRadios = document.querySelectorAll('input[name="saved_address_id"]');
+    if (savedAddrRadios.length) {
+        savedAddrRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.saved-addr-item').forEach(el => el.classList.remove('border-primary', 'bg-primary-subtle'));
+                const label = this.closest('.saved-addr-item');
+                if (label) label.classList.add('border-primary', 'bg-primary-subtle');
+
+                const wrap = document.getElementById('saveAddressCheckWrap');
+                if (this.value === 'new') {
+                    if (wrap) wrap.style.display = 'block';
+                    document.getElementById('shippingAddressInput').value = '';
+                    document.getElementById('shippingZipInput').value = '';
+                } else {
+                    if (wrap) wrap.style.display = 'none';
+                    const name = this.getAttribute('data-name');
+                    const phone = this.getAttribute('data-phone');
+                    const addr = this.getAttribute('data-addr');
+                    const city = this.getAttribute('data-city');
+                    const zip = this.getAttribute('data-zip');
+
+                    if (name) document.querySelector('input[name="customer_name"]').value = name;
+                    if (phone) document.querySelector('input[name="customer_phone"]').value = phone;
+                    if (addr) document.getElementById('shippingAddressInput').value = addr;
+                    if (city && cityInput) {
+                        cityInput.value = city;
+                        cityInput.dispatchEvent(new Event('change'));
+                    }
+                    if (zip) document.getElementById('shippingZipInput').value = zip;
+                }
+            });
+        });
+    }
+
+    recalculate();
+});
+</script>
+{% endblock content %}
