@@ -45,9 +45,11 @@ $categories = [];
 try {
     $categories = FileCache::remember('home:categories:all', 300, function () use ($pdo) {
         return $pdo->query(
-            "SELECT c.id, c.name, c.slug, c.description, c.image,
+            "SELECT c.id, c.name, c.slug, c.description, NULL AS image,
                     (SELECT COUNT(*) FROM products p 
-                     WHERE (p.category_id = c.id OR (p.category_id IS NULL AND LOWER(p.tags) LIKE CONCAT('%', LOWER(c.slug), '%'))) 
+                     WHERE (p.category_id = c.id 
+                        OR ((p.category_id IS NULL OR p.category_id = 0) 
+                            AND (LOWER(p.tags) LIKE CONCAT('%', LOWER(c.slug), '%') OR LOWER(p.tags) LIKE CONCAT('%', LOWER(c.name), '%')))) 
                        AND p.status = 'active') AS product_count
              FROM categories c
              WHERE c.status = 'active'
@@ -251,16 +253,30 @@ include __DIR__ . '/includes/partials/header.php';
 					$bUrl    = !empty($b['button_url']) ? $b['button_url'] : route('shop');
 
 					$displaySub = $bSub;
+					$matchedCount = null;
 					if (!empty($categories)) {
 						foreach ($categories as $cat) {
-							if (strcasecmp($cat['name'], $bTitle) === 0 || (!empty($bUrl) && str_contains($bUrl, 'slug=' . $cat['slug']))) {
-								if ($displaySub === '' || preg_match('/^\d+\s*products?$/i', trim($displaySub))) {
-									$cCnt = (int)($cat['product_count'] ?? 0);
-									$displaySub = $cCnt === 1 ? '1 Product' : "{$cCnt} Products";
-								}
+							if (strcasecmp($cat['name'], $bTitle) === 0 
+							    || (!empty($bUrl) && (str_contains($bUrl, 'slug=' . $cat['slug']) || str_ends_with(rtrim($bUrl, '/'), '/' . $cat['slug']) || str_contains($bUrl, '/' . $cat['slug'])))
+							    || (stripos($bTitle, $cat['name']) !== false || stripos($cat['name'], $bTitle) !== false)) {
+								$matchedCount = (int)($cat['product_count'] ?? 0);
 								break;
 							}
 						}
+					}
+
+					// Fallback dynamic count query if banner title was not matched in category array
+					if ($matchedCount === null) {
+						try {
+							$term = '%' . strtolower(trim($bTitle)) . '%';
+							$stmtCnt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE (category_id IN (SELECT id FROM categories WHERE LOWER(name) LIKE :term1 OR LOWER(slug) LIKE :term2) OR LOWER(tags) LIKE :term3) AND status = 'active'");
+							$stmtCnt->execute([':term1' => $term, ':term2' => $term, ':term3' => $term]);
+							$matchedCount = (int)$stmtCnt->fetchColumn();
+						} catch (Throwable $e) {}
+					}
+
+					if ($matchedCount !== null) {
+						$displaySub = $matchedCount === 1 ? '1 Product' : "{$matchedCount} Products";
 					}
 				?>
 				<div class="<?= $colClass ?> p-b-30 m-lr-auto">
