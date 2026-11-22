@@ -73,8 +73,8 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/vendor/perfect-scrollbar/perfect-scrollbar.css'), ENT_QUOTES, 'UTF-8') ?>">
 <!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/util.css'), ENT_QUOTES, 'UTF-8') ?>">
-	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/main.css'), ENT_QUOTES, 'UTF-8') ?>">
-	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/coza-custom.css'), ENT_QUOTES, 'UTF-8') ?>">
+	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/main.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= file_exists(__DIR__ . '/../../../assets/coza/css/main.css') ? filemtime(__DIR__ . '/../../../assets/coza/css/main.css') : time() ?>">
+	<link rel="stylesheet" type="text/css" href="<?= htmlspecialchars(url('assets/coza/css/coza-custom.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= file_exists(__DIR__ . '/../../../assets/coza/css/coza-custom.css') ? filemtime(__DIR__ . '/../../../assets/coza/css/coza-custom.css') : time() ?>">
 <!--===============================================================================================-->
 
 	<script>

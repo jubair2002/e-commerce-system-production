@@ -342,10 +342,10 @@ include __DIR__ . '/../../includes/partials/header.php';
 
 										<?php if ($dispType === 'swatch'): ?>
 											<!-- Color Swatch UI -->
-											<div class="pdp-swatch-list d-flex flex-wrap gap-2">
+											<div class="pdp-swatch-list d-flex flex-wrap" style="gap: 12px; margin-top: 8px; margin-bottom: 8px;">
 												<?php foreach ($opt['values'] as $val): 
 													$hex = !empty($val['swatch_hex']) ? $val['swatch_hex'] : '#3b82f6';
-													$isWhite = in_array(strtolower($hex), ['#fff', '#ffffff', 'white']);
+													$isWhite = in_array(strtolower($hex), ['#fff', '#ffffff', 'white', '#fafafa', '#f8fafc', '#f1f5f9']);
 												?>
 													<button type="button" 
 													        class="pdp-swatch-btn js-pdp-opt-btn"
@@ -353,8 +353,8 @@ include __DIR__ . '/../../includes/partials/header.php';
 													        data-val-id="<?= (int)$val['id'] ?>"
 													        data-val-name="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>"
 													        title="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>"
-													        style="background-color: <?= htmlspecialchars($hex, ENT_QUOTES, 'UTF-8') ?>; <?= $isWhite ? 'border: 1px solid #cbd5e1 !important;' : '' ?>">
-														<i class="zmdi zmdi-check pdp-swatch-check <?= $isWhite ? 'text-dark' : 'text-white' ?>"></i>
+													        style="background-color: <?= htmlspecialchars($hex, ENT_QUOTES, 'UTF-8') ?>; width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%; <?= $isWhite ? 'border: 2px solid #cbd5e1 !important;' : '' ?>">
+														<i class="zmdi zmdi-check pdp-swatch-check <?= $isWhite ? 'text-dark' : 'text-white' ?>" style="display: none; font-size: 20px;"></i>
 													</button>
 												<?php endforeach; ?>
 											</div>
@@ -748,12 +748,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		var valId = $btn.data('val-id');
 		var valName = $btn.data('val-name');
 
-		$btn.closest('.pdp-option-group').find('.js-pdp-opt-btn').removeClass('active');
+		var $group = $btn.closest('.pdp-option-group');
+		$group.find('.js-pdp-opt-btn').removeClass('active');
+		$group.find('.pdp-swatch-check').hide();
+
 		$btn.addClass('active');
+		$btn.find('.pdp-swatch-check').show();
 
 		$('#opt_label_' + optId).text(valName);
 
-		var $hiddenInput = $btn.closest('.pdp-option-group').find('input.option-select');
+		var $hiddenInput = $group.find('input.option-select');
 		$hiddenInput.val(valId).trigger('change');
 	});
 
