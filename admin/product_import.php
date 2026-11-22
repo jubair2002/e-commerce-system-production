@@ -176,17 +176,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'sample_csv') {
         '1'
     ]);
 
+    // Sample row 4: Simple product without options
     fputcsv($out, [
         'Chronograph Sport Stainless Watch',
         'WTCH-CHR-04',
+        'simple',
         'Watches',
         '4500.00',
         '',
         '15',
+        '',
+        '',
+        '',
         'Water-resistant stainless steel sports chronograph.',
         'Precision quartz movement with sub-dials, date display, luminous hands, and 50m water resistance.',
         'Jinishpotro',
         'watch, sport, chronograph',
+        'Sport Chronograph Stainless Steel Watch BD | Jinishpotro',
+        'Premium waterproof stainless steel quartz chronograph watch at affordable price in Bangladesh.',
+        'watch bd, chronograph watch, mens watch, jinishpotro',
         'active',
         '1'
     ]);
@@ -208,13 +216,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'export_catalog') {
     fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
     fputcsv($out, [
-        'id', 'name', 'sku', 'category', 'price', 'sale_price', 'stock',
-        'short_description', 'description', 'brand', 'tags', 'status', 'featured'
+        'id', 'name', 'sku', 'product_type', 'category', 'price', 'sale_price', 'stock',
+        'short_description', 'description', 'brand', 'tags',
+        'meta_title', 'meta_description', 'meta_keywords', 'status', 'featured'
     ]);
 
     $stmt = $pdo->query("
-        SELECT p.id, p.name, p.sku, c.name AS category_name, p.price, p.sale_price, p.stock,
-               p.short_description, p.description, p.brand, p.tags, p.status, p.featured
+        SELECT p.id, p.name, p.sku, p.product_type, c.name AS category_name, p.price, p.sale_price, p.stock,
+               p.short_description, p.description, p.brand, p.tags,
+               p.meta_title, p.meta_description, p.meta_keywords, p.status, p.featured
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         ORDER BY p.id ASC
@@ -225,6 +235,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'export_catalog') {
             $row['id'],
             $row['name'],
             $row['sku'] ?? '',
+            $row['product_type'] === 'variable' ? 'Products with option' : 'simple',
             $row['category_name'] ?? '',
             $row['price'],
             $row['sale_price'] ?? '',
@@ -233,6 +244,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'export_catalog') {
             $row['description'] ?? '',
             $row['brand'] ?? '',
             $row['tags'] ?? '',
+            $row['meta_title'] ?? '',
+            $row['meta_description'] ?? '',
+            $row['meta_keywords'] ?? '',
             $row['status'],
             $row['featured']
         ]);
