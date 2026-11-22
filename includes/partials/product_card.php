@@ -50,6 +50,33 @@ $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '
 			<?php elseif (!empty($p['featured'])): ?>
 				<span class="stext-109 cl0 bg3 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">Featured</span>
 			<?php endif; ?>
+
+			<!-- Quick Actions Overlay (Add to Cart / Buy Now) -->
+			<div class="block2-action-wrap pos-absolute w-full p-lr-12 p-b-12 trans-03">
+				<?php if ($isSoldOut): ?>
+					<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-card-action btn-card-soldout flex-c-m w-full trans-03 text-decoration-none">
+						View Details
+					</a>
+				<?php elseif (!$isSimple): ?>
+					<div class="d-flex gap-2 w-full">
+						<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-card-action btn-card-cart flex-c-m flex-grow-1 trans-03 text-decoration-none" title="Select Options">
+							<i class="zmdi zmdi-shopping-cart-plus m-r-5"></i> Add to Cart
+						</a>
+						<a href="<?= htmlspecialchars($productUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-card-action btn-card-buynow flex-c-m flex-grow-1 trans-03 text-decoration-none" title="Buy Now">
+							<i class="zmdi zmdi-flash m-r-5"></i> Buy Now
+						</a>
+					</div>
+				<?php else: ?>
+					<div class="d-flex gap-2 w-full">
+						<button type="button" class="btn-card-action btn-card-cart js-quick-add-cart flex-c-m flex-grow-1 trans-03" data-pid="<?= $pid ?>" title="Add to Cart">
+							<i class="zmdi zmdi-shopping-cart-plus m-r-5"></i> Add to Cart
+						</button>
+						<button type="button" class="btn-card-action btn-card-buynow js-quick-buy-now flex-c-m flex-grow-1 trans-03" data-pid="<?= $pid ?>" title="Buy Now">
+							<i class="zmdi zmdi-flash m-r-5"></i> Buy Now
+						</button>
+					</div>
+				<?php endif; ?>
+			</div>
 		</div>
 
 		<div class="block2-txt flex-w flex-t p-t-14">

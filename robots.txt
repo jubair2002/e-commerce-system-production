@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scratch/
+Sitemap: http://jinishpotro.store/sitemap.xml

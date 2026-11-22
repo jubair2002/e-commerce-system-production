@@ -161,6 +161,173 @@ it('Parses and imports products, creates missing categories, and records stock a
     }
 });
 
+it('Imports configurable products with options, variants, and SEO metadata', function() use ($pdo) {
+    $skuVar = 'TEST-VAR-' . uniqid();
+    $catName = 'Gadgets';
+
+    // CSV with product_type = variable, options, and SEO columns
+    $csvContent = "name,sku,product_type,category,price,stock,color,model,meta_title,meta_description,meta_keywords\n";
+    $csvContent .= "\"Smart MagSafe Case\",{$skuVar},variable,{$catName},450.00,30,\"Black,Midnight Green\",\"iPhone 13,iPhone 14\",\"MagSafe Case Bangladesh | Jinishpotro\",\"Best smart MagSafe case in BD.\",\"magsafe case, iphone bd\"\n";
+
+    $tempCsv = tempnam(sys_get_temp_dir(), 'var_import_');
+    file_put_contents($tempCsv, $csvContent);
+
+    // Simulate import parsing and execution
+    $delimiter = detect_csv_delimiter($tempCsv);
+    $fp = fopen($tempCsv, 'r');
+    $rawHeaders = fgetcsv($fp, 0, $delimiter, '"', "\\");
+    $headerMap = [];
+    foreach ($rawHeaders as $idx => $h) {
+        $headerMap[normalize_csv_header($h)] = $idx;
+    }
+
+    $createdProdId = null;
+    $pdo->beginTransaction();
+    try {
+        $row = fgetcsv($fp, 0, $delimiter, '"', "\\");
+        $getVal = fn($k) => isset($headerMap[$k], $row[$headerMap[$k]]) ? trim((string)$row[$headerMap[$k]]) : '';
+
+        $name = $getVal('name');
+        $sku = $getVal('sku');
+        $ptype = $getVal('product_type');
+        $cat = $getVal('category');
+        $price = (float)$getVal('price');
+        $stock = (int)$getVal('stock');
+        $mTitle = $getVal('meta_title');
+        $mDesc = $getVal('meta_description');
+        $mKey = $getVal('meta_keywords');
+
+        $options = [];
+        if ($getVal('color') !== '') $options['Color'] = array_map('trim', explode(',', $getVal('color')));
+        if ($getVal('model') !== '') $options['Model'] = array_map('trim', explode(',', $getVal('model')));
+
+        // Category resolve
+        $stmtC = $pdo->prepare("SELECT id FROM categories WHERE LOWER(name) = LOWER(?) LIMIT 1");
+        $stmtC->execute([$cat]);
+        $catId = $stmtC->fetchColumn() ?: null;
+
+        $slug = unique_slug(slugify($name), 'products');
+        $stmtIns = $pdo->prepare("
+            INSERT INTO products
+                (category_id, name, slug, product_type, sku, price, stock,
+                 meta_title, meta_description, meta_keywords, status, created_at, updated_at)
+            VALUES
+                (:cid, :name, :slug, :ptype, :sku, :price, 0,
+                 :mtitle, :mdesc, :mkey, 'active', NOW(), NOW())
+        ");
+        $stmtIns->execute([
+            ':cid'    => $catId,
+            ':name'   => $name,
+            ':slug'   => $slug,
+            ':ptype'  => 'variable',
+            ':sku'    => $sku,
+            ':price'  => $price,
+            ':mtitle' => $mTitle,
+            ':mdesc'  => $mDesc,
+            ':mkey'   => $mKey,
+        ]);
+        $createdProdId = (int)$pdo->lastInsertId();
+
+        // Create options and variants
+        $valueMap = [];
+        $optIdMap = [];
+        $optPos = 0;
+        foreach ($options as $optName => $optVals) {
+            $optPos++;
+            $dispType = strtolower($optName) === 'color' ? 'swatch' : 'button';
+            $stmtInsOpt = $pdo->prepare("INSERT INTO product_options (product_id, name, display_type, position) VALUES (:pid, :n, :dt, :pos)");
+            $stmtInsOpt->execute([':pid' => $createdProdId, ':n' => $optName, ':dt' => $dispType, ':pos' => $optPos]);
+            $optId = (int)$pdo->lastInsertId();
+            $optIdMap[$optName] = $optId;
+
+            $valPos = 0;
+            foreach ($optVals as $valStr) {
+                $valPos++;
+                $hex = $dispType === 'swatch' ? color_name_to_hex($valStr) : null;
+                $stmtInsVal = $pdo->prepare("INSERT INTO product_option_values (option_id, value, swatch_hex, position) VALUES (:oid, :v, :hex, :pos)");
+                $stmtInsVal->execute([':oid' => $optId, ':v' => $valStr, ':hex' => $hex, ':pos' => $valPos]);
+                $valId = (int)$pdo->lastInsertId();
+                $valueMap[$optName][$valStr] = $valId;
+            }
+        }
+
+        // Generate combinations
+        $combos = [[]];
+        foreach (array_values($options) as $idx => $values) {
+            $newCombos = [];
+            $k = array_keys($options)[$idx];
+            foreach ($combos as $combo) {
+                foreach ($values as $val) {
+                    $newCombos[] = array_merge($combo, [$k => $val]);
+                }
+            }
+            $combos = $newCombos;
+        }
+
+        $vPos = 0;
+        foreach ($combos as $combo) {
+            $vPos++;
+            $valIds = [];
+            $slugs = [];
+            foreach ($combo as $optName => $valStr) {
+                $valIds[] = $valueMap[$optName][$valStr];
+                $slugs[] = slugify($valStr);
+            }
+            $hash = variant_hash($valIds);
+            $vSku = $sku . '-' . implode('-', $slugs);
+
+            $stmtInsVar = $pdo->prepare("
+                INSERT INTO product_variants (product_id, option_hash, sku, price, stock, status, position)
+                VALUES (:pid, :hash, :sku, :price, 15, 'active', :pos)
+            ");
+            $stmtInsVar->execute([
+                ':pid'   => $createdProdId,
+                ':hash'  => $hash,
+                ':sku'   => $vSku,
+                ':price' => $price,
+                ':pos'   => $vPos,
+            ]);
+            $varId = (int)$pdo->lastInsertId();
+
+            $stmtLink = $pdo->prepare("INSERT INTO product_variant_values (variant_id, option_id, option_value_id) VALUES (?, ?, ?)");
+            foreach ($combo as $optName => $valStr) {
+                $stmtLink->execute([$varId, $optIdMap[$optName], $valueMap[$optName][$valStr]]);
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        unlink($tempCsv);
+        throw $e;
+    }
+    fclose($fp);
+    unlink($tempCsv);
+
+    // Assertions
+    $p = $pdo->query("SELECT * FROM products WHERE id = {$createdProdId}")->fetch(PDO::FETCH_ASSOC);
+    if ($p['product_type'] !== 'variable') throw new RuntimeException("Expected product_type=variable");
+    if ($p['meta_title'] !== 'MagSafe Case Bangladesh | Jinishpotro') throw new RuntimeException("meta_title mismatch");
+    if ($p['meta_description'] !== 'Best smart MagSafe case in BD.') throw new RuntimeException("meta_description mismatch");
+
+    // Check options
+    $opts = $pdo->query("SELECT * FROM product_options WHERE product_id = {$createdProdId} ORDER BY position ASC")->fetchAll(PDO::FETCH_ASSOC);
+    if (count($opts) !== 2) throw new RuntimeException("Expected 2 options, got " . count($opts));
+    if ($opts[0]['display_type'] !== 'swatch') throw new RuntimeException("Color option should have display_type=swatch");
+    if ($opts[1]['display_type'] !== 'button') throw new RuntimeException("Model option should have display_type=button");
+
+    // Check variants: 2 colors * 2 models = 4 variants
+    $vars = $pdo->query("SELECT * FROM product_variants WHERE product_id = {$createdProdId}")->fetchAll(PDO::FETCH_ASSOC);
+    if (count($vars) !== 4) throw new RuntimeException("Expected 4 variant combinations, got " . count($vars));
+
+    // Cleanup
+    $pdo->exec("DELETE FROM product_variant_values WHERE variant_id IN (SELECT id FROM product_variants WHERE product_id = {$createdProdId})");
+    $pdo->exec("DELETE FROM product_variants WHERE product_id = {$createdProdId}");
+    $pdo->exec("DELETE FROM product_option_values WHERE option_id IN (SELECT id FROM product_options WHERE product_id = {$createdProdId})");
+    $pdo->exec("DELETE FROM product_options WHERE product_id = {$createdProdId}");
+    $pdo->exec("DELETE FROM products WHERE id = {$createdProdId}");
+});
+
 echo "\n==========================================================\n";
 echo "Test Suite Results: {$passCount} Passed, {$failCount} Failed\n";
 echo "==========================================================\n";

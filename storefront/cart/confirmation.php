@@ -40,16 +40,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_guest_account'
         $guestAccountError = 'Invalid or expired session. Please try again.';
     } else {
         $password = (string)($_POST['password'] ?? '');
-        $email = strtolower(trim($order['customer_email']));
+        $email = strtolower(trim($order['customer_email'] ?? ''));
+        if ($email === '') {
+            $email = strtolower(trim($_POST['email'] ?? ''));
+        }
         $name = trim($order['customer_name']);
         $phone = trim($order['customer_phone'] ?? '');
 
-        $pwdErr = password_ok($password, $email, $name);
-        if ($pwdErr !== null) {
-            $guestAccountError = $pwdErr;
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $guestAccountError = 'Please provide a valid email address.';
         } else {
-            $pdo = db();
-            $stmtC = $pdo->prepare("SELECT id FROM customers WHERE email = :e LIMIT 1");
+            $pwdErr = password_ok($password, $email, $name);
+            if ($pwdErr !== null) {
+                $guestAccountError = $pwdErr;
+            } else {
+                $pdo = db();
+                if (empty($order['customer_email'])) {
+                    $pdo->prepare("UPDATE orders SET customer_email = :e WHERE id = :oid")
+                        ->execute([':e' => $email, ':oid' => (int)$order['id']]);
+                    $order['customer_email'] = $email;
+                }
+                $stmtC = $pdo->prepare("SELECT id FROM customers WHERE email = :e LIMIT 1");
             $stmtC->execute([':e' => $email]);
             $existing = $stmtC->fetch();
 
@@ -112,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_guest_account'
                 $guestAccountCreated = true;
             }
         }
+        }
     }
 }
 
@@ -163,24 +175,24 @@ include __DIR__ . '/../../includes/partials/header.php';
 
       <?php if ($order['payment_method'] === 'cod'): ?>
         <!-- COD Amount to prepare callout -->
-        <div class="card border-warning bg-warning bg-opacity-10 mb-4 shadow-sm">
+        <div class="card mb-4 shadow-sm" style="background-color: #fffbeb !important; border: 1px solid #fde68a !important; border-radius: 12px; color: #78350f !important;">
           <div class="card-body p-4 d-flex align-items-center">
-            <div class="fs-1 text-warning me-3 flex-shrink-0">
-              <?= icon('cash', 'text-warning') ?>
+            <div class="fs-1 me-3 flex-shrink-0" style="color: #d97706 !important;">
+              <?= icon('cash') ?>
             </div>
             <div>
-              <h5 class="fw-bold mb-1">Cash on Delivery Reminder</h5>
-              <p class="mb-0">
-                Please keep <strong><?= e(price($order['total'])) ?></strong> in cash ready to hand over to the delivery courier when your parcel arrives.
+              <h5 class="fw-bold mb-1" style="color: #92400e !important;">Cash on Delivery Reminder</h5>
+              <p class="mb-0" style="color: #78350f !important;">
+                Please keep <strong style="color: #111827 !important;"><?= e(price($order['total'])) ?></strong> in cash ready to hand over to the delivery courier when your parcel arrives.
               </p>
             </div>
           </div>
         </div>
       <?php elseif ($order['payment_method'] === 'bank_transfer'): ?>
-        <div class="card border-info bg-info bg-opacity-10 mb-4 shadow-sm">
+        <div class="card mb-4 shadow-sm" style="background-color: #f0f9ff !important; border: 1px solid #bae6fd !important; border-radius: 12px; color: #0369a1 !important;">
           <div class="card-body p-4">
-            <h5 class="fw-bold mb-2"><?= icon('info', 'me-2 text-primary') ?> Bank Transfer Instructions</h5>
-            <p class="mb-0">
+            <h5 class="fw-bold mb-2" style="color: #075985 !important;"><?= icon('info', 'me-2') ?> Bank Transfer Instructions</h5>
+            <p class="mb-0" style="color: #0c4a6e !important;">
               <?= nl2br(e(setting('bank_transfer_instructions', 'Please transfer the total amount to our bank account. Use your order number as reference.'))) ?>
             </p>
           </div>
@@ -188,26 +200,30 @@ include __DIR__ . '/../../includes/partials/header.php';
       <?php endif; ?>
 
       <?php if ($guestAccountCreated): ?>
-        <div class="card border-success bg-success bg-opacity-10 mb-4 shadow-sm">
+        <div class="card mb-4 shadow-sm" style="background-color: #ecfdf5 !important; border: 1px solid #a7f3d0 !important; border-radius: 12px; color: #065f46 !important;">
           <div class="card-body p-4 d-flex align-items-center">
-            <div class="fs-1 text-success me-3"><?= icon('check-circle', 'text-success') ?></div>
+            <div class="fs-1 me-3" style="color: #059669 !important;"><?= icon('check-circle') ?></div>
             <div>
-              <h5 class="fw-bold mb-1">Account Ready &amp; Linked!</h5>
-              <p class="mb-0">
+              <h5 class="fw-bold mb-1" style="color: #065f46 !important;">Account Ready &amp; Linked!</h5>
+              <p class="mb-0" style="color: #047857 !important;">
                 This order has been linked to your account. You can now track its progress and view your past orders in your customer dashboard.
               </p>
             </div>
           </div>
         </div>
       <?php elseif ($order && empty($order['customer_id']) && !customer_current()): ?>
-        <div class="card border-primary bg-primary bg-opacity-10 mb-4 shadow-sm">
+        <div class="card mb-4 shadow-sm" style="background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 12px; color: #1e293b !important;">
           <div class="card-body p-4">
             <div class="d-flex align-items-center mb-2">
-              <div class="fs-3 text-primary me-2"><?= icon('user', 'text-primary') ?></div>
-              <h5 class="fw-bold mb-0">Create an Account to Track This Order</h5>
+              <div class="me-2" style="color: #3b82f6 !important; font-size: 1.5rem;"><?= icon('user') ?></div>
+              <h5 class="fw-bold mb-0 text-dark">Create an Account to Track This Order</h5>
             </div>
-            <p class="text-muted small mb-3">
-              We already have your name (<strong><?= e($order['customer_name']) ?></strong>) and email (<strong><?= e($order['customer_email']) ?></strong>). Just choose a password to track this delivery and save your information for next time.
+            <p class="text-secondary small mb-3">
+              <?php if (!empty($order['customer_email'])): ?>
+                We already have your name (<strong class="text-dark"><?= e($order['customer_name']) ?></strong>) and email (<strong class="text-dark"><?= e($order['customer_email']) ?></strong>). Just choose a password to track this delivery and save your information for next time.
+              <?php else: ?>
+                We already have your name (<strong class="text-dark"><?= e($order['customer_name']) ?></strong>). Provide your email and choose a password to track this delivery and access your account anytime.
+              <?php endif; ?>
             </p>
 
             <?php if ($guestAccountError): ?>
@@ -219,20 +235,41 @@ include __DIR__ . '/../../includes/partials/header.php';
             <form method="post" action="<?= e(route('order_confirmation', ['o' => $order['order_number'], 't' => $token])) ?>" class="row g-2 align-items-end" novalidate>
               <?= csrf_field() ?>
               <input type="hidden" name="create_guest_account" value="1">
-              <div class="col-md-7">
-                <label for="guestPass" class="form-label small fw-semibold">Choose a Password</label>
-                <div class="input-group">
-                  <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
-                  <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
-                    <?= icon('eye') ?>
+              <?php if (empty($order['customer_email'])): ?>
+                <div class="col-md-4">
+                  <label for="guestEmail" class="form-label small fw-semibold text-dark">Email Address</label>
+                  <input type="email" name="email" id="guestEmail" class="form-control" placeholder="your@email.com" required value="<?= e($_POST['email'] ?? '') ?>">
+                </div>
+                <div class="col-md-4">
+                  <label for="guestPass" class="form-label small fw-semibold text-dark">Choose a Password</label>
+                  <div class="input-group">
+                    <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                    <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                      <?= icon('eye') ?>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <button type="submit" class="btn btn-editorial-primary w-100">
+                    Create Account &amp; Link Order
                   </button>
                 </div>
-              </div>
-              <div class="col-md-5">
-                <button type="submit" class="btn btn-editorial-primary w-100">
-                  Create Account &amp; Link Order
-                </button>
-              </div>
+              <?php else: ?>
+                <div class="col-md-7">
+                  <label for="guestPass" class="form-label small fw-semibold text-dark">Choose a Password</label>
+                  <div class="input-group">
+                    <input type="password" name="password" id="guestPass" class="form-control" placeholder="At least 8 characters" required autocomplete="new-password">
+                    <button type="button" class="btn btn-outline-secondary btn-pw-toggle" data-toggle-password="guestPass" aria-label="Toggle password visibility">
+                      <?= icon('eye') ?>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-5">
+                  <button type="submit" class="btn btn-editorial-primary w-100">
+                    Create Account &amp; Link Order
+                  </button>
+                </div>
+              <?php endif; ?>
             </form>
           </div>
         </div>

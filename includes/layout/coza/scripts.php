@@ -180,6 +180,117 @@
 			}
 		});
 
+		// Quick Add to Cart from Product Cards
+		$(document).on('click', '.js-quick-add-cart', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $btn = $(this);
+			var pid = $btn.data('pid');
+			if (!pid || $btn.hasClass('is-loading')) return;
+
+			var origHtml = $btn.html();
+			$btn.addClass('is-loading').html('<i class="zmdi zmdi-rotate-right zmdi-hc-spin m-r-5"></i> Adding...');
+
+			var cartUrl = window.SHOP_CART_URL || (window.SHOP_BASE_URL ? window.SHOP_BASE_URL + 'storefront/cart/index.php' : '/storefront/cart/index.php');
+
+			$.ajax({
+				url: cartUrl,
+				type: 'POST',
+				data: {
+					action: 'add',
+					product_id: pid,
+					quantity: 1,
+					_csrf: window.SHOP_CSRF_TOKEN || ''
+				},
+				dataType: 'json',
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			}).done(function(res) {
+				if (res && res.ok) {
+					$('.js-show-cart').attr('data-notify', res.count);
+					$btn.html('<i class="zmdi zmdi-check m-r-5"></i> Added!');
+					setTimeout(function() {
+						$btn.removeClass('is-loading').html(origHtml);
+					}, 1800);
+					if (typeof swal === 'function') {
+						swal({
+							title: "Added to Cart!",
+							text: res.message || "Item has been added to your shopping cart.",
+							icon: "success",
+							buttons: {
+								continue: { text: "Keep Shopping", value: "continue", className: "btn btn-outline-secondary" },
+								viewCart: { text: "View Cart", value: "cart", className: "btn btn-dark" }
+							}
+						}).then(function(val) {
+							if (val === 'cart') {
+								window.location.href = cartUrl;
+							}
+						});
+					}
+				} else {
+					$btn.removeClass('is-loading').html(origHtml);
+					var msg = (res && res.message) ? res.message : 'Could not add to cart.';
+					if (typeof swal === 'function') {
+						swal("Notice", msg, "warning");
+					} else {
+						alert(msg);
+					}
+				}
+			}).fail(function() {
+				$btn.removeClass('is-loading').html(origHtml);
+				var pdpUrl = $btn.closest('.block2').find('a.dis-block').attr('href');
+				if (pdpUrl) {
+					window.location.href = pdpUrl;
+				}
+			});
+		});
+
+		// Quick Buy Now from Product Cards
+		$(document).on('click', '.js-quick-buy-now', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $btn = $(this);
+			var pid = $btn.data('pid');
+			if (!pid || $btn.hasClass('is-loading')) return;
+
+			var origHtml = $btn.html();
+			$btn.addClass('is-loading').html('<i class="zmdi zmdi-rotate-right zmdi-hc-spin m-r-5"></i> Loading...');
+
+			var cartUrl = window.SHOP_CART_URL || (window.SHOP_BASE_URL ? window.SHOP_BASE_URL + 'storefront/cart/index.php' : '/storefront/cart/index.php');
+
+			$.ajax({
+				url: cartUrl,
+				type: 'POST',
+				data: {
+					action: 'add',
+					product_id: pid,
+					quantity: 1,
+					_csrf: window.SHOP_CSRF_TOKEN || ''
+				},
+				dataType: 'json',
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			}).done(function(res) {
+				if (res && res.ok) {
+					window.location.href = window.SHOP_CHECKOUT_URL || '/storefront/cart/checkout.php';
+				} else {
+					$btn.removeClass('is-loading').html(origHtml);
+					var pdpUrl = $btn.closest('.block2').find('a.dis-block').attr('href');
+					if (pdpUrl) {
+						window.location.href = pdpUrl;
+					} else if (res && res.message) {
+						if (typeof swal === 'function') swal("Notice", res.message, "warning");
+						else alert(res.message);
+					}
+				}
+			}).fail(function() {
+				var pdpUrl = $btn.closest('.block2').find('a.dis-block').attr('href');
+				if (pdpUrl) {
+					window.location.href = pdpUrl;
+				} else {
+					$btn.removeClass('is-loading').html(origHtml);
+				}
+			});
+		});
+
 		// Theme Manager (Dark / Light Mode)
 		function updateThemeIcons(theme) {
 			if (theme === 'dark') {

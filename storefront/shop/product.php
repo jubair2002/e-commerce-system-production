@@ -328,20 +328,84 @@ include __DIR__ . '/../../includes/partials/header.php';
 						<!-- Variant Option Selectors -->
 						<?php if ($isVariable && !empty($options)): ?>
 							<div class="pdp-options-wrap m-b-20">
-								<?php foreach ($options as $opt): ?>
-									<div class="pdp-option-group">
-										<label class="pdp-option-label"><?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?>:</label>
-										<div class="rs1-select2 bor8 bg0" style="border-radius: 8px;">
-											<select class="js-select2 option-select" data-option-id="<?= (int)$opt['id'] ?>">
-												<option value="">Choose <?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?></option>
-												<?php foreach ($opt['values'] as $val): ?>
-													<option value="<?= (int)$val['id'] ?>">
-														<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>
-													</option>
-												<?php endforeach; ?>
-											</select>
-											<div class="dropDownSelect2"></div>
+								<?php foreach ($options as $opt): 
+									$dispType = $opt['display_type'] ?? 'button';
+									$optId = (int)$opt['id'];
+								?>
+									<div class="pdp-option-group m-b-18" data-option-id="<?= $optId ?>">
+										<div class="d-flex align-items-center justify-content-between mb-2">
+											<label class="pdp-option-label fw-bold mb-0 text-dark">
+												<?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?>:
+												<span class="pdp-selected-val text-primary fw-semibold ms-1" id="opt_label_<?= $optId ?>"></span>
+											</label>
 										</div>
+
+										<?php if ($dispType === 'swatch'): ?>
+											<!-- Color Swatch UI -->
+											<div class="pdp-swatch-list d-flex flex-wrap gap-2">
+												<?php foreach ($opt['values'] as $val): 
+													$hex = !empty($val['swatch_hex']) ? $val['swatch_hex'] : '#3b82f6';
+													$isWhite = in_array(strtolower($hex), ['#fff', '#ffffff', 'white']);
+												?>
+													<button type="button" 
+													        class="pdp-swatch-btn js-pdp-opt-btn"
+													        data-option-id="<?= $optId ?>"
+													        data-val-id="<?= (int)$val['id'] ?>"
+													        data-val-name="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>"
+													        title="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>"
+													        style="background-color: <?= htmlspecialchars($hex, ENT_QUOTES, 'UTF-8') ?>; <?= $isWhite ? 'border: 1px solid #cbd5e1 !important;' : '' ?>">
+														<i class="zmdi zmdi-check pdp-swatch-check <?= $isWhite ? 'text-dark' : 'text-white' ?>"></i>
+													</button>
+												<?php endforeach; ?>
+											</div>
+											<input type="hidden" class="option-select" data-option-id="<?= $optId ?>" value="">
+
+										<?php elseif ($dispType === 'button'): ?>
+											<!-- Buttons Pill UI -->
+											<div class="pdp-pill-list d-flex flex-wrap gap-2">
+												<?php foreach ($opt['values'] as $val): ?>
+													<button type="button"
+													        class="pdp-pill-btn js-pdp-opt-btn"
+													        data-option-id="<?= $optId ?>"
+													        data-val-id="<?= (int)$val['id'] ?>"
+													        data-val-name="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>">
+														<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>
+													</button>
+												<?php endforeach; ?>
+											</div>
+											<input type="hidden" class="option-select" data-option-id="<?= $optId ?>" value="">
+
+										<?php elseif ($dispType === 'radio'): ?>
+											<!-- Radio UI -->
+											<div class="pdp-radio-list d-flex flex-wrap gap-3">
+												<?php foreach ($opt['values'] as $val): ?>
+													<label class="pdp-radio-pill d-inline-flex align-items-center gap-1 cursor-pointer">
+														<input type="radio" 
+														       name="opt_radio_<?= $optId ?>"
+														       class="form-check-input js-pdp-radio-val"
+														       data-option-id="<?= $optId ?>"
+														       data-val-id="<?= (int)$val['id'] ?>"
+														       data-val-name="<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>">
+														<span class="small fw-semibold ms-1"><?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?></span>
+													</label>
+												<?php endforeach; ?>
+											</div>
+											<input type="hidden" class="option-select" data-option-id="<?= $optId ?>" value="">
+
+										<?php else: ?>
+											<!-- Dropdown UI -->
+											<div class="rs1-select2 bor8 bg0" style="border-radius: 8px;">
+												<select class="js-select2 option-select" data-option-id="<?= $optId ?>">
+													<option value="">Choose <?= htmlspecialchars($opt['name'], ENT_QUOTES, 'UTF-8') ?></option>
+													<?php foreach ($opt['values'] as $val): ?>
+														<option value="<?= (int)$val['id'] ?>">
+															<?= htmlspecialchars($val['value'], ENT_QUOTES, 'UTF-8') ?>
+														</option>
+													<?php endforeach; ?>
+												</select>
+												<div class="dropDownSelect2"></div>
+											</div>
+										<?php endif; ?>
 									</div>
 								<?php endforeach; ?>
 							</div>
@@ -676,6 +740,36 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
+	// Interactive Button / Swatch Click Handler
+	$('.js-pdp-opt-btn').on('click', function(e) {
+		e.preventDefault();
+		var $btn = $(this);
+		var optId = $btn.data('option-id');
+		var valId = $btn.data('val-id');
+		var valName = $btn.data('val-name');
+
+		$btn.closest('.pdp-option-group').find('.js-pdp-opt-btn').removeClass('active');
+		$btn.addClass('active');
+
+		$('#opt_label_' + optId).text(valName);
+
+		var $hiddenInput = $btn.closest('.pdp-option-group').find('input.option-select');
+		$hiddenInput.val(valId).trigger('change');
+	});
+
+	// Radio Handler
+	$('.js-pdp-radio-val').on('change', function() {
+		var $radio = $(this);
+		var optId = $radio.data('option-id');
+		var valId = $radio.data('val-id');
+		var valName = $radio.data('val-name');
+
+		$('#opt_label_' + optId).text(valName);
+
+		var $hiddenInput = $radio.closest('.pdp-option-group').find('input.option-select');
+		$hiddenInput.val(valId).trigger('change');
+	});
+
 	// Real-Time Variant Option & Stock Updates
 	var variantsData = <?= json_encode($variants) ?>;
 	var totalOptionsCount = <?= count($options ?? []) ?>;
@@ -745,6 +839,19 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (stockBadge && totalOptionsCount > 0) {
 					stockBadge.className = 'pdp-stock-badge out-of-stock';
 					stockBadge.innerHTML = '<i class="zmdi zmdi-help-outline m-r-4"></i> Select Options';
+				}
+			}
+		});
+
+		// Auto-select first value for swatches and buttons on page load
+		$('.pdp-option-group').each(function() {
+			var $firstBtn = $(this).find('.js-pdp-opt-btn').first();
+			if ($firstBtn.length) {
+				$firstBtn.trigger('click');
+			} else {
+				var $firstRadio = $(this).find('.js-pdp-radio-val').first();
+				if ($firstRadio.length) {
+					$firstRadio.prop('checked', true).trigger('change');
 				}
 			}
 		});

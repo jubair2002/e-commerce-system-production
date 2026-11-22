@@ -3,16 +3,42 @@ require_once __DIR__ . '/includes/auth.php';
 require_permission('orders.print', 'orders.view');
 
 $id = (int)($_GET['id'] ?? 0);
+$orderNumber = trim((string)($_GET['order'] ?? $_GET['order_number'] ?? ''));
 
-$stmt = db()->prepare('SELECT * FROM orders WHERE id = :id LIMIT 1');
-$stmt->execute([':id' => $id]);
-$order = $stmt->fetch();
+if ($id > 0) {
+    $stmt = db()->prepare('SELECT * FROM orders WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+} elseif ($orderNumber !== '') {
+    $stmt = db()->prepare('SELECT * FROM orders WHERE order_number = :on LIMIT 1');
+    $stmt->execute([':on' => $orderNumber]);
+} else {
+    $stmt = null;
+}
+$order = $stmt ? $stmt->fetch() : null;
 
 if (!$order) {
     http_response_code(404);
-    echo 'Order not found.';
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <title>Order Not Found</title>
+      <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap/bootstrap.min.css')) ?>">
+    </head>
+    <body class="p-5 text-center bg-light">
+      <div class="card p-4 mx-auto shadow-sm" style="max-width: 450px;">
+        <h4 class="text-danger mb-2">Order Not Found</h4>
+        <p class="text-muted mb-4">The requested packing slip or invoice cannot be found.</p>
+        <a href="orders.php" class="btn btn-primary">Back to Orders</a>
+      </div>
+    </body>
+    </html>
+    <?php
     exit;
 }
+
+$id = (int)$order['id'];
 
 $stmtItems = db()->prepare('SELECT * FROM order_items WHERE order_id = :id ORDER BY id ASC');
 $stmtItems->execute([':id' => $id]);
@@ -97,8 +123,10 @@ $storeLogo = setting('store_logo', '');
     <!-- Header -->
     <div class="row align-items-center mb-4 pb-3 border-bottom">
       <div class="col-7">
-        <?php if (!empty($storeLogo)): ?>
-          <img src="<?= htmlspecialchars(upload_url('branding/' . $storeLogo), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 50px;" class="mb-2">
+        <?php 
+        $logoSrc = !empty($storeLogo) ? (store_logo_url($storeLogo) ?? upload_url('branding/' . $storeLogo)) : null;
+        if (!empty($logoSrc)): ?>
+          <img src="<?= htmlspecialchars($logoSrc, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>" style="max-height: 50px;" class="mb-2">
         <?php else: ?>
           <h2 class="fw-bold mb-1 text-primary"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></h2>
         <?php endif; ?>

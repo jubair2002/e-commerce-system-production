@@ -46,7 +46,9 @@ try {
     $categories = FileCache::remember('home:categories:all', 300, function () use ($pdo) {
         return $pdo->query(
             "SELECT c.id, c.name, c.slug, c.description, c.image,
-                    (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status = 'active') AS product_count
+                    (SELECT COUNT(*) FROM products p 
+                     WHERE (p.category_id = c.id OR (p.category_id IS NULL AND LOWER(p.tags) LIKE CONCAT('%', LOWER(c.slug), '%'))) 
+                       AND p.status = 'active') AS product_count
              FROM categories c
              WHERE c.status = 'active'
              ORDER BY product_count DESC, c.name ASC"
@@ -247,6 +249,19 @@ include __DIR__ . '/includes/partials/header.php';
 					$bSub    = $b['subtitle'] ?? '';
 					$bBtnTxt = !empty($b['button_text']) ? $b['button_text'] : 'Shop Now';
 					$bUrl    = !empty($b['button_url']) ? $b['button_url'] : route('shop');
+
+					$displaySub = $bSub;
+					if (!empty($categories)) {
+						foreach ($categories as $cat) {
+							if (strcasecmp($cat['name'], $bTitle) === 0 || (!empty($bUrl) && str_contains($bUrl, 'slug=' . $cat['slug']))) {
+								if ($displaySub === '' || preg_match('/^\d+\s*products?$/i', trim($displaySub))) {
+									$cCnt = (int)($cat['product_count'] ?? 0);
+									$displaySub = $cCnt === 1 ? '1 Product' : "{$cCnt} Products";
+								}
+								break;
+							}
+						}
+					}
 				?>
 				<div class="<?= $colClass ?> p-b-30 m-lr-auto">
 					<!-- Block1 -->
@@ -265,9 +280,9 @@ include __DIR__ . '/includes/partials/header.php';
 									<?= htmlspecialchars($bTitle, ENT_QUOTES, 'UTF-8') ?>
 								</span>
 
-								<?php if ($bSub !== ''): ?>
+								<?php if ($displaySub !== ''): ?>
 								<span class="block1-info stext-102 trans-04">
-									<?= htmlspecialchars($bSub, ENT_QUOTES, 'UTF-8') ?>
+									<?= htmlspecialchars($displaySub, ENT_QUOTES, 'UTF-8') ?>
 								</span>
 								<?php endif; ?>
 							</div>
@@ -287,6 +302,7 @@ include __DIR__ . '/includes/partials/header.php';
 				$bannerCats = array_slice($categories, 0, 3);
 				foreach ($bannerCats as $cat): 
 					$catImg = category_image_url($cat['image'] ?? null);
+					$pCount = (int)($cat['product_count'] ?? 0);
 				?>
 				<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
 					<!-- Block1 -->
@@ -300,7 +316,7 @@ include __DIR__ . '/includes/partials/header.php';
 								</span>
 
 								<span class="block1-info stext-102 trans-04">
-									<?= (int)($cat['product_count'] ?? 0) ?> Products
+									<?= $pCount === 1 ? '1 Product' : "{$pCount} Products" ?>
 								</span>
 							</div>
 

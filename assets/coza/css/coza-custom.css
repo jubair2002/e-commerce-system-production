@@ -1644,6 +1644,118 @@ svg.i {
   transform: scale(1.05);
 }
 
+/* Product Card Quick Actions (Add to Cart / Buy Now) */
+.block2-pic {
+  position: relative;
+  overflow: hidden;
+}
+
+.block2-action-wrap {
+  bottom: -60px;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.block2:hover .block2-action-wrap,
+.block2-pic:hover .block2-action-wrap {
+  bottom: 0px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-card-action {
+  height: 38px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn-card-cart {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.btn-card-cart:hover {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #111827 !important;
+}
+
+.btn-card-buynow {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border: 1px solid #111827 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+.btn-card-buynow:hover {
+  background: #374151 !important;
+  border-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+.btn-card-soldout {
+  background: rgba(243, 244, 246, 0.95) !important;
+  color: #4b5563 !important;
+  border: 1px solid #d1d5db !important;
+  font-size: 12.5px;
+}
+
+[data-theme="dark"] .btn-card-cart {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .btn-card-cart:hover {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-card-buynow {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-card-buynow:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+@media (max-width: 768px) {
+  /* On mobile touch screens, ensure actions are reachable */
+  .block2-action-wrap {
+    position: relative;
+    bottom: 0 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    padding: 6px 4px 0 4px !important;
+  }
+  .btn-card-action {
+    height: 32px;
+    font-size: 11px;
+    padding: 0 4px;
+    border-radius: 4px;
+  }
+}
+
 .block2-txt {
   min-height: 54px;
 }
@@ -2720,4 +2832,120 @@ svg.i {
 
 [data-theme="dark"] .wrap-search-header button {
   color: #9ca3af !important;
+}
+
+/* ==============================================================
+   PDP Variant Option Display Types (Swatches, Buttons, Radio)
+============================================================== */
+.pdp-swatch-list, .pdp-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pdp-swatch-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  padding: 0;
+}
+
+.pdp-swatch-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px #4f46e5;
+}
+
+.pdp-swatch-btn.active {
+  box-shadow: 0 0 0 2px #111827, 0 2px 8px rgba(0,0,0,0.22);
+  transform: scale(1.1);
+}
+
+.pdp-swatch-btn .pdp-swatch-check {
+  font-size: 15px;
+  display: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.pdp-swatch-btn.active .pdp-swatch-check {
+  display: block;
+}
+
+.pdp-pill-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.pdp-pill-btn:hover {
+  border-color: #111827;
+  background: #f8fafc;
+}
+
+.pdp-pill-btn.active {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.pdp-radio-pill {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 13.5px;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.pdp-radio-pill:hover {
+  border-color: #cbd5e1;
+}
+
+[data-theme="dark"] .pdp-pill-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .pdp-pill-btn:hover {
+  border-color: #60a5fa;
+  background: #334155;
+}
+
+[data-theme="dark"] .pdp-pill-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .pdp-swatch-btn {
+  border-color: #1e293b !important;
+  box-shadow: 0 0 0 1px #475569;
+}
+
+[data-theme="dark"] .pdp-swatch-btn.active {
+  box-shadow: 0 0 0 2px #60a5fa, 0 2px 8px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .pdp-radio-pill {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
 }

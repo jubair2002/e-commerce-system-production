@@ -764,6 +764,71 @@ function store_logo_url(?string $logo = null): ?string
     return null;
 }
 
+/** Return URL for uploaded file (fallback helper). */
+function upload_url(?string $path = ''): string
+{
+    if (empty($path)) return '';
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+        return $path;
+    }
+    if (function_exists('storage')) {
+        try {
+            $storageUrl = storage()->getUrl($path);
+            if (!empty($storageUrl) && str_starts_with($storageUrl, 'http')) {
+                return $storageUrl;
+            }
+        } catch (Throwable $e) {}
+    }
+    $clean = ltrim($path, '/');
+    if (defined('UPLOADS_URL')) {
+        return UPLOADS_URL . $clean;
+    }
+    return base_url('assets/uploads/' . $clean);
+}
+
+/** Convert standard color name to hex code. */
+function color_name_to_hex(?string $name): ?string
+{
+    if (empty($name)) return null;
+    $clean = strtolower(trim($name));
+    if (str_starts_with($clean, '#')) return $clean;
+    $palette = [
+        'black'          => '#000000',
+        'white'          => '#ffffff',
+        'red'            => '#ef4444',
+        'blue'           => '#3b82f6',
+        'navy'           => '#1e3a8a',
+        'green'          => '#10b981',
+        'dark green'     => '#065f46',
+        'yellow'         => '#eab308',
+        'orange'         => '#f97316',
+        'purple'         => '#a855f7',
+        'pink'           => '#ec4899',
+        'rose gold'      => '#fb7185',
+        'gray'           => '#6b7280',
+        'grey'           => '#6b7280',
+        'silver'         => '#e2e8f0',
+        'gold'           => '#eab308',
+        'brown'          => '#78350f',
+        'beige'          => '#f5f5dc',
+        'teal'           => '#14b8a6',
+        'cyan'           => '#06b6d4',
+        'violet'         => '#8b5cf6',
+        'lavender'       => '#c084fc',
+        'midnight green' => '#14532d',
+        'space gray'     => '#4b5563',
+        'graphite'       => '#374151',
+        'sierra blue'    => '#93c5fd',
+        'deep purple'    => '#581c87',
+        'starlight'      => '#fafaf9',
+    ];
+    if (isset($palette[$clean])) return $palette[$clean];
+    foreach ($palette as $k => $hex) {
+        if (str_contains($clean, $k)) return $hex;
+    }
+    return '#3b82f6';
+}
+
 /** Return URL to store favicon (or null if none exists). */
 function store_favicon_url(?string $fav = null): ?string
 {

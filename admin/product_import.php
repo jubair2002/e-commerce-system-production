@@ -27,7 +27,8 @@ function normalize_csv_header(string $header): string
     $aliasMap = [
         'name'             => ['name', 'productname', 'title', 'itemname', 'producttitle', 'item'],
         'sku'              => ['sku', 'productsku', 'itemsku', 'itemcode', 'code', 'barcode'],
-        'category'         => ['category', 'categoryname', 'cat', 'collection', 'department'],
+        'product_type'     => ['producttype', 'type', 'itemtype', 'kind'],
+        'category'         => ['category', 'categories', 'categoryname', 'cat', 'cats', 'collection', 'collections', 'department', 'departments', 'productcategory', 'productcategories', 'taxonomies'],
         'price'            => ['price', 'regularprice', 'retailprice', 'cost', 'mrp', 'standardprice'],
         'sale_price'       => ['saleprice', 'discountprice', 'discountedprice', 'specialprice', 'offerprice'],
         'stock'            => ['stock', 'quantity', 'qty', 'inventory', 'stockcount', 'amount'],
@@ -40,6 +41,21 @@ function normalize_csv_header(string $header): string
         'status'           => ['status', 'visibility', 'state'],
         'featured'         => ['featured', 'isfeatured', 'highlight', 'promoted'],
         'low_stock'        => ['lowstockthreshold', 'lowstock', 'alertstock'],
+        'meta_title'       => ['metatitle', 'seotitle', 'pagetitle', 'headertitle'],
+        'meta_description' => ['metadescription', 'seodescription', 'metadesc', 'seodesc', 'meta_desc'],
+        'meta_keywords'    => ['metakeywords', 'seokeywords', 'keywords', 'metatags'],
+        'parent'           => ['parent', 'parentsku', 'parentname', 'parentid'],
+        'options'          => ['options', 'variants', 'attributes', 'variations', 'models'],
+        'color'            => ['color', 'colour', 'colors', 'colours'],
+        'size'             => ['size', 'sizes'],
+        'model'            => ['model', 'models'],
+        'storage'          => ['storage', 'capacity'],
+        'option1_name'     => ['option1name', 'attribute1name'],
+        'option1_value'    => ['option1value', 'attribute1value'],
+        'option2_name'     => ['option2name', 'attribute2name'],
+        'option2_value'    => ['option2value', 'attribute2value'],
+        'option3_name'     => ['option3name', 'attribute3name'],
+        'option3_value'    => ['option3value', 'attribute3value'],
     ];
 
     foreach ($aliasMap as $canonical => $aliases) {
@@ -312,6 +328,77 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                             $image            = $getVal('image');
                             $statusVal        = strtolower($getVal('status'));
                             $featuredVal      = strtolower($getVal('featured'));
+                            $productTypeRaw   = strtolower($getVal('product_type'));
+                            $metaTitle        = $getVal('meta_title');
+                            $metaDesc         = $getVal('meta_description');
+                            $metaKeywords     = $getVal('meta_keywords');
+
+                            $parentRef        = $getVal('parent');
+                            $optionsRaw       = $getVal('options');
+                            $colorRaw         = $getVal('color');
+                            $sizeRaw          = $getVal('size');
+                            $modelRaw         = $getVal('model');
+                            $storageRaw       = $getVal('storage');
+
+                            $opt1Name         = $getVal('option1_name');
+                            $opt1Val          = $getVal('option1_value');
+                            $opt2Name         = $getVal('option2_name');
+                            $opt2Val          = $getVal('option2_value');
+                            $opt3Name         = $getVal('option3_name');
+                            $opt3Val          = $getVal('option3_value');
+
+                            $parsedOptions = [];
+                            if ($optionsRaw !== '') {
+                                $parts = explode('|', $optionsRaw);
+                                foreach ($parts as $p) {
+                                    $p = trim($p);
+                                    if (str_contains($p, ':')) {
+                                        [$oName, $oVals] = explode(':', $p, 2);
+                                        $oName = trim($oName);
+                                        $vList = array_values(array_filter(array_map('trim', explode(',', $oVals)), fn($x) => $x !== ''));
+                                        if ($oName !== '' && !empty($vList)) {
+                                            $parsedOptions[$oName] = $vList;
+                                        }
+                                    } else {
+                                        $vList = array_values(array_filter(array_map('trim', explode(',', $p)), fn($x) => $x !== ''));
+                                        if (!empty($vList)) {
+                                            $parsedOptions['Model'] = $vList;
+                                        }
+                                    }
+                                }
+                            }
+                            if ($colorRaw !== '') {
+                                $cList = array_values(array_filter(array_map('trim', explode(',', $colorRaw)), fn($x) => $x !== ''));
+                                if (!empty($cList)) $parsedOptions['Color'] = $cList;
+                            }
+                            if ($sizeRaw !== '') {
+                                $sList = array_values(array_filter(array_map('trim', explode(',', $sizeRaw)), fn($x) => $x !== ''));
+                                if (!empty($sList)) $parsedOptions['Size'] = $sList;
+                            }
+                            if ($modelRaw !== '') {
+                                $mList = array_values(array_filter(array_map('trim', explode(',', $modelRaw)), fn($x) => $x !== ''));
+                                if (!empty($mList)) $parsedOptions['Model'] = $mList;
+                            }
+                            if ($storageRaw !== '') {
+                                $stList = array_values(array_filter(array_map('trim', explode(',', $storageRaw)), fn($x) => $x !== ''));
+                                if (!empty($stList)) $parsedOptions['Storage'] = $stList;
+                            }
+                            if ($opt1Name !== '' && $opt1Val !== '') {
+                                $vList = array_values(array_filter(array_map('trim', explode(',', $opt1Val)), fn($x) => $x !== ''));
+                                if (!empty($vList)) $parsedOptions[$opt1Name] = $vList;
+                            }
+                            if ($opt2Name !== '' && $opt2Val !== '') {
+                                $vList = array_values(array_filter(array_map('trim', explode(',', $opt2Val)), fn($x) => $x !== ''));
+                                if (!empty($vList)) $parsedOptions[$opt2Name] = $vList;
+                            }
+                            if ($opt3Name !== '' && $opt3Val !== '') {
+                                $vList = array_values(array_filter(array_map('trim', explode(',', $opt3Val)), fn($x) => $x !== ''));
+                                if (!empty($vList)) $parsedOptions[$opt3Name] = $vList;
+                            }
+
+                            $isConfigurable = in_array($productTypeRaw, ['variable', 'configurable', 'config', 'var'], true) || !empty($parsedOptions);
+                            $isVariant = in_array($productTypeRaw, ['variant', 'variation'], true) || $parentRef !== '';
+                            $productType = $isConfigurable ? 'variable' : ($isVariant ? 'variant' : 'simple');
 
                             // Row validation
                             $rowErrors = [];
@@ -397,6 +484,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                                 'row'            => $rowNumber,
                                 'name'           => $name,
                                 'sku'            => $sku,
+                                'product_type'   => $productType,
+                                'parent_ref'     => $parentRef,
+                                'options'        => $parsedOptions,
+                                'meta_title'     => $metaTitle,
+                                'meta_description'=> $metaDesc,
+                                'meta_keywords'  => $metaKeywords,
                                 'category'       => $categoryName,
                                 'category_id'    => $catId,
                                 'category_exists'=> $catExists,
@@ -568,17 +661,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     $productImage = $oldP['image'];
                 }
 
+                $actualProductType = ($r['product_type'] === 'variable') ? 'variable' : 'simple';
+
                 $stmtUpd = $pdo->prepare("
                     UPDATE products SET
                         category_id = :cid,
                         name = :name,
                         sku = :sku,
+                        product_type = :ptype,
                         short_description = :sd,
                         description = :d,
                         price = :price,
                         sale_price = :sp,
                         brand = :brand,
                         tags = :tags,
+                        meta_title = :mtitle,
+                        meta_description = :mdesc,
+                        meta_keywords = :mkey,
                         image = :img,
                         status = :status,
                         featured = :feat,
@@ -590,12 +689,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     ':cid'    => $finalCatId,
                     ':name'   => $r['name'],
                     ':sku'    => $r['sku'] !== '' ? $r['sku'] : null,
+                    ':ptype'  => $actualProductType,
                     ':sd'     => $r['short_desc'] !== '' ? $r['short_desc'] : null,
                     ':d'      => $r['desc'] !== '' ? $r['desc'] : null,
                     ':price'  => number_format((float)$r['price'], 2, '.', ''),
                     ':sp'     => $r['sale_price'] !== null ? number_format((float)$r['sale_price'], 2, '.', '') : null,
                     ':brand'  => $r['brand'] !== '' ? $r['brand'] : null,
                     ':tags'   => $r['tags'] !== '' ? $r['tags'] : null,
+                    ':mtitle' => !empty($r['meta_title']) ? $r['meta_title'] : null,
+                    ':mdesc'  => !empty($r['meta_description']) ? $r['meta_description'] : null,
+                    ':mkey'   => !empty($r['meta_keywords']) ? $r['meta_keywords'] : null,
                     ':img'    => $productImage,
                     ':status' => $r['status'],
                     ':feat'   => $r['featured'],
@@ -610,27 +713,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     stock_adjust($existingId, null, $stockDelta, $reason, null, 'Stock updated via CSV import');
                 }
 
+                $targetProdId = $existingId;
                 $updated++;
                 $resultsLog[] = [
                     'row'    => $r['row'],
                     'id'     => $existingId,
                     'name'   => $r['name'],
                     'status' => 'updated',
-                    'detail' => 'Updated product #' . $existingId,
+                    'detail' => 'Updated product #' . $existingId . ($actualProductType === 'variable' ? ' (Configurable)' : ''),
                 ];
             } else {
                 // Create new product
                 $slug = unique_slug(slugify($r['name']), 'products');
+                $actualProductType = ($r['product_type'] === 'variable') ? 'variable' : 'simple';
 
                 $stmtIns = $pdo->prepare("
                     INSERT INTO products
                         (category_id, name, slug, product_type, sku, short_description, description,
                          price, sale_price, stock, image, status, featured,
+                         meta_title, meta_description, meta_keywords,
                          track_inventory, allow_backorder, low_stock_threshold, show_stock_count,
                          brand, tags, created_at, updated_at)
                     VALUES
-                        (:cid, :name, :slug, 'simple', :sku, :sd, :d,
+                        (:cid, :name, :slug, :ptype, :sku, :sd, :d,
                          :price, :sp, 0, :img, :status, :feat,
+                         :mtitle, :mdesc, :mkey,
                          1, 0, 5, 1,
                          :brand, :tags, NOW(), NOW())
                 ");
@@ -639,6 +746,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     ':cid'    => $finalCatId,
                     ':name'   => $r['name'],
                     ':slug'   => $slug,
+                    ':ptype'  => $actualProductType,
                     ':sku'    => $r['sku'] !== '' ? $r['sku'] : null,
                     ':sd'     => $r['short_desc'] !== '' ? $r['short_desc'] : null,
                     ':d'      => $r['desc'] !== '' ? $r['desc'] : null,
@@ -647,11 +755,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     ':img'    => $productImage,
                     ':status' => $r['status'],
                     ':feat'   => $r['featured'],
+                    ':mtitle' => !empty($r['meta_title']) ? $r['meta_title'] : null,
+                    ':mdesc'  => !empty($r['meta_description']) ? $r['meta_description'] : null,
+                    ':mkey'   => !empty($r['meta_keywords']) ? $r['meta_keywords'] : null,
                     ':brand'  => $r['brand'] !== '' ? $r['brand'] : null,
                     ':tags'   => $r['tags'] !== '' ? $r['tags'] : null,
                 ]);
 
                 $newProdId = (int)$pdo->lastInsertId();
+                $targetProdId = $newProdId;
 
                 // If primary image assigned, insert into product_images gallery
                 if ($productImage && $newProdId) {
@@ -659,9 +771,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                         ->execute([$newProdId, $productImage, $r['name']]);
                 }
 
-                // Initial stock ledger adjustment
+                // Initial stock ledger adjustment for simple product
                 $initialStock = (int)$r['stock'];
-                if ($initialStock > 0 && function_exists('stock_adjust')) {
+                if ($actualProductType !== 'variable' && $initialStock > 0 && function_exists('stock_adjust')) {
                     stock_adjust($newProdId, null, $initialStock, 'restock', null, 'Initial stock from CSV import');
                 }
 
@@ -671,8 +783,125 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                     'id'     => $newProdId,
                     'name'   => $r['name'],
                     'status' => 'created',
-                    'detail' => 'Created product #' . $newProdId . ' (SKU: ' . ($r['sku'] ?: 'N/A') . ')',
+                    'detail' => 'Created ' . ($actualProductType === 'variable' ? 'configurable' : 'simple') . ' product #' . $newProdId . ' (SKU: ' . ($r['sku'] ?: 'N/A') . ')',
                 ];
+            }
+
+            // Generate options and variant combinations for configurable products
+            if ($actualProductType === 'variable' && !empty($r['options']) && !empty($targetProdId)) {
+                $optPos = 0;
+                $valueMap = [];
+                $optIdMap = [];
+
+                foreach ($r['options'] as $optName => $optVals) {
+                    $optPos++;
+                    $isColor = (bool)preg_match('/colou?r/i', $optName);
+                    $dispType = $isColor ? 'swatch' : 'button';
+
+                    $stmtCheckOpt = $pdo->prepare("SELECT id FROM product_options WHERE product_id = :pid AND LOWER(name) = :n LIMIT 1");
+                    $stmtCheckOpt->execute([':pid' => $targetProdId, ':n' => strtolower($optName)]);
+                    $optId = $stmtCheckOpt->fetchColumn();
+
+                    if (!$optId) {
+                        $stmtInsOpt = $pdo->prepare("INSERT INTO product_options (product_id, name, display_type, position) VALUES (:pid, :n, :dt, :pos)");
+                        $stmtInsOpt->execute([':pid' => $targetProdId, ':n' => $optName, ':dt' => $dispType, ':pos' => $optPos]);
+                        $optId = (int)$pdo->lastInsertId();
+                    } else {
+                        $optId = (int)$optId;
+                    }
+                    $optIdMap[$optName] = $optId;
+
+                    $valPos = 0;
+                    foreach ($optVals as $valStr) {
+                        $valPos++;
+                        $hex = $isColor ? color_name_to_hex($valStr) : null;
+
+                        $stmtCheckVal = $pdo->prepare("SELECT id FROM product_option_values WHERE option_id = :oid AND LOWER(value) = :v LIMIT 1");
+                        $stmtCheckVal->execute([':oid' => $optId, ':v' => strtolower($valStr)]);
+                        $valId = $stmtCheckVal->fetchColumn();
+
+                        if (!$valId) {
+                            $stmtInsVal = $pdo->prepare("INSERT INTO product_option_values (option_id, value, swatch_hex, position) VALUES (:oid, :v, :hex, :pos)");
+                            $stmtInsVal->execute([':oid' => $optId, ':v' => $valStr, ':hex' => $hex, ':pos' => $valPos]);
+                            $valId = (int)$pdo->lastInsertId();
+                        } else {
+                            $valId = (int)$valId;
+                        }
+                        $valueMap[$optName][$valStr] = $valId;
+                    }
+                }
+
+                // Generate Cartesian combinations
+                $arrays = array_values($r['options']);
+                $keys = array_keys($r['options']);
+                $combos = [[]];
+                foreach ($arrays as $idx => $values) {
+                    $newCombos = [];
+                    foreach ($combos as $combo) {
+                        foreach ($values as $val) {
+                            $newCombos[] = array_merge($combo, [$keys[$idx] => $val]);
+                        }
+                    }
+                    $combos = $newCombos;
+                }
+
+                $comboCount = count($combos);
+                $initialStock = (int)$r['stock'];
+                $perVariantStock = $comboCount > 0 ? (int)floor($initialStock / $comboCount) : 0;
+                $stockRemainder = $comboCount > 0 ? ($initialStock % $comboCount) : 0;
+
+                $vPosition = 0;
+                foreach ($combos as $cIdx => $combo) {
+                    $vPosition++;
+                    $valIds = [];
+                    $comboSlugs = [];
+                    foreach ($combo as $optName => $valStr) {
+                        $vId = $valueMap[$optName][$valStr] ?? null;
+                        if ($vId) {
+                            $valIds[] = $vId;
+                            $comboSlugs[] = slugify($valStr);
+                        }
+                    }
+                    if (empty($valIds)) continue;
+
+                    $optionHash = variant_hash($valIds);
+                    $vSku = !empty($r['sku']) ? ($r['sku'] . '-' . implode('-', $comboSlugs)) : null;
+                    $vStock = $perVariantStock + ($cIdx === 0 ? $stockRemainder : 0);
+
+                    $stmtCheckVar = $pdo->prepare("SELECT id, stock FROM product_variants WHERE product_id = :pid AND option_hash = :hash LIMIT 1");
+                    $stmtCheckVar->execute([':pid' => $targetProdId, ':hash' => $optionHash]);
+                    $existingVar = $stmtCheckVar->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$existingVar) {
+                        $stmtInsVar = $pdo->prepare("
+                            INSERT INTO product_variants
+                                (product_id, option_hash, sku, price, sale_price, stock, status, position)
+                            VALUES
+                                (:pid, :hash, :sku, :price, :sp, :stock, 'active', :pos)
+                        ");
+                        $stmtInsVar->execute([
+                            ':pid'   => $targetProdId,
+                            ':hash'  => $optionHash,
+                            ':sku'   => $vSku,
+                            ':price' => number_format((float)$r['price'], 2, '.', ''),
+                            ':sp'    => $r['sale_price'] !== null ? number_format((float)$r['sale_price'], 2, '.', '') : null,
+                            ':stock' => $vStock,
+                            ':pos'   => $vPosition,
+                        ]);
+                        $variantId = (int)$pdo->lastInsertId();
+
+                        $stmtLink = $pdo->prepare("INSERT IGNORE INTO product_variant_values (variant_id, option_id, option_value_id) VALUES (?, ?, ?)");
+                        foreach ($combo as $optName => $valStr) {
+                            $oId = $optIdMap[$optName];
+                            $vId = $valueMap[$optName][$valStr];
+                            $stmtLink->execute([$variantId, $oId, $vId]);
+                        }
+
+                        if ($vStock > 0 && function_exists('stock_adjust')) {
+                            stock_adjust($targetProdId, $variantId, $vStock, 'restock', null, 'Initial variant stock from CSV import');
+                        }
+                    }
+                }
             }
         }
 
@@ -982,9 +1211,25 @@ include __DIR__ . '/includes/header.php';
               <tr class="<?= $r['action'] === 'error' ? 'table-danger' : '' ?>">
                 <td class="font-monospace small text-muted">#<?= (int)$r['row'] ?></td>
                 <td>
-                  <div class="fw-bold"><?= e($r['name'] ?: '—') ?></div>
+                  <div class="fw-bold">
+                    <?= e($r['name'] ?: '—') ?>
+                    <?php if (($r['product_type'] ?? 'simple') === 'variable'): ?>
+                      <span class="badge bg-primary-subtle text-primary border ms-1" style="font-size: 0.68rem;">Configurable</span>
+                    <?php endif; ?>
+                  </div>
                   <?php if (!empty($r['brand'])): ?>
                     <span class="badge bg-light text-muted border" style="font-size: 0.68rem;"><?= e($r['brand']) ?></span>
+                  <?php endif; ?>
+                  <?php if (!empty($r['options'])): ?>
+                    <div class="small text-muted mt-1">
+                      <i class="bi bi-sliders me-1"></i>
+                      <?= e(implode(' · ', array_map(fn($k, $v) => "$k: " . implode(', ', $v), array_keys($r['options']), array_values($r['options'])))) ?>
+                    </div>
+                  <?php endif; ?>
+                  <?php if (!empty($r['meta_title']) || !empty($r['meta_description'])): ?>
+                    <span class="badge bg-light text-secondary border mt-1" title="SEO metadata included" style="font-size: 0.65rem;">
+                      <i class="bi bi-search me-1"></i> SEO
+                    </span>
                   <?php endif; ?>
                   <?php if (!empty($r['errors'])): ?>
                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i><?= e(implode('; ', $r['errors'])) ?></div>

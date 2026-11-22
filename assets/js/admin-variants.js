@@ -87,9 +87,50 @@
   if (typeVariable) typeVariable.addEventListener('change', updateProductTypeUI);
 
   // -------------------------------------------------------------
-  // Options Builder
+  // Options Builder & Color Helpers
   // -------------------------------------------------------------
-  function renderOptions() {
+  const COLOR_PALETTE = {
+    'black': '#000000',
+    'white': '#ffffff',
+    'red': '#ef4444',
+    'blue': '#3b82f6',
+    'navy': '#1e3a8a',
+    'green': '#10b981',
+    'dark green': '#065f46',
+    'yellow': '#eab308',
+    'orange': '#f97316',
+    'purple': '#a855f7',
+    'pink': '#ec4899',
+    'rose gold': '#fb7185',
+    'gray': '#6b7280',
+    'grey': '#6b7280',
+    'silver': '#e2e8f0',
+    'gold': '#eab308',
+    'brown': '#78350f',
+    'beige': '#f5f5dc',
+    'teal': '#14b8a6',
+    'cyan': '#06b6d4',
+    'violet': '#8b5cf6',
+    'lavender': '#c084fc',
+    'midnight green': '#14532d',
+    'space gray': '#4b5563',
+    'graphite': '#374151',
+    'sierra blue': '#93c5fd',
+    'deep purple': '#581c87',
+    'starlight': '#fafaf9'
+  };
+
+  function colorNameToHex(name) {
+    if (!name) return null;
+    const clean = name.toLowerCase().trim();
+    if (COLOR_PALETTE[clean]) return COLOR_PALETTE[clean];
+    for (const [k, v] of Object.entries(COLOR_PALETTE)) {
+      if (clean.includes(k)) return v;
+    }
+    return '#3b82f6';
+  }
+
+  function renderOptions(focusOptIndex = null) {
     if (!optionsContainer) return;
     optionsContainer.innerHTML = '';
 
@@ -138,7 +179,7 @@
           <div class="row g-2 mb-3">
             <div class="col-md-5">
               <label class="form-label small fw-semibold">Option name</label>
-              <input type="text" class="form-control opt-name-input" list="presets_datalist" value="${escapeHtml(opt.name)}" placeholder="e.g. Size, Color, Storage" required>
+              <input type="text" class="form-control opt-name-input" list="presets_datalist" value="${escapeHtml(opt.name)}" placeholder="e.g. Model, Size, Color" required>
             </div>
             <div class="col-md-4">
               <label class="form-label small fw-semibold">Display type</label>
@@ -156,21 +197,32 @@
             </div>
           </div>
 
-          <label class="form-label small fw-semibold">Option values (type and press Enter or comma)</label>
+          <label class="form-label small fw-semibold">Option values (type or paste multiple values separated by commas)</label>
           <div class="values-tag-container d-flex flex-wrap align-items-center gap-2 p-2 border rounded bg-white">
             ${(opt.values || []).map((val, valIndex) => `
               <span class="badge border text-dark d-flex align-items-center gap-1 p-2 bg-light val-badge" data-val-index="${valIndex}">
                 ${isSwatch ? `
                   <input type="color" class="form-control form-control-color p-0 border-0 val-color-picker"
-                         value="${val.swatch_hex || '#3b82f6'}" style="width:20px;height:20px;cursor:pointer;" title="Pick color">
+                         value="${val.swatch_hex || colorNameToHex(val.value) || '#3b82f6'}" style="width:22px;height:22px;cursor:pointer;" title="Pick color">
                 ` : ''}
                 <span class="val-text">${escapeHtml(val.value)}</span>
                 <button type="button" class="btn-close btn-close-sm val-remove-btn" aria-label="Remove" style="font-size:0.65rem;"></button>
               </span>
             `).join('')}
-            <input type="text" class="border-0 flex-grow-1 val-input" placeholder="+ Add value..." style="min-width:120px; outline:none;">
+            <input type="text" class="border-0 flex-grow-1 val-input" placeholder="+ Add value (or paste multiple, comma-separated)..." style="min-width:160px; outline:none;">
           </div>
-          <div class="form-text small text-muted">Press <kbd>Enter</kbd> or <kbd>,</kbd> to add each value.</div>
+          ${isSwatch ? `
+            <div class="d-flex align-items-center flex-wrap gap-1 mt-2 p-2 bg-light rounded border">
+              <small class="text-muted fw-semibold me-1"><i class="bi bi-palette"></i> Quick Colors:</small>
+              ${['Black', 'White', 'Midnight Green', 'Navy', 'Red', 'Blue', 'Gold', 'Silver', 'Purple', 'Pink', 'Gray'].map(c => `
+                <button type="button" class="btn btn-sm p-0 rounded-circle border opt-preset-color"
+                        data-color-name="${c}" data-hex="${COLOR_PALETTE[c.toLowerCase()] || '#000000'}"
+                        style="width:22px;height:22px;background-color:${COLOR_PALETTE[c.toLowerCase()] || '#000000'};cursor:pointer;"
+                        title="Add ${c}"></button>
+              `).join('')}
+            </div>
+          ` : ''}
+          <div class="form-text small text-muted">Press <kbd>Enter</kbd> or <kbd>,</kbd> to add. You can paste comma-separated lists like <em>"iPhone 11, iPhone 12, iPhone 13"</em>.</div>
         </div>
       `;
 
@@ -184,7 +236,12 @@
       const typeSelect = optCard.querySelector('.opt-type-select');
       typeSelect.addEventListener('change', (e) => {
         opt.display_type = e.target.value;
-        renderOptions();
+        if (opt.display_type === 'swatch' && Array.isArray(opt.values)) {
+          opt.values.forEach(v => {
+            if (!v.swatch_hex) v.swatch_hex = colorNameToHex(v.value) || '#3b82f6';
+          });
+        }
+        renderOptions(optIndex);
       });
 
       const loadPresetBtn = optCard.querySelector('.opt-load-preset');
@@ -195,9 +252,9 @@
           opt.values = found.values.map(v => ({
             id: null,
             value: v.value,
-            swatch_hex: v.swatch_hex || (found.display_type === 'swatch' ? '#000000' : null)
+            swatch_hex: v.swatch_hex || (found.display_type === 'swatch' ? colorNameToHex(v.value) || '#000000' : null)
           }));
-          renderOptions();
+          renderOptions(optIndex);
         } else {
           alert(`No presets found matching "${opt.name}". Check presets in admin settings.`);
         }
@@ -233,36 +290,71 @@
 
       // Tag input for values
       const valInput = optCard.querySelector('.val-input');
-      const addTag = (valStr) => {
-        valStr = valStr.trim();
-        if (!valStr) return;
-        // Check case-insensitive duplicate
-        const exists = (opt.values || []).some(v => v.value.toLowerCase() === valStr.toLowerCase());
-        if (exists) {
-          alert(`Value "${valStr}" already exists for option "${opt.name}".`);
-          return;
-        }
+      const addTags = (rawInput, preserveFocus = true) => {
+        if (!rawInput) return;
+        const tokens = rawInput.split(/[,;\n\r\t]+/).map(s => s.trim()).filter(Boolean);
+        if (!tokens.length) return;
+
         opt.values = opt.values || [];
-        opt.values.push({
-          id: null,
-          value: valStr,
-          swatch_hex: opt.display_type === 'swatch' ? '#111111' : null
+        let addedCount = 0;
+        tokens.forEach(valStr => {
+          const exists = opt.values.some(v => v.value.toLowerCase() === valStr.toLowerCase());
+          if (!exists) {
+            opt.values.push({
+              id: null,
+              value: valStr,
+              swatch_hex: opt.display_type === 'swatch' ? (colorNameToHex(valStr) || '#3b82f6') : null
+            });
+            addedCount++;
+          }
         });
+
         valInput.value = '';
-        renderOptions();
+        renderOptions(preserveFocus ? optIndex : null);
       };
 
       valInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ',') {
           e.preventDefault();
-          addTag(valInput.value);
+          addTags(valInput.value, true);
         }
+      });
+
+      valInput.addEventListener('input', () => {
+        if (valInput.value.includes(',') || valInput.value.includes('\n')) {
+          addTags(valInput.value, true);
+        }
+      });
+
+      valInput.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteText = (e.clipboardData || window.clipboardData).getData('text');
+        addTags(pasteText, true);
       });
 
       valInput.addEventListener('blur', () => {
         if (valInput.value.trim()) {
-          addTag(valInput.value);
+          addTags(valInput.value, false);
         }
+      });
+
+      // Quick Color Presets Click
+      optCard.querySelectorAll('.opt-preset-color').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const cName = btn.dataset.colorName;
+          const cHex = btn.dataset.hex;
+          const exists = (opt.values || []).some(v => v.value.toLowerCase() === cName.toLowerCase());
+          if (!exists) {
+            opt.values = opt.values || [];
+            opt.values.push({
+              id: null,
+              value: cName,
+              swatch_hex: cHex
+            });
+            renderOptions(optIndex);
+          }
+        });
       });
 
       // Remove tag buttons
@@ -271,7 +363,7 @@
           const badge = e.target.closest('.val-badge');
           const valIdx = parseInt(badge.dataset.valIndex, 10);
           opt.values.splice(valIdx, 1);
-          renderOptions();
+          renderOptions(optIndex);
         });
       });
 
@@ -291,6 +383,16 @@
     });
 
     syncJsonInputs();
+
+    if (focusOptIndex !== null) {
+      setTimeout(() => {
+        const targetCard = optionsContainer.querySelector(`.option-item-card[data-index="${focusOptIndex}"]`);
+        if (targetCard) {
+          const targetInp = targetCard.querySelector('.val-input');
+          if (targetInp) targetInp.focus();
+        }
+      }, 20);
+    }
   }
 
   if (addOptionBtn) {

@@ -3,11 +3,17 @@ require_once __DIR__ . '/../../shop_bootstrap.php';
 
 $pageTitle = $pageTitle ?? '';
 $siteName  = setting('site_name', APP_NAME);
-$fullTitle = $pageTitle !== '' ? "$pageTitle · $siteName" : $siteName;
+$seoDefaultTitle = setting('seo_default_title', setting('meta_title', ''));
+if ($pageTitle === '' || $pageTitle === 'Home') {
+    $fullTitle = $seoDefaultTitle ?: ($pageTitle !== '' ? "$pageTitle · $siteName" : $siteName);
+} else {
+    $fullTitle = "$pageTitle · $siteName";
+}
 
 // SEO Metadata
-$metaDescContent = !empty($pageDescription) ? $pageDescription : setting('seo_default_description', setting('site_about', 'Quality essentials delivered to your door.'));
-$metaKeywordsContent = !empty($pageKeywords) ? $pageKeywords : setting('seo_default_keywords', '');
+$metaDescContent = !empty($pageDescription) ? $pageDescription : setting('seo_default_description', setting('meta_description', setting('site_about', 'Shop unique Chinese imported products in Bangladesh at Jinishpotro.store.')));
+$metaKeywordsContent = !empty($pageKeywords) ? $pageKeywords : setting('seo_default_keywords', setting('meta_keywords', ''));
+$robotsAllow = (int)setting('robots_allow', setting('allow_crawlers', '1')) === 1;
 
 // Store Favicon
 $storeFavicon = setting('store_favicon');
@@ -23,6 +29,7 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 	<?php if (!empty($metaKeywordsContent)): ?>
 	<meta name="keywords" content="<?= htmlspecialchars($metaKeywordsContent, ENT_QUOTES, 'UTF-8') ?>">
 	<?php endif; ?>
+	<meta name="robots" content="<?= $robotsAllow ? 'index, follow' : 'noindex, nofollow' ?>">
 
 	<!-- Theme Flash Prevention -->
 	<script>
@@ -72,6 +79,7 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 
 	<script>
 		window.SHOP_BASE_URL = "<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>";
+		window.SHOP_CART_URL = "<?= htmlspecialchars(route('cart'), ENT_QUOTES, 'UTF-8') ?>";
 		window.SHOP_CHECKOUT_URL = "<?= htmlspecialchars(route('checkout'), ENT_QUOTES, 'UTF-8') ?>";
 		window.SHOP_CSRF_TOKEN = "<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>";
 		window.CUSTOMER_LOGGED_IN = <?= (function_exists('customer_current') && customer_current() !== null) ? 'true' : 'false' ?>;
