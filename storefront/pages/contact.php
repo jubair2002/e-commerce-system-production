@@ -82,8 +82,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 $storeName = setting('site_name', APP_NAME);
-$storeEmail = setting('contact_email', setting('store_email', 'support@jinishpotro.store'));
-$storePhone = setting('contact_phone', setting('store_phone', '+880 1700-000000'));
+$storeEmail = setting('site_email', setting('contact_email', setting('store_email', 'support@jinishpotro.store')));
+$storePhone = setting('store_phone', setting('contact_phone', '+880 1700-000000'));
 $storeAddress = setting('store_address', 'Dhaka, Bangladesh');
 
 include __DIR__ . '/../../includes/partials/header.php';

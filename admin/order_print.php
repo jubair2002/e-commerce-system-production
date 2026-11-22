@@ -47,7 +47,7 @@ $items = $stmtItems->fetchAll();
 $siteName = setting('site_name', 'E-Commerce Store');
 $storeAddress = setting('store_address', '');
 $storePhone = setting('store_phone', '');
-$storeEmail = setting('store_email', '');
+$storeEmail = setting('site_email', setting('store_email', ''));
 $storeLogo = setting('store_logo', '');
 ?>
 <!DOCTYPE html>
