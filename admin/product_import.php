@@ -27,7 +27,7 @@ function normalize_csv_header(string $header): string
     $aliasMap = [
         'name'             => ['name', 'productname', 'title', 'itemname', 'producttitle', 'item'],
         'sku'              => ['sku', 'productsku', 'itemsku', 'itemcode', 'code', 'barcode'],
-        'product_type'     => ['producttype', 'type', 'itemtype', 'kind'],
+        'product_type'     => ['producttype', 'type', 'itemtype', 'kind', 'productkind', 'productswithoption', 'productwithoptions', 'productswithoptions', 'productwithoption'],
         'category'         => ['category', 'categories', 'categoryname', 'cat', 'cats', 'collection', 'collections', 'department', 'departments', 'productcategory', 'productcategories', 'taxonomies'],
         'price'            => ['price', 'regularprice', 'retailprice', 'cost', 'mrp', 'standardprice'],
         'sale_price'       => ['saleprice', 'discountprice', 'discountedprice', 'specialprice', 'offerprice'],
@@ -35,17 +35,17 @@ function normalize_csv_header(string $header): string
         'short_description'=> ['shortdescription', 'summary', 'brief', 'tagline', 'shortdesc'],
         'description'      => ['description', 'details', 'body', 'fulldescription', 'content', 'desc'],
         'brand'            => ['brand', 'manufacturer', 'vendor', 'maker'],
-        'tags'             => ['tags', 'keywords', 'labels'],
+        'tags'             => ['tags', 'labels'],
         'weight_g'         => ['weight', 'weightg', 'weightinms', 'weightgrams'],
         'image'            => ['image', 'imageurl', 'img', 'photo', 'picture', 'thumbnail'],
         'status'           => ['status', 'visibility', 'state'],
         'featured'         => ['featured', 'isfeatured', 'highlight', 'promoted'],
         'low_stock'        => ['lowstockthreshold', 'lowstock', 'alertstock'],
-        'meta_title'       => ['metatitle', 'seotitle', 'pagetitle', 'headertitle'],
-        'meta_description' => ['metadescription', 'seodescription', 'metadesc', 'seodesc', 'meta_desc'],
-        'meta_keywords'    => ['metakeywords', 'seokeywords', 'keywords', 'metatags'],
+        'meta_title'       => ['metatitle', 'seotitle', 'pagetitle', 'headertitle', 'seometatitle'],
+        'meta_description' => ['metadescription', 'seodescription', 'metadesc', 'seodesc', 'meta_desc', 'seometadescription'],
+        'meta_keywords'    => ['metakeywords', 'seokeywords', 'keywords', 'metatags', 'seometakeywords'],
         'parent'           => ['parent', 'parentsku', 'parentname', 'parentid'],
-        'options'          => ['options', 'variants', 'attributes', 'variations', 'models'],
+        'options'          => ['options', 'variants', 'attributes', 'variations', 'numberofvariants', 'variantcount', 'numvariants'],
         'color'            => ['color', 'colour', 'colors', 'colours'],
         'size'             => ['size', 'sizes'],
         'model'            => ['model', 'models'],
@@ -102,54 +102,78 @@ if (isset($_GET['action']) && $_GET['action'] === 'sample_csv') {
 
     // Headers
     fputcsv($out, [
-        'name', 'sku', 'category', 'price', 'sale_price', 'stock',
-        'short_description', 'description', 'brand', 'tags', 'status', 'featured'
+        'name', 'sku', 'product_type', 'category', 'price', 'sale_price', 'stock',
+        'color', 'size', 'model', 'short_description', 'description', 'brand', 'tags',
+        'meta_title', 'meta_description', 'meta_keywords', 'status', 'featured'
     ]);
 
-    // Sample rows
+    // Sample row 1: Products with multiple variants ("Products with option")
     fputcsv($out, [
-        'Classic Cotton Crewneck T-Shirt',
-        'TSHIRT-COT-01',
-        'Men',
-        '1200.00',
-        '999.00',
-        '50',
-        'Comfortable 100% combed cotton casual tee.',
-        'Premium breathable ring-spun cotton t-shirt designed for everyday comfort and durability. Double-needle sleeve and bottom hem.',
-        'Jinishpotro',
-        'tshirt, cotton, casual, men',
-        'active',
-        '1'
-    ]);
-
-    fputcsv($out, [
-        'Floral Summer Maxi Dress',
-        'DRESS-FLR-02',
-        'Women',
-        '2850.00',
+        'Semi-Transparent Jelly Magnetic Phone Case',
+        'JP-GADT-CASE-001',
+        'Products with option',
+        'Gadgets',
+        '650.00',
+        '600.00',
+        '60',
+        'Black, Navy Blue, Midnight Green',
         '',
-        '35',
-        'Lightweight vibrant floral print summer maxi dress.',
-        'Elegant maxi dress with soft chiffon lining, tiered skirt, and elastic waist. Perfect for casual day-outs and summer events.',
+        'iPhone 13, iPhone 14, iPhone 15 Pro',
+        'Semi-transparent jelly magnetic phone case with liquid silicone finish.',
+        'High quality shockproof magnetic liquid silicone phone case compatible with MagSafe chargers and accessories. Available in vibrant colors across iPhone models.',
         'Jinishpotro',
-        'dress, women, summer, floral',
+        'case, iphone, magsafe, accessories',
+        'Magnetic Liquid Silicone Case Bangladesh | Jinishpotro',
+        'Buy authentic magnetic jelly silicone iPhone case in BD. Cash on delivery available nationwide.',
+        'iphone case, magsafe case, liquid silicone, jinishpotro',
         'active',
         '1'
     ]);
 
+    // Sample row 2: Standalone simple product with single variant (considered as simple)
     fputcsv($out, [
         'Minimalist Slim Leather Wallet',
         'WLLT-LTH-03',
+        'simple',
         'Accessories',
         '850.00',
         '750.00',
         '25',
+        'Brown',
+        '',
+        '',
         'Slim bi-fold genuine top-grain leather wallet.',
         'Ultra-slim profile holding up to 8 cards and full-length cash slot. Built with RFID-blocking security lining.',
         'Jinishpotro',
         'wallet, leather, accessories',
+        'Slim Genuine Leather Wallet BD | Jinishpotro',
+        'Minimalist RFID-blocking top-grain leather wallet at best price in Bangladesh.',
+        'leather wallet, rfid wallet, slim wallet, accessories',
         'active',
-        '0'
+        '1'
+    ]);
+
+    // Sample row 3: Simple product with multiple sizes (multiple variants -> Products with option)
+    fputcsv($out, [
+        'Classic Cotton Crewneck T-Shirt',
+        'TSHIRT-COT-01',
+        '',
+        'Men',
+        '1200.00',
+        '999.00',
+        '50',
+        'Black, White',
+        'M, L, XL',
+        '',
+        'Comfortable 100% combed cotton casual tee.',
+        'Premium breathable ring-spun cotton t-shirt designed for everyday comfort and durability. Double-needle sleeve and bottom hem.',
+        'Jinishpotro',
+        'tshirt, cotton, casual, men',
+        'Premium Cotton Crewneck T-Shirt BD | Jinishpotro',
+        'Shop 100% combed breathable cotton men t-shirt in Bangladesh. Fast home delivery.',
+        'cotton tshirt, men fashion, crewneck, casual',
+        'active',
+        '1'
     ]);
 
     fputcsv($out, [
@@ -396,9 +420,44 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                                 if (!empty($vList)) $parsedOptions[$opt3Name] = $vList;
                             }
 
-                            $isConfigurable = in_array($productTypeRaw, ['variable', 'configurable', 'config', 'var'], true) || !empty($parsedOptions);
-                            $isVariant = in_array($productTypeRaw, ['variant', 'variation'], true) || $parentRef !== '';
-                            $productType = $isConfigurable ? 'variable' : ($isVariant ? 'variant' : 'simple');
+                            // Calculate total combinations from options
+                            $comboCount = 0;
+                            if (!empty($parsedOptions)) {
+                                $comboCount = 1;
+                                foreach ($parsedOptions as $optVals) {
+                                    $cnt = count($optVals);
+                                    if ($cnt > 0) {
+                                        $comboCount *= $cnt;
+                                    }
+                                }
+                            }
+
+                            $isExplicitlyVariable = in_array(strtolower($productTypeRaw), [
+                                'variable', 'configurable', 'config', 'var',
+                                'products with option', 'product with options', 'products with options', 'product with option',
+                                'options', 'with options', 'with option', 'has options'
+                            ], true);
+
+                            $isExplicitlySimple = in_array(strtolower($productTypeRaw), [
+                                'simple', 'simple product', 'standalone', 'single', 'standard', 'no options'
+                            ], true);
+
+                            $isVariantRow = in_array(strtolower($productTypeRaw), ['variant', 'variation'], true) || $parentRef !== '';
+
+                            // Product type rule:
+                            // If a product has multiple variants (combinations > 1), it is "Products with option" (variable).
+                            // If a product has only 1 variant (or 0 options), it will be considered as simple.
+                            if ($isVariantRow) {
+                                $productType = 'variant';
+                            } elseif ($comboCount > 1) {
+                                $productType = 'variable';
+                            } elseif ($comboCount === 1) {
+                                $productType = 'simple';
+                            } elseif ($isExplicitlyVariable) {
+                                $productType = 'variable';
+                            } else {
+                                $productType = 'simple';
+                            }
 
                             // Row validation
                             $rowErrors = [];
@@ -485,6 +544,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                                 'name'           => $name,
                                 'sku'            => $sku,
                                 'product_type'   => $productType,
+                                'combo_count'    => $comboCount,
                                 'parent_ref'     => $parentRef,
                                 'options'        => $parsedOptions,
                                 'meta_title'     => $metaTitle,
@@ -1214,7 +1274,13 @@ include __DIR__ . '/includes/header.php';
                   <div class="fw-bold">
                     <?= e($r['name'] ?: '—') ?>
                     <?php if (($r['product_type'] ?? 'simple') === 'variable'): ?>
-                      <span class="badge bg-primary-subtle text-primary border ms-1" style="font-size: 0.68rem;">Configurable</span>
+                      <span class="badge bg-primary-subtle text-primary border ms-1" style="font-size: 0.68rem;" title="<?= (int)($r['combo_count'] ?? 0) ?> generated combinations">
+                        <i class="bi bi-diagram-3 me-1"></i>Products with option<?= !empty($r['combo_count']) ? ' (' . (int)$r['combo_count'] . ' variants)' : '' ?>
+                      </span>
+                    <?php else: ?>
+                      <span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 0.68rem;">
+                        <i class="bi bi-box me-1"></i>Simple product
+                      </span>
                     <?php endif; ?>
                   </div>
                   <?php if (!empty($r['brand'])): ?>
@@ -1226,8 +1292,8 @@ include __DIR__ . '/includes/header.php';
                       <?= e(implode(' · ', array_map(fn($k, $v) => "$k: " . implode(', ', $v), array_keys($r['options']), array_values($r['options'])))) ?>
                     </div>
                   <?php endif; ?>
-                  <?php if (!empty($r['meta_title']) || !empty($r['meta_description'])): ?>
-                    <span class="badge bg-light text-secondary border mt-1" title="SEO metadata included" style="font-size: 0.65rem;">
+                  <?php if (!empty($r['meta_title']) || !empty($r['meta_description']) || !empty($r['meta_keywords'])): ?>
+                    <span class="badge bg-light text-secondary border mt-1" title="SEO: <?= e($r['meta_title'] ?? '') ?>" style="font-size: 0.65rem;">
                       <i class="bi bi-search me-1"></i> SEO
                     </span>
                   <?php endif; ?>
@@ -1486,6 +1552,41 @@ include __DIR__ . '/includes/header.php';
                   <td><code>tags</code></td>
                   <td><span class="badge bg-light text-muted border">Optional</span></td>
                   <td>cotton, summer, casual</td>
+                </tr>
+                <tr>
+                  <td><code>product_type</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td><code>simple</code> or <code>Products with option</code> (auto-detects from variants)</td>
+                </tr>
+                <tr>
+                  <td><code>color</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>Black, Navy Blue, Midnight Green (comma-separated)</td>
+                </tr>
+                <tr>
+                  <td><code>size</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>S, M, L, XL (comma-separated)</td>
+                </tr>
+                <tr>
+                  <td><code>model</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>iPhone 13, iPhone 14 Pro, iPhone 15 (comma-separated)</td>
+                </tr>
+                <tr>
+                  <td><code>meta_title</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>SEO Meta Title (shown directly in product_form.php)</td>
+                </tr>
+                <tr>
+                  <td><code>meta_description</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>SEO Meta Description (shown directly in product_form.php)</td>
+                </tr>
+                <tr>
+                  <td><code>meta_keywords</code></td>
+                  <td><span class="badge bg-light text-muted border">Optional</span></td>
+                  <td>SEO Keywords comma-separated (shown in product_form.php)</td>
                 </tr>
                 <tr>
                   <td><code>image</code></td>

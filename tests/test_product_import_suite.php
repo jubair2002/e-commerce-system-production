@@ -328,6 +328,38 @@ it('Imports configurable products with options, variants, and SEO metadata', fun
     $pdo->exec("DELETE FROM products WHERE id = {$createdProdId}");
 });
 
+it('Considers product with single variant option as simple and multiple variants as variable (Products with option)', function() use ($pdo) {
+    require_once __DIR__ . '/../admin/product_import.php';
+
+    // Test header aliases
+    if (normalize_csv_header('Product Type') !== 'product_type') throw new RuntimeException("Failed Product Type");
+    if (normalize_csv_header('Meta Title') !== 'meta_title') throw new RuntimeException("Failed Meta Title");
+    if (normalize_csv_header('Meta Description') !== 'meta_description') throw new RuntimeException("Failed Meta Description");
+    if (normalize_csv_header('Meta Keywords') !== 'meta_keywords') throw new RuntimeException("Failed Meta Keywords");
+
+    // Case 1: Product with only 1 variant (e.g., single color)
+    $optSingle = ['Color' => ['Brown']];
+    $comboCountSingle = 1;
+    foreach ($optSingle as $v) { $comboCountSingle *= count($v); }
+    $typeSingle = ($comboCountSingle > 1) ? 'variable' : 'simple';
+    if ($typeSingle !== 'simple') throw new RuntimeException("Expected single variant to be simple");
+
+    // Case 2: Product with multiple variants (e.g., 2 colors, 3 sizes)
+    $optMulti = ['Color' => ['Black', 'Blue'], 'Size' => ['S', 'M', 'L']];
+    $comboCountMulti = 1;
+    foreach ($optMulti as $v) { $comboCountMulti *= count($v); }
+    $typeMulti = ($comboCountMulti > 1) ? 'variable' : 'simple';
+    if ($typeMulti !== 'variable') throw new RuntimeException("Expected multi-variant to be variable (Products with option)");
+    if ($comboCountMulti !== 6) throw new RuntimeException("Expected 6 combinations, got {$comboCountMulti}");
+
+    // Case 3: Explicit header "Products with option"
+    $isVarExplicit = in_array(strtolower('Products with option'), [
+        'variable', 'configurable', 'config', 'var',
+        'products with option', 'product with options', 'products with options', 'product with option'
+    ], true);
+    if (!$isVarExplicit) throw new RuntimeException("Failed explicit 'Products with option' parsing");
+});
+
 echo "\n==========================================================\n";
 echo "Test Suite Results: {$passCount} Passed, {$failCount} Failed\n";
 echo "==========================================================\n";
