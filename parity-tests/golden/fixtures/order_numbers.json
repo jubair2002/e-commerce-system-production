@@ -1,0 +1,62 @@
+[
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 1,
+        "formatted": "ORD-202611-0001"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 2,
+        "formatted": "ORD-202611-0002"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 7,
+        "formatted": "ORD-202611-0007"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 42,
+        "formatted": "ORD-202611-0042"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 99,
+        "formatted": "ORD-202611-0099"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 100,
+        "formatted": "ORD-202611-0100"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 999,
+        "formatted": "ORD-202611-0999"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 1000,
+        "formatted": "ORD-202611-1000"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 9999,
+        "formatted": "ORD-202611-9999"
+    },
+    {
+        "prefix": "ORD",
+        "year_month": "202611",
+        "sequence": 10000,
+        "formatted": "ORD-202611-10000"
+    }
+]

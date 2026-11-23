@@ -1,0 +1,186 @@
+[
+    {
+        "input": null,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u2014",
+        "number_format_2": null,
+        "round_2": null,
+        "round_half_up": null
+    },
+    {
+        "input": 0,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.00",
+        "number_format_2": "0.00",
+        "round_2": 0,
+        "round_half_up": 0
+    },
+    {
+        "input": 0,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.00",
+        "number_format_2": "0.00",
+        "round_2": 0,
+        "round_half_up": 0
+    },
+    {
+        "input": 0.01,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.01",
+        "number_format_2": "0.01",
+        "round_2": 0.01,
+        "round_half_up": 0.01
+    },
+    {
+        "input": 0.004,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.00",
+        "number_format_2": "0.00",
+        "round_2": 0,
+        "round_half_up": 0
+    },
+    {
+        "input": 0.005,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.01",
+        "number_format_2": "0.01",
+        "round_2": 0.01,
+        "round_half_up": 0.01
+    },
+    {
+        "input": 0.006,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.01",
+        "number_format_2": "0.01",
+        "round_2": 0.01,
+        "round_half_up": 0.01
+    },
+    {
+        "input": 0.05,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.05",
+        "number_format_2": "0.05",
+        "round_2": 0.05,
+        "round_half_up": 0.05
+    },
+    {
+        "input": 0.99,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f30.99",
+        "number_format_2": "0.99",
+        "round_2": 0.99,
+        "round_half_up": 0.99
+    },
+    {
+        "input": 1,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31.00",
+        "number_format_2": "1.00",
+        "round_2": 1,
+        "round_half_up": 1
+    },
+    {
+        "input": 1.235,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31.24",
+        "number_format_2": "1.24",
+        "round_2": 1.24,
+        "round_half_up": 1.24
+    },
+    {
+        "input": 1.245,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31.25",
+        "number_format_2": "1.25",
+        "round_2": 1.25,
+        "round_half_up": 1.25
+    },
+    {
+        "input": 10.5,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f310.50",
+        "number_format_2": "10.50",
+        "round_2": 10.5,
+        "round_half_up": 10.5
+    },
+    {
+        "input": 99.99,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f399.99",
+        "number_format_2": "99.99",
+        "round_2": 99.99,
+        "round_half_up": 99.99
+    },
+    {
+        "input": 99.995,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3100.00",
+        "number_format_2": "100.00",
+        "round_2": 100,
+        "round_half_up": 100
+    },
+    {
+        "input": 100,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3100.00",
+        "number_format_2": "100.00",
+        "round_2": 100,
+        "round_half_up": 100
+    },
+    {
+        "input": 1234.56,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31,234.56",
+        "number_format_2": "1234.56",
+        "round_2": 1234.56,
+        "round_half_up": 1234.56
+    },
+    {
+        "input": 1234.567,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31,234.57",
+        "number_format_2": "1234.57",
+        "round_2": 1234.57,
+        "round_half_up": 1234.57
+    },
+    {
+        "input": 999999.99,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3999,999.99",
+        "number_format_2": "999999.99",
+        "round_2": 999999.99,
+        "round_half_up": 999999.99
+    },
+    {
+        "input": 1000000,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f31,000,000.00",
+        "number_format_2": "1000000.00",
+        "round_2": 1000000,
+        "round_half_up": 1000000
+    },
+    {
+        "input": -0.01,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3-0.01",
+        "number_format_2": "-0.01",
+        "round_2": -0.01,
+        "round_half_up": -0.01
+    },
+    {
+        "input": -45.2,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3-45.20",
+        "number_format_2": "-45.20",
+        "round_2": -45.2,
+        "round_half_up": -45.2
+    },
+    {
+        "input": -1.235,
+        "currency_symbol": "\u09f3",
+        "price_formatted": "\u09f3-1.24",
+        "number_format_2": "-1.24",
+        "round_2": -1.24,
+        "round_half_up": -1.24
+    }
+]

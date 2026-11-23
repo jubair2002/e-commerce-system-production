@@ -1,0 +1,506 @@
+[
+    {
+        "district": "Dhaka",
+        "zone": "inside_dhaka",
+        "method_id": 1,
+        "standard_fee": 60,
+        "calculated_fee_normal": 60,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Bagerhat",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Bandarban",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Barguna",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Barishal",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Bhola",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Bogura",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Brahmanbaria",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Chandpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Chattogram",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Chuadanga",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Cox's Bazar",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Cumilla",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Dinajpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Faridpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Feni",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Gaibandha",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Gazipur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Gopalganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Habiganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Jamalpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Jashore",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Jhalokati",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Jhenaidah",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Joypurhat",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Khagrachhari",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Khulna",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Kishoreganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Kurigram",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Kushtia",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Lakshmipur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Lalmonirhat",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Madaripur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Magura",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Manikganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Meherpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Moulvibazar",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Munshiganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Mymensingh",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Naogaon",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Narail",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Narayanganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Narsingdi",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Natore",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Netrokona",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Nilphamari",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Noakhali",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Pabna",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Panchagarh",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Patuakhali",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Pirojpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Rajbari",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Rajshahi",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Rangamati",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Rangpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Satkhira",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Shariatpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Sherpur",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Sirajganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Sunamganj",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Sylhet",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Tangail",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    },
+    {
+        "district": "Thakurgaon",
+        "zone": "outside_dhaka",
+        "method_id": 2,
+        "standard_fee": 120,
+        "calculated_fee_normal": 120,
+        "calculated_fee_free_threshold": 0
+    }
+]

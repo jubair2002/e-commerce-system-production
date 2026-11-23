@@ -32,10 +32,10 @@ pub fn format_money(amount: Option<Decimal>, symbol: &str) -> String {
     }
 
     let mut out = String::new();
+    out.push_str(symbol);
     if is_negative {
         out.push('-');
     }
-    out.push_str(symbol);
     let _ = write!(out, "{}.{}", formatted_int, fractional_part);
     out
 }

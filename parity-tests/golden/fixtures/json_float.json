@@ -1,0 +1,47 @@
+[
+    {
+        "float_val": 0,
+        "json_encoded": "{\"val\":0}",
+        "number_format_2": "0.00"
+    },
+    {
+        "float_val": 1,
+        "json_encoded": "{\"val\":1}",
+        "number_format_2": "1.00"
+    },
+    {
+        "float_val": 1.5,
+        "json_encoded": "{\"val\":1.5}",
+        "number_format_2": "1.50"
+    },
+    {
+        "float_val": 99.99,
+        "json_encoded": "{\"val\":99.99}",
+        "number_format_2": "99.99"
+    },
+    {
+        "float_val": 120,
+        "json_encoded": "{\"val\":120}",
+        "number_format_2": "120.00"
+    },
+    {
+        "float_val": 1000.5,
+        "json_encoded": "{\"val\":1000.5}",
+        "number_format_2": "1000.50"
+    },
+    {
+        "float_val": 0.0001,
+        "json_encoded": "{\"val\":0.0001}",
+        "number_format_2": "0.00"
+    },
+    {
+        "float_val": 1234567.89,
+        "json_encoded": "{\"val\":1234567.89}",
+        "number_format_2": "1234567.89"
+    },
+    {
+        "float_val": -45.5,
+        "json_encoded": "{\"val\":-45.5}",
+        "number_format_2": "-45.50"
+    }
+]

@@ -1,0 +1,42 @@
+[
+    {
+        "input": "Men Black T-Shirt",
+        "slug": "men-black-t-shirt"
+    },
+    {
+        "input": "Women's Premium Silk Saree - Red & Gold",
+        "slug": "women-s-premium-silk-saree-red-gold"
+    },
+    {
+        "input": "Exclusive 100% Cotton Polo Shirt (2026 Edition)",
+        "slug": "exclusive-100-cotton-polo-shirt-2026-edition"
+    },
+    {
+        "input": "Special Discount: 50% Off!",
+        "slug": "special-discount-50-off"
+    },
+    {
+        "input": "  Extra   Spaces   Around   ",
+        "slug": "extra-spaces-around"
+    },
+    {
+        "input": "Product with special characters @#$%^&*()_+",
+        "slug": "product-with-special-characters"
+    },
+    {
+        "input": "Simple-Already-Slugged",
+        "slug": "simple-already-slugged"
+    },
+    {
+        "input": "123 456 789 Numbers Test",
+        "slug": "123-456-789-numbers-test"
+    },
+    {
+        "input": "Multiple---Dashes---And___Underscores",
+        "slug": "multiple-dashes-and-underscores"
+    },
+    {
+        "input": "Leading and Trailing Hyphens -",
+        "slug": "leading-and-trailing-hyphens"
+    }
+]

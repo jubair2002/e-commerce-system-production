@@ -477,6 +477,7 @@ dependencies = [
  "rand 0.8.8",
  "rust_decimal",
  "serde",
+ "serde_json",
  "sha2",
 ]
 
@@ -1359,7 +1360,6 @@ dependencies = [
  "domain",
  "lettre",
  "sqlx",
- "thiserror 1.0.69",
  "tokio",
  "tracing",
 ]

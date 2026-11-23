@@ -1,0 +1,44 @@
+[
+    {
+        "plaintext": "hello world",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "MzEyXVUpUrTL8Y6yFrkU2uHHTNJFstj3uQPAn4OLyVY=",
+        "decrypted": "hello world",
+        "matches": true
+    },
+    {
+        "plaintext": "smtp_secret_password_2026",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "+3AF9nmB8x5OvLnegi3rUbdVIXVrRPptlyEv6iJ\/dhB7lHkvvsw23gNEKmt2pSrV",
+        "decrypted": "smtp_secret_password_2026",
+        "matches": true
+    },
+    {
+        "plaintext": "{\"access_key\":\"AKIA123\",\"secret\":\"xyz789\"}",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "TwwZjdwQ9WpIFtuAPUJGGtS3y1QQfAr9\/KbyJyIqgDEp5JBxrieNU0MOr7k57ZZptPmiA4Z\/wSKLOvTsPOrYnA==",
+        "decrypted": "{\"access_key\":\"AKIA123\",\"secret\":\"xyz789\"}",
+        "matches": true
+    },
+    {
+        "plaintext": "Unicode: \u09ac\u09be\u0982\u09b2\u09be \u099f\u09c7\u0995\u09cd\u09b8\u099f \u099f\u09c7\u09b8\u09cd\u099f",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "YuFxtn0m8hMKZ2fqphDldOPkHlk58JYm1N9sTNH3XmPgnVtomoLpM4J5\/zzzPqV79zlb19tDVeuU\/9wAAItnxQIxsTJowuS6N566edtw4Is=",
+        "decrypted": "Unicode: \u09ac\u09be\u0982\u09b2\u09be \u099f\u09c7\u0995\u09cd\u09b8\u099f \u099f\u09c7\u09b8\u09cd\u099f",
+        "matches": true
+    },
+    {
+        "plaintext": "",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "jdt4d3ofW\/cpLnyEP7GzmkhsM++rSiUSizf9JngpYiY=",
+        "decrypted": "",
+        "matches": true
+    },
+    {
+        "plaintext": "A very long plaintext string to test padding and multiblock CBC cipher mode interoperability between PHP OpenSSL and Rust aes\/cbc crates.",
+        "app_key": "CHANGE_ME_TO_64_RANDOM_CHARS",
+        "ciphertext_base64": "Mml5sPe60L3tshvKqXNHuxUQhH3AVS4580QECxuBr2o2VVXwrMFAZ0trPFzZghyCiQqUsU7tFds7DBH76kA59oSJ5BfNrulQG5anRE2333Pp7L35ky7g\/L+baMrVV11xrNMVdpYgEqeLfCQBMNE9eRuYbI9lJDPHc4iLtUwtY6p9jF9GBWF2yCnbeGw3\/hSpflgqcTGsogUA\/uBI3v64Vw==",
+        "decrypted": "A very long plaintext string to test padding and multiblock CBC cipher mode interoperability between PHP OpenSSL and Rust aes\/cbc crates.",
+        "matches": true
+    }
+]

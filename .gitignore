@@ -66,4 +66,8 @@ _template/
 target/
 rust-backend/target/
 
+# Parity tests artifacts
+parity-tests/node_modules/
+parity-tests/reports/
+
 
