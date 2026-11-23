@@ -1,0 +1,7 @@
+Port the admin shell and catalog area. Read report sections 3, 8, 10 and each PHP file. Admin HTML/JS stay identical.
+
+1. Shell: admin layout (header, sidebar, footer), login/logout/profile, RBAC guard per route/action, flash, activity logging (same activity table and messages), X-Frame-Options.
+2. dashboard.php (KPIs, graph data, low-stock alerts).
+3. products list (filters, bulk status/delete using safe IN binding), product_form (variants matrix with the exact SKU rule {PARENT}-{VAL1}-{VAL2}, gallery uploads, option presets, assets/js/admin-variants.js contract incl. the window.initProductVariantsBuilder JSON), categories + category_form, inventory ledger + stock_update ajax + CSV export (parameterized LIMIT/OFFSET), option_presets ajax.
+4. product_import.php CSV wizard (1,630 lines): port the full flow and edge cases; build a test suite from tests/test_product_import_suite.php scenarios and the template CSV.
+5. Every state-changing POST: CSRF, permission check, same DB effects. Use DB-diff parity scenarios. Report per-page parity.

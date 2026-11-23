@@ -1,0 +1,8 @@
+Port /account/* (index, orders, order, invoice, addresses, profile, security, wishlist, export, delete). Read report sections 5, 7, 8 and each PHP file.
+
+- Identical HTML, form fields, validation messages, flash behavior, pagination.
+- Addresses: max 10, default toggle. Profile: avatar upload through the storage manager from Prompt 6. Security: password change (verify old, rehash, notification email) and active session/token revocation. Order cancellation rules as in PHP, including stock restore. Invoice page including the auto window.print() script.
+- GDPR export: requires password re-auth; JSON payload shape and headers exactly as PHP (exported_at ISO 8601, profile, addresses, orders, wishlist).
+- Account deletion: email confirmation, anonymization, orders unlinked not deleted, file cleanup.
+- Customer email change flow with customer_email_change template.
+Run parity (GET and POST scenarios with DB diffs) for every page.

@@ -1,0 +1,4 @@
+Port analytics.php, analytics_product.php, admin/ajax/analytics_data.php, monitoring.php, admin/ajax/monitor_data.php, and the analytics event pipeline (includes/analytics.php: visitor tracking, search_log, product_stats_daily, site_stats_daily, funnels).
+- Reproduce the exact JSON contract of monitor_data.php (tiles, series, bandwidth, tables.slow, alerts) so Chart.js code is untouched. Fields like php_version and collector_command need a documented Rust equivalent that keeps the shape (e.g. app_version, rust collector command string) without breaking the JS.
+- Alert rules from monitor_alert_rules evaluated as in PHP; CSV output of monitor_data identical.
+- Query results must match PHP for the fixture data. Add performance notes for heavy aggregate queries (indexes only if additive and approved).

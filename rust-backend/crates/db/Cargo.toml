@@ -1,0 +1,21 @@
+[package]
+name = "db"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common.workspace = true
+domain.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+rust_decimal.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+dashmap.workspace = true
+rand.workspace = true
+sha2.workspace = true
+md5.workspace = true
+hex.workspace = true
+infer.workspace = true

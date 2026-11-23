@@ -1,0 +1,5 @@
+Port admin/settings.php (2,349 lines: General, Store, Checkout, SEO, Storage tabs and all ~150 keys), mail_settings (SMTP config, encrypted secrets via crypto, live test email through the queue), mail_templates (editor + preview + placeholders), mail_queue (status view, retry failed).
+- Every setting must be read/written with the exact same key, validation, type cast, and defaults as PHP (use the settings table from VERIFIED_FACTS). Changing a setting must invalidate the Rust cache immediately and remain visible to the PHP app during coexistence.
+- Settings that alter the UI (pretty_urls, theme_accent, dark_mode_enabled, announcement bar, home toggles, store_logo) must immediately change Rust-rendered output like PHP.
+- Secrets encrypted with APP_KEY stay compatible in both directions.
+Parity: for each tab, POST then compare the settings table and the rendered storefront.

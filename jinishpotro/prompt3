@@ -1,0 +1,10 @@
+Build /parity-tests so every ported page can be proven identical.
+
+1. Deterministic fixture DB (products simple/variable/out-of-stock/sale, categories, coupons, customers verified/pending/locked, orders in every status, reviews, banners, pages, settings variants incl. pretty_urls on/off, dark mode, announcement bar).
+2. Crawler/recorder: for every GET route in the verified route map and for key states (guest, customer, admin, empty cart, cart with items, coupon applied, validation errors after POST) capture from PHP: status, redirect target, relevant headers (Content-Type, Cache-Control, Set-Cookie flags), and body.
+3. Normalizers: for HTML, parse to DOM and compare structure, attributes, and text after stripping CSRF tokens, nonces, timestamps, and session-specific values; ignore insignificant whitespace between tags only. For JSON, compare key order, types, number formatting. For CSV/XML, compare exactly.
+4. Playwright screenshots at 360, 768, 1440 px with pixel-diff threshold 0 (configurable), animations disabled.
+5. POST scenario runner: register, login, add to cart, checkout, admin product edit, etc. Run each scenario against PHP and Rust on identical DB snapshots and diff resulting DB rows (ignoring ids/timestamps/random tokens).
+6. CLI: `make parity ROUTE=<name>`, `make parity UNIT=storefront`, `make parity ALL`. HTML report with per-route diffs.
+
+A route is "done" only with a clean report. Explain in docs/migration/PARITY.md how to read results.

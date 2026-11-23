@@ -1,0 +1,16 @@
+Goal: remove every doubt in docs/MIGRATION_INTEL.md before we write Rust. Read the actual PHP source.
+
+A. Resolve and document in docs/migration/VERIFIED_FACTS.md (cite file:line):
+  1. Cart session key format (report conflicts: p{id}/p{id}_v{id} vs {id}/{id}:{vid}) and what the JS (assets/js/shop.js, data-cart-key) and cart_ajax expect.
+  2. Remember-me cookie name and rotation behavior (c_remember vs remember_me).
+  3. Every table the code reads/writes versus sql/schema.sql and migrations (activity_log vs activity_logs, analytics_summary, product_sales_summary, files, schema_migrations). List tables created or altered at runtime.
+  4. Every setting key used by setting(), its type and cast, default value, and where read. Output as a table (this is the ~150-key settings contract).
+  5. Exact route map including legacy .php URLs, 301 rules, and PRETTY_URLS behavior on and off. Rewrite the route table as the authoritative one.
+  6. The HMAC confirmation token (order number + APP_KEY), checkout_token one-time logic, crypto.php AES-256-GCM format (nonce/tag/encoding), all `hooks` registered and their handlers.
+  7. Every place HTML is produced outside views (JSON, redirects, headers, CSV, SSE).
+
+B. Generate golden test vectors by running the real PHP functions (via CLI scripts in /parity-tests/golden/, not changing app code): money formatting, round(), cart_totals and coupon_validate on 200 varied carts, shipping fee per all 64 districts, order number format, customer_password_hash/verify with an existing-style hash, HMAC token, AES encrypt/decrypt samples, slug generation, number/date formatting, json_encode float output. Save as JSON fixtures that Rust tests will load.
+
+C. If a live or sample DB is available, run SHOW CREATE TABLE for every table and compare against schema.sql; list differences.
+
+Output a short summary of discrepancies and blockers.

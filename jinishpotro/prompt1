@@ -1,0 +1,8 @@
+Rust and dev tools are NOT installed here. Follow Prompt 0 rules.
+
+1. Detect the OS. Install rustup (stable), clippy, rustfmt, cargo-watch, sqlx-cli (mysql, rustls), cargo-nextest, cargo-audit. Check for Docker, Node.js (for Playwright), a MySQL client; install or list what is missing and what I must do manually.
+2. Create the Cargo workspace in /rust-backend with crates: web, domain, db, jobs, common. Add the dependencies from the rules. Make `cargo build` and `cargo test` pass.
+3. Create docker-compose.parity.yml: mysql 8, php-apache (built from the existing Dockerfile, untouched), the Rust app, and nginx in front. PHP on :8081, Rust on :8082, DB shared. Load sql/schema.sql then migrations/*.up.sql then the product_sales_summary DDL (see section 14 of the report, IF NOT EXISTS) into a fresh DB.
+4. Write docs/migration/00-env.md: versions, commands to start and stop everything, ports, and how to reset the DB.
+
+Do not touch any PHP file.

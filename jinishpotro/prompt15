@@ -1,0 +1,8 @@
+Prepare production cutover in 3 units. Read DEPLOY.md, Deployment.txt, .htaccess, docker/apache.conf, docker/entrypoint.sh.
+
+1. Build and run: release binary with LTO and strip, systemd service, config from the same .env, graceful shutdown, health endpoint.
+2. Nginx replacing Apache: reproduce every .htaccess rule (denies for .env, config/, includes/, sql/, cron/, storage/; static caching/gzip headers; legacy .php 301 redirects; uploads routing; clean URLs) and serve /assets and uploads directly from disk. Prefer upstream switch per UNIT (storefront+account+API / admin / workers) controlled by a single include file so rollback is a one-line change plus reload.
+3. docs/migration/CUTOVER.md runbook with: pre-checks (DB backup + restore test, parity ALL clean, k6 load test PHP vs Rust, email double-send guard, staging soak), exact commands, expected user impact (carts and admin sessions reset; remember-me customers stay logged in), schedule an off-peak window, post-cutover monitoring (5xx rate, p95 latency, orders/hour vs baseline, mail queue depth), and a rollback runbook that is tested.
+4. Update Dockerfile and docker-compose.yml (app, MySQL, Prometheus scrape of /metrics, Grafana dashboards unchanged).
+5. Proposal only, no action: retire PHP after 2+ weeks of stable operation.
+Do not delete any PHP file in this task.

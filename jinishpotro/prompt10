@@ -1,0 +1,9 @@
+Replace the 9 PHP cron jobs plus CLI tools in /rust-backend/crates/jobs as separate binaries and an optional in-process scheduler. Read report sections 10.2 and 12 and each cron PHP file.
+
+1. mail-worker: email_queue claim of 50 rows with FOR UPDATE SKIP LOCKED on MySQL 8 (fallback row-claim for older versions), status sending/sent/failed, attempts + backoff [1,5,30] min, max_attempts, sanitized last_error. SMTP settings (encrypted fields via crypto) from settings table via lettre; templates from email_templates with {{placeholder}} rendering identical to mailer.php for all 16 template slugs. Test: queue 1,000, kill mid-run, restart => no loss, no duplicates.
+2. customer-maintenance (daily): token purge 7d, auth_attempts 30d, unverified-account purge with file deletion and order unlinking, activity log entry.
+3. collect-metrics (1/min): /proc parsing (cpu delta, mem, swap, disk, uptime, net rx/tx), MySQL SHOW GLOBAL STATUS and size; write system_metrics and network_samples; file lock; no runtime ALTER TABLE (use an additive migration).
+4. rebuild-sales-summary, cleanup-logs (retentions as in PHP), aggregate-analytics, parse-access-log (if still needed with nginx logs; decide and document), purge-image-cache.
+5. CLI: cleanup-orphans, migrate-files-to-s3, sync-storage (decide: replace with async upload fallback per report section 14), create-admin.
+6. Provide systemd units + timers, and Windows Task Scheduler notes. All have --dry-run, structured logs, exit codes.
+7. IMPORTANT: write docs/migration/WORKER_CUTOVER.md explaining how to stop the PHP cron entries and start the Rust ones so email is never double-sent or dropped.

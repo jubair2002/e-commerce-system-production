@@ -1,0 +1,12 @@
+Port customer and admin authentication. Read report section 7 and the PHP files includes/customer_auth.php, admin/includes/auth.php, includes/permissions.php.
+
+Customer:
+- Password verify: bcrypt over base64(sha256(raw password)). New hashes: same scheme, bcrypt cost 10. Dummy-hash timing defense for unknown emails.
+- Register (honeypot `website_url`, 2s trap, BD phone regex 01[3-9]\d{8}, common-password rejection, min length setting, pending vs active by customer_require_email_verification, auto-claim guest orders by email), login (rate limits: 5/email/15min, 20/IP/15min via auth_attempts, lockout via customers.locked_until, failed_logins, last_login fields), logout, email verification, resend, forgot/reset (3/hour; selector.secret tokens in customer_tokens, sha256 of secret, single-use consume, 60-min TTL; revoke sessions/tokens on reset; password-changed email).
+- Remember-me: cookie name per VERIFIED_FACTS, selector.secret, validate against customer_tokens, rotate on use. An existing PHP-issued cookie must log the user in on Rust.
+- Session cart survives login exactly as PHP does.
+
+Admin:
+- bcrypt direct (no prehash), password_needs_rehash behavior, role + permissions JSON with `*` and `module.*` wildcard logic identical to user_has_permission, per-route permission guards from the verified route table, admin session separate from customer session. Install route is NOT ported; replace with a documented CLI command `create-admin`.
+
+Output: auth modules, middleware extractors (RequireCustomer, RequireAdmin(permission)), tests including existing-hash fixtures and lockout timing. Add Rust-side rate limiter (governor) for track lookups and availability polling.

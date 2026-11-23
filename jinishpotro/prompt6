@@ -1,0 +1,7 @@
+Build the rendering layer and media pipeline. UI must stay byte-for-byte equivalent in DOM.
+
+1. Port the layout partials to Tera: includes/layout/coza/{head,header,footer,mini_cart,scripts}.php, includes/partials/*, account/_layout.php, error and maintenance pages. Keep the HTML exactly; replace PHP echo/loops/conditions only. Provide the same globals the PHP layout used (SHOP_BASE_URL, SHOP_CHECKOUT_URL, SHOP_CSRF_TOKEN, CUSTOMER_LOGGED_IN, theme accent, dark mode, announcement bar, banners, logo, currency symbol, cart count, flash messages, SEO meta).
+2. Serve /assets/* directly with the same caching headers as .htaccess (1-year immutable for css/js/fonts/images, gzip). Nothing under assets/ is modified.
+3. Media: /uploads/* and /assets/uploads/* with the same cascade as uploads.php and StorageManager: DB files record -> local disk -> S3 -> placeholder SVG; ETag/If-None-Match/If-Modified-Since with 304; traversal-safe (canonicalize + prefix check); responsive variants thumb 300 / card 600 / detail 1200.
+4. Storage manager: local + S3 drivers (aws-sdk-s3), primary/fallback config via STORAGE_PRIMARY/STORAGE_FALLBACK, key format {purpose}/{YYYY}/{MM}/{32hex}.{ext}, per-purpose MIME/size rules, magic-byte validation with `infer`, SVG script rejection, avatar 400x400 center-crop WebP q85, product max width 1800 WebP q85 (use libwebp lossy, not lossless), EXIF stripped. Writes to the `files` table exactly as PHP does.
+5. Parity: render the layout-only pages (404, maintenance, one simple CMS page) and pass the parity harness at all 3 breakpoints.

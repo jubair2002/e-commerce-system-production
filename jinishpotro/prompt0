@@ -1,0 +1,12 @@
+PROJECT: Migrate this PHP 8 + MySQL e-commerce app (Jinish Potro) to Rust, backend only.
+
+NON-NEGOTIABLE RULES
+1. UI is frozen. Do not edit anything under assets/, and do not change HTML structure, class names, attribute order of meaningful attributes, copy text, or JS behavior. Rust must emit the same DOM as PHP. Templates are ported verbatim from PHP views to Tera; only PHP logic becomes Tera syntax.
+2. Database: same MySQL, same tables. No drops, renames, or column changes. Additive changes only (new table/column/index), each as a numbered SQL file in /rust-backend/migrations/, with a note in docs/migration/SCHEMA_ADDITIONS.md explaining why, and PHP must keep working after it.
+3. PHP code stays untouched and runnable until final cutover approval. All Rust lives in /rust-backend. Docs live in docs/migration/.
+4. docs/MIGRATION_INTEL.md is a strong starting point but was machine-written and contains contradictions. Before porting any module, read the PHP source for it and trust the source over the report. Record any discrepancy in docs/migration/DISCREPANCIES.md.
+5. Never guess. If PHP behavior is unclear, add it to docs/migration/OPEN_QUESTIONS.md and ask me.
+6. Stack: axum, tokio, sqlx (mysql, rustls), tera, tower-sessions (MySQL store), tower-http, lettre, rust_decimal, chrono + chrono-tz, bcrypt, sha2, hmac, aes-gcm, serde, tracing, governor or dashmap, moka, aws-sdk-s3, webp + image, infer, validator. No unwrap() on user input. clippy -D warnings must pass.
+6b. Money uses rust_decimal with half-up (MidpointAwayFromZero), never f64.
+7. After each task: update docs/migration/PROGRESS.md (module | status | parity result | notes), run tests, commit on branch rust-migration, and report in at most 10 lines.
+8. Cutover is in 3 units (storefront+account+API, then admin, then workers) because PHP sessions cannot be shared with Rust. Do not design a route-by-route mix.

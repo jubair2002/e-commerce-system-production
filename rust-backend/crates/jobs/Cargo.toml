@@ -1,0 +1,14 @@
+[package]
+name = "jobs"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common.workspace = true
+domain.workspace = true
+db.workspace = true
+lettre.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+chrono.workspace = true
+tracing.workspace = true

@@ -1,0 +1,10 @@
+Port the public read paths and public JSON APIs. Read report sections 3, 8, 9, 10.3 and the PHP files for each route.
+
+Pages: home (index.php with all home_show_* toggles, best sellers from product_sales_summary), shop, category/{slug}, product/{slug} (variants JSON map, gallery, reviews, JSON-LD, SEO meta, live availability data attributes), CMS pages /page/{slug}, contact (honeypot + 2s trap + contact_messages + admin email), newsletter (double opt-in, pending/active, 48-char token), track (order lookup, stepper, now rate-limited + CSRF), sitemap.xml, robots, /metrics (METRICS_TOKEN bearer).
+APIs: availability (ETag/304, 60/min/IP limiter in memory), availability_stream (SSE via tokio, 2s cadence, reconnect event), search_suggest, newsletter, review (reviews_require_login, moderation status), wishlist.
+Rules:
+- Search, filters, sort, pagination, and result ordering must match PHP, including LIKE behavior and ORDER BY tie-breakers and collation.
+- Legacy .php URLs 301 to clean URLs with query string preserved, exactly as .htaccess; both PRETTY_URLS modes work.
+- JSON responses identical (key names/order, ok vs success flags, status codes, error strings, number formats).
+- Port templates verbatim into Tera.
+After each route group run `make parity ROUTE=...` and fix every diff before moving on. Update PROGRESS.md.

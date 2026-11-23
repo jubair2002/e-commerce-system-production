@@ -1,0 +1,12 @@
+Implement the foundation in /rust-backend. Read report sections 4, 6, 7 and VERIFIED_FACTS.md first.
+
+1. Config: load the SAME .env keys. Refuse to start if APP_KEY is missing or the placeholder. APP_TIMEZONE (default Asia/Dhaka) must apply to chrono and to the MySQL session: after_connect sets `SET time_zone` to the matching offset, like config/database.php.
+2. DB pool (sqlx) and typed models for every table; DECIMAL -> Decimal, DATETIME -> NaiveDateTime, JSON columns (users.permissions) typed.
+3. Settings service: typed access over the settings key-value table with the same casts and defaults as setting(); moka cache with a short TTL plus a check on settings updated_at so PHP admin edits show up quickly.
+4. Helpers matching golden vectors exactly: money formatter, number_format, date formats, slug, order number, htmlspecialchars-equivalent escaping, pagination, url()/route() for both PRETTY_URLS modes with BASE_URL support. Register them as Tera functions and filters.
+5. Crypto: AES-256-GCM compatible with includes/crypto.php (verify against golden vectors), HMAC confirmation token.
+6. Sessions (tower-sessions, MySQL store; additive table logged in SCHEMA_ADDITIONS.md): cookie flags like PHP (HttpOnly, SameSite Lax, Secure when HTTPS/proxy), session id regeneration on login. Do NOT port ?test_sess. Typed session keys: cart, applied_coupon, csrf_token, _flash, _old, last_placed_order, checkout_token, customer, user.
+7. CSRF middleware: field `_csrf` and header X-CSRF-Token, constant-time compare; enforce on all state-changing routes, including the ones PHP forgot (cart_ajax, track).
+8. Flash messages and old-input behavior identical to PHP.
+9. Middleware: security headers exactly as PHP/.htaccess, FORCE_HTTPS redirect, maintenance mode page, error pages 404/500 rendering the same templates, request telemetry writing traffic_minute and slow_requests like traffic.php.
+10. Tests against golden vectors. Health endpoint.

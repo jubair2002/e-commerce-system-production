@@ -1,0 +1,8 @@
+Independent review of the whole migration:
+1. Every route in the verified route table is parity-clean; list gaps.
+2. `git diff` of assets/ against the original: must be empty.
+3. Schema: only the additive changes in SCHEMA_ADDITIONS.md exist.
+4. cargo clippy -D warnings, cargo audit, cargo nextest, make parity ALL, concurrency tests all pass.
+5. Security review: SQL injection, template escaping/XSS, CSRF on every POST, auth bypass, upload validation, path traversal, rate limits, secrets/APP_KEY handling, panics on user input, absence of the installer and test_sess hook.
+6. p50/p95 latency and memory vs PHP under the k6 test.
+7. docs/migration/FINAL_REPORT.md with a go/no-go recommendation and remaining risks.
