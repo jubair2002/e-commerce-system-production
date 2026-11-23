@@ -222,7 +222,7 @@ pub async fn build_base_context(
     let mut ctx = Context::new();
 
     ctx.insert("current_route", current_route);
-    ctx.insert("base_url", &state.config.app_url);
+    ctx.insert("base_url", &state.config.base_url);
     ctx.insert("site_url", &state.config.app_url);
 
     let site_name = state.settings.get_or("site_name", "Jinish Potro");

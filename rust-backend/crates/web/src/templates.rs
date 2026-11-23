@@ -269,6 +269,17 @@ impl Filter for EscapeHtmlFilter {
     }
 }
 
+fn normalize_base_url(base: &str) -> String {
+    let t = base.trim();
+    if t.is_empty() {
+        "/".to_string()
+    } else if !t.ends_with('/') {
+        format!("{}/", t)
+    } else {
+        t.to_string()
+    }
+}
+
 struct UrlFunction {
     base_url: String,
 }
@@ -279,8 +290,12 @@ impl Function for UrlFunction {
             .get("path")
             .and_then(|v| v.as_str())
             .unwrap_or("");
+        if path.starts_with("http://") || path.starts_with("https://") || path.starts_with("//") {
+            return Ok(Value::String(path.to_string()));
+        }
         let clean = path.trim_start_matches('/');
-        Ok(Value::String(format!("{}{}", self.base_url, clean)))
+        let base = normalize_base_url(&self.base_url);
+        Ok(Value::String(format!("{}{}", base, clean)))
     }
 }
 
@@ -376,7 +391,8 @@ impl Function for RouteFunction {
             }
 
             let clean = pattern.trim_start_matches('/');
-            let mut full = format!("{}{}", self.base_url, clean);
+            let base = normalize_base_url(&self.base_url);
+            let mut full = format!("{}{}", base, clean);
             if !query_params.is_empty() {
                 full.push('?');
                 full.push_str(&query_params.join("&"));
@@ -385,7 +401,6 @@ impl Function for RouteFunction {
         } else {
             let file = legacy_file.trim_start_matches('/');
             let mut query_params = Vec::new();
-
             for (k, v) in args {
                 if k == "name" {
                     continue;
@@ -400,8 +415,8 @@ impl Function for RouteFunction {
                     query_params.push(format!("{}={}", k, val_str));
                 }
             }
-
-            let mut full = format!("{}{}", self.base_url, file);
+            let base = normalize_base_url(&self.base_url);
+            let mut full = format!("{}{}", base, file);
             if !query_params.is_empty() {
                 full.push('?');
                 full.push_str(&query_params.join("&"));
@@ -432,7 +447,8 @@ impl Function for IconFunction {
 
         let safe_name: String = name.chars().filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-').collect();
         let cls = format!("i {}", class).trim().to_string();
-        let sprite_url = format!("{}assets/img/icons.svg", self.base_url);
+        let base = normalize_base_url(&self.base_url);
+        let sprite_url = format!("{}assets/img/icons.svg", base);
 
         let html = if title.is_empty() {
             format!(

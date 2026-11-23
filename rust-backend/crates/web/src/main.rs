@@ -34,18 +34,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings = SettingsRepository::load(&db_pool).await?;
 
     let templates_dir = std::env::var("TEMPLATES_DIR").unwrap_or_else(|_| {
-        if std::path::Path::new("templates").is_dir() {
-            "templates".to_string()
-        } else if std::path::Path::new("rust-backend/templates").is_dir() {
-            "rust-backend/templates".to_string()
-        } else if std::path::Path::new("../../templates").is_dir() {
-            "../../templates".to_string()
-        } else {
-            "templates".to_string()
+        for candidate in &["templates", "rust-backend/templates", "../templates", "../../templates"] {
+            if std::path::Path::new(candidate).is_dir() {
+                return candidate.to_string();
+            }
         }
+        "templates".to_string()
     });
 
-    let tera = init_templates(&templates_dir, settings.clone(), config.app_url.clone())?;
+    let tera = init_templates(&templates_dir, settings.clone(), config.base_url.clone())?;
     let tera = Arc::new(tera);
 
     let mailer = Arc::new(Mailer::new(

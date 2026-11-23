@@ -160,13 +160,12 @@ async fn test_assets_serving_immutable_cache_header() {
         .unwrap();
 
     let res = router.oneshot(req).await.unwrap();
-    if res.status() == StatusCode::OK {
-        let cache_control = res
-            .headers()
-            .get(header::CACHE_CONTROL)
-            .and_then(|h| h.to_str().ok());
-        assert_eq!(cache_control, Some("public, max-age=31536000, immutable"));
-    }
+    assert_eq!(res.status(), StatusCode::OK);
+    let cache_control = res
+        .headers()
+        .get(header::CACHE_CONTROL)
+        .and_then(|h| h.to_str().ok());
+    assert_eq!(cache_control, Some("public, max-age=31536000, immutable"));
 }
 
 // =========================================================================

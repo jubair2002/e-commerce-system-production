@@ -83,7 +83,7 @@ impl AppConfig {
         let time_zone_offset = calculate_timezone_offset(&app_timezone);
 
         let raw_base_url = env::var("BASE_URL").unwrap_or_else(|_| "/".to_string());
-        let base_url = if raw_base_url.is_empty() {
+        let base_url = if raw_base_url.trim().is_empty() {
             "/".to_string()
         } else if !raw_base_url.ends_with('/') {
             format!("{}/", raw_base_url)
@@ -91,9 +91,27 @@ impl AppConfig {
             raw_base_url
         };
 
-        let site_url = env::var("SITE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-        let app_url = env::var("APP_URL").unwrap_or_else(|_| site_url.clone());
-        let uploads_dir = env::var("UPLOADS_DIR").unwrap_or_else(|_| "assets/uploads".to_string());
+        let raw_site_url = env::var("SITE_URL").unwrap_or_default();
+        let site_url = if raw_site_url.trim().is_empty() {
+            "http://localhost:8080".to_string()
+        } else {
+            raw_site_url
+        };
+
+        let raw_app_url = env::var("APP_URL").unwrap_or_default();
+        let app_url = if raw_app_url.trim().is_empty() {
+            site_url.clone()
+        } else {
+            raw_app_url
+        };
+        let uploads_dir = env::var("UPLOADS_DIR").unwrap_or_else(|_| {
+            for candidate in &["assets/uploads", "../assets/uploads", "../../assets/uploads"] {
+                if std::path::Path::new(candidate).is_dir() {
+                    return candidate.to_string();
+                }
+            }
+            "assets/uploads".to_string()
+        });
 
         let storage_primary = env::var("STORAGE_PRIMARY").unwrap_or_else(|_| "local".to_string());
         let storage_fallback = env::var("STORAGE_FALLBACK").unwrap_or_else(|_| "none".to_string());

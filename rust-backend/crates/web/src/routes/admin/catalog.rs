@@ -121,8 +121,8 @@ pub async fn admin_products_get_handler(
         "SELECT p.id, p.name, p.slug, p.sku, p.price, p.sale_price, p.stock, p.image,
                 p.status, p.featured, p.product_type, p.low_stock_threshold,
                 c.name AS category_name,
-                COALESCE(vps.total_stock, p.stock) AS calculated_stock,
-                COALESCE(vps.variant_count, 1) AS variant_count
+                CAST(COALESCE(vps.total_stock, p.stock) AS SIGNED) AS calculated_stock,
+                CAST(COALESCE(vps.variant_count, 1) AS SIGNED) AS variant_count
          FROM products p
          LEFT JOIN categories c ON c.id = p.category_id
          LEFT JOIN v_product_stock vps ON vps.product_id = p.id
@@ -144,12 +144,16 @@ pub async fn admin_products_get_handler(
         String,
         i32,
         Option<String>,
-        i32,
         i64,
-    )> = sqlx::query_as(&select_sql)
-        .fetch_all(&state.db)
-        .await
-        .unwrap_or_default();
+        i64,
+    )> = match sqlx::query_as(&select_sql).fetch_all(&state.db).await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("SQLx error fetching products: {:?}", e);
+            eprintln!("SQLx error fetching products: {:?}", e);
+            Vec::new()
+        }
+    };
 
     let products: Vec<serde_json::Value> = rows
         .into_iter()

@@ -207,6 +207,36 @@ pub fn build_router(state: AppState) -> Router {
         .route("/uploads/*path", get(media::media_handler))
         .route("/assets/uploads/*path", get(media::media_handler))
         .route("/uploads.php", get(media::media_handler))
+        .route(
+            "/assets/coza/images/product-placeholder.svg",
+            get(|| async {
+                (
+                    [
+                        (axum::http::header::CONTENT_TYPE, "image/svg+xml"),
+                        (axum::http::header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                    ],
+                    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250" width="200" height="250"><rect width="200" height="250" fill="#f4f4f5"/><path d="M70 105 L130 105 L125 160 L75 160 Z" fill="none" stroke="#d4d4d8" stroke-width="2.5" stroke-linejoin="round"/><path d="M85 105 C85 90 115 90 115 105" fill="none" stroke="#d4d4d8" stroke-width="2.5"/></svg>"##,
+                )
+            }),
+        )
+
+        // Legacy storefront subpaths (exact PHP parity when pretty_urls = 0)
+        .route("/storefront/shop/index.php", get(storefront::shop_handler))
+        .route("/storefront/shop/category.php", get(storefront::category_php_handler))
+        .route("/storefront/shop/product.php", get(storefront::product_php_handler))
+        .route("/storefront/cart/index.php", get(storefront::cart_get_handler).post(storefront::cart_post_handler))
+        .route("/storefront/cart/checkout.php", get(storefront::checkout_get_handler).post(storefront::checkout_post_handler))
+        .route("/storefront/cart/confirmation.php", get(storefront::order_confirmation_handler))
+        .route("/storefront/track/index.php", get(storefront::track_get_handler).post(storefront::track_post_handler))
+        .route("/storefront/auth/login.php", get(auth::login_get_handler).post(auth::login_post_handler))
+        .route("/storefront/auth/register.php", get(auth::register_get_handler).post(auth::register_post_handler))
+        .route("/storefront/auth/logout.php", get(auth::logout_handler).post(auth::logout_handler))
+        .route("/storefront/auth/forgot-password.php", get(auth::forgot_password_get_handler).post(auth::forgot_password_post_handler))
+        .route("/storefront/auth/reset-password.php", get(auth::reset_password_get_handler).post(auth::reset_password_post_handler))
+        .route("/storefront/auth/verify-email.php", get(auth::verify_email_handler))
+        .route("/storefront/auth/resend-verification.php", get(auth::resend_verification_get_handler).post(auth::resend_verification_post_handler))
+        .route("/storefront/pages/view.php", get(storefront::page_handler))
+        .route("/storefront/pages/contact.php", get(storefront::contact_get_handler).post(storefront::contact_post_handler))
 
         // Robots
         .route("/robots.txt", get(storefront::robots_txt_handler))
@@ -218,13 +248,12 @@ pub fn build_router(state: AppState) -> Router {
         // Static files under assets/ with 1-year immutable caching
         .nest_service("/assets", {
             let assets_dir = std::env::var("ASSETS_DIR").unwrap_or_else(|_| {
-                if std::path::Path::new("assets").is_dir() {
-                    "assets".to_string()
-                } else if std::path::Path::new("../../assets").is_dir() {
-                    "../../assets".to_string()
-                } else {
-                    "assets".to_string()
+                for candidate in &["assets", "../assets", "../../assets", "rust-backend/assets"] {
+                    if std::path::Path::new(candidate).is_dir() {
+                        return candidate.to_string();
+                    }
                 }
+                "assets".to_string()
             });
             Router::new()
                 .fallback_service(ServeDir::new(assets_dir))

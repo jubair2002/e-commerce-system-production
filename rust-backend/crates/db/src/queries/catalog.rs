@@ -562,7 +562,7 @@ pub async fn attach_card_data(
 /// Image resolver matching PHP product_image_url()
 pub fn resolve_image_url(img: Option<&str>) -> String {
     match img {
-        Some(s) if s.starts_with("http://") || s.starts_with("https://") => s.to_string(),
+        Some(s) if s.starts_with("http://") || s.starts_with("https://") || s.starts_with("data:") => s.to_string(),
         Some(s) if s.starts_with('/') => s.to_string(),
         Some(s) if !s.trim().is_empty() => {
             let clean = s.trim_start_matches('/');
@@ -572,7 +572,7 @@ pub fn resolve_image_url(img: Option<&str>) -> String {
                 format!("/uploads/{}", clean)
             }
         }
-        _ => "/assets/coza/images/product-placeholder.svg".to_string(),
+        _ => "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20250%22%20width%3D%22200%22%20height%3D%22250%22%3E%3Crect%20width%3D%22200%22%20height%3D%22250%22%20fill%3D%22%23f4f4f5%22%2F%3E%3Cpath%20d%3D%22M70%20105%20L130%20105%20L125%20160%20L75%20160%20Z%22%20fill%3D%22none%22%20stroke%3D%22%23d4d4d8%22%20stroke-width%3D%222.5%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cpath%20d%3D%22M85%20105%20C85%2090%20115%2090%20115%20105%22%20fill%3D%22none%22%20stroke%3D%22%23d4d4d8%22%20stroke-width%3D%222.5%22%2F%3E%3C%2Fsvg%3E".to_string(),
     }
 }
 
