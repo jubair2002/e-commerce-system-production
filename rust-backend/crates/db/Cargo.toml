@@ -19,3 +19,5 @@ md5.workspace = true
 hex.workspace = true
 infer.workspace = true
 moka.workspace = true
+image.workspace = true
+webp.workspace = true

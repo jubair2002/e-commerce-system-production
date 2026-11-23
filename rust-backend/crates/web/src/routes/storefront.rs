@@ -289,6 +289,11 @@ pub async fn category_php_handler(
     session: Session,
     Query(query): Query<ShopQuery>,
 ) -> Result<Html<String>, Response> {
+    if state.config.pretty_urls {
+        if let Some(ref slug) = query.slug {
+            return Err(axum::response::Redirect::permanent(&format!("/category/{}", slug)).into_response());
+        }
+    }
     let slug = query.slug.clone().unwrap_or_default();
     render_category(&state, &session, &slug, query).await
 }
@@ -387,6 +392,11 @@ pub async fn product_php_handler(
     session: Session,
     Query(query): Query<SlugQuery>,
 ) -> Result<Html<String>, Response> {
+    if state.config.pretty_urls {
+        if let Some(ref slug) = query.slug {
+            return Err(axum::response::Redirect::permanent(&format!("/product/{}", slug)).into_response());
+        }
+    }
     let slug = query.slug.unwrap_or_default();
     render_product(&state, &session, &slug).await
 }
@@ -543,7 +553,7 @@ pub async fn cart_get_handler(
         .flatten();
 
     let coupon_discount = if let Some(ref code) = applied_coupon {
-        match validate_coupon(&state.db, code, loaded_cart.subtotal).await {
+        match validate_coupon(&state.db, code, loaded_cart.subtotal, &currency_sym).await {
             Ok(c) => {
                 ctx.insert("coupon", &c.coupon);
                 c.discount
@@ -657,7 +667,7 @@ pub async fn cart_post_handler(
                         total_count: 0,
                         alerts: Vec::new(),
                     });
-                match validate_coupon(&state.db, code, loaded.subtotal).await {
+                match validate_coupon(&state.db, code, loaded.subtotal, &currency_sym).await {
                     Ok(cres) => {
                         if cres.valid {
                             if let Some(ref cp) = cres.coupon {
@@ -740,7 +750,7 @@ pub async fn checkout_get_handler(
         .flatten();
 
     let coupon_discount = if let Some(ref code) = applied_coupon {
-        match validate_coupon(&state.db, code, loaded_cart.subtotal).await {
+        match validate_coupon(&state.db, code, loaded_cart.subtotal, &currency_sym).await {
             Ok(c) => {
                 ctx.insert("coupon", &c.coupon);
                 c.discount
@@ -954,6 +964,7 @@ pub async fn checkout_post_handler(
         Ok(order) => {
             let _ = session.remove::<String>(SessionHelper::KEY_CHECKOUT_TOKEN).await;
             SessionHelper::clear_cart(&session).await;
+            let _ = session.insert("last_placed_order", &order.order_number).await;
 
             let site_name = state.settings.get_or("site_name", "Jinish Potro");
             let _ = state.mailer.queue_email(
@@ -967,7 +978,8 @@ pub async fn checkout_post_handler(
                 false,
             ).await;
 
-            Redirect::to(&format!("/order/confirmation?number={}", order.order_number)).into_response()
+            let token = common::crypto::generate_hmac_sha256(&order.order_number, &state.config.app_key);
+            Redirect::to(&format!("/order/confirmation?o={}&t={}", order.order_number, token)).into_response()
         }
         Err(e) => {
             SessionHelper::add_flash(&session, "danger", &format!("Order could not be placed: {}", e)).await;
@@ -981,6 +993,8 @@ pub async fn checkout_post_handler(
 // -------------------------------------------------------------
 #[derive(Debug, Deserialize)]
 pub struct ConfirmationQuery {
+    pub o: Option<String>,
+    pub t: Option<String>,
     pub number: Option<String>,
     pub order: Option<String>,
 }
@@ -990,7 +1004,39 @@ pub async fn order_confirmation_handler(
     session: Session,
     Query(query): Query<ConfirmationQuery>,
 ) -> Result<Html<String>, Response> {
-    let order_num = query.number.or(query.order).unwrap_or_default();
+    let order_num = query.o.or(query.number).or(query.order).unwrap_or_default();
+    let token = query.t.unwrap_or_default();
+
+    let mut is_authorized = false;
+    if !order_num.is_empty() {
+        let expected_token = common::crypto::generate_hmac_sha256(&order_num, &state.config.app_key);
+        if !token.is_empty() && common::crypto::verify_csrf_token(&token, &expected_token) {
+            is_authorized = true;
+        } else if let Ok(Some(last_ord)) = session.get::<String>("last_placed_order").await {
+            if last_ord == order_num {
+                is_authorized = true;
+            }
+        }
+    }
+
+    if !is_authorized && !order_num.is_empty() {
+        if let Some(cust) = SessionHelper::get_customer(&session).await {
+            let owner_match: Option<u64> = sqlx::query_scalar("SELECT id FROM orders WHERE order_number = ? AND customer_id = ? LIMIT 1")
+                .bind(&order_num)
+                .bind(cust.id)
+                .fetch_optional(&state.db)
+                .await
+                .unwrap_or(None);
+            if owner_match.is_some() {
+                is_authorized = true;
+            }
+        }
+    }
+
+    if !is_authorized {
+        return Err(Redirect::to("/").into_response());
+    }
+
     let mut ctx = build_base_context(&state, &session, "order_confirmation").await;
 
     let order: Option<Order> = sqlx::query_as(
@@ -1245,4 +1291,13 @@ pub async fn sitemap_handler(
     xml.push_str("</urlset>");
 
     ([(axum::http::header::CONTENT_TYPE, "application/xml; charset=utf-8")], xml).into_response()
+}
+
+pub async fn robots_txt_handler(State(state): State<AppState>) -> Response {
+    let base_url = state.config.app_url.trim_end_matches('/');
+    let robots = format!(
+        "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\nDisallow: /scratch/\nSitemap: {}/sitemap.xml\n",
+        base_url
+    );
+    ([(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")], robots).into_response()
 }

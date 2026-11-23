@@ -219,8 +219,15 @@ fn build_cart_ajax_response(
 // -------------------------------------------------------------
 pub async fn availability_handler(
     State(state): State<AppState>,
-    Query(query): Query<AvailabilityQuery>,
+    req: axum::extract::Request,
 ) -> Response {
+    let query_str = req.uri().query().unwrap_or_default();
+    let query: AvailabilityQuery = serde_urlencoded::from_str(query_str).unwrap_or(AvailabilityQuery {
+        ids: None,
+        id: None,
+        product_id: None,
+    });
+
     let raw_ids = query.ids.unwrap_or_default();
     let id_list: Vec<u64> = if !raw_ids.is_empty() {
         raw_ids
@@ -293,7 +300,26 @@ pub async fn availability_handler(
         }
     }
 
-    Json(serde_json::Value::Object(results)).into_response()
+    let body_str = serde_json::to_string(&serde_json::Value::Object(results)).unwrap_or_default();
+    let etag = format!("\"{:x}\"", md5::compute(body_str.as_bytes()));
+
+    if let Some(inm) = req.headers().get(axum::http::header::IF_NONE_MATCH) {
+        if let Ok(val) = inm.to_str() {
+            if val.trim() == etag.trim() {
+                return (axum::http::StatusCode::NOT_MODIFIED, "").into_response();
+            }
+        }
+    }
+
+    (
+        [
+            (axum::http::header::CONTENT_TYPE, "application/json".to_string()),
+            (axum::http::header::ETAG, etag),
+            (axum::http::header::CACHE_CONTROL, "public, max-age=10".to_string()),
+        ],
+        body_str,
+    )
+        .into_response()
 }
 
 // -------------------------------------------------------------
@@ -307,7 +333,7 @@ pub async fn availability_stream_handler(
 
     let stream = async_stream::stream! {
         let mut last_stock: Option<i32> = None;
-        for _ in 0..25 {
+        for _ in 0..12 {
             let stock: Option<i32> = sqlx::query_scalar(
                 "SELECT stock FROM products WHERE id = ? AND status = 'active' LIMIT 1",
             )
@@ -329,8 +355,11 @@ pub async fn availability_stream_handler(
                 yield Ok(Event::default().event("stock").data(payload.to_string()));
             }
 
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            yield Ok(Event::default().comment("ping"));
+            tokio::time::sleep(Duration::from_secs(2)).await;
         }
+
+        yield Ok(Event::default().event("reconnect").data("{}"));
     };
 
     Sse::new(stream).keep_alive(KeepAlive::default())

@@ -237,6 +237,7 @@ pub async fn validate_coupon(
     pool: &Pool<MySql>,
     code: &str,
     subtotal: Decimal,
+    currency_symbol: &str,
 ) -> Result<CouponValidationResult, sqlx::Error> {
     let clean = code.trim().to_uppercase();
     if clean.is_empty() {
@@ -249,35 +250,54 @@ pub async fn validate_coupon(
     }
 
     let coupon: Option<Coupon> = sqlx::query_as(
-        "SELECT * FROM coupons
-         WHERE code = ? AND status = 'active'
-           AND (starts_at IS NULL OR starts_at <= NOW())
-           AND (expires_at IS NULL OR expires_at >= NOW())
-         LIMIT 1",
+        "SELECT * FROM coupons WHERE UPPER(code) = ? LIMIT 1",
     )
     .bind(&clean)
     .fetch_optional(pool)
     .await?;
 
     let c = match coupon {
-        Some(cp) => cp,
-        None => {
+        Some(cp) if cp.status == "active" => cp,
+        _ => {
             return Ok(CouponValidationResult {
                 valid: false,
                 coupon: None,
                 discount: Decimal::ZERO,
-                error: Some("Invalid or expired coupon code.".to_string()),
+                error: Some("Invalid or inactive coupon code.".to_string()),
             });
         }
     };
 
-    if let Some(limit) = c.usage_limit {
-        if c.used_count >= limit {
+    let now = chrono::Utc::now().naive_utc();
+    if let Some(starts) = c.starts_at {
+        if starts > now {
             return Ok(CouponValidationResult {
                 valid: false,
                 coupon: None,
                 discount: Decimal::ZERO,
-                error: Some("This coupon has reached its usage limit.".to_string()),
+                error: Some("This coupon is not active yet.".to_string()),
+            });
+        }
+    }
+
+    if let Some(expires) = c.expires_at {
+        if expires < now {
+            return Ok(CouponValidationResult {
+                valid: false,
+                coupon: None,
+                discount: Decimal::ZERO,
+                error: Some("This coupon has expired.".to_string()),
+            });
+        }
+    }
+
+    if let Some(limit) = c.usage_limit {
+        if limit > 0 && c.used_count >= limit {
+            return Ok(CouponValidationResult {
+                valid: false,
+                coupon: None,
+                discount: Decimal::ZERO,
+                error: Some("This coupon has reached its maximum usage limit.".to_string()),
             });
         }
     }
@@ -288,8 +308,8 @@ pub async fn validate_coupon(
             coupon: None,
             discount: Decimal::ZERO,
             error: Some(format!(
-                "Minimum spend of {} is required for this coupon.",
-                c.min_subtotal
+                "Minimum order amount for this coupon is {}.",
+                format_money(Some(c.min_subtotal), currency_symbol)
             )),
         });
     }
@@ -305,6 +325,8 @@ pub async fn validate_coupon(
             discount = max_disc;
         }
     }
+
+    discount = round_money(discount);
 
     Ok(CouponValidationResult {
         valid: true,
@@ -332,7 +354,7 @@ pub async fn calculate_totals(
 
     if let Some(code) = coupon_code {
         if !code.trim().is_empty() {
-            let res = validate_coupon(pool, code, subtotal).await?;
+            let res = validate_coupon(pool, code, subtotal, &currency_symbol).await?;
             if res.valid {
                 discount = res.discount;
                 coupon = res.coupon;

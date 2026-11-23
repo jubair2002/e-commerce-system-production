@@ -127,11 +127,14 @@ pub fn build_router(state: AppState) -> Router {
         .route("/assets/uploads/*path", get(media::media_handler))
         .route("/uploads.php", get(media::media_handler))
 
+        // Robots
+        .route("/robots.txt", get(storefront::robots_txt_handler))
+
         // Metrics & Health
         .route("/metrics", get(metrics::metrics_handler))
         .route("/health", get(health_handler))
 
-        // Static files under assets/
+        // Static files under assets/ with 1-year immutable caching
         .nest_service("/assets", {
             let assets_dir = std::env::var("ASSETS_DIR").unwrap_or_else(|_| {
                 if std::path::Path::new("assets").is_dir() {
@@ -142,10 +145,16 @@ pub fn build_router(state: AppState) -> Router {
                     "assets".to_string()
                 }
             });
-            ServeDir::new(assets_dir)
+            Router::new()
+                .fallback_service(ServeDir::new(assets_dir))
+                .layer(tower_http::set_header::SetResponseHeaderLayer::overriding(
+                    axum::http::header::CACHE_CONTROL,
+                    axum::http::HeaderValue::from_static("public, max-age=31536000, immutable"),
+                ))
         })
 
         // Global Middlewares (applied from bottom to top execution order)
+        .layer(tower_http::compression::CompressionLayer::new())
         .layer(axum_mw::from_fn(csrf_middleware))
         .layer(axum_mw::from_fn_with_state(state.clone(), remember_me_middleware))
         .layer(axum_mw::from_fn_with_state(state.clone(), maintenance_middleware))

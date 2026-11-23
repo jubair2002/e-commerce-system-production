@@ -50,6 +50,7 @@ pub struct AppConfig {
     pub smtp_user: String,
     pub smtp_password: String,
     pub smtp_from: String,
+    pub pretty_urls: bool,
 }
 
 pub type Config = AppConfig;
@@ -118,6 +119,9 @@ impl AppConfig {
         let smtp_user = env::var("MAIL_USERNAME").unwrap_or_default();
         let smtp_password = env::var("MAIL_PASSWORD").unwrap_or_default();
         let smtp_from = env::var("MAIL_FROM_ADDRESS").unwrap_or_else(|_| "noreply@jinishpotro.com".to_string());
+        let pretty_urls = env::var("PRETTY_URLS")
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(true);
 
         Self {
             db_host,
@@ -152,6 +156,7 @@ impl AppConfig {
             smtp_user,
             smtp_password,
             smtp_from,
+            pretty_urls,
         }
     }
 

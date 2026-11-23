@@ -269,12 +269,26 @@ pub async fn build_base_context(
     let announcement_text = state.settings.get_or("announcement_bar_text", "");
     ctx.insert("announcement_enabled", &announcement_enabled);
     ctx.insert("announcement_text", &announcement_text);
+    ctx.insert("announcement_bar", &announcement_text);
+
+    let theme_accent = state.settings.get_or("theme_accent_color", "#717fe0");
+    let dark_mode = state.settings.get_or("theme_dark_mode", "0") == "1";
+    ctx.insert("theme_accent", &theme_accent);
+    ctx.insert("theme_accent_color", &theme_accent);
+    ctx.insert("dark_mode", &dark_mode);
+
+    let currency_sym = state.settings.get_or("currency_symbol", "৳");
+    ctx.insert("currency_symbol", &currency_sym);
 
     let csrf_token = SessionHelper::get_csrf(session).await;
     ctx.insert("csrf_token", &csrf_token);
+    ctx.insert("SHOP_CSRF_TOKEN", &csrf_token);
+    ctx.insert("SHOP_BASE_URL", &state.config.app_url);
+    ctx.insert("SHOP_CHECKOUT_URL", &format!("{}/checkout", state.config.app_url.trim_end_matches('/')));
 
     let flashes = SessionHelper::take_flashes(session).await;
     ctx.insert("flashes", &flashes);
+    ctx.insert("flash_messages", &flashes);
     if let Some(first_flash) = flashes.first() {
         ctx.insert("flash", first_flash);
     }
@@ -337,6 +351,8 @@ pub async fn build_base_context(
         wishlist_count = count.unwrap_or(0);
     }
 
+    ctx.insert("CUSTOMER_LOGGED_IN", &customer.is_some());
+    ctx.insert("logo", &logo_url);
     ctx.insert("wishlist_count", &wishlist_count);
 
     // Active categories for navigation
