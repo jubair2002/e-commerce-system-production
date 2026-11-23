@@ -36,6 +36,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let templates_dir = std::env::var("TEMPLATES_DIR").unwrap_or_else(|_| {
         if std::path::Path::new("templates").is_dir() {
             "templates".to_string()
+        } else if std::path::Path::new("rust-backend/templates").is_dir() {
+            "rust-backend/templates".to_string()
         } else if std::path::Path::new("../../templates").is_dir() {
             "../../templates".to_string()
         } else {
