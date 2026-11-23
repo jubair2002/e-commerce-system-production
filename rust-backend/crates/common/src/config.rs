@@ -1,4 +1,20 @@
+use chrono::Offset;
 use std::env;
+
+pub fn calculate_timezone_offset(tz_name: &str) -> String {
+    if let Ok(tz) = tz_name.parse::<chrono_tz::Tz>() {
+        let now = chrono::Utc::now().with_timezone(&tz);
+        let offset = now.offset().fix();
+        let total_seconds = offset.local_minus_utc();
+        let sign = if total_seconds >= 0 { '+' } else { '-' };
+        let abs_secs = total_seconds.abs();
+        let hours = abs_secs / 3600;
+        let mins = (abs_secs % 3600) / 60;
+        format!("{}{:02}:{:02}", sign, hours, mins)
+    } else {
+        "+06:00".to_string()
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct AppConfig {
@@ -12,6 +28,7 @@ pub struct AppConfig {
     pub app_env: String,
     pub app_key: String,
     pub app_timezone: String,
+    pub time_zone_offset: String,
     pub base_url: String,
     pub site_url: String,
     pub app_url: String,
@@ -57,8 +74,12 @@ impl AppConfig {
 
         let app_name = env::var("APP_NAME").unwrap_or_else(|_| "Jinish Potro".to_string());
         let app_env = env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
-        let app_key = env::var("APP_KEY").unwrap_or_else(|_| "CHANGE_ME_TO_64_RANDOM_CHARS".to_string());
+        let app_key = env::var("APP_KEY").unwrap_or_default();
+        if app_key.trim().is_empty() || app_key == "CHANGE_ME_TO_64_RANDOM_CHARS" {
+            panic!("Fatal: APP_KEY is missing or the placeholder 'CHANGE_ME_TO_64_RANDOM_CHARS'. Refusing to start.");
+        }
         let app_timezone = env::var("APP_TIMEZONE").unwrap_or_else(|_| "Asia/Dhaka".to_string());
+        let time_zone_offset = calculate_timezone_offset(&app_timezone);
 
         let raw_base_url = env::var("BASE_URL").unwrap_or_else(|_| "/".to_string());
         let base_url = if raw_base_url.is_empty() {
@@ -109,6 +130,7 @@ impl AppConfig {
             app_env,
             app_key,
             app_timezone,
+            time_zone_offset,
             base_url,
             site_url,
             app_url,

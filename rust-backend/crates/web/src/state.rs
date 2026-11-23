@@ -31,14 +31,59 @@ pub struct FlashMessage {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminSession {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+    pub role: String,
+    pub permissions: Vec<String>,
+    pub avatar: Option<String>,
+}
+
+impl AdminSession {
+    pub fn has_permission(&self, required: &str) -> bool {
+        user_has_permission(&self.role, &self.permissions, &[required])
+    }
+}
+
+/// Wildcard permission logic identical to PHP user_has_permission()
+pub fn user_has_permission(role: &str, permissions: &[String], required: &[&str]) -> bool {
+    if role == "admin" {
+        return true;
+    }
+    if permissions.iter().any(|p| p == "*") {
+        return true;
+    }
+    if required.is_empty() {
+        return true;
+    }
+    for req in required {
+        if *req == "*" || permissions.iter().any(|p| p == *req) {
+            return true;
+        }
+        if let Some((module, _)) = req.split_once('.') {
+            let wild = format!("{}.*", module);
+            if permissions.iter().any(|p| p == &wild) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Session helper functions
 pub struct SessionHelper;
 
 impl SessionHelper {
     pub const KEY_CUSTOMER: &'static str = "customer";
+    pub const KEY_USER: &'static str = "user";
     pub const KEY_CART: &'static str = "cart";
     pub const KEY_CSRF: &'static str = "_csrf";
+    pub const KEY_CSRF_TOKEN: &'static str = "csrf_token";
     pub const KEY_FLASH: &'static str = "_flash";
+    pub const KEY_OLD: &'static str = "_old";
+    pub const KEY_LAST_PLACED_ORDER: &'static str = "last_placed_order";
     pub const KEY_CHECKOUT_TOKEN: &'static str = "checkout_token";
     pub const KEY_CHECKOUT_TIME: &'static str = "checkout_rendered_at";
     pub const KEY_APPLIED_COUPON: &'static str = "applied_coupon";
@@ -56,13 +101,35 @@ impl SessionHelper {
         let _ = session.remove::<CustomerSession>(Self::KEY_CUSTOMER).await;
     }
 
+    pub async fn get_user(session: &Session) -> Option<AdminSession> {
+        session.get::<AdminSession>(Self::KEY_USER).await.ok().flatten()
+    }
+
+    pub async fn set_user(session: &Session, user: &AdminSession) {
+        let _ = session.insert(Self::KEY_USER, user).await;
+    }
+
+    pub async fn remove_user(session: &Session) {
+        let _ = session.remove::<AdminSession>(Self::KEY_USER).await;
+    }
+
+    pub async fn cycle_session_id(session: &Session) {
+        let _ = session.cycle_id().await;
+    }
+
     pub async fn get_csrf(session: &Session) -> String {
+        if let Ok(Some(token)) = session.get::<String>(Self::KEY_CSRF_TOKEN).await {
+            if !token.is_empty() {
+                return token;
+            }
+        }
         if let Ok(Some(token)) = session.get::<String>(Self::KEY_CSRF).await {
             if !token.is_empty() {
                 return token;
             }
         }
         let new_token = generate_csrf_token();
+        let _ = session.insert(Self::KEY_CSRF_TOKEN, &new_token).await;
         let _ = session.insert(Self::KEY_CSRF, &new_token).await;
         new_token
     }
@@ -70,7 +137,7 @@ impl SessionHelper {
     pub async fn verify_csrf(session: &Session, token: Option<&str>) -> bool {
         let expected = Self::get_csrf(session).await;
         match token {
-            Some(t) => !t.is_empty() && t == expected,
+            Some(t) => common::crypto::verify_csrf_token(t.trim(), &expected),
             None => false,
         }
     }
@@ -98,6 +165,33 @@ impl SessionHelper {
             .unwrap_or_default();
         let _ = session.remove::<Vec<FlashMessage>>(Self::KEY_FLASH).await;
         flashes
+    }
+
+    pub async fn set_old(session: &Session, data: &HashMap<String, String>) {
+        let _ = session.insert(Self::KEY_OLD, data).await;
+    }
+
+    pub async fn get_old(session: &Session) -> HashMap<String, String> {
+        session
+            .get::<HashMap<String, String>>(Self::KEY_OLD)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_default()
+    }
+
+    pub async fn take_old(session: &Session) -> HashMap<String, String> {
+        let data = Self::get_old(session).await;
+        let _ = session.remove::<HashMap<String, String>>(Self::KEY_OLD).await;
+        data
+    }
+
+    pub async fn set_last_placed_order(session: &Session, order_id: u64) {
+        let _ = session.insert(Self::KEY_LAST_PLACED_ORDER, order_id).await;
+    }
+
+    pub async fn get_last_placed_order(session: &Session) -> Option<u64> {
+        session.get::<u64>(Self::KEY_LAST_PLACED_ORDER).await.ok().flatten()
     }
 
     pub async fn get_cart(session: &Session) -> HashMap<String, i32> {
@@ -183,6 +277,14 @@ pub async fn build_base_context(
     ctx.insert("flashes", &flashes);
     if let Some(first_flash) = flashes.first() {
         ctx.insert("flash", first_flash);
+    }
+
+    let old_inputs = SessionHelper::take_old(session).await;
+    ctx.insert("old", &old_inputs);
+
+    if let Some(admin) = SessionHelper::get_user(session).await {
+        ctx.insert("user", &admin);
+        ctx.insert("admin_user", &admin);
     }
 
     let customer = SessionHelper::get_customer(session).await;

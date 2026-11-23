@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use tera::{Filter, Function, Result as TeraResult, Tera, Value};
 
+use common::formatters::{escape_html, format_date, format_order_number, number_format, slugify};
 use common::money::{format_money, parse_money};
 use db::queries::catalog::resolve_image_url;
 use db::SettingsRepository;
+use rust_decimal::Decimal;
+use std::str::FromStr;
 
 /// Create and configure the Tera template engine
 pub fn init_templates(
@@ -19,6 +22,12 @@ pub fn init_templates(
         settings: settings.clone(),
     });
     tera.register_filter("product_img", ProductImgFilter);
+    tera.register_filter("number_format", NumberFormatFilter);
+    tera.register_filter("format_date", FormatDateFilter);
+    tera.register_filter("date_format", FormatDateFilter);
+    tera.register_filter("slugify", SlugifyFilter);
+    tera.register_filter("order_number", OrderNumberFilter);
+    tera.register_filter("e", EscapeHtmlFilter);
 
     // Register functions
     tera.register_function("url", UrlFunction {
@@ -29,10 +38,20 @@ pub fn init_templates(
     });
     tera.register_function("route", RouteFunction {
         base_url: base_url.clone(),
+        settings: settings.clone(),
     });
     tera.register_function("icon", IconFunction {
         base_url: base_url.clone(),
     });
+    tera.register_function("money", MoneyFunction {
+        settings: settings.clone(),
+    });
+    tera.register_function("number_format", NumberFormatFunction);
+    tera.register_function("format_date", FormatDateFunction);
+    tera.register_function("slugify", SlugifyFunction);
+    tera.register_function("order_number", OrderNumberFunction);
+    tera.register_function("old", OldFunction);
+    tera.register_function("csrf_token", CsrfTokenFunction);
 
     Ok(tera)
 }
@@ -53,6 +72,22 @@ impl Filter for MoneyFilter {
     }
 }
 
+struct MoneyFunction {
+    settings: SettingsRepository,
+}
+
+impl Function for MoneyFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let sym = self.settings.get_or("currency_symbol", "৳");
+        let dec = match args.get("value") {
+            Some(Value::Number(n)) => parse_money(&n.to_string()),
+            Some(Value::String(s)) => parse_money(s),
+            _ => None,
+        };
+        Ok(Value::String(format_money(dec, &sym)))
+    }
+}
+
 struct ProductImgFilter;
 
 impl Filter for ProductImgFilter {
@@ -62,6 +97,135 @@ impl Filter for ProductImgFilter {
             _ => None,
         };
         Ok(Value::String(resolve_image_url(s)))
+    }
+}
+
+struct NumberFormatFilter;
+
+impl Filter for NumberFormatFilter {
+    fn filter(&self, value: &Value, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let decimals = args
+            .get("decimals")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as u32;
+        let dec_point = args
+            .get("dec_point")
+            .and_then(|v| v.as_str())
+            .unwrap_or(".");
+        let thousands_sep = args
+            .get("thousands_sep")
+            .and_then(|v| v.as_str())
+            .unwrap_or(",");
+
+        let dec = match value {
+            Value::Number(n) => Decimal::from_str(&n.to_string()).unwrap_or_default(),
+            Value::String(s) => Decimal::from_str(s).unwrap_or_default(),
+            _ => Decimal::ZERO,
+        };
+        Ok(Value::String(number_format(dec, decimals, dec_point, thousands_sep)))
+    }
+}
+
+struct NumberFormatFunction;
+
+impl Function for NumberFormatFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let decimals = args
+            .get("decimals")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as u32;
+        let dec_point = args
+            .get("dec_point")
+            .and_then(|v| v.as_str())
+            .unwrap_or(".");
+        let thousands_sep = args
+            .get("thousands_sep")
+            .and_then(|v| v.as_str())
+            .unwrap_or(",");
+
+        let dec = match args.get("value") {
+            Some(Value::Number(n)) => Decimal::from_str(&n.to_string()).unwrap_or_default(),
+            Some(Value::String(s)) => Decimal::from_str(s).unwrap_or_default(),
+            _ => Decimal::ZERO,
+        };
+        Ok(Value::String(number_format(dec, decimals, dec_point, thousands_sep)))
+    }
+}
+
+struct FormatDateFilter;
+
+impl Filter for FormatDateFilter {
+    fn filter(&self, value: &Value, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let dt_str = match value {
+            Value::String(s) => Some(s.as_str()),
+            Value::Number(n) => Some(Box::leak(n.to_string().into_boxed_str()) as &str),
+            _ => None,
+        };
+        let format = args.get("format").and_then(|v| v.as_str());
+        Ok(Value::String(format_date(dt_str, format, None)))
+    }
+}
+
+struct FormatDateFunction;
+
+impl Function for FormatDateFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let dt_str = match args.get("value") {
+            Some(Value::String(s)) => Some(s.as_str()),
+            Some(Value::Number(n)) => Some(Box::leak(n.to_string().into_boxed_str()) as &str),
+            _ => None,
+        };
+        let format = args.get("format").and_then(|v| v.as_str());
+        Ok(Value::String(format_date(dt_str, format, None)))
+    }
+}
+
+struct SlugifyFilter;
+
+impl Filter for SlugifyFilter {
+    fn filter(&self, value: &Value, _args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let s = value.as_str().unwrap_or("");
+        Ok(Value::String(slugify(s)))
+    }
+}
+
+struct SlugifyFunction;
+
+impl Function for SlugifyFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let s = args.get("text").and_then(|v| v.as_str()).unwrap_or("");
+        Ok(Value::String(slugify(s)))
+    }
+}
+
+struct OrderNumberFilter;
+
+impl Filter for OrderNumberFilter {
+    fn filter(&self, value: &Value, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let seq = value.as_u64().unwrap_or(0);
+        let prefix = args.get("prefix").and_then(|v| v.as_str()).unwrap_or("ORD");
+        let ym = args.get("year_month").and_then(|v| v.as_str()).unwrap_or("202611");
+        Ok(Value::String(format_order_number(prefix, ym, seq)))
+    }
+}
+
+struct OrderNumberFunction;
+
+impl Function for OrderNumberFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let seq = args.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0);
+        let prefix = args.get("prefix").and_then(|v| v.as_str()).unwrap_or("ORD");
+        let ym = args.get("year_month").and_then(|v| v.as_str()).unwrap_or("202611");
+        Ok(Value::String(format_order_number(prefix, ym, seq)))
+    }
+}
+
+struct EscapeHtmlFilter;
+
+impl Filter for EscapeHtmlFilter {
+    fn filter(&self, value: &Value, _args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let s = value.as_str().unwrap_or("");
+        Ok(Value::String(escape_html(s)))
     }
 }
 
@@ -100,59 +264,110 @@ impl Function for SettingFunction {
 
 struct RouteFunction {
     base_url: String,
+    settings: SettingsRepository,
 }
 
 impl Function for RouteFunction {
     fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
         let name = match args.get("name").and_then(|v| v.as_str()) {
             Some(n) => n,
-            None => return Err(tera::Error::msg("Missing 'name' argument")),
+            None => return Err(tera::Error::msg("Missing 'name' argument in route()")),
         };
 
-        let path = match name {
-            "home" => "".to_string(),
-            "shop" => "shop".to_string(),
-            "cart" => "cart".to_string(),
-            "checkout" => "checkout".to_string(),
-            "order_confirmation" => "order/confirmation".to_string(),
-            "track" => "track".to_string(),
-            "login" => "login".to_string(),
-            "register" => "register".to_string(),
-            "logout" => "logout".to_string(),
-            "forgot_password" => "forgot-password".to_string(),
-            "reset_password" => "reset-password".to_string(),
-            "verify_email" => "verify-email".to_string(),
-            "resend_verification" => "resend-verification".to_string(),
-            "account" => "account".to_string(),
-            "account_orders" => "account/orders".to_string(),
-            "account_order" => "account/order".to_string(),
-            "account_invoice" => "account/invoice".to_string(),
-            "account_addresses" => "account/addresses".to_string(),
-            "account_profile" => "account/profile".to_string(),
-            "account_security" => "account/security".to_string(),
-            "account_wishlist" => "account/wishlist".to_string(),
-            "account_export" => "account/export".to_string(),
-            "account_delete" => "account/delete".to_string(),
-            "contact" => "contact".to_string(),
-            "newsletter" => "newsletter".to_string(),
-            "sitemap" => "sitemap.xml".to_string(),
-            "category" => {
-                let slug = args.get("slug").and_then(|v| v.as_str()).unwrap_or("");
-                format!("category/{}", slug)
-            }
-            "product" => {
-                let slug = args.get("slug").and_then(|v| v.as_str()).unwrap_or("");
-                format!("product/{}", slug)
-            }
-            "page" => {
-                let slug = args.get("slug").and_then(|v| v.as_str()).unwrap_or("");
-                format!("page/{}", slug)
-            }
-            other => other.to_string(),
+        let is_pretty = self.settings.get_bool("pretty_urls", false);
+
+        // Map route name to (pretty_pattern, legacy_file) matching PHP get_route_map()
+        let (pretty_pattern, legacy_file) = match name {
+            "home" => ("", ""),
+            "shop" => ("shop", "storefront/shop/index.php"),
+            "category" => ("category/{slug}", "storefront/shop/category.php"),
+            "product" => ("product/{slug}", "storefront/shop/product.php"),
+            "cart" => ("cart", "storefront/cart/index.php"),
+            "checkout" => ("checkout", "storefront/cart/checkout.php"),
+            "order_confirmation" => ("order/confirmation", "storefront/cart/confirmation.php"),
+            "track" => ("track", "storefront/track/index.php"),
+            "login" => ("login", "storefront/auth/login.php"),
+            "register" => ("register", "storefront/auth/register.php"),
+            "logout" => ("logout", "storefront/auth/logout.php"),
+            "forgot_password" => ("forgot-password", "storefront/auth/forgot-password.php"),
+            "reset_password" => ("reset-password", "storefront/auth/reset-password.php"),
+            "verify_email" => ("verify-email", "storefront/auth/verify-email.php"),
+            "resend_verification" => ("resend-verification", "storefront/auth/resend-verification.php"),
+            "account" => ("account", "account/index.php"),
+            "account_orders" => ("account/orders", "account/orders.php"),
+            "account_order" => ("account/order/{number}", "account/order.php"),
+            "account_invoice" => ("account/invoice/{number}", "account/invoice.php"),
+            "account_addresses" => ("account/addresses", "account/addresses.php"),
+            "account_profile" => ("account/profile", "account/profile.php"),
+            "account_security" => ("account/security", "account/security.php"),
+            "account_wishlist" => ("account/wishlist", "account/wishlist.php"),
+            "account_export" => ("account/export", "account/export.php"),
+            "account_delete" => ("account/delete", "account/delete.php"),
+            "page" => ("page/{slug}", "storefront/pages/view.php"),
+            "contact" => ("contact", "storefront/pages/contact.php"),
+            "newsletter" => ("newsletter", "storefront/pages/newsletter.php"),
+            "sitemap" => ("sitemap.xml", "storefront/seo/sitemap.php"),
+            "maintenance" => ("maintenance", "storefront/errors/maintenance.php"),
+            "404" => ("404", "storefront/errors/404.php"),
+            "500" => ("500", "storefront/errors/500.php"),
+            custom => (custom, custom),
         };
 
-        let clean = path.trim_start_matches('/');
-        Ok(Value::String(format!("{}{}", self.base_url, clean)))
+        if is_pretty {
+            let mut pattern = pretty_pattern.to_string();
+            let mut query_params = Vec::new();
+
+            for (k, v) in args {
+                if k == "name" {
+                    continue;
+                }
+                let val_str = match v {
+                    Value::String(s) => s.clone(),
+                    Value::Number(n) => n.to_string(),
+                    Value::Bool(b) => b.to_string(),
+                    _ => String::new(),
+                };
+                let placeholder = format!("{{{}}}", k);
+                if pattern.contains(&placeholder) {
+                    pattern = pattern.replace(&placeholder, &val_str);
+                } else if !val_str.is_empty() {
+                    query_params.push(format!("{}={}", k, val_str));
+                }
+            }
+
+            let clean = pattern.trim_start_matches('/');
+            let mut full = format!("{}{}", self.base_url, clean);
+            if !query_params.is_empty() {
+                full.push('?');
+                full.push_str(&query_params.join("&"));
+            }
+            Ok(Value::String(full))
+        } else {
+            let file = legacy_file.trim_start_matches('/');
+            let mut query_params = Vec::new();
+
+            for (k, v) in args {
+                if k == "name" {
+                    continue;
+                }
+                let val_str = match v {
+                    Value::String(s) => s.clone(),
+                    Value::Number(n) => n.to_string(),
+                    Value::Bool(b) => b.to_string(),
+                    _ => String::new(),
+                };
+                if !val_str.is_empty() {
+                    query_params.push(format!("{}={}", k, val_str));
+                }
+            }
+
+            let mut full = format!("{}{}", self.base_url, file);
+            if !query_params.is_empty() {
+                full.push('?');
+                full.push_str(&query_params.join("&"));
+            }
+            Ok(Value::String(full))
+        }
     }
 }
 
@@ -192,5 +407,24 @@ impl Function for IconFunction {
         };
 
         Ok(Value::String(html))
+    }
+}
+
+struct OldFunction;
+
+impl Function for OldFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let default = args.get("default").and_then(|v| v.as_str()).unwrap_or("");
+        let val = args.get("value").and_then(|v| v.as_str()).unwrap_or(default);
+        Ok(Value::String(escape_html(val)))
+    }
+}
+
+struct CsrfTokenFunction;
+
+impl Function for CsrfTokenFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let token = args.get("token").and_then(|v| v.as_str()).unwrap_or("");
+        Ok(Value::String(token.to_string()))
     }
 }

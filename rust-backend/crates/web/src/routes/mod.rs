@@ -1,4 +1,5 @@
 pub mod account;
+pub mod admin_auth;
 pub mod api;
 pub mod auth;
 pub mod media;
@@ -7,16 +8,22 @@ pub mod storefront;
 
 use axum::{
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    middleware as axum_mw,
+    response::{Html, IntoResponse, Json, Response},
     routing::{get, post},
     Router,
 };
 use tower_http::services::ServeDir;
 
+use crate::middleware::{
+    availability_rate_limit_middleware, csrf_middleware, force_https_middleware,
+    maintenance_middleware, remember_me_middleware, security_headers_middleware,
+    telemetry_middleware, track_rate_limit_middleware,
+};
 use crate::state::AppState;
 
 pub fn build_router(state: AppState) -> Router {
-    Router::new()
+    let app_router = Router::new()
         // Storefront
         .route("/", get(storefront::home_handler))
         .route("/index.php", get(storefront::home_handler))
@@ -32,8 +39,18 @@ pub fn build_router(state: AppState) -> Router {
         .route("/checkout.php", get(storefront::checkout_get_handler).post(storefront::checkout_post_handler))
         .route("/order/confirmation", get(storefront::order_confirmation_handler))
         .route("/order_confirmation.php", get(storefront::order_confirmation_handler))
-        .route("/track", get(storefront::track_get_handler).post(storefront::track_post_handler))
-        .route("/track.php", get(storefront::track_get_handler).post(storefront::track_post_handler))
+        .route(
+            "/track",
+            get(storefront::track_get_handler)
+                .post(storefront::track_post_handler)
+                .layer(axum_mw::from_fn(track_rate_limit_middleware)),
+        )
+        .route(
+            "/track.php",
+            get(storefront::track_get_handler)
+                .post(storefront::track_post_handler)
+                .layer(axum_mw::from_fn(track_rate_limit_middleware)),
+        )
         .route("/page/:slug", get(storefront::page_handler))
         .route("/contact", get(storefront::contact_get_handler).post(storefront::contact_post_handler))
         .route("/contact.php", get(storefront::contact_get_handler).post(storefront::contact_post_handler))
@@ -55,6 +72,12 @@ pub fn build_router(state: AppState) -> Router {
         .route("/verify_email.php", get(auth::verify_email_handler))
         .route("/resend-verification", get(auth::resend_verification_get_handler).post(auth::resend_verification_post_handler))
         .route("/resend_verification.php", get(auth::resend_verification_get_handler).post(auth::resend_verification_post_handler))
+
+        // Admin Auth
+        .route("/admin/login", get(admin_auth::admin_login_get_handler).post(admin_auth::admin_login_post_handler))
+        .route("/admin/login.php", get(admin_auth::admin_login_get_handler).post(admin_auth::admin_login_post_handler))
+        .route("/admin/logout", get(admin_auth::admin_logout_handler).post(admin_auth::admin_logout_handler))
+        .route("/admin/logout.php", get(admin_auth::admin_logout_handler).post(admin_auth::admin_logout_handler))
 
         // Customer Account
         .route("/account", get(account::account_index_handler))
@@ -81,8 +104,14 @@ pub fn build_router(state: AppState) -> Router {
         // API
         .route("/api/cart_ajax.php", get(api::cart_ajax_get_handler).post(api::cart_ajax_post_handler))
         .route("/api/cart", get(api::cart_ajax_get_handler).post(api::cart_ajax_post_handler))
-        .route("/api/availability.php", get(api::availability_handler))
-        .route("/api/availability", get(api::availability_handler))
+        .route(
+            "/api/availability.php",
+            get(api::availability_handler).layer(axum_mw::from_fn(availability_rate_limit_middleware)),
+        )
+        .route(
+            "/api/availability",
+            get(api::availability_handler).layer(axum_mw::from_fn(availability_rate_limit_middleware)),
+        )
         .route("/api/availability_stream.php", get(api::availability_stream_handler))
         .route("/api/search_suggest.php", get(api::search_suggest_handler))
         .route("/api/search/suggest", get(api::search_suggest_handler))
@@ -98,8 +127,9 @@ pub fn build_router(state: AppState) -> Router {
         .route("/assets/uploads/*path", get(media::media_handler))
         .route("/uploads.php", get(media::media_handler))
 
-        // Metrics
+        // Metrics & Health
         .route("/metrics", get(metrics::metrics_handler))
+        .route("/health", get(health_handler))
 
         // Static files under assets/
         .nest_service("/assets", {
@@ -115,9 +145,42 @@ pub fn build_router(state: AppState) -> Router {
             ServeDir::new(assets_dir)
         })
 
-        // Error pages fallback
+        // Global Middlewares (applied from bottom to top execution order)
+        .layer(axum_mw::from_fn(csrf_middleware))
+        .layer(axum_mw::from_fn_with_state(state.clone(), remember_me_middleware))
+        .layer(axum_mw::from_fn_with_state(state.clone(), maintenance_middleware))
+        .layer(axum_mw::from_fn_with_state(state.clone(), force_https_middleware))
+        .layer(axum_mw::from_fn(security_headers_middleware))
+        .layer(axum_mw::from_fn_with_state(state.clone(), telemetry_middleware))
+
+        // Error pages fallback (404)
         .fallback(fallback_handler)
-        .with_state(state)
+        .with_state(state);
+
+    app_router
+}
+
+async fn health_handler(axum::extract::State(state): axum::extract::State<AppState>) -> Response {
+    let db_ok = sqlx::query("SELECT 1").execute(&state.db).await.is_ok();
+    if db_ok {
+        (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "status": "ok",
+                "db": "ok"
+            })),
+        )
+            .into_response()
+    } else {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({
+                "status": "error",
+                "db": "failed"
+            })),
+        )
+            .into_response()
+    }
 }
 
 async fn fallback_handler(axum::extract::State(state): axum::extract::State<AppState>) -> Response {

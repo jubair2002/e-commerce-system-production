@@ -78,10 +78,23 @@ pub fn customer_pre_hash(pw: &str) -> String {
     BASE64.encode(raw)
 }
 
-/// Customer password hash: bcrypt(customer_pre_hash(pw))
+/// Customer password hash: bcrypt(customer_pre_hash(pw)) with cost 10
 pub fn customer_password_hash(pw: &str) -> Result<String, bcrypt::BcryptError> {
     let pre_hashed = customer_pre_hash(pw);
-    bcrypt::hash(pre_hashed, 12)
+    bcrypt::hash(pre_hashed, 10)
+}
+
+/// Dummy bcrypt hash for timing attack defense on unknown email
+pub const DUMMY_CUSTOMER_HASH: &str = "$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012";
+
+/// Dummy password verify to eliminate timing discrepancies when customer is not found
+pub fn dummy_customer_password_verify(pw: &str) {
+    let _ = customer_password_verify(pw, DUMMY_CUSTOMER_HASH);
+}
+
+/// Dummy password verify to eliminate timing discrepancies when admin user is not found
+pub fn dummy_admin_password_verify(pw: &str) {
+    let _ = admin_password_verify(pw, DUMMY_CUSTOMER_HASH);
 }
 
 /// Customer password verify: verifies bcrypt against customer_pre_hash(pw)

@@ -1,18 +1,30 @@
 use axum::{
     extract::{Query, State},
+    http::{header, HeaderValue},
     response::{Html, IntoResponse, Redirect, Response},
     Form,
 };
+use chrono::Utc;
 use serde::Deserialize;
 use tower_sessions::Session;
 
 use crate::state::{build_base_context, AppState, SessionHelper};
 use common::crypto::customer_password_hash;
 use db::queries::customer_auth::{
-    build_customer_session, customer_authenticate, customer_register, token_consume, token_issue,
-    token_peek,
+    auth_rate_limited, build_customer_session, customer_authenticate, customer_register,
+    password_ok, token_consume, token_issue, token_peek, token_revoke_all,
 };
 use domain::models::customer::Customer;
+
+fn is_valid_bd_phone(phone: &str) -> bool {
+    let clean: String = phone.chars().filter(|c| c.is_ascii_digit()).collect();
+    if clean.len() == 11 && clean.starts_with("01") {
+        let third = clean.chars().nth(2).unwrap_or('0');
+        ('3'..='9').contains(&third)
+    } else {
+        clean.len() >= 7 && clean.len() <= 20
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct NextQuery {
@@ -42,6 +54,9 @@ pub struct RegisterForm {
     pub password_confirmation: Option<String>,
     pub agree_terms: Option<String>,
     pub marketing_opt_in: Option<String>,
+    pub website_url: Option<String>,
+    pub _form_rendered_at: Option<i64>,
+    pub _render_ts: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -106,8 +121,11 @@ pub async fn login_post_handler(
     let identifier = form.login.or(form.email).unwrap_or_default();
     let password = form.password.unwrap_or_default();
 
-    match customer_authenticate(&state.db, &identifier, &password, Some("127.0.0.1"), None).await {
+    match customer_authenticate(&state.db, &identifier, &password, Some("127.0.0.1")).await {
         Ok(customer) => {
+            // Regenerate session id to protect against fixation
+            SessionHelper::cycle_session_id(&session).await;
+
             let session_data = build_customer_session(&customer);
             SessionHelper::set_customer(&session, &session_data).await;
 
@@ -130,13 +148,44 @@ pub async fn login_post_handler(
             )
             .await;
 
-            if let Some(ref next_url) = form.next {
-                if next_url.starts_with('/') && !next_url.starts_with("//") {
-                    return Redirect::to(next_url).into_response();
+            let next_url = form
+                .next
+                .filter(|n| n.starts_with('/') && !n.starts_with("//"))
+                .unwrap_or_else(|| "/account".to_string());
+
+            let mut response = Redirect::to(&next_url).into_response();
+
+            // Set remember-me cookie if requested
+            let remember_checked = form
+                .remember
+                .map(|r| r == "1" || r.eq_ignore_ascii_case("on"))
+                .unwrap_or(false);
+
+            if remember_checked {
+                if let Ok(raw_token) = token_issue(
+                    &state.db,
+                    customer.id,
+                    "remember_me",
+                    30 * 86400,
+                    None,
+                    Some("127.0.0.1"),
+                    None,
+                )
+                .await
+                {
+                    let is_secure = state.config.site_url.starts_with("https://");
+                    let secure_flag = if is_secure { "; Secure" } else { "" };
+                    let cookie_val = format!(
+                        "customer_remember={}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax{}",
+                        raw_token, secure_flag
+                    );
+                    if let Ok(hv) = HeaderValue::from_str(&cookie_val) {
+                        response.headers_mut().append(header::SET_COOKIE, hv);
+                    }
                 }
             }
 
-            Redirect::to("/account").into_response()
+            response
         }
         Err(err_msg) => {
             SessionHelper::add_flash(&session, "danger", &err_msg).await;
@@ -156,7 +205,9 @@ pub async fn register_get_handler(
         return Err(Redirect::to("/account").into_response());
     }
 
-    let ctx = build_base_context(&state, &session, "register").await;
+    let mut ctx = build_base_context(&state, &session, "register").await;
+    ctx.insert("_form_rendered_at", &Utc::now().timestamp());
+
     state
         .tera
         .render("auth/register.html", &ctx)
@@ -180,23 +231,59 @@ pub async fn register_post_handler(
         return Redirect::to("/register").into_response();
     }
 
+    // 1. Honeypot check: website_url must be empty
+    if form.website_url.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false) {
+        SessionHelper::add_flash(&session, "info", "Check your email to finish creating your account.").await;
+        return Redirect::to("/login").into_response();
+    }
+
+    // 2. Time-trap check: form must take at least 2 seconds to complete
+    let rendered_ts = form._form_rendered_at.or(form._render_ts).unwrap_or(0);
+    if rendered_ts > 0 && (Utc::now().timestamp() - rendered_ts) < 2 {
+        SessionHelper::add_flash(&session, "info", "Check your email to finish creating your account.").await;
+        return Redirect::to("/login").into_response();
+    }
+
     let name = form.name.as_deref().unwrap_or("").trim();
-    let email = form.email.as_deref().unwrap_or("").trim();
-    let phone = form.phone.as_deref().map(|p| p.trim());
+    let email = form.email.as_deref().unwrap_or("").trim().to_lowercase();
+    let phone = form.phone.as_deref().map(|p| p.trim()).unwrap_or("");
     let password = form.password.as_deref().unwrap_or("");
     let confirm = form.password_confirmation.as_deref().unwrap_or("");
+
+    // Validate Bangladeshi phone if provided
+    if !phone.is_empty() && !is_valid_bd_phone(phone) {
+        SessionHelper::add_flash(&session, "danger", "Please enter a valid contact phone number.").await;
+        return Redirect::to("/register").into_response();
+    }
 
     if password != confirm {
         SessionHelper::add_flash(&session, "danger", "Passwords do not match.").await;
         return Redirect::to("/register").into_response();
     }
 
-    let opt_in = form.marketing_opt_in.is_some();
+    let min_len = state.settings.get_int("customer_password_min_length", 8) as usize;
+    if let Err(msg) = password_ok(password, &email, name, min_len) {
+        SessionHelper::add_flash(&session, "danger", &msg).await;
+        return Redirect::to("/register").into_response();
+    }
 
-    match customer_register(&state.db, name, email, phone, password, opt_in).await {
+    let opt_in = form.marketing_opt_in.is_some();
+    let require_verification = state.settings.get_bool("customer_require_email_verification", true);
+
+    match customer_register(
+        &state.db,
+        name,
+        &email,
+        if phone.is_empty() { None } else { Some(phone) },
+        password,
+        opt_in,
+        require_verification,
+        "127.0.0.1",
+    )
+    .await
+    {
         Ok(new_cust) => {
-            let verify_required = state.settings.get_or("customer_email_verification", "0") == "1";
-            if verify_required {
+            if require_verification {
                 if let Ok(token) = token_issue(
                     &state.db,
                     new_cust.id,
@@ -223,6 +310,7 @@ pub async fn register_post_handler(
                 }
                 SessionHelper::add_flash(&session, "info", "Account created! Please check your email to verify your address.").await;
             } else {
+                SessionHelper::cycle_session_id(&session).await;
                 let session_data = build_customer_session(&new_cust);
                 SessionHelper::set_customer(&session, &session_data).await;
                 SessionHelper::add_flash(&session, "success", "Welcome! Your account has been created.").await;
@@ -245,8 +333,14 @@ pub async fn logout_handler(
     session: Session,
 ) -> Response {
     SessionHelper::remove_customer(&session).await;
+    SessionHelper::cycle_session_id(&session).await;
     SessionHelper::add_flash(&session, "info", "You have been successfully signed out.").await;
-    Redirect::to("/").into_response()
+
+    let mut response = Redirect::to("/").into_response();
+    if let Ok(hv) = HeaderValue::from_str("customer_remember=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax") {
+        response.headers_mut().append(header::SET_COOKIE, hv);
+    }
+    response
 }
 
 // -------------------------------------------------------------
@@ -281,7 +375,7 @@ pub async fn forgot_password_post_handler(
     }
 
     let email = form.email.as_deref().unwrap_or("").trim().to_lowercase();
-    if !email.is_empty() {
+    if !email.is_empty() && !auth_rate_limited(&state.db, "forgot", &email, "127.0.0.1").await {
         let cust: Option<Customer> = sqlx::query_as(
             "SELECT * FROM customers WHERE email = ? AND deleted_at IS NULL LIMIT 1",
         )
@@ -291,32 +385,34 @@ pub async fn forgot_password_post_handler(
         .unwrap_or(None);
 
         if let Some(c) = cust {
+            // 60-min TTL
+            let ttl_sec = state.settings.get_int("customer_password_reset_minutes", 60) * 60;
             if let Ok(token) = token_issue(
                 &state.db,
                 c.id,
                 "password_reset",
-                7200, // 2 hours
+                ttl_sec,
                 None,
                 Some("127.0.0.1"),
                 None,
             )
             .await
-            {
-                let reset_url = format!("{}/reset-password?token={}", state.config.app_url.trim_end_matches('/'), token);
-                let site_name = state.settings.get_or("site_name", "Jinish Potro");
-                let _ = state.mailer.queue_email(
-                    &c.email,
-                    Some(&c.name),
-                    &format!("Password Reset Request - {}", site_name),
-                    &format!(
-                        "<p>Hi {},</p><p>You recently requested to reset your password. Click the link below to set a new password:</p><p><a href=\"{}\">{}</a></p><p>This link expires in 2 hours.</p>",
-                        c.name, reset_url, reset_url
-                    ),
-                    false,
-                ).await;
+                {
+                    let reset_url = format!("{}/reset-password?token={}", state.config.app_url.trim_end_matches('/'), token);
+                    let site_name = state.settings.get_or("site_name", "Jinish Potro");
+                    let _ = state.mailer.queue_email(
+                        &c.email,
+                        Some(&c.name),
+                        &format!("Password Reset Request - {}", site_name),
+                        &format!(
+                            "<p>Hi {},</p><p>You recently requested to reset your password. Click the link below to set a new password:</p><p><a href=\"{}\">{}</a></p><p>This link expires in 60 minutes.</p>",
+                            c.name, reset_url, reset_url
+                        ),
+                        false,
+                    ).await;
+                }
             }
         }
-    }
 
     // Always show same message to prevent email enumeration
     SessionHelper::add_flash(
@@ -340,7 +436,7 @@ pub async fn reset_password_get_handler(
     let mut ctx = build_base_context(&state, &session, "reset_password").await;
     let token = query.token.unwrap_or_default();
 
-    let peek_res = token_peek(&state.db, &token, "password_reset").await.unwrap_or(None);
+    let peek_res = token_peek(&state.db, "password_reset", &token).await.unwrap_or(None);
     if peek_res.is_none() {
         SessionHelper::add_flash(&session, "danger", "This password reset link is invalid or has expired.").await;
         return Err(Redirect::to("/forgot-password").into_response());
@@ -384,7 +480,7 @@ pub async fn reset_password_post_handler(
         return Redirect::to(&format!("/reset-password?token={}", token)).into_response();
     }
 
-    let consumed = token_consume(&state.db, token, "password_reset").await.unwrap_or(None);
+    let consumed = token_consume(&state.db, "password_reset", token).await.unwrap_or(None);
     let token_record = match consumed {
         Some(t) => t,
         None => {
@@ -409,6 +505,30 @@ pub async fn reset_password_post_handler(
     .execute(&state.db)
     .await;
 
+    // Revoke all tokens for this customer (sessions and remember-me tokens)
+    let _ = token_revoke_all(&state.db, token_record.customer_id, None).await;
+
+    // Send password changed notification email
+    let cust: Option<Customer> = sqlx::query_as("SELECT * FROM customers WHERE id = ? LIMIT 1")
+        .bind(token_record.customer_id)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
+
+    if let Some(c) = cust {
+        let site_name = state.settings.get_or("site_name", "Jinish Potro");
+        let _ = state.mailer.queue_email(
+            &c.email,
+            Some(&c.name),
+            &format!("Security Alert: Password Changed - {}", site_name),
+            &format!(
+                "<p>Hi {},</p><p>Your account password was just changed. If you did not make this change, please contact us immediately.</p>",
+                c.name
+            ),
+            false,
+        ).await;
+    }
+
     SessionHelper::add_flash(&session, "success", "Your password has been reset successfully. Please sign in.").await;
     Redirect::to("/login").into_response()
 }
@@ -423,9 +543,9 @@ pub async fn verify_email_handler(
 ) -> Response {
     let token = query.token.unwrap_or_default();
 
-    if let Ok(Some(tok)) = token_consume(&state.db, &token, "verify_email").await {
+    if let Ok(Some(tok)) = token_consume(&state.db, "verify_email", &token).await {
         let _ = sqlx::query(
-            "UPDATE customers SET email_verified_at = NOW(), updated_at = NOW() WHERE id = ?",
+            "UPDATE customers SET email_verified_at = NOW(), status = 'active', updated_at = NOW() WHERE id = ?",
         )
         .bind(tok.customer_id)
         .execute(&state.db)
@@ -468,7 +588,7 @@ pub async fn resend_verification_post_handler(
     }
 
     let email = form.email.as_deref().unwrap_or("").trim().to_lowercase();
-    if !email.is_empty() {
+    if !email.is_empty() && !auth_rate_limited(&state.db, "resend", &email, "127.0.0.1").await {
         let cust: Option<Customer> = sqlx::query_as(
             "SELECT * FROM customers WHERE email = ? AND deleted_at IS NULL LIMIT 1",
         )
@@ -477,35 +597,35 @@ pub async fn resend_verification_post_handler(
         .await
         .unwrap_or(None);
 
-        if let Some(c) = cust {
-            if c.email_verified_at.is_none() {
-                if let Ok(token) = token_issue(
-                    &state.db,
-                    c.id,
-                    "verify_email",
-                    86400 * 3,
-                    None,
-                    Some("127.0.0.1"),
-                    None,
-                )
-                .await
-                {
-                    let verify_url = format!("{}/verify-email?token={}", state.config.app_url.trim_end_matches('/'), token);
-                    let site_name = state.settings.get_or("site_name", "Jinish Potro");
-                    let _ = state.mailer.queue_email(
-                        &c.email,
-                        Some(&c.name),
-                        &format!("Verify your email - {}", site_name),
-                        &format!(
-                            "<p>Hi {},</p><p>Please verify your email address by clicking the link below:</p><p><a href=\"{}\">{}</a></p>",
-                            c.name, verify_url, verify_url
-                        ),
-                        false,
-                    ).await;
+            if let Some(c) = cust {
+                if c.email_verified_at.is_none() {
+                    if let Ok(token) = token_issue(
+                        &state.db,
+                        c.id,
+                        "verify_email",
+                        86400 * 3,
+                        None,
+                        Some("127.0.0.1"),
+                        None,
+                    )
+                    .await
+                    {
+                        let verify_url = format!("{}/verify-email?token={}", state.config.app_url.trim_end_matches('/'), token);
+                        let site_name = state.settings.get_or("site_name", "Jinish Potro");
+                        let _ = state.mailer.queue_email(
+                            &c.email,
+                            Some(&c.name),
+                            &format!("Verify your email - {}", site_name),
+                            &format!(
+                                "<p>Hi {},</p><p>Please verify your email address by clicking the link below:</p><p><a href=\"{}\">{}</a></p>",
+                                c.name, verify_url, verify_url
+                            ),
+                            false,
+                        ).await;
+                    }
                 }
             }
         }
-    }
 
     SessionHelper::add_flash(&session, "info", "If an unverified account exists with that email, a verification link has been sent.").await;
     Redirect::to("/login").into_response()
