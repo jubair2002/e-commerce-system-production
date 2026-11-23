@@ -71,9 +71,9 @@ pub struct OrderListItem {
     pub customer_id: Option<u64>,
     pub customer_name: String,
     pub customer_email: String,
-    pub customer_phone: String,
+    pub customer_phone: Option<String>,
     pub shipping_address: String,
-    pub shipping_city: String,
+    pub shipping_city: Option<String>,
     pub subtotal: Decimal,
     pub discount_total: Decimal,
     pub shipping_fee: Decimal,
@@ -85,20 +85,24 @@ pub struct OrderListItem {
     pub courier: Option<String>,
     pub tracking_number: Option<String>,
     pub notes: Option<String>,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
 pub struct OrderDetailRow {
     pub id: u64,
     pub order_number: String,
     pub customer_id: Option<u64>,
     pub customer_name: String,
     pub customer_email: String,
-    pub customer_phone: String,
+    pub customer_phone: Option<String>,
     pub shipping_address: String,
-    pub shipping_city: String,
+    pub shipping_city: Option<String>,
+    pub shipping_zip: Option<String>,
+    pub shipping_country: Option<String>,
+    #[sqlx(default)]
     pub shipping_district: Option<String>,
+    #[sqlx(default)]
     pub shipping_postal_code: Option<String>,
     pub subtotal: Decimal,
     pub discount_total: Decimal,
@@ -112,21 +116,31 @@ pub struct OrderDetailRow {
     pub tracking_number: Option<String>,
     pub notes: Option<String>,
     pub stock_restored: i8,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
 pub struct OrderItemRow {
     pub id: u64,
     pub order_id: u64,
-    pub product_id: u64,
+    pub product_id: Option<u64>,
     pub variant_id: Option<u64>,
     pub product_name: String,
-    pub variant_name: Option<String>,
-    pub sku: Option<String>,
-    pub price: Decimal,
+    pub product_sku: Option<String>,
+    pub variant_sku: Option<String>,
+    pub variant_label: Option<String>,
+    pub product_image: Option<String>,
+    pub unit_price: Decimal,
     pub quantity: i32,
+    pub line_total: Decimal,
+    #[sqlx(default)]
+    pub variant_name: Option<String>,
+    #[sqlx(default)]
+    pub sku: Option<String>,
+    #[sqlx(default)]
+    pub price: Decimal,
+    #[sqlx(default)]
     pub subtotal: Decimal,
 }
 
@@ -247,12 +261,12 @@ pub async fn admin_orders_get_handler(
             for r in rows {
                 let _ = writer.write_record(&[
                     r.order_number,
-                    r.created_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    r.created_at.map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string()).unwrap_or_default(),
                     r.customer_name,
-                    r.customer_phone,
+                    r.customer_phone.unwrap_or_default(),
                     r.customer_email,
                     r.shipping_address,
-                    r.shipping_city,
+                    r.shipping_city.unwrap_or_default(),
                     r.subtotal.to_string(),
                     r.discount_total.to_string(),
                     r.shipping_fee.to_string(),
@@ -572,12 +586,7 @@ pub async fn admin_order_view_get_handler(
 
     let oid = query.id.unwrap_or(0);
     let order_opt = sqlx::query_as::<_, OrderDetailRow>(
-        "SELECT id, order_number, customer_id, customer_name, customer_email, customer_phone,
-                shipping_address, shipping_city, shipping_district, shipping_postal_code,
-                subtotal, discount_total, shipping_fee, cod_fee, total,
-                payment_method, payment_status, status, courier, tracking_number, notes,
-                stock_restored, created_at, updated_at
-         FROM orders WHERE id = ? LIMIT 1"
+        "SELECT * FROM orders WHERE id = ? LIMIT 1"
     )
     .bind(oid)
     .fetch_optional(&state.db)
@@ -585,22 +594,30 @@ pub async fn admin_order_view_get_handler(
     .unwrap_or(None);
 
     let order = match order_opt {
-        Some(o) => o,
+        Some(mut o) => {
+            o.shipping_postal_code = o.shipping_zip.clone();
+            o
+        }
         None => {
             SessionHelper::add_flash(&session, "warning", "Order not found.").await;
             return Redirect::to("/admin/orders.php").into_response();
         }
     };
 
-    let items = sqlx::query_as::<_, OrderItemRow>(
-        "SELECT id, order_id, product_id, variant_id, product_name, variant_name, sku,
-                price, quantity, subtotal
-         FROM order_items WHERE order_id = ? ORDER BY id ASC"
+    let mut items = sqlx::query_as::<_, OrderItemRow>(
+        "SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC"
     )
     .bind(oid)
     .fetch_all(&state.db)
     .await
     .unwrap_or_default();
+
+    for it in &mut items {
+        it.variant_name = it.variant_label.clone();
+        it.sku = it.variant_sku.clone().or_else(|| it.product_sku.clone());
+        it.price = it.unit_price;
+        it.subtotal = it.line_total;
+    }
 
     let timeline = sqlx::query_as::<_, OrderHistoryRow>(
         "SELECT h.id, h.order_id, h.status, h.note, h.user_id, u.name as admin_name, h.created_at
@@ -656,12 +673,7 @@ pub async fn admin_order_view_post_handler(
 
     let oid = query.id.unwrap_or(0);
     let order_opt = sqlx::query_as::<_, OrderDetailRow>(
-        "SELECT id, order_number, customer_id, customer_name, customer_email, customer_phone,
-                shipping_address, shipping_city, shipping_district, shipping_postal_code,
-                subtotal, discount_total, shipping_fee, cod_fee, total,
-                payment_method, payment_status, status, courier, tracking_number, notes,
-                stock_restored, created_at, updated_at
-         FROM orders WHERE id = ? LIMIT 1"
+        "SELECT * FROM orders WHERE id = ? LIMIT 1"
     )
     .bind(oid)
     .fetch_optional(&state.db)
@@ -833,12 +845,7 @@ pub async fn admin_order_print_handler(
 
     let order_opt = if id > 0 {
         sqlx::query_as::<_, OrderDetailRow>(
-            "SELECT id, order_number, customer_id, customer_name, customer_email, customer_phone,
-                    shipping_address, shipping_city, shipping_district, shipping_postal_code,
-                    subtotal, discount_total, shipping_fee, cod_fee, total,
-                    payment_method, payment_status, status, courier, tracking_number, notes,
-                    stock_restored, created_at, updated_at
-             FROM orders WHERE id = ? LIMIT 1"
+            "SELECT * FROM orders WHERE id = ? LIMIT 1"
         )
         .bind(id)
         .fetch_optional(&state.db)
@@ -846,12 +853,7 @@ pub async fn admin_order_print_handler(
         .unwrap_or(None)
     } else if !order_num.is_empty() {
         sqlx::query_as::<_, OrderDetailRow>(
-            "SELECT id, order_number, customer_id, customer_name, customer_email, customer_phone,
-                    shipping_address, shipping_city, shipping_district, shipping_postal_code,
-                    subtotal, discount_total, shipping_fee, cod_fee, total,
-                    payment_method, payment_status, status, courier, tracking_number, notes,
-                    stock_restored, created_at, updated_at
-             FROM orders WHERE order_number = ? LIMIT 1"
+            "SELECT * FROM orders WHERE order_number = ? LIMIT 1"
         )
         .bind(&order_num)
         .fetch_optional(&state.db)
@@ -862,17 +864,26 @@ pub async fn admin_order_print_handler(
     };
 
     let order = match order_opt {
-        Some(o) => o,
+        Some(mut o) => {
+            o.shipping_postal_code = o.shipping_zip.clone();
+            o
+        }
         None => {
             return (
                 StatusCode::NOT_FOUND,
                 Html(r#"<!DOCTYPE html>
-<html>
-<head><title>Order Not Found</title></head>
-<body style="font-family:sans-serif;text-align:center;padding:50px;">
-  <h2>Order Not Found</h2>
-  <p>The requested packing slip or invoice cannot be found.</p>
-  <a href="/admin/orders.php">Back to Orders</a>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Order Not Found</title>
+  <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
+</head>
+<body class="p-5 text-center bg-light">
+  <div class="card p-4 mx-auto shadow-sm" style="max-width: 450px;">
+    <h4 class="text-danger mb-2">Order Not Found</h4>
+    <p class="text-muted mb-4">The requested packing slip or invoice cannot be found.</p>
+    <a href="/admin/orders.php" class="btn btn-primary">Back to Orders</a>
+  </div>
 </body>
 </html>"#),
             )
@@ -880,15 +891,20 @@ pub async fn admin_order_print_handler(
         }
     };
 
-    let items = sqlx::query_as::<_, OrderItemRow>(
-        "SELECT id, order_id, product_id, variant_id, product_name, variant_name, sku,
-                price, quantity, subtotal
-         FROM order_items WHERE order_id = ? ORDER BY id ASC"
+    let mut items = sqlx::query_as::<_, OrderItemRow>(
+        "SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC"
     )
     .bind(order.id)
     .fetch_all(&state.db)
     .await
     .unwrap_or_default();
+
+    for it in &mut items {
+        it.variant_name = it.variant_label.clone();
+        it.sku = it.variant_sku.clone().or_else(|| it.product_sku.clone());
+        it.price = it.unit_price;
+        it.subtotal = it.line_total;
+    }
 
     let mut ctx = build_admin_context(&state, &session, "order_print.php", &format!("Invoice - {}", order.order_number)).await;
     ctx.insert("order", &order);
