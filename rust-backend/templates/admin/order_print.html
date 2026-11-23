@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice - {{ order.order_number }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; background: #fff; }
+    .invoice-card { max-width: 800px; margin: 30px auto; padding: 40px; border: 1px solid #e5e7eb; border-radius: 8px; }
+    @media print {
+      body { margin: 0; padding: 0; }
+      .invoice-card { border: none; padding: 0; max-width: 100%; margin: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="invoice-card">
+    <div class="d-flex justify-content-between align-items-start pb-4 border-bottom mb-4">
+      <div>
+        <h2 class="fw-bold text-primary mb-1">{{ site_name }}</h2>
+        <p class="text-muted small mb-0">Dhaka, Bangladesh</p>
+      </div>
+      <div class="text-end">
+        <h4 class="fw-bold mb-1">INVOICE</h4>
+        <div class="text-muted small">Order #: <strong>{{ order.order_number }}</strong></div>
+        <div class="text-muted small">Date: {{ order.created_at }}</div>
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-6">
+        <h6 class="text-muted text-uppercase small fw-bold">Billed To:</h6>
+        <div class="fw-bold">{{ order.customer_name }}</div>
+        <div class="small">{{ order.customer_phone }}</div>
+        <div class="small text-muted">{{ order.customer_email }}</div>
+      </div>
+      <div class="col-6 text-end">
+        <h6 class="text-muted text-uppercase small fw-bold">Shipping Destination:</h6>
+        <div class="small">{{ order.shipping_address }}</div>
+        <div class="small">{{ order.shipping_city }}{% if order.shipping_district %}, {{ order.shipping_district }}{% endif %}</div>
+        <div class="small mt-1">Payment Method: <span class="badge text-bg-light border text-uppercase">{{ order.payment_method }}</span></div>
+      </div>
+    </div>
+
+    <div class="table-responsive mb-4">
+      <table class="table align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Item</th>
+            <th class="text-center">SKU</th>
+            <th class="text-end">Price</th>
+            <th class="text-center">Qty</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ it.product_name }}</div>
+                {% if it.variant_name %}<small class="text-muted">{{ it.variant_name }}</small>{% endif %}
+              </td>
+              <td class="text-center text-muted small"><code>{{ it.sku | default(value='—') }}</code></td>
+              <td class="text-end">৳{{ it.price }}</td>
+              <td class="text-center">{{ it.quantity }}</td>
+              <td class="text-end fw-semibold">৳{{ it.subtotal }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4" class="text-end text-muted">Subtotal:</td><td class="text-end">৳{{ order.subtotal }}</td></tr>
+          {% if order.discount_total > 0 %}
+            <tr><td colspan="4" class="text-end text-success">Discount:</td><td class="text-end text-success">-৳{{ order.discount_total }}</td></tr>
+          {% endif %}
+          <tr><td colspan="4" class="text-end text-muted">Shipping Fee:</td><td class="text-end">৳{{ order.shipping_fee }}</td></tr>
+          {% if order.cod_fee > 0 %}
+            <tr><td colspan="4" class="text-end text-muted">Cash on Delivery Fee:</td><td class="text-end">৳{{ order.cod_fee }}</td></tr>
+          {% endif %}
+          <tr class="fw-bold fs-5"><td colspan="4" class="text-end">Total Due:</td><td class="text-end text-primary">৳{{ order.total }}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="text-center text-muted small border-top pt-3">
+      Thank you for shopping with {{ site_name }}!
+    </div>
+
+    <div class="no-print text-center mt-4">
+      <button onclick="window.print()" class="btn btn-primary me-2"><i class="bi bi-printer me-1"></i> Print Invoice</button>
+      <button onclick="window.close()" class="btn btn-outline-secondary">Close</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,196 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4 pb-2 border-bottom">
+  <div>
+    <div class="mb-2">
+      <a href="{{ admin_url(path='users.php') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+        <span>Back to Users &amp; Permissions</span>
+      </a>
+    </div>
+    <h3 class="mb-1">{% if id > 0 %}Edit User: {{ user.name }}{% else %}Create New User{% endif %}</h3>
+    <p class="text-muted small mb-0">
+      Configure user identity, assigned role preset, and fine-grained module permissions.
+    </p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="adminUserForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="id" value="{{ id }}">
+
+  <div class="row g-4">
+    <!-- Main Column: Account Details & Permissions Matrix -->
+    <div class="col-lg-8">
+
+      <!-- Section 1: Basic Information -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-person-lines-fill text-primary"></i>
+            <span>Account Details</span>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="name" class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>
+              <input type="text"
+                     name="name"
+                     id="name"
+                     class="form-control"
+                     required
+                     maxlength="100"
+                     placeholder="e.g. Jane Doe"
+                     value="{% if user %}{{ user.name }}{% endif %}">
+            </div>
+
+            <div class="col-md-6">
+              <label for="email" class="form-label fw-medium">Email Address <span class="text-danger">*</span></label>
+              <input type="email"
+                     name="email"
+                     id="email"
+                     class="form-control"
+                     required
+                     maxlength="150"
+                     placeholder="e.g. staff@example.com"
+                     value="{% if user %}{{ user.email }}{% endif %}">
+            </div>
+
+            <div class="col-md-6">
+              <label for="phone" class="form-label fw-medium">Phone Number</label>
+              <input type="text"
+                     name="phone"
+                     id="phone"
+                     class="form-control"
+                     maxlength="30"
+                     placeholder="e.g. +880 1700 000000"
+                     value="{% if user and user.phone %}{{ user.phone }}{% endif %}">
+            </div>
+
+            <div class="col-md-6">
+              <label for="status" class="form-label fw-medium">Account Status</label>
+              <select name="status" id="status" class="form-select">
+                <option value="active" {% if user and user.status == 'active' %}selected{% endif %}>Active (Can log in)</option>
+                <option value="inactive" {% if user and user.status == 'inactive' %}selected{% endif %}>Inactive (Access suspended)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Security & Credentials -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-key-fill text-primary"></i>
+            <span>Security &amp; Password</span>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="password" class="form-label fw-medium">
+                {% if id > 0 %}New Password{% else %}Password <span class="text-danger">*</span>{% endif %}
+              </label>
+              <input type="password"
+                     name="password"
+                     id="password"
+                     class="form-control"
+                     {% if id == 0 %}required{% endif %}
+                     minlength="6"
+                     placeholder="{% if id > 0 %}Leave blank to keep unchanged{% else %}Minimum 6 characters{% endif %}"
+                     autocomplete="new-password">
+              {% if id > 0 %}
+                <div class="form-text text-muted">Leave empty if you don't want to change the password.</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="confirm_password" class="form-label fw-medium">
+                {% if id > 0 %}Confirm New Password{% else %}Confirm Password <span class="text-danger">*</span>{% endif %}
+              </label>
+              <input type="password"
+                     name="confirm_password"
+                     id="confirm_password"
+                     class="form-control"
+                     {% if id == 0 %}required{% endif %}
+                     minlength="6"
+                     placeholder="Re-enter password"
+                     autocomplete="new-password">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Role & Granular Permission Matrix -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check text-primary"></i>
+            <span>Role &amp; Permissions</span>
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <div class="mb-4">
+            <label for="roleSelector" class="form-label fw-semibold">Administrative Role</label>
+            <select name="role" id="roleSelector" class="form-select form-select-lg">
+              <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Super Administrator (Full Wildcard Access)</option>
+              <option value="manager" {% if user and user.role == 'manager' %}selected{% endif %}>Store Manager (Orders, Catalog, Customers)</option>
+              <option value="editor" {% if not user or user.role == 'editor' %}selected{% endif %}>Content Editor (Catalog, Reviews, Pages)</option>
+              <option value="support" {% if user and user.role == 'support' %}selected{% endif %}>Customer Support (Orders, Messages)</option>
+              <option value="analyst" {% if user and user.role == 'analyst' %}selected{% endif %}>Analyst (Analytics, Reports)</option>
+              <option value="custom" {% if user and user.role == 'custom' %}selected{% endif %}>Custom Role</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex align-items-center gap-2 mb-5">
+        <button type="submit" class="btn btn-primary px-4 py-2">
+          <i class="bi bi-check-lg me-1"></i> {% if id > 0 %}Update User{% else %}Create User{% endif %}
+        </button>
+        <a href="{{ admin_url(path='users.php') }}" class="btn btn-outline-secondary px-4 py-2">
+          Cancel
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar Column: Avatar -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-image text-primary"></i>
+            <span>Profile Photo</span>
+          </h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <img src="{% if user %}{{ avatar_url(avatar=user.avatar, name=user.name) }}{% else %}{{ avatar_url(avatar='', name='User') }}{% endif %}"
+                 id="avatarPreview"
+                 class="rounded-circle border shadow-sm"
+                 width="110" height="110"
+                 style="object-fit: cover;"
+                 alt="Avatar Preview">
+          </div>
+          <div class="mb-2">
+            <input type="file"
+                   name="avatar"
+                   id="avatarInput"
+                   class="form-control form-control-sm"
+                   accept="image/png, image/jpeg, image/webp, image/gif">
+          </div>
+          <div class="form-text text-muted small">
+            Recommended: Square JPG, PNG or WEBP (max 2MB).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

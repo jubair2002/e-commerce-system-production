@@ -1,0 +1,60 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4 pb-2 border-bottom">
+  <div>
+    <div class="mb-2">
+      <a href="{{ admin_url(path='products.php') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i>
+        <span>Back to Products</span>
+      </a>
+    </div>
+    <h3 class="mb-1">Bulk Product CSV Import</h3>
+    <p class="text-muted small mb-0">
+      Upload a CSV spreadsheet to batch-generate and update products in your store catalog.
+    </p>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <a href="{{ admin_url(path='product_import.php?action=sample_csv') }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 shadow-sm">
+      <i class="bi bi-download"></i>
+      <span>Download Sample CSV</span>
+    </a>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Upload CSV File</h5>
+        <form method="post" enctype="multipart/form-data">
+          {{ csrf_token() }}
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Select CSV Spreadsheet <span class="text-danger">*</span></label>
+            <input type="file" name="csv_file" class="form-control form-control-lg" accept=".csv,text/csv" required>
+            <div class="form-text mt-2">
+              Maximum file size: 10 MB. Delimiters (comma <code>,</code>, semicolon <code>;</code>, tab <code>\t</code>) and UTF-8 BOM are automatically detected.
+            </div>
+          </div>
+
+          <div class="card bg-light border-0 mb-4">
+            <div class="card-body">
+              <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-1"></i> Supported Column Headers</h6>
+              <div class="small text-muted">
+                <code>name</code>, <code>sku</code>, <code>product_type</code>, <code>category</code>, <code>price</code>, <code>sale_price</code>, <code>stock</code>, <code>color</code>, <code>size</code>, <code>model</code>, <code>short_description</code>, <code>description</code>, <code>brand</code>, <code>tags</code>, <code>status</code>, <code>featured</code>.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-cloud-arrow-up me-1"></i> Start Import Process
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-amber"><i class="bi bi-envelope"></i></div>
+      <div>
+        <p class="stat-label">New Messages</p>
+        <p class="stat-value">{{ count_new }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-blue"><i class="bi bi-envelope-open"></i></div>
+      <div>
+        <p class="stat-label">Read Messages</p>
+        <p class="stat-value">{{ count_read }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-emerald"><i class="bi bi-reply"></i></div>
+      <div>
+        <p class="stat-label">Replied</p>
+        <p class="stat-value">{{ count_replied }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-indigo"><i class="bi bi-inbox"></i></div>
+      <div>
+        <p class="stat-label">Total Messages</p>
+        <p class="stat-value">{{ count_total }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-6">
+        <label class="form-label small text-muted">Search</label>
+        <input type="text" name="q" class="form-control" value="{{ search | default(value='') }}" placeholder="Name, email, subject, message or order #...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="all">All statuses</option>
+          <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+          <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Read</option>
+          <option value="replied" {% if status_filter == 'replied' %}selected{% endif %}>Replied</option>
+          <option value="spam" {% if status_filter == 'spam' %}selected{% endif %}>Spam</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Messages Table -->
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Sender</th>
+            <th>Subject & Message</th>
+            <th>Order #</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in messages %}
+            <tr>
+              <td>
+                <div class="fw-bold">{{ m.name }}</div>
+                <div class="small text-muted">{{ m.email }}</div>
+                {% if m.phone %}<div class="small text-muted">{{ m.phone }}</div>{% endif %}
+              </td>
+              <td>
+                <div class="fw-semibold">{{ m.subject | default(value='(No Subject)') }}</div>
+                <p class="small text-secondary mb-0" style="max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  {{ m.message }}
+                </p>
+              </td>
+              <td>
+                {% if m.order_number %}
+                  <code>{{ m.order_number }}</code>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td><span class="badge status-{{ m.status }}">{{ m.status }}</span></td>
+              <td class="small text-muted">{{ m.created_at }}</td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  {% if m.status == 'new' %}
+                    <button type="button" class="btn btn-outline-success" onclick="messageAction('set_status', '{{ m.id }}', 'read')" title="Mark read"><i class="bi bi-check2"></i></button>
+                  {% endif %}
+                  <a href="mailto:{{ m.email }}?subject=Re: {{ m.subject | default(value='Contact Message') }}" class="btn btn-outline-primary" title="Reply via Email"><i class="bi bi-reply"></i></a>
+                  <button type="button" class="btn btn-outline-danger" onclick="messageAction('delete', '{{ m.id }}', '')" title="Delete"><i class="bi bi-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if messages | length == 0 %}
+            <tr><td colspan="6" class="text-center py-4 text-muted">No messages found.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form method="post" id="msg_action_form" style="display:none;">
+  {{ csrf_token() }}
+  <input type="hidden" name="action" id="maf_action">
+  <input type="hidden" name="id" id="maf_id">
+  <input type="hidden" name="status" id="maf_status">
+</form>
+
+<script>
+function messageAction(act, id, st) {
+  document.getElementById('maf_action').value = act;
+  document.getElementById('maf_id').value = id;
+  document.getElementById('maf_status').value = st;
+  document.getElementById('msg_action_form').submit();
+}
+</script>
+{% endblock %}

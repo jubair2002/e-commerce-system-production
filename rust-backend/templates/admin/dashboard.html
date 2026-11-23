@@ -1,0 +1,683 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<style>
+/* Dashboard Unified Layout */
+.dash-welcome-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
+  margin-bottom: 1.5rem;
+}
+.dash-welcome-banner::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 70%);
+  pointer-events: none;
+}
+.dash-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+}
+.dash-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+}
+.dash-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+  border-color: #cbd5e1;
+}
+.dash-kpi-card {
+  height: 154px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.dash-kpi-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dash-kpi-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.dash-kpi-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+  margin: 0;
+}
+.dash-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.dash-kpi-footer {
+  padding-top: 0.65rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.dash-sub-card {
+  height: 84px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dash-sub-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+.dash-card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+.dash-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash-upper-card {
+  height: 410px;
+  display: flex;
+  flex-direction: column;
+}
+.dash-upper-body {
+  flex: 1 1 auto;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.dash-lower-card {
+  height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+.dash-lower-body {
+  flex: 1 1 auto;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  position: relative;
+}
+.dash-lower-body::-webkit-scrollbar {
+  width: 5px;
+}
+.dash-lower-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dash-lower-body::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+.dash-activity-timeline {
+  display: flex;
+  flex-direction: column;
+}
+.dash-activity-item {
+  position: relative;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed #f1f5f9;
+}
+.dash-activity-item:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+.dash-activity-icon-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.dash-activity-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.dash-activity-title {
+  color: #334155;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.dash-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.status-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+  display: inline-block;
+}
+.chart-toggle-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chart-toggle-pill.active {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+}
+</style>
+
+<!-- 1. Hero Welcome & Shortcuts -->
+<div class="dash-welcome-banner d-flex flex-wrap align-items-center justify-content-between gap-3">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <span class="dash-live-badge">
+        <span class="dash-live-dot"></span> Live Store Operations
+      </span>
+      <span class="text-white-50 small">&middot; 2026</span>
+    </div>
+    <h2 class="h3 fw-bold mb-1 text-white">Welcome back, {{ me.name }} 👋</h2>
+    <p class="text-white-50 small mb-0">Here is your executive store performance overview and operational health.</p>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <a href="{{ admin_url(path='product_form.php') }}" class="btn btn-primary px-3 shadow-sm rounded-pill fw-medium">
+      <i class="bi bi-plus-lg me-1"></i> Add Product
+    </a>
+    <a href="{{ admin_url(path='orders.php') }}" class="btn btn-light px-3 shadow-sm rounded-pill text-dark fw-medium">
+      <i class="bi bi-receipt me-1"></i> Orders
+    </a>
+    <a href="{{ url(path='') }}" target="_blank" class="btn btn-outline-light px-3 rounded-pill fw-medium">
+      <i class="bi bi-box-arrow-up-right me-1"></i> Storefront
+    </a>
+  </div>
+</div>
+
+<!-- 2. Row 1: Primary 4 KPI Cards -->
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-3">
+  <div class="col">
+    <div class="dash-card dash-kpi-card">
+      <div class="dash-kpi-header">
+        <div>
+          <div class="dash-kpi-title">Total Revenue</div>
+          <h3 class="dash-kpi-value">{{ stats.total_revenue | money }}</h3>
+        </div>
+        <div class="dash-kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+      </div>
+      <div class="dash-kpi-footer">
+        <span class="text-muted">Today's Sales</span>
+        <span class="fw-bold text-success">+{{ stats.today_revenue | money }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='orders.php') }}" class="text-decoration-none">
+      <div class="dash-card dash-kpi-card">
+        <div class="dash-kpi-header">
+          <div>
+            <div class="dash-kpi-title">Total Orders</div>
+            <h3 class="dash-kpi-value">{{ stats.total_orders }}</h3>
+          </div>
+          <div class="dash-kpi-icon" style="background: rgba(79, 70, 229, 0.12); color: #4f46e5;">
+            <i class="bi bi-bag-check"></i>
+          </div>
+        </div>
+        <div class="dash-kpi-footer">
+          <span class="text-muted">Pending Orders</span>
+          <span class="badge rounded-pill bg-warning text-dark px-2 py-1">{{ stats.pending_orders }} pending</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='products.php') }}" class="text-decoration-none">
+      <div class="dash-card dash-kpi-card">
+        <div class="dash-kpi-header">
+          <div>
+            <div class="dash-kpi-title">Active Catalog</div>
+            <h3 class="dash-kpi-value">{{ stats.active_products }}</h3>
+          </div>
+          <div class="dash-kpi-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+            <i class="bi bi-box-seam"></i>
+          </div>
+        </div>
+        <div class="dash-kpi-footer">
+          <span class="text-muted">In Categories</span>
+          <span class="fw-semibold text-secondary">{{ stats.total_categories }} categories</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='customers.php') }}" class="text-decoration-none">
+      <div class="dash-card dash-kpi-card">
+        <div class="dash-kpi-header">
+          <div>
+            <div class="dash-kpi-title">Total Customers</div>
+            <h3 class="dash-kpi-value">{{ stats.total_customers }}</h3>
+          </div>
+          <div class="dash-kpi-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+            <i class="bi bi-people"></i>
+          </div>
+        </div>
+        <div class="dash-kpi-footer">
+          <span class="text-muted">Recent Buyers</span>
+          <span class="badge rounded-pill bg-light text-dark border px-2 py-1">+{{ stats.new_customers_7d }} (7 days)</span>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- 3. Row 2: Secondary 4 Metric Cards -->
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-4">
+  <div class="col">
+    <a href="{{ admin_url(path='inventory.php') }}" class="text-decoration-none text-dark">
+      <div class="dash-card dash-sub-card">
+        <div>
+          <div class="dash-kpi-title">Inventory Value</div>
+          <div class="fw-bold fs-6 text-dark">{{ stats.inventory_value | money }}</div>
+        </div>
+        <div class="dash-sub-icon bg-light text-primary border">
+          <i class="bi bi-wallet2"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='inventory.php?filter=low') }}" class="text-decoration-none text-dark">
+      <div class="dash-card dash-sub-card">
+        <div>
+          <div class="dash-kpi-title">Low Stock Alert</div>
+          <div class="fw-bold fs-6 text-dark">
+            <span class="{% if stats.low_stock | length > 0 %}text-danger{% else %}text-success{% endif %}">{{ stats.low_stock | length }} items</span>
+            <span class="text-muted small fw-normal">({{ stats.out_of_stock }} out)</span>
+          </div>
+        </div>
+        <div class="dash-sub-icon {% if stats.low_stock | length > 0 %}bg-danger bg-opacity-10 text-danger border border-danger-subtle{% else %}bg-light text-muted border{% endif %}">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='subscribers.php') }}" class="text-decoration-none text-dark">
+      <div class="dash-card dash-sub-card">
+        <div>
+          <div class="dash-kpi-title">Subscribers</div>
+          <div class="fw-bold fs-6 text-dark">{{ stats.total_subscribers }} audience</div>
+        </div>
+        <div class="dash-sub-icon bg-light text-success border">
+          <i class="bi bi-envelope-check"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col">
+    <a href="{{ admin_url(path='customers.php') }}" class="text-decoration-none text-dark">
+      <div class="dash-card dash-sub-card">
+        <div>
+          <div class="dash-kpi-title">Repeat Buyers</div>
+          <div class="fw-bold fs-6 text-dark">
+            {{ stats.repeat_customers }} buyers
+          </div>
+        </div>
+        <div class="dash-sub-icon bg-light text-info border">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- 4. Row 3: Performance Chart & Stock Watchlist -->
+<div class="row g-4 mb-4">
+  <div class="col-xl-8">
+    <div class="dash-card dash-upper-card">
+      <div class="dash-card-header">
+        <div>
+          <h5 class="dash-card-title">
+            <i class="bi bi-graph-up text-primary"></i> Store Performance (Last 7 Days)
+          </h5>
+          <span class="text-muted small">Daily revenue volume and customer orders trend.</span>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <button type="button" class="chart-toggle-pill active" id="btnChartRev">Revenue</button>
+          <button type="button" class="chart-toggle-pill" id="btnChartOrders">Orders</button>
+        </div>
+      </div>
+      <div class="dash-upper-body">
+        <div style="position: relative; width: 100%; height: 100%;">
+          <canvas id="performanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="dash-card dash-upper-card">
+      <div class="dash-card-header">
+        <h5 class="dash-card-title">
+          <i class="bi bi-exclamation-triangle text-warning"></i> Stock Watchlist
+        </h5>
+        <a href="{{ admin_url(path='inventory.php?filter=low') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+          Inventory
+        </a>
+      </div>
+      <div class="dash-upper-body" style="overflow-y: auto;">
+        {% if stats.low_stock | length > 0 %}
+          <div class="d-flex flex-column gap-2">
+            {% for ls in stats.low_stock %}
+              <div class="p-2 rounded-3 border bg-light bg-opacity-50 d-flex align-items-center gap-2">
+                <img src="{{ ls.image | product_img }}"
+                     class="rounded border" width="38" height="38" style="object-fit: cover;" alt="">
+                <div class="flex-grow-1 min-w-0">
+                  <a href="{{ admin_url(path='product_form.php?id=' ~ ls.id) }}" class="fw-semibold text-dark text-truncate d-block small text-decoration-none">
+                    {{ ls.name }}
+                  </a>
+                  <span class="text-muted" style="font-size: 11px;">SKU: {{ ls.sku | default(value='-') }}</span>
+                </div>
+                <div class="text-end">
+                  <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle fw-bold" style="font-size: 11px;">
+                    {{ ls.stock }} left
+                  </span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center py-4 text-muted">
+            <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
+            <span class="small fw-semibold text-dark">Stock Levels Healthy</span>
+            <span class="small text-muted mt-1">All products currently satisfy minimum inventory thresholds.</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Row 4: Recent Orders & Activity Stream -->
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="dash-card dash-lower-card">
+      <div class="dash-card-header">
+        <div>
+          <h5 class="dash-card-title">
+            <i class="bi bi-receipt text-primary"></i> Recent Customer Orders
+          </h5>
+          <span class="text-muted small">Latest purchases processed on the storefront.</span>
+        </div>
+        <a href="{{ admin_url(path='orders.php') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+          View All
+        </a>
+      </div>
+      <div class="dash-lower-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr class="small text-muted text-uppercase" style="font-size: 11px;">
+                <th class="ps-3">Order #</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date Placed</th>
+                <th class="text-end pe-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if stats.recent_orders | length == 0 %}
+                <tr>
+                  <td colspan="6" class="text-center py-5 text-muted">
+                    <i class="bi bi-bag-x fs-1 d-block mb-2 text-muted"></i>
+                    No orders placed yet. Customer orders will appear here in real time.
+                  </td>
+                </tr>
+              {% else %}
+                {% for ro in stats.recent_orders %}
+                  <tr>
+                    <td class="ps-3">
+                      <a href="{{ admin_url(path='order_view.php?id=' ~ ro.id) }}" class="fw-bold text-decoration-none font-monospace small">
+                        {{ ro.order_number }}
+                      </a>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="dash-avatar-circle">C</span>
+                        <span class="fw-medium text-dark small text-truncate" style="max-width: 140px;">{{ ro.customer_name }}</span>
+                      </div>
+                    </td>
+                    <td class="fw-bold text-dark small">
+                      {{ ro.total | money }}
+                    </td>
+                    <td>
+                      <span class="status-pill {% if ro.status == 'pending' %}bg-warning text-dark{% elif ro.status == 'processing' %}bg-info text-dark{% elif ro.status == 'shipped' %}bg-primary text-white{% elif ro.status == 'completed' %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
+                        {{ ro.status }}
+                      </span>
+                    </td>
+                    <td class="small text-muted">
+                      {{ ro.created_at }}
+                    </td>
+                    <td class="text-end pe-3">
+                      <a href="{{ admin_url(path='order_view.php?id=' ~ ro.id) }}" class="btn btn-sm btn-light border" title="View Order Details">
+                        <i class="bi bi-chevron-right"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="dash-card dash-lower-card">
+      <div class="dash-card-header">
+        <h5 class="dash-card-title">
+          <i class="bi bi-clock-history text-primary"></i> Store Activity Feed
+        </h5>
+        <a href="{{ admin_url(path='activity.php') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;">
+          All Logs
+        </a>
+      </div>
+      <div class="dash-lower-body">
+        {% if stats.recent_activity | length > 0 %}
+          <div class="dash-activity-timeline p-3">
+            {% for act in stats.recent_activity %}
+              <div class="dash-activity-item d-flex align-items-start gap-2">
+                <div class="dash-activity-icon-box bg-light text-primary">
+                  <i class="bi bi-activity"></i>
+                </div>
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                    <span class="fw-bold text-dark text-truncate" style="font-size: 12.5px;">{{ act.user_name }}</span>
+                    <span class="text-muted text-nowrap flex-shrink-0" style="font-size: 10.5px;">{{ act.created_at }}</span>
+                  </div>
+                  <div class="dash-activity-title">
+                    {{ act.description | default(value=act.action) }}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center py-5 text-muted">
+            <i class="bi bi-journal-text fs-2 d-block mb-2 text-muted"></i>
+            <span class="small">No recent activity logged.</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+
+    const labels = {{ stats.rev_labels | json_encode() | safe }};
+    const revData = {{ stats.rev_values | json_encode() | safe }};
+    const ordersData = {{ stats.order_values | json_encode() | safe }};
+
+    let currentMode = 'revenue';
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue',
+                data: revData,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointBackgroundColor: '#4f46e5',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    const btnRev = document.getElementById('btnChartRev');
+    const btnOrders = document.getElementById('btnChartOrders');
+
+    if (btnRev && btnOrders) {
+        btnRev.addEventListener('click', function() {
+            currentMode = 'revenue';
+            btnRev.classList.add('active');
+            btnOrders.classList.remove('active');
+            chart.data.datasets[0].label = 'Revenue';
+            chart.data.datasets[0].data = revData;
+            chart.data.datasets[0].borderColor = '#4f46e5';
+            chart.data.datasets[0].backgroundColor = 'rgba(79, 70, 229, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#4f46e5';
+            chart.update();
+        });
+
+        btnOrders.addEventListener('click', function() {
+            currentMode = 'orders';
+            btnOrders.classList.add('active');
+            btnRev.classList.remove('active');
+            chart.data.datasets[0].label = 'Orders';
+            chart.data.datasets[0].data = ordersData;
+            chart.data.datasets[0].borderColor = '#10b981';
+            chart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#10b981';
+            chart.update();
+        });
+    }
+});
+</script>
+{% endblock scripts %}

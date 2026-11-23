@@ -1,0 +1,242 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<!-- Filter Card -->
+<div class="card mb-3 shadow-sm">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-3">
+        <label class="form-label small text-muted">Search</label>
+        <input type="text" name="q" class="form-control" value="{{ search | default(value='') }}" placeholder="Name or SKU">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Category</label>
+        <select name="category" class="form-select">
+          <option value="0">All</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}" {% if catId == c.id %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Type</label>
+        <select name="type" class="form-select">
+          <option value="">All types</option>
+          <option value="simple" {% if typeFilter == 'simple' %}selected{% endif %}>Simple</option>
+          <option value="variable" {% if typeFilter == 'variable' %}selected{% endif %}>With options</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Stock</label>
+        <select name="stock_status" class="form-select">
+          <option value="">All stock</option>
+          <option value="in" {% if stockFilter == 'in' %}selected{% endif %}>In stock</option>
+          <option value="low" {% if stockFilter == 'low' %}selected{% endif %}>Low stock</option>
+          <option value="out" {% if stockFilter == 'out' %}selected{% endif %}>Out of stock</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="draft" {% if status == 'draft' %}selected{% endif %}>Draft</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary"><i class="bi bi-funnel"></i> Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Products List Card -->
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" id="bulk_action_form">
+      {{ csrf_token() }}
+      <input type="hidden" name="action" value="bulk">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="card-title mb-0">{{ total }} product{% if total != 1 %}s{% endif %}</h5>
+          <!-- Bulk actions dropdown -->
+          <div class="dropdown ms-2">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="bulk_dropdown_btn" disabled>
+              Bulk actions
+            </button>
+            <ul class="dropdown-menu">
+              <li><button type="submit" name="bulk_op" value="activate" class="dropdown-item"><i class="bi bi-check-circle text-success me-1"></i> Activate selected</button></li>
+              <li><button type="submit" name="bulk_op" value="deactivate" class="dropdown-item"><i class="bi bi-pause-circle text-warning me-1"></i> Deactivate selected</button></li>
+              {% if me.role == 'admin' %}
+                <li><hr class="dropdown-divider"></li>
+                <li><button type="submit" name="bulk_op" value="delete" class="dropdown-item text-danger" onclick="return confirm('Delete all selected products? This cannot be undone.');"><i class="bi bi-trash text-danger me-1"></i> Delete selected</button></li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          {% if canSeeEcommerce %}
+            <a class="btn btn-outline-primary" href="{{ admin_url(path='product_import.php') }}">
+              <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
+            </a>
+            <a class="btn btn-primary" href="{{ admin_url(path='product_form.php') }}">
+              <i class="bi bi-plus-lg me-1"></i> Add product
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:30px;"><input type="checkbox" class="form-check-input" id="check_all_products"></th>
+              <th style="width:55px;"></th>
+              <th>Product</th>
+              <th>Type</th>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+              <tr id="product_row_{{ p.id }}">
+                <td>
+                  <input type="checkbox" name="selected_ids[]" value="{{ p.id }}" class="form-check-input product-check">
+                </td>
+                <td>
+                  {% if p.image %}
+                    <img src="{{ url(path='uploads/' ~ p.image) }}" class="rounded border" width="44" height="44" style="object-fit:cover" alt="" loading="lazy">
+                  {% else %}
+                    <div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted" style="width:44px;height:44px;"><i class="bi bi-image"></i></div>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="fw-semibold">
+                    <a href="{{ admin_url(path='product_form.php?id=' ~ p.id) }}" class="text-reset text-decoration-none">
+                      {{ p.name }}
+                    </a>
+                    {% if p.featured == 1 %}
+                      <i class="bi bi-star-fill text-warning ms-1" title="Featured"></i>
+                    {% endif %}
+                  </div>
+                  <small class="text-muted"><code>{{ p.slug }}</code></small>
+                </td>
+                <td>
+                  {% if p.product_type == 'variable' %}
+                    <span class="badge bg-indigo-subtle text-indigo border border-indigo-subtle">Options</span>
+                  {% else %}
+                    <span class="badge bg-light text-secondary border">Simple</span>
+                  {% endif %}
+                </td>
+                <td><code>{{ p.sku | default(value='—') }}</code></td>
+                <td>{{ p.category_name | default(value='—') }}</td>
+                <td>
+                  {% if p.sale_price and p.sale_price != "" %}
+                    <span class="fw-semibold text-success">৳{{ p.sale_price }}</span>
+                    <small class="text-muted text-decoration-line-through d-block">৳{{ p.price }}</small>
+                  {% else %}
+                    <span class="fw-semibold">৳{{ p.price }}</span>
+                  {% endif %}
+                </td>
+                <td id="stock_badge_col_{{ p.id }}">
+                  {% if p.calculated_stock <= 0 %}
+                    <span class="badge text-bg-danger">Out of stock</span>
+                  {% elif p.calculated_stock <= p.low_stock_threshold %}
+                    <span class="badge text-bg-warning">{{ p.calculated_stock }} in stock</span>
+                  {% else %}
+                    <span class="badge text-bg-success">{{ p.calculated_stock }}</span>
+                  {% endif %}
+                  {% if p.product_type == 'variable' %}
+                    <small class="text-muted d-block">{{ p.variant_count }} variant{% if p.variant_count != 1 %}s{% endif %}</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge status-{{ p.status }}">
+                    {{ p.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-outline-secondary quick-stock-btn me-1"
+                          data-id="{{ p.id }}" title="Quick stock adjustment">
+                    <i class="bi bi-box-arrow-in-down"></i>
+                  </button>
+                  <a class="btn btn-sm btn-light me-1"
+                     href="{{ admin_url(path='product_form.php?id=' ~ p.id) }}" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  {% if me.role == 'admin' %}
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-single-btn"
+                            data-id="{{ p.id }}" data-name="{{ p.name }}" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            {% if products | length == 0 %}
+              <tr><td colspan="10" class="text-center text-muted py-4">No products match your filters.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Single Delete Form (Hidden) -->
+<form method="post" id="single_delete_form" style="display:none;">
+  {{ csrf_token() }}
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="id" id="delete_target_id" value="">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const checkAll = document.getElementById('check_all_products');
+  const rowChecks = document.querySelectorAll('.product-check');
+  const bulkBtn = document.getElementById('bulk_dropdown_btn');
+
+  function updateBulkBtn() {
+    const checkedCount = document.querySelectorAll('.product-check:checked').length;
+    if (bulkBtn) {
+      bulkBtn.disabled = (checkedCount === 0);
+      bulkBtn.textContent = checkedCount > 0 ? `Bulk actions (${checkedCount})` : 'Bulk actions';
+    }
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      rowChecks.forEach(cb => cb.checked = checkAll.checked);
+      updateBulkBtn();
+    });
+  }
+
+  rowChecks.forEach(cb => {
+    cb.addEventListener('change', function () {
+      updateBulkBtn();
+    });
+  });
+
+  document.querySelectorAll('.delete-single-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const id = this.getAttribute('data-id');
+      const name = this.getAttribute('data-name');
+      if (confirm(`Permanently delete "${name}"?`)) {
+        document.getElementById('delete_target_id').value = id;
+        document.getElementById('single_delete_form').submit();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

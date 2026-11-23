@@ -52,8 +52,48 @@ pub fn init_templates(
     tera.register_function("order_number", OrderNumberFunction);
     tera.register_function("old", OldFunction);
     tera.register_function("csrf_token", CsrfTokenFunction);
+    tera.register_function("admin_url", AdminUrlFunction);
+    tera.register_function("avatar_url", AvatarUrlFunction);
 
     Ok(tera)
+}
+
+struct AdminUrlFunction;
+
+impl Function for AdminUrlFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+        let path_clean = path.trim_start_matches('/');
+        let res = if path_clean.is_empty() {
+            "/admin/dashboard.php".to_string()
+        } else if path_clean.starts_with("admin/") {
+            format!("/{}", path_clean)
+        } else {
+            format!("/admin/{}", path_clean)
+        };
+        Ok(Value::String(res))
+    }
+}
+
+struct AvatarUrlFunction;
+
+impl Function for AvatarUrlFunction {
+    fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
+        let avatar = args.get("avatar").and_then(|v| v.as_str());
+        let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("Admin");
+        if let Some(av) = avatar.filter(|a| !a.trim().is_empty()) {
+            if av.starts_with("http://") || av.starts_with("https://") || av.starts_with("data:") {
+                return Ok(Value::String(av.to_string()));
+            }
+            return Ok(Value::String(resolve_image_url(Some(av))));
+        }
+        let initial = name.chars().next().unwrap_or('A').to_ascii_uppercase();
+        let svg = format!(
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%236366f1'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='42' fill='%23ffffff' font-weight='bold'>{}</text></svg>",
+            initial
+        );
+        Ok(Value::String(svg))
+    }
 }
 
 struct MoneyFilter {

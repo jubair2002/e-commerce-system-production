@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title | default(value='Dashboard') }} · {{ site_name }}</title>
+
+<link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap/bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ url(path='assets/vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
+<link rel="stylesheet" href="{{ url(path='assets/css/style.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="{{ admin_url(path='dashboard.php') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+        <span class="brand-icon"><i class="bi bi-shield-lock-fill"></i></span>
+        <span class="brand-text">{{ site_name }}</span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+
+      <a href="{{ admin_url(path='dashboard.php') }}"
+         class="nav-link {% if current == 'dashboard.php' or current == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      </a>
+
+      <a href="{{ url(path='') }}" target="_blank" class="nav-link">
+        <i class="bi bi-shop"></i><span>View store</span>
+        <i class="bi bi-box-arrow-up-right ms-auto small text-muted"></i>
+      </a>
+
+      {% if canSeeEcommerce %}
+        <div class="nav-section">E-commerce</div>
+
+        <a href="{{ admin_url(path='analytics.php') }}"
+           class="nav-link {% if current == 'analytics.php' or current == 'analytics_product.php' %}active{% endif %}">
+          <i class="bi bi-graph-up-arrow"></i><span>Analytics</span>
+        </a>
+
+        <a href="{{ admin_url(path='orders.php') }}"
+           class="nav-link {% if current == 'orders.php' or current == 'order_view.php' %}active{% endif %}">
+          <i class="bi bi-receipt"></i><span>Orders</span>
+          {% if notifPendingOrders > 0 %}
+            <span class="badge text-bg-warning ms-auto">{{ notifPendingOrders }}</span>
+          {% endif %}
+        </a>
+
+        <a href="{{ admin_url(path='customers.php') }}"
+           class="nav-link {% if current == 'customers.php' or current == 'customer_view.php' %}active{% endif %}">
+          <i class="bi bi-people"></i><span>Customers</span>
+        </a>
+
+        <a href="{{ admin_url(path='products.php') }}"
+           class="nav-link {% if current == 'products.php' or current == 'product_form.php' or current == 'product_import.php' %}active{% endif %}">
+          <i class="bi bi-box-seam"></i><span>Products</span>
+        </a>
+
+        <a href="{{ admin_url(path='inventory.php') }}"
+           class="nav-link {% if current == 'inventory.php' %}active{% endif %}">
+          <i class="bi bi-boxes"></i><span>Inventory</span>
+        </a>
+
+        <a href="{{ admin_url(path='categories.php') }}"
+           class="nav-link {% if current == 'categories.php' or current == 'category_form.php' %}active{% endif %}">
+          <i class="bi bi-tags"></i><span>Categories</span>
+        </a>
+
+        <a href="{{ admin_url(path='banners.php') }}"
+           class="nav-link {% if current == 'banners.php' or current == 'banner_form.php' %}active{% endif %}">
+          <i class="bi bi-images"></i><span>Banners</span>
+        </a>
+
+        <a href="{{ admin_url(path='reviews.php') }}"
+           class="nav-link {% if current == 'reviews.php' %}active{% endif %}">
+          <i class="bi bi-star"></i><span>Reviews</span>
+        </a>
+      {% endif %}
+
+      {% if canSeeContent %}
+        <div class="nav-section">Storefront & Content</div>
+
+        <a href="{{ admin_url(path='pages.php') }}"
+           class="nav-link {% if current == 'pages.php' or current == 'page_form.php' %}active{% endif %}">
+          <i class="bi bi-file-earmark-text"></i><span>Pages (CMS)</span>
+        </a>
+
+        <a href="{{ admin_url(path='messages.php') }}"
+           class="nav-link {% if current == 'messages.php' %}active{% endif %}">
+          <i class="bi bi-chat-left-text"></i><span>Messages</span>
+        </a>
+
+        <a href="{{ admin_url(path='subscribers.php') }}"
+           class="nav-link {% if current == 'subscribers.php' %}active{% endif %}">
+          <i class="bi bi-envelope-check"></i><span>Subscribers</span>
+        </a>
+      {% endif %}
+
+      <a href="{{ admin_url(path='activity.php') }}"
+         class="nav-link {% if current == 'activity.php' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i><span>Activity log</span>
+      </a>
+
+      {% if canSeeConfig %}
+        <div class="nav-section">Configuration</div>
+
+        <a href="{{ admin_url(path='users.php') }}"
+           class="nav-link {% if current == 'users.php' or current == 'user_form.php' %}active{% endif %}">
+          <i class="bi bi-people-fill"></i><span>Users & Permissions</span>
+        </a>
+
+        <a href="{{ admin_url(path='settings.php') }}"
+           class="nav-link {% if current == 'settings.php' %}active{% endif %}">
+          <i class="bi bi-gear"></i><span>Settings</span>
+        </a>
+
+        <a href="{{ admin_url(path='mail_settings.php') }}"
+           class="nav-link {% if current == 'mail_settings.php' or current == 'mail_templates.php' or current == 'mail_queue.php' %}active{% endif %}">
+          <i class="bi bi-envelope"></i><span>Mail System</span>
+        </a>
+
+        <a href="{{ admin_url(path='monitoring.php') }}"
+           class="nav-link {% if current == 'monitoring.php' %}active{% endif %}">
+          <i class="bi bi-cpu"></i><span>Monitoring</span>
+        </a>
+      {% endif %}
+    </nav>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <main class="app-main">
+
+    <!-- Top bar -->
+    <nav class="topbar">
+      <button class="btn btn-light btn-sm" id="sidebarToggle" type="button" title="Toggle Sidebar">
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+
+      <h1 class="topbar-title">{{ page_title | default(value='Dashboard') }}</h1>
+
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <!-- Health Badge -->
+        <a href="{{ admin_url(path='monitoring.php') }}" class="btn btn-light btn-sm d-flex align-items-center gap-1 text-decoration-none" title="{{ serverHealthTitle }}">
+          <span class="rounded-circle bg-{{ serverHealthColor }} shadow-sm" style="width: 8px; height: 8px; display: inline-block;"></span>
+          <span class="small d-none d-md-inline text-muted">Health</span>
+        </a>
+
+        <!-- Notifications Dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-light btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+            <i class="bi bi-bell"></i>
+            {% if rawNotifCount > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                {% if rawNotifCount > 99 %}99+{% else %}{{ rawNotifCount }}{% endif %}
+                <span class="visually-hidden">unread notifications</span>
+              </span>
+            {% endif %}
+          </button>
+          <div class="dropdown-menu dropdown-menu-end shadow-sm p-0" style="min-width: 320px; max-width: 380px;">
+            <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
+              <span class="fw-bold fs-6">Notifications</span>
+              {% if rawNotifCount > 0 %}
+                <span class="badge text-bg-primary">{{ rawNotifCount }} active</span>
+              {% endif %}
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 320px; overflow-y: auto;">
+              {% if notifPendingOrders > 0 %}
+                <a href="{{ admin_url(path='orders.php?status=pending') }}" class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2">
+                  <div class="text-warning mt-1"><i class="bi bi-clock-history fs-5"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold small">Pending Orders</div>
+                    <div class="text-muted small">{{ notifPendingOrders }} order{% if notifPendingOrders > 1 %}s{% endif %} awaiting confirmation.</div>
+                  </div>
+                </a>
+              {% endif %}
+              {% if notifLowStock > 0 %}
+                <a href="{{ admin_url(path='inventory.php?filter=low') }}" class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2">
+                  <div class="text-danger mt-1"><i class="bi bi-exclamation-triangle fs-5"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold small">Low Stock Alert</div>
+                    <div class="text-muted small">{{ notifLowStock }} product{% if notifLowStock > 1 %}s{% endif %} running low on stock.</div>
+                  </div>
+                </a>
+              {% endif %}
+              {% if notifFailedMail > 0 %}
+                <a href="{{ admin_url(path='mail_queue.php?status=failed') }}" class="list-group-item list-group-item-action d-flex align-items-start gap-2 py-2">
+                  <div class="text-danger mt-1"><i class="bi bi-envelope-exclamation fs-5"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold small">Failed Emails</div>
+                    <div class="text-muted small">{{ notifFailedMail }} queued email{% if notifFailedMail > 1 %}s{% endif %} failed to send.</div>
+                  </div>
+                </a>
+              {% endif %}
+              {% if rawNotifCount == 0 %}
+                <div class="p-3 text-center text-muted small">
+                  <i class="bi bi-check-circle-fill text-success d-block fs-3 mb-1"></i>
+                  All caught up! No active alerts.
+                </div>
+              {% endif %}
+            </div>
+            <div class="p-2 border-top text-center bg-light">
+              <a href="{{ admin_url(path='activity.php') }}" class="text-decoration-none small text-primary fw-medium">
+                View Activity Log <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-light btn-sm" id="themeToggle" title="Toggle theme">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+
+        <div class="dropdown">
+          <button class="btn btn-light btn-sm dropdown-toggle d-flex align-items-center gap-2"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="{{ avatar_url(avatar=me.avatar, name=me.name) }}"
+                 class="rounded-circle" width="28" height="28" alt="">
+            <span class="d-none d-sm-inline">{{ me.name }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">{{ me.email }}</h6></li>
+            <li><a class="dropdown-item" href="{{ admin_url(path='profile.php') }}">
+              <i class="bi bi-person"></i> Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ admin_url(path='logout.php') }}">
+              <i class="bi bi-box-arrow-right"></i> Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="app-content">
+      {% for f in flashes %}
+        <div class="alert alert-{{ f.type }} alert-dismissible fade show" role="alert">
+          {{ f.message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+
+      {% block content %}{% endblock %}
+    </div><!-- /.app-content -->
+
+    <footer class="app-footer">
+      <small>
+        &copy; 2026 {{ site_name }}.
+      </small>
+    </footer>
+  </main><!-- /.app-main -->
+</div><!-- /.app -->
+
+<script src="{{ url(path='assets/vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url(path='assets/vendor/chartjs/chart.umd.min.js') }}"></script>
+<script src="{{ url(path='assets/js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

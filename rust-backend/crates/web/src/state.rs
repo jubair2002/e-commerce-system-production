@@ -379,3 +379,106 @@ pub async fn build_base_context(
 
     ctx
 }
+
+/// Helper to build admin layout template context with permissions, notifications, and telemetry health
+pub async fn build_admin_context(
+    state: &AppState,
+    session: &Session,
+    current_page: &str,
+    page_title: &str,
+) -> Context {
+    let mut ctx = Context::new();
+
+    let site_name = state.settings.get_or("site_name", "Jinish Potro");
+    let site_name = if site_name.is_empty() || site_name == "PHP Admin Panel" || site_name == "Store" {
+        "Jinish Potro"
+    } else {
+        &site_name
+    };
+    ctx.insert("site_name", site_name);
+    ctx.insert("pageTitle", page_title);
+    ctx.insert("page_title", page_title);
+    ctx.insert("current", current_page);
+    ctx.insert("current_page", current_page);
+    ctx.insert("base_url", &state.config.app_url);
+
+    let admin = SessionHelper::get_user(session).await.unwrap_or(AdminSession {
+        id: 0,
+        name: "Admin".to_string(),
+        email: "admin@example.com".to_string(),
+        role: "admin".to_string(),
+        permissions: vec!["*".to_string()],
+        avatar: None,
+    });
+
+    let avatar_url = admin.avatar.as_deref().map(|a| resolve_image_url(Some(a)));
+    let me_val = serde_json::json!({
+        "id": admin.id,
+        "name": admin.name,
+        "email": admin.email,
+        "role": admin.role,
+        "permissions": admin.permissions,
+        "avatar": admin.avatar,
+        "avatar_url": avatar_url,
+    });
+    ctx.insert("me", &me_val);
+    ctx.insert("user", &me_val);
+
+    // Permission flags for sidebar
+    let can_see_ecommerce = admin.has_permission("analytics.view")
+        || admin.has_permission("orders.view")
+        || admin.has_permission("orders.manage")
+        || admin.has_permission("customers.view")
+        || admin.has_permission("customers.manage")
+        || admin.has_permission("products.view")
+        || admin.has_permission("products.create")
+        || admin.has_permission("products.edit")
+        || admin.has_permission("inventory.view")
+        || admin.has_permission("inventory.manage")
+        || admin.has_permission("categories.manage")
+        || admin.has_permission("banners.manage")
+        || admin.has_permission("reviews.view")
+        || admin.has_permission("reviews.manage")
+        || admin.role == "admin"
+        || admin.role == "editor";
+
+    let can_see_content = admin.has_permission("pages.manage")
+        || admin.has_permission("messages.manage")
+        || admin.has_permission("subscribers.manage")
+        || admin.role == "admin"
+        || admin.role == "editor";
+
+    let can_see_config = admin.has_permission("users.view")
+        || admin.has_permission("users.manage")
+        || admin.has_permission("settings.general")
+        || admin.has_permission("settings.storage")
+        || admin.has_permission("mail.manage")
+        || admin.has_permission("monitoring.view")
+        || admin.role == "admin";
+
+    ctx.insert("canSeeEcommerce", &can_see_ecommerce);
+    ctx.insert("canSeeContent", &can_see_content);
+    ctx.insert("canSeeConfig", &can_see_config);
+
+    // Dynamic notification and health indicators
+    let low_stock_thresh = state.settings.get_or("low_stock_threshold", "5").parse::<i64>().unwrap_or(5);
+    let notifs = db::queries::admin::get_admin_notifications(&state.db, low_stock_thresh).await;
+
+    ctx.insert("notifPendingOrders", &notifs.pending_orders);
+    ctx.insert("notifLowStock", &notifs.low_stock);
+    ctx.insert("notifFailedMail", &notifs.failed_mail);
+    ctx.insert("rawNotifCount", &notifs.raw_count);
+    ctx.insert("serverHealthColor", &notifs.health_color);
+    ctx.insert("serverHealthTitle", &notifs.health_title);
+
+    let csrf_token = SessionHelper::get_csrf(session).await;
+    ctx.insert("csrf_token", &csrf_token);
+
+    let flashes = SessionHelper::take_flashes(session).await;
+    ctx.insert("flashes", &flashes);
+
+    let old = SessionHelper::take_old(session).await;
+    ctx.insert("old", &old);
+
+    ctx
+}

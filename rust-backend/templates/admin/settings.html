@@ -1,0 +1,509 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">Settings &amp; Configuration</h3>
+    <p class="text-muted small mb-0">Manage global store parameters, integrations, checkout policies, and infrastructure.</p>
+  </div>
+</div>
+
+<!-- Nav Tabs -->
+<ul class="nav nav-tabs mb-4" id="settingsTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'general' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=general') }}">
+      <i class="bi bi-sliders me-1"></i> General
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'storefront' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=storefront') }}">
+      <i class="bi bi-shop me-1"></i> Storefront
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'inventory' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=inventory') }}">
+      <i class="bi bi-boxes me-1"></i> Inventory &amp; Stock
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'checkout' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=checkout') }}">
+      <i class="bi bi-credit-card me-1"></i> Checkout &amp; COD
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'shipping' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=shipping') }}">
+      <i class="bi bi-truck me-1"></i> Shipping Methods
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'coupons' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=coupons') }}">
+      <i class="bi bi-ticket-perforated me-1"></i> Coupons ({{ coupons | length }})
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'seo' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=seo') }}">
+      <i class="bi bi-search me-1"></i> SEO &amp; Sitemap
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'customers' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=customers') }}">
+      <i class="bi bi-people me-1"></i> Customers
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'storage' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=storage') }}">
+      <i class="bi bi-cloud-arrow-up me-1"></i> Storage &amp; AWS S3
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <!-- TAB 1: GENERAL -->
+  {% if active_tab == 'general' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">General Store Settings</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="general">
+          <input type="hidden" name="action" value="save_general">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Store Name</label>
+              <input type="text" name="site_name" class="form-control" value="{{ settings.site_name | default(value='Jinish Potro') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Tagline</label>
+              <input type="text" name="store_tagline" class="form-control" value="{{ settings.store_tagline | default(value='') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Contact Email</label>
+              <input type="email" name="site_email" class="form-control" value="{{ settings.site_email | default(value='') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Contact Phone</label>
+              <input type="text" name="store_phone" class="form-control" value="{{ settings.store_phone | default(value='') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">Store Physical Address</label>
+              <textarea name="store_address" class="form-control" rows="2">{{ settings.store_address | default(value='') }}</textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-medium">Timezone</label>
+              <input type="text" name="timezone" class="form-control" value="{{ settings.timezone | default(value='Asia/Dhaka') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-medium">Currency Code</label>
+              <input type="text" name="currency_code" class="form-control" value="{{ settings.currency_code | default(value='BDT') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-medium">Currency Symbol</label>
+              <input type="text" name="currency_symbol" class="form-control" value="{{ settings.currency_symbol | default(value='৳') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-medium">Catalog Items Per Page</label>
+              <input type="number" name="items_per_page" class="form-control" value="{{ settings.items_per_page | default(value='24') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 2: STOREFRONT -->
+  {% if active_tab == 'storefront' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Storefront Display &amp; Features</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="storefront">
+          <input type="hidden" name="action" value="save_storefront">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Tax Rate (%)</label>
+              <input type="text" name="tax_rate" class="form-control" value="{{ settings.tax_rate | default(value='0') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Catalog Mode</label>
+              <select name="catalog_mode" class="form-select">
+                <option value="0" {% if settings.catalog_mode | default(value='0') == '0' %}selected{% endif %}>Normal Store (Buy &amp; Cart Active)</option>
+                <option value="1" {% if settings.catalog_mode | default(value='0') == '1' %}selected{% endif %}>Catalog Only (Purchases Disabled)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" name="enable_wishlist" value="1" id="swWishlist" {% if settings.enable_wishlist | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium" for="swWishlist">Enable Customer Wishlists</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" name="enable_reviews" value="1" id="swReviews" {% if settings.enable_reviews | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium" for="swReviews">Enable Product Reviews</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 3: INVENTORY -->
+  {% if active_tab == 'inventory' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Inventory &amp; Stock Policy</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="inventory">
+          <input type="hidden" name="action" value="save_inventory">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Stock Management</label>
+              <select name="manage_stock" class="form-select">
+                <option value="1" {% if settings.manage_stock | default(value='1') == '1' %}selected{% endif %}>Track Inventory Quantities</option>
+                <option value="0" {% if settings.manage_stock | default(value='1') == '0' %}selected{% endif %}>Unlimited / Do Not Track</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Low Stock Alert Threshold</label>
+              <input type="number" name="low_stock_threshold" class="form-control" value="{{ settings.low_stock_threshold | default(value='5') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Out of Stock Visibility</label>
+              <select name="show_out_of_stock" class="form-select">
+                <option value="1" {% if settings.show_out_of_stock | default(value='1') == '1' %}selected{% endif %}>Keep Out of Stock Items Visible</option>
+                <option value="0" {% if settings.show_out_of_stock | default(value='1') == '0' %}selected{% endif %}>Hide Out of Stock Items From Catalog</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 4: CHECKOUT -->
+  {% if active_tab == 'checkout' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Checkout &amp; Payment Options</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="checkout">
+          <input type="hidden" name="action" value="save_checkout">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Guest Checkout</label>
+              <select name="guest_checkout" class="form-select">
+                <option value="1" {% if settings.guest_checkout | default(value='1') == '1' %}selected{% endif %}>Allow Guest Checkout</option>
+                <option value="0" {% if settings.guest_checkout | default(value='1') == '0' %}selected{% endif %}>Require Account Login</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Cash on Delivery (COD)</label>
+              <select name="cod_enabled" class="form-select">
+                <option value="1" {% if settings.cod_enabled | default(value='1') == '1' %}selected{% endif %}>Enabled</option>
+                <option value="0" {% if settings.cod_enabled | default(value='1') == '0' %}selected{% endif %}>Disabled</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Minimum Order Amount</label>
+              <input type="text" name="min_order_amount" class="form-control" value="{{ settings.min_order_amount | default(value='0') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Maximum Order Amount (0 for unlimited)</label>
+              <input type="text" name="max_order_amount" class="form-control" value="{{ settings.max_order_amount | default(value='0') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 5: SHIPPING -->
+  {% if active_tab == 'shipping' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Shipping Rates &amp; Free Delivery</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="shipping">
+          <input type="hidden" name="action" value="save_shipping">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Inside Dhaka Default Rate</label>
+              <input type="text" name="shipping_inside_dhaka" class="form-control" value="{{ settings.shipping_inside_dhaka | default(value='60') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Outside Dhaka Default Rate</label>
+              <input type="text" name="shipping_outside_dhaka" class="form-control" value="{{ settings.shipping_outside_dhaka | default(value='120') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Free Shipping Minimum Subtotal (0 to disable)</label>
+              <input type="text" name="free_shipping_threshold" class="form-control" value="{{ settings.free_shipping_threshold | default(value='2000') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 6: COUPONS -->
+  {% if active_tab == 'coupons' %}
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-white py-3">
+            <h6 class="card-title mb-0 fw-bold">Create Coupon</h6>
+          </div>
+          <div class="card-body">
+            <form method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="tab" value="coupons">
+              <input type="hidden" name="action" value="add_coupon">
+
+              <div class="mb-3">
+                <label class="form-label small fw-medium">Coupon Code <span class="text-danger">*</span></label>
+                <input type="text" name="code" class="form-control text-uppercase" placeholder="e.g. SUMMER20" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-medium">Discount Type</label>
+                <select name="type" class="form-select">
+                  <option value="percent">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-medium">Discount Value <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" name="value" class="form-control" required placeholder="10.00">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-medium">Minimum Subtotal</label>
+                <input type="number" step="0.01" name="min_subtotal" class="form-control" value="0.00">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-medium">Usage Limit</label>
+                <input type="number" name="usage_limit" class="form-control" placeholder="Unlimited">
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle me-1"></i> Add Coupon</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-white py-3">
+            <h6 class="card-title mb-0 fw-bold">Active &amp; Expired Coupons</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Code</th>
+                  <th>Discount</th>
+                  <th>Min Subtotal</th>
+                  <th>Used / Limit</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if coupons | length == 0 %}
+                  <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No coupons created yet.</td>
+                  </tr>
+                {% else %}
+                  {% for c in coupons %}
+                    <tr>
+                      <td class="fw-bold font-monospace">{{ c.code }}</td>
+                      <td>
+                        {% if c.type == 'percent' %}
+                          {{ c.value }}%
+                        {% else %}
+                          ৳{{ c.value }}
+                        {% endif %}
+                      </td>
+                      <td>৳{{ c.min_subtotal }}</td>
+                      <td>
+                        {{ c.used_count }} / {% if c.usage_limit %}{{ c.usage_limit }}{% else %}∞{% endif %}
+                      </td>
+                      <td>
+                        {% if c.status == 'active' %}
+                          <span class="badge bg-success-subtle text-success">Active</span>
+                        {% else %}
+                          <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">
+                        <form method="post" class="d-inline">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="tab" value="coupons">
+                          <input type="hidden" name="action" value="toggle_coupon">
+                          <input type="hidden" name="id" value="{{ c.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-secondary" title="Toggle Active">
+                            <i class="bi bi-arrow-repeat"></i>
+                          </button>
+                        </form>
+                        <form method="post" class="d-inline" onsubmit="return confirm('Delete coupon {{ c.code }}?');">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="tab" value="coupons">
+                          <input type="hidden" name="action" value="delete_coupon">
+                          <input type="hidden" name="id" value="{{ c.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 7: SEO -->
+  {% if active_tab == 'seo' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">SEO &amp; Metadata</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="seo">
+          <input type="hidden" name="action" value="save_seo">
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-medium">Default Meta Title</label>
+              <input type="text" name="meta_title" class="form-control" value="{{ settings.meta_title | default(value='') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">Default Meta Description</label>
+              <textarea name="meta_description" class="form-control" rows="3">{{ settings.meta_description | default(value='') }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">Default Meta Keywords</label>
+              <input type="text" name="meta_keywords" class="form-control" value="{{ settings.meta_keywords | default(value='') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 8: CUSTOMERS -->
+  {% if active_tab == 'customers' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Customer Policies &amp; Account Protection</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="customers">
+          <input type="hidden" name="action" value="save_customers">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Email Verification</label>
+              <select name="require_email_verification" class="form-select">
+                <option value="0" {% if settings.require_email_verification | default(value='0') == '0' %}selected{% endif %}>Disabled</option>
+                <option value="1" {% if settings.require_email_verification | default(value='0') == '1' %}selected{% endif %}>Required before login</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Max Failed Login Attempts</label>
+              <input type="number" name="max_login_attempts" class="form-control" value="{{ settings.max_login_attempts | default(value='5') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB 9: STORAGE -->
+  {% if active_tab == 'storage' %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Storage Layer &amp; AWS S3 Configuration</h5>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="storage">
+          <input type="hidden" name="action" value="save_storage">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-medium">Primary Storage Driver</label>
+              <select name="storage_driver" class="form-select">
+                <option value="local" {% if settings.storage_driver | default(value='local') == 'local' %}selected{% endif %}>Local Server Storage</option>
+                <option value="s3" {% if settings.storage_driver | default(value='local') == 's3' %}selected{% endif %}>Amazon S3 / S3-Compatible</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">S3 Bucket Name</label>
+              <input type="text" name="storage_s3_bucket" class="form-control" value="{{ settings.storage_s3_bucket | default(value='') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">AWS Region</label>
+              <input type="text" name="storage_s3_region" class="form-control" value="{{ settings.storage_s3_region | default(value='us-east-1') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">AWS Access Key ID</label>
+              <input type="text" name="storage_s3_key" class="form-control" value="{{ settings.storage_s3_key | default(value='') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">AWS Secret Access Key</label>
+              <input type="password" name="storage_s3_secret_key" class="form-control" value="{{ settings.storage_s3_secret_key | default(value='') }}">
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

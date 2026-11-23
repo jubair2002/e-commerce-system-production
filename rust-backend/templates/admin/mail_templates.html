@@ -1,0 +1,106 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">Email Templates</h3>
+    <p class="text-muted small mb-0">Customize automated notification emails for customers, order changes, and system alerts.</p>
+  </div>
+  <div>
+    <a href="{{ admin_url(path='mail_settings.php') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-gear me-1"></i> Mail Settings
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Template Selector Column -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h6 class="card-title mb-0 fw-bold">Template Library</h6>
+      </div>
+      <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
+        {% for t in templates %}
+          <a href="{{ admin_url(path='mail_templates.php?slug=' ~ t.slug) }}"
+             class="list-group-item list-group-item-action {% if t.slug == active_slug %}active{% endif %}">
+            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+              <h6 class="mb-0 fw-semibold">{{ t.name }}</h6>
+              <span class="badge {% if t.slug == active_slug %}bg-light text-dark{% else %}bg-secondary-subtle text-secondary{% endif %} text-uppercase" style="font-size: 0.65rem;">
+                {{ t.audience }}
+              </span>
+            </div>
+            <small class="{% if t.slug == active_slug %}text-white-50{% else %}text-muted{% endif %} font-monospace" style="font-size: 0.75rem;">
+              {{ t.slug }}
+            </small>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Editor Column -->
+  <div class="col-lg-8">
+    {% if current_template %}
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="card-title mb-0">{{ current_template.name }}</h5>
+            <small class="text-muted font-monospace">{{ current_template.slug }}</small>
+          </div>
+          <div>
+            {% if current_template.enabled == 1 %}
+              <span class="badge bg-success-subtle text-success">Enabled</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger">Disabled</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="slug" value="{{ current_template.slug }}">
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Email Subject</label>
+              <input type="text" name="subject" class="form-control" value="{{ current_template.subject }}" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">HTML Body</label>
+              <textarea name="body_html" class="form-control font-monospace" rows="12" required>{{ current_template.body_html }}</textarea>
+            </div>
+
+            {% if current_template.variables %}
+              <div class="p-3 bg-light rounded border mb-4">
+                <small class="fw-bold d-block text-secondary mb-1"><i class="bi bi-code-square me-1"></i> Available Template Variables:</small>
+                <div class="d-flex flex-wrap gap-1">
+                  {% for var in current_template.variables | split(pat=",") %}
+                    <code class="bg-white border rounded px-1 text-primary">{{ var | trim }}</code>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" name="enabled" value="1" id="swEnabled" {% if current_template.enabled == 1 %}checked{% endif %}>
+              <label class="form-check-label fw-medium" for="swEnabled">Template Active &amp; Dispatching</label>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Template</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="card shadow-sm border-0 py-5 text-center text-muted">
+        <i class="bi bi-envelope-open fs-1 mb-2"></i>
+        <p>Select a template from the left list to view or edit.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

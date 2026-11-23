@@ -1,0 +1,196 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-indigo"><i class="bi bi-receipt"></i></div>
+      <div>
+        <p class="stat-label">Total Orders</p>
+        <p class="stat-value">{{ total_orders }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-amber"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <p class="stat-label">Pending Orders</p>
+        <p class="stat-value">{{ count_pending }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-emerald"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <p class="stat-label">Completed</p>
+        <p class="stat-value">{{ count_completed }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-blue"><i class="bi bi-truck"></i></div>
+      <div>
+        <p class="stat-label">Shipped</p>
+        <p class="stat-value">{{ count_shipped }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-3">
+        <label class="form-label small text-muted">Search</label>
+        <input type="text" name="q" class="form-control" value="{{ search | default(value='') }}" placeholder="Order #, name, email, phone">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All statuses</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
+          <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>Shipped</option>
+          <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Payment</label>
+        <select name="payment_status" class="form-select">
+          <option value="">All payment</option>
+          <option value="unpaid" {% if pay_status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+          <option value="paid" {% if pay_status == 'paid' %}selected{% endif %}>Paid</option>
+          <option value="refunded" {% if pay_status == 'refunded' %}selected{% endif %}>Refunded</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">From Date</label>
+        <input type="date" name="from" class="form-control" value="{{ date_from | default(value='') }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">To Date</label>
+        <input type="date" name="to" class="form-control" value="{{ date_to | default(value='') }}">
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-primary"><i class="bi bi-funnel"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Orders Table -->
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <form method="post" id="orders_bulk_form">
+      {{ csrf_token() }}
+      <input type="hidden" name="action" value="bulk_status">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <!-- Bulk actions -->
+          <select name="bulk_status_target" class="form-select form-select-sm" style="width:auto;" id="bulk_status_select" disabled>
+            <option value="">Bulk status change...</option>
+            <option value="processing">Mark Processing</option>
+            <option value="shipped">Mark Shipped</option>
+            <option value="completed">Mark Completed</option>
+            <option value="cancelled">Mark Cancelled</option>
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-primary" id="apply_bulk_btn" disabled>Apply</button>
+        </div>
+
+        <div>
+          <a href="{{ admin_url(path='orders.php?export=csv') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-download me-1"></i> Export CSV
+          </a>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:30px;"><input type="checkbox" class="form-check-input" id="check_all_orders"></th>
+              <th>Order</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orders %}
+              <tr>
+                <td><input type="checkbox" name="selected_orders[]" value="{{ o.id }}" class="form-check-input order-check"></td>
+                <td>
+                  <a href="{{ admin_url(path='order_view.php?id=' ~ o.id) }}" class="fw-bold text-decoration-none">
+                    {{ o.order_number }}
+                  </a>
+                </td>
+                <td class="small text-muted">{{ o.created_at }}</td>
+                <td>
+                  <div class="fw-semibold">{{ o.customer_name }}</div>
+                  <small class="text-muted">{{ o.customer_phone }}</small>
+                </td>
+                <td class="fw-bold">৳{{ o.total }}</td>
+                <td>
+                  <span class="badge text-bg-light border text-uppercase">{{ o.payment_method }}</span>
+                  <span class="badge {% if o.payment_status == 'paid' %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                    {{ o.payment_status }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge status-{{ o.status }}">
+                    {{ o.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <a href="{{ admin_url(path='order_view.php?id=' ~ o.id) }}" class="btn btn-sm btn-light me-1" title="View details">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{{ admin_url(path='order_print.php?id=' ~ o.id) }}" target="_blank" class="btn btn-sm btn-light" title="Print invoice">
+                    <i class="bi bi-printer"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+            {% if orders | length == 0 %}
+              <tr><td colspan="8" class="text-center py-4 text-muted">No orders match your filter criteria.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const checkAll = document.getElementById('check_all_orders');
+  const checks = document.querySelectorAll('.order-check');
+  const select = document.getElementById('bulk_status_select');
+  const btn = document.getElementById('apply_bulk_btn');
+
+  function update() {
+    const cnt = document.querySelectorAll('.order-check:checked').length;
+    select.disabled = (cnt === 0);
+    btn.disabled = (cnt === 0);
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      checks.forEach(c => c.checked = checkAll.checked);
+      update();
+    });
+  }
+
+  checks.forEach(c => c.addEventListener('change', update));
+});
+</script>
+{% endblock %}

@@ -20,10 +20,10 @@
 | **Unit 1: Storefront Public APIs** | Complete | Passed | Cart AJAX drawer, Availability check, Search suggestions, SSE availability stream, Newsletter, Reviews, Wishlist toggle |
 | **Unit 1: Media & Asset Delivery** | Complete | Passed | `/uploads/*` resolution, mime sniffing, placeholder fallback, ETag HTTP caching |
 | **Unit 1: Prometheus Metrics** | Complete | Passed | `/metrics` Prometheus text metrics endpoint |
-| **Unit 2: Admin Panel Auth & RBAC** | In Progress | Pending | Admin session, CSRF, RBAC permission matrices |
-| **Unit 2: Admin Catalog & Inventory** | Not Started | Pending | Products, Categories, Option Presets, CSV Import/Export, Stock Movements |
-| **Unit 2: Admin Orders & Customers** | Not Started | Pending | Order status transitions, Invoice printing, Customer management |
-| **Unit 2: Admin Marketing & Content** | Not Started | Pending | Coupons, Banners, Subscribers, Reviews, Static Pages, Contact Messages |
-| **Unit 2: Admin Monitoring & Settings** | Not Started | Pending | Telemetry display, Alert rules, General/Mail/Storage configuration |
-| **Unit 2: Admin AJAX Endpoints** | Not Started | Pending | Monitor data, stock inline updates, option presets, analytics data |
+| **Unit 2: Admin Panel Auth & RBAC** | Complete | Passed | Admin session, direct bcrypt, CSRF protection, RBAC permission matrices & wildcards |
+| **Unit 2: Admin Catalog & Inventory** | Complete | Passed | Products CRUD, categories, option presets, CSV wizard (BOM/delimiters), stock overview, movements ledger, stock adjustment |
+| **Unit 2: Admin Orders & Customers** | Complete | Passed | Orders state transitions machine, COD paid auto-update, cancellation stock restore, invoice printing, customer GDPR anonymization, notes |
+| **Unit 2: Admin Marketing & Content** | Complete | Passed | Coupons CRUD, storefront banners, newsletter subscribers, review moderation & rating recalculation, CMS pages, contact messages, staff management |
+| **Unit 2: Admin Monitoring & Settings** | Complete | Passed | Real-time /proc and MySQL telemetry, alert rules, 9 settings tabs, SMTP configuration, 16 mail templates, mail queue retry/purge |
+| **Unit 2: Admin AJAX Endpoints** | Complete | Passed | /admin/ajax/stock_update.php, /admin/ajax/option_presets.php, /admin/ajax/monitor_data.php, /admin/ajax/analytics_data.php |
 | **Unit 3: Background Workers / Cron** | Complete | Passed (8/8 tests) | Process mail queue (SKIP LOCKED), telemetry collector (/proc, MySQL), access log parser, customer maintenance, rollups, cleanup logs, CLI tools, systemd units, WORKER_CUTOVER.md |

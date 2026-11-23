@@ -1,0 +1,189 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-4">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-amber"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <p class="stat-label">Pending Reviews</p>
+        <p class="stat-value">{{ count_pending }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-emerald"><i class="bi bi-star-fill"></i></div>
+      <div>
+        <p class="stat-label">Approved Reviews</p>
+        <p class="stat-value">{{ count_approved }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-rose"><i class="bi bi-x-circle"></i></div>
+      <div>
+        <p class="stat-label">Rejected Reviews</p>
+        <p class="stat-value">{{ count_rejected }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-6">
+        <label class="form-label small text-muted">Search</label>
+        <input type="text" name="q" class="form-control" value="{{ search | default(value='') }}" placeholder="Author, title, content or product name...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="all">All statuses</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Card -->
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <form method="post" id="reviews_bulk_form">
+      {{ csrf_token() }}
+      <input type="hidden" name="action" value="bulk">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <select name="bulk_op" class="form-select form-select-sm" style="width:auto;" id="bulk_review_select" disabled>
+            <option value="">Bulk actions...</option>
+            <option value="approve">Approve selected</option>
+            <option value="reject">Reject selected</option>
+            {% if me.role == 'admin' %}
+              <option value="delete">Delete selected</option>
+            {% endif %}
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-primary" id="apply_review_btn" disabled>Apply</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:30px;"><input type="checkbox" class="form-check-input" id="check_all_reviews"></th>
+              <th>Product</th>
+              <th>Rating & Review</th>
+              <th>Author</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reviews %}
+              <tr>
+                <td><input type="checkbox" name="selected_ids[]" value="{{ r.id }}" class="form-check-input review-check"></td>
+                <td>
+                  <a href="{{ admin_url(path='product_form.php?id=' ~ r.product_id) }}" class="fw-semibold text-decoration-none">
+                    {{ r.product_name }}
+                  </a>
+                </td>
+                <td>
+                  <div class="text-warning small mb-1">
+                    {% for i in range(end=r.rating) %}★{% endfor %}{% for i in range(end=5-r.rating) %}☆{% endfor %}
+                  </div>
+                  {% if r.title %}<div class="fw-bold small">{{ r.title }}</div>{% endif %}
+                  <p class="small text-secondary mb-0">{{ r.body }}</p>
+                  {% if r.admin_reply %}
+                    <div class="small bg-light p-2 rounded mt-1 text-primary"><strong>Reply:</strong> {{ r.admin_reply }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="fw-semibold small">{{ r.author_name }}</div>
+                  {% if r.ip %}<small class="text-muted font-monospace">{{ r.ip }}</small>{% endif %}
+                </td>
+                <td><span class="badge status-{{ r.status }}">{{ r.status }}</span></td>
+                <td class="small text-muted">{{ r.created_at }}</td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm">
+                    {% if r.status != 'approved' %}
+                      <button type="button" class="btn btn-outline-success" onclick="reviewAction('set_status', '{{ r.id }}', 'approved')"><i class="bi bi-check-lg"></i></button>
+                    {% endif %}
+                    {% if r.status != 'rejected' %}
+                      <button type="button" class="btn btn-outline-warning" onclick="reviewAction('set_status', '{{ r.id }}', 'rejected')"><i class="bi bi-x-lg"></i></button>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-primary" onclick="promptReply('{{ r.id }}')"><i class="bi bi-reply"></i></button>
+                    {% if me.role == 'admin' %}
+                      <button type="button" class="btn btn-outline-danger" onclick="reviewAction('delete', '{{ r.id }}', '')"><i class="bi bi-trash"></i></button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+            {% if reviews | length == 0 %}
+              <tr><td colspan="7" class="text-center py-4 text-muted">No reviews found.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+</div>
+
+<form method="post" id="single_review_form" style="display:none;">
+  {{ csrf_token() }}
+  <input type="hidden" name="action" id="srf_action">
+  <input type="hidden" name="id" id="srf_id">
+  <input type="hidden" name="status" id="srf_status">
+  <input type="hidden" name="admin_reply" id="srf_reply">
+</form>
+
+<script>
+function reviewAction(act, id, st) {
+  document.getElementById('srf_action').value = act;
+  document.getElementById('srf_id').value = id;
+  document.getElementById('srf_status').value = st;
+  document.getElementById('single_review_form').submit();
+}
+
+function promptReply(id) {
+  const reply = prompt("Enter public reply from store admin:");
+  if (reply === null) return;
+  document.getElementById('srf_action').value = 'reply';
+  document.getElementById('srf_id').value = id;
+  document.getElementById('srf_reply').value = reply;
+  document.getElementById('single_review_form').submit();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const checkAll = document.getElementById('check_all_reviews');
+  const checks = document.querySelectorAll('.review-check');
+  const select = document.getElementById('bulk_review_select');
+  const btn = document.getElementById('apply_review_btn');
+
+  function update() {
+    const cnt = document.querySelectorAll('.review-check:checked').length;
+    select.disabled = (cnt === 0);
+    btn.disabled = (cnt === 0);
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      checks.forEach(c => c.checked = checkAll.checked);
+      update();
+    });
+  }
+  checks.forEach(c => c.addEventListener('change', update));
+});
+</script>
+{% endblock %}

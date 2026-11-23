@@ -1,0 +1,225 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-1">{% if id > 0 %}Edit Product{% else %}Add New Product{% endif %}</h3>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="{{ admin_url(path='products.php') }}">Products</a></li>
+        <li class="breadcrumb-item active">{% if id > 0 %}{{ product.name }}{% else %}New{% endif %}</li>
+      </ol>
+    </nav>
+  </div>
+  <div>
+    <a href="{{ admin_url(path='products.php') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Products
+    </a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="product_form">
+  {{ csrf_token() }}
+  <input type="hidden" name="id" value="{{ id }}">
+  <input type="hidden" name="updated_at" value="{{ product.updated_at | default(value='') }}">
+
+  <div class="row g-4">
+    <!-- Left Column: Core Product Info -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">General Information</h5>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control form-control-lg" required value="{{ product.name | default(value='') }}" placeholder="e.g. Premium Cotton T-Shirt">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">SKU (Stock Keeping Unit)</label>
+              <input type="text" name="sku" class="form-control" value="{{ product.sku | default(value='') }}" placeholder="e.g. JP-TSHIRT-001">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">URL Slug</label>
+              <input type="text" name="slug" class="form-control" value="{{ product.slug | default(value='') }}" placeholder="auto-generated from name if blank">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Short Description</label>
+            <textarea name="short_description" class="form-control" rows="2" placeholder="Brief summary for catalog cards...">{{ product.short_description | default(value='') }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Full Description</label>
+            <textarea name="description" class="form-control" rows="8" placeholder="Detailed product specifications, features, sizing...">{{ product.description | default(value='') }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing & Inventory for Simple Product -->
+      <div class="card shadow-sm border-0 mb-4" id="simple_pricing_card">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Pricing & Stock</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Regular Price (৳) <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" name="price" class="form-control" value="{{ product.price | default(value='0.00') }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sale Price (৳)</label>
+              <input type="number" step="0.01" name="sale_price" class="form-control" value="{{ product.sale_price | default(value='') }}" placeholder="Leave empty if not on sale">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Stock Quantity</label>
+              <input type="number" name="stock" class="form-control" value="{{ product.stock | default(value='0') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Low Stock Threshold</label>
+              <input type="number" name="low_stock_threshold" class="form-control" value="{{ product.low_stock_threshold | default(value='5') }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variants Builder Section -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="card-title mb-0">Product Options & Variants</h5>
+              <small class="text-muted">Generate variant matrix for size, color, storage, etc.</small>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggle_variable_product"
+                     {% if product.product_type == 'variable' %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="toggle_variable_product">This product has options</label>
+            </div>
+          </div>
+
+          <div id="variants_builder_wrapper" {% if product.product_type != 'variable' %}style="display:none;"{% endif %}>
+            <div id="options_container" class="mb-4"></div>
+            <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add_option_btn">
+              <i class="bi bi-plus-circle me-1"></i> Add Another Option
+            </button>
+            <div id="variants_matrix_container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO Meta Data -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Search Engine Optimization (SEO)</h5>
+          <div class="mb-3">
+            <label class="form-label">Meta Title</label>
+            <input type="text" name="meta_title" class="form-control" value="{{ product.meta_title | default(value='') }}" placeholder="Title displayed in search engine results">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Meta Description</label>
+            <textarea name="meta_description" class="form-control" rows="3" placeholder="Brief search snippet summary...">{{ product.meta_description | default(value='') }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Meta Keywords</label>
+            <input type="text" name="meta_keywords" class="form-control" value="{{ product.meta_keywords | default(value='') }}" placeholder="comma-separated keywords">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Settings & Media -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Publishing</h5>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Status</label>
+            <select name="status" class="form-select">
+              <option value="active" {% if product.status == 'active' %}selected{% endif %}>Active (Published)</option>
+              <option value="inactive" {% if product.status == 'inactive' %}selected{% endif %}>Inactive (Hidden)</option>
+              <option value="draft" {% if product.status == 'draft' %}selected{% endif %}>Draft</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <select name="category_id" class="form-select">
+              <option value="">Uncategorized</option>
+              {% for c in categories %}
+                <option value="{{ c.id }}" {% if product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="featured" value="1" id="featured_check" {% if product.featured == 1 %}checked{% endif %}>
+            <label class="form-check-label" for="featured_check">Featured on Home Page</label>
+          </div>
+          <hr>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-check2-circle me-1"></i> Save Product
+            </button>
+            {% if id > 0 %}
+              <a href="{{ url(path='product/' ~ product.slug) }}" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> View on Store
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Primary Image Upload -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Primary Image</h5>
+          {% if product.image %}
+            <div class="mb-3 text-center">
+              <img src="{{ url(path='uploads/' ~ product.image) }}" class="img-fluid rounded border" style="max-height: 200px;" alt="">
+            </div>
+          {% endif %}
+          <div class="mb-3">
+            <input type="file" name="primary_image" class="form-control" accept="image/*">
+            <small class="text-muted">WebP, JPEG, PNG, or AVIF. Auto-converted to optimized WebP.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Images Gallery -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Image Gallery</h5>
+          <div class="mb-3">
+            <input type="file" name="gallery_images[]" class="form-control" accept="image/*" multiple>
+            <small class="text-muted">Select multiple images to append to the product gallery.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script src="{{ url(path='assets/js/admin-variants.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const initialOptions  = {{ existing_options | default(value='[]') | safe }};
+  const initialVariants = {{ existing_variants | default(value='[]') | safe }};
+  const initialGallery  = {{ existing_images | default(value='[]') | safe }};
+
+  if (window.initProductVariantsBuilder) {
+    window.initProductVariantsBuilder(initialOptions, initialVariants, initialGallery);
+  }
+
+  const toggleVar = document.getElementById('toggle_variable_product');
+  const wrapper = document.getElementById('variants_builder_wrapper');
+  const pricingCard = document.getElementById('simple_pricing_card');
+  if (toggleVar && wrapper) {
+    toggleVar.addEventListener('change', function () {
+      wrapper.style.display = this.checked ? 'block' : 'none';
+      if (pricingCard) {
+        pricingCard.style.display = this.checked ? 'none' : 'block';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

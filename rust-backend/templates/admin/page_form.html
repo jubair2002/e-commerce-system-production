@@ -1,0 +1,77 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-4">{% if id > 0 %}Edit CMS Page{% else %}Add New Page{% endif %}</h5>
+
+        <form method="post">
+          {{ csrf_token() }}
+          <input type="hidden" name="id" value="{{ id }}">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Page Title <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control form-control-lg" value="{{ page.title | default(value='') }}" required placeholder="e.g. Terms & Conditions">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">URL Slug</label>
+              <input type="text" name="slug" class="form-control" value="{{ page.slug | default(value='') }}" placeholder="auto-generated from title if blank">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select">
+                <option value="published" {% if page.status == 'published' %}selected{% endif %}>Published</option>
+                <option value="draft" {% if page.status == 'draft' %}selected{% endif %}>Draft</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Page Content (HTML supported) <span class="text-danger">*</span></label>
+            <textarea name="content" class="form-control font-monospace" rows="12" required placeholder="Write your page content here...">{{ page.content | default(value='') }}</textarea>
+          </div>
+
+          <h6 class="fw-bold mb-3">Display & SEO Settings</h6>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Display Position / Order</label>
+              <input type="number" name="position" class="form-control" value="{{ page.position | default(value=0) }}">
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-4 mt-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="show_in_header" value="1" id="s_header" {% if page.show_in_header == 1 %}checked{% endif %}>
+                <label class="form-check-label" for="s_header">Header Nav</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="show_in_footer" value="1" id="s_footer" {% if page.show_in_footer == 1 %}checked{% endif %}>
+                <label class="form-check-label" for="s_footer">Footer Nav</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Meta Title</label>
+            <input type="text" name="meta_title" class="form-control" value="{{ page.meta_title | default(value='') }}">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Meta Description</label>
+            <textarea name="meta_description" class="form-control" rows="2">{{ page.meta_description | default(value='') }}</textarea>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between">
+            <a href="{{ admin_url(path='pages.php') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Page</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ pub struct User {
     pub avatar_file_id: Option<u64>,
     pub phone: Option<String>,
     pub bio: Option<String>,
+    #[sqlx(default)]
     pub last_login: Option<NaiveDateTime>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,

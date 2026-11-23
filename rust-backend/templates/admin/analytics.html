@@ -1,0 +1,121 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <h3 class="mb-1">Store Analytics &amp; Intelligence</h3>
+    <p class="text-muted small mb-0">Sales trends, customer conversion funnels, top selling products, and traffic intelligence.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload();">
+      <i class="bi bi-arrow-repeat me-1"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <p class="stat-label">Total Revenue</p>
+        <p class="stat-value" id="kpiRevenue">৳0.00</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-receipt"></i></div>
+      <div>
+        <p class="stat-label">Total Orders</p>
+        <p class="stat-value" id="kpiOrders">0</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <p class="stat-label">Units Sold</p>
+        <p class="stat-value" id="kpiUnits">0</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-graph-up"></i></div>
+      <div>
+        <p class="stat-label">Conversion Rate</p>
+        <p class="stat-value" id="kpiConversion">0.0%</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0">Sales &amp; Revenue Overview</h5>
+      </div>
+      <div class="card-body">
+        <div id="salesChartPlaceholder" class="p-5 text-center text-muted">
+          <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>
+          <span>Dynamic chart loads via /admin/ajax/analytics_data.php</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0">Order Status Breakdown</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush small" id="statusBreakdownList">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Completed</span>
+            <span class="badge bg-success">Active</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Processing</span>
+            <span class="badge bg-info">In Delivery</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Pending</span>
+            <span class="badge bg-warning text-dark">Awaiting</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Cancelled</span>
+            <span class="badge bg-danger">Void</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  fetch("{{ admin_url(path='ajax/analytics_data.php?range=30d') }}")
+    .then(r => r.json())
+    .then(data => {
+      if (data.revenue !== undefined) {
+        document.getElementById("kpiRevenue").textContent = "৳" + Number(data.revenue).toLocaleString();
+      }
+      if (data.orders !== undefined) {
+        document.getElementById("kpiOrders").textContent = Number(data.orders).toLocaleString();
+      }
+      if (data.units_sold !== undefined) {
+        document.getElementById("kpiUnits").textContent = Number(data.units_sold).toLocaleString();
+      }
+      if (data.conversion_rate !== undefined) {
+        document.getElementById("kpiConversion").textContent = data.conversion_rate + "%";
+      }
+    })
+    .catch(e => console.error("Analytics fetch error:", e));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="card mb-3 shadow-sm">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-md-5">
+        <label class="form-label small text-muted">Search</label>
+        <input type="text" name="q" class="form-control" value="{{ search | default(value='') }}" placeholder="Category name">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary"><i class="bi bi-funnel"></i> Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="card-title mb-0">{{ total }} categor{% if total == 1 %}y{% else %}ies{% endif %}</h5>
+      <a class="btn btn-primary" href="{{ admin_url(path='category_form.php') }}">
+        <i class="bi bi-plus-lg"></i> Add category
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Name</th><th>Slug</th><th>Products</th>
+            <th>Status</th><th>Created</th><th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in categories %}
+            <tr>
+              <td><span class="fw-semibold">{{ c.name }}</span></td>
+              <td><code>{{ c.slug }}</code></td>
+              <td><span class="badge text-bg-light">{{ c.product_count }}</span></td>
+              <td><span class="badge status-{{ c.status }}">{{ c.status }}</span></td>
+              <td class="text-muted">{{ c.created_at | default(value='') }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-light" href="{{ admin_url(path='category_form.php?id=' ~ c.id) }}" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if me.role == 'admin' %}
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this category? Products in it will be unlinked.');">
+                    {{ csrf_token() }}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="{{ c.id }}">
+                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          {% if categories | length == 0 %}
+            <tr><td colspan="6" class="text-center py-4 text-muted">No categories found.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

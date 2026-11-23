@@ -1,0 +1,81 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-4">{% if id > 0 %}Edit Banner{% else %}Add New Banner{% endif %}</h5>
+
+        <form method="post" enctype="multipart/form-data">
+          {{ csrf_token() }}
+          <input type="hidden" name="id" value="{{ id }}">
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Banner Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" class="form-control" value="{{ banner.title | default(value='') }}" required placeholder="e.g. Eid Mega Sale">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Placement</label>
+              <select name="placement" class="form-select">
+                <option value="hero" {% if banner.placement == 'hero' %}selected{% endif %}>Hero Carousel</option>
+                <option value="promo_strip" {% if banner.placement == 'promo_strip' %}selected{% endif %}>Promo Strip</option>
+                <option value="category_row" {% if banner.placement == 'category_row' %}selected{% endif %}>Category Row</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Subtitle / Description</label>
+            <input type="text" name="subtitle" class="form-control" value="{{ banner.subtitle | default(value='') }}" placeholder="e.g. Up to 50% discount on all winter gadgets">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Button Text</label>
+              <input type="text" name="button_text" class="form-control" value="{{ banner.button_text | default(value='') }}" placeholder="e.g. Shop Now">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Target Link URL</label>
+              <input type="text" name="button_url" class="form-control" value="{{ banner.button_url | default(value='') }}" placeholder="e.g. /category/gadgets">
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label">Display Order / Position</label>
+              <input type="number" name="position" class="form-control" value="{{ banner.position | default(value=0) }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select">
+                <option value="active" {% if banner.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if banner.status == 'inactive' %}selected{% endif %}>Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Banner Image</label>
+            {% if banner.image %}
+              <div class="mb-2">
+                <img src="{{ url(path='uploads/' ~ banner.image) }}" class="img-fluid rounded border" style="max-height: 150px;" alt="">
+              </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*">
+            <small class="text-muted">Recommended: 1920x600 for hero sliders. Auto-converted to WebP.</small>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between">
+            <a href="{{ admin_url(path='banners.php') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Banner</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

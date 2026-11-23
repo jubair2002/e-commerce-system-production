@@ -1,0 +1,185 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">Inventory Management</h3>
+    <p class="text-muted small mb-0">Live stock overview, atomic adjustment controls, and full inventory movement audit trail.</p>
+  </div>
+  {% if sub_tab == 'ledger' %}
+    <div>
+      <a href="{{ admin_url(path='inventory.php?tab=ledger&export=csv') }}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-download me-1"></i> Export Ledger CSV
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Sub Navigation Tabs -->
+<ul class="nav nav-pills mb-4">
+  <li class="nav-item">
+    <a class="nav-link {% if sub_tab == 'overview' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=overview') }}">
+      <i class="bi bi-grid-3x3 me-1"></i> Stock Overview
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if sub_tab == 'ledger' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=ledger') }}">
+      <i class="bi bi-journal-text me-1"></i> Movements Ledger
+    </a>
+  </li>
+</ul>
+
+{% if sub_tab == 'overview' %}
+  <!-- Filters -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="tab" value="overview">
+        <div class="col-md-5">
+          <input type="text" name="q" class="form-control" placeholder="Search by name or SKU..." value="{{ search | default(value='') }}">
+        </div>
+        <div class="col-md-3">
+          <select name="filter" class="form-select" onchange="this.form.submit()">
+            <option value="all" {% if stock_filter == 'all' %}selected{% endif %}>All Stock Statuses</option>
+            <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock Only (&le; Threshold)</option>
+            <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of Stock Only (&le; 0)</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Product & Variant</th>
+            <th>Type</th>
+            <th>SKU</th>
+            <th class="text-center">Current Stock</th>
+            <th class="text-center">Threshold</th>
+            <th>Condition</th>
+            <th class="text-end" style="width: 140px;">Adjust Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.product_name }}</div>
+                {% if item.variant_id %}
+                  <small class="text-muted">Variant #{{ item.variant_id }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.variant_id %}
+                  <span class="badge bg-indigo-subtle text-indigo border">Variant</span>
+                {% else %}
+                  <span class="badge bg-light text-secondary border">Simple</span>
+                {% endif %}
+              </td>
+              <td><code>{{ item.sku | default(value='—') }}</code></td>
+              <td class="text-center fw-bold">{{ item.stock }}</td>
+              <td class="text-center text-muted">{{ item.low_stock_threshold | default(value=5) }}</td>
+              <td>
+                {% if item.stock <= 0 %}
+                  <span class="badge text-bg-danger">Out of stock</span>
+                {% elif item.stock <= 5 %}
+                  <span class="badge text-bg-warning">Low stock</span>
+                {% else %}
+                  <span class="badge text-bg-success">In stock</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        onclick="promptAdjustStock('{{ item.product_id }}', '{{ item.variant_id | default(value='') }}')">
+                  Adjust
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if items | length == 0 %}
+            <tr><td colspan="7" class="text-center py-4 text-muted">No inventory items found.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% elif sub_tab == 'ledger' %}
+  <!-- Ledger Table -->
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Product</th>
+            <th class="text-center">Change</th>
+            <th class="text-center">Stock After</th>
+            <th>Reason</th>
+            <th>User / System</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in ledger %}
+            <tr>
+              <td><code>#{{ row.id }}</code></td>
+              <td class="text-muted small">{{ row.created_at }}</td>
+              <td>{{ row.product_name }}</td>
+              <td class="text-center">
+                {% if row.change_qty > 0 %}
+                  <span class="badge text-bg-success">+{{ row.change_qty }}</span>
+                {% else %}
+                  <span class="badge text-bg-danger">{{ row.change_qty }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center fw-semibold">{{ row.stock_after | default(value='—') }}</td>
+              <td><span class="badge text-bg-light border">{{ row.reason }}</span></td>
+              <td class="small">{{ row.user_name | default(value='System') }}</td>
+              <td class="small text-muted">{{ row.note | default(value='—') }}</td>
+            </tr>
+          {% endfor %}
+          {% if ledger | length == 0 %}
+            <tr><td colspan="8" class="text-center py-4 text-muted">No ledger movements recorded.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+<form method="post" id="stock_adjust_form" style="display:none;">
+  {{ csrf_token() }}
+  <input type="hidden" name="action" value="adjust_stock">
+  <input type="hidden" name="product_id" id="adj_product_id">
+  <input type="hidden" name="variant_id" id="adj_variant_id">
+  <input type="hidden" name="change_qty" id="adj_change_qty">
+  <input type="hidden" name="reason" value="manual_adjust">
+  <input type="hidden" name="note" id="adj_note">
+</form>
+
+<script>
+function promptAdjustStock(pid, vid) {
+  const qtyStr = prompt("Enter stock change amount (e.g. +10 or -5):");
+  if (!qtyStr) return;
+  const qty = parseInt(qtyStr, 10);
+  if (isNaN(qty) || qty === 0) {
+    alert("Invalid stock quantity.");
+    return;
+  }
+  const note = prompt("Optional reason / note for stock adjustment:") || "Manual inventory adjustment";
+  document.getElementById('adj_product_id').value = pid;
+  document.getElementById('adj_variant_id').value = vid;
+  document.getElementById('adj_change_qty').value = qty;
+  document.getElementById('adj_note').value = note;
+  document.getElementById('stock_adjust_form').submit();
+}
+</script>
+{% endblock %}

@@ -89,6 +89,10 @@ impl SettingsRepository {
         Ok(())
     }
 
+    pub fn invalidate(&self) {
+        self.cache.invalidate_all();
+    }
+
     pub fn get(&self, key: &str) -> Option<String> {
         self.cache.get(key)
     }

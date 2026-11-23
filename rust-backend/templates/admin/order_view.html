@@ -1,0 +1,173 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">Order #{{ order.order_number }}</h3>
+    <small class="text-muted">Placed on {{ order.created_at }}</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ admin_url(path='order_print.php?id=' ~ order.id) }}" target="_blank" class="btn btn-outline-secondary">
+      <i class="bi bi-printer me-1"></i> Print Invoice
+    </a>
+    <a href="{{ admin_url(path='orders.php') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Orders
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left column: Order items and timeline -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Order Items</h5>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in items %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ it.product_name }}</div>
+                    {% if it.variant_name %}
+                      <small class="text-muted">{{ it.variant_name }}</small>
+                    {% endif %}
+                    {% if it.sku %}
+                      <small class="text-muted d-block">SKU: {{ it.sku }}</small>
+                    {% endif %}
+                  </td>
+                  <td>৳{{ it.price }}</td>
+                  <td class="text-center">{{ it.quantity }}</td>
+                  <td class="text-end fw-semibold">৳{{ it.subtotal }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="3" class="text-end text-muted">Subtotal:</td><td class="text-end">৳{{ order.subtotal }}</td></tr>
+              {% if order.discount_total > 0 %}
+                <tr><td colspan="3" class="text-end text-success">Discount:</td><td class="text-end text-success">-৳{{ order.discount_total }}</td></tr>
+              {% endif %}
+              <tr><td colspan="3" class="text-end text-muted">Shipping Fee:</td><td class="text-end">৳{{ order.shipping_fee }}</td></tr>
+              {% if order.cod_fee > 0 %}
+                <tr><td colspan="3" class="text-end text-muted">COD Fee:</td><td class="text-end">৳{{ order.cod_fee }}</td></tr>
+              {% endif %}
+              <tr class="fw-bold fs-5"><td colspan="3" class="text-end">Total:</td><td class="text-end text-primary">৳{{ order.total }}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status History Timeline -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Order History Timeline</h5>
+        <ul class="list-group list-group-flush">
+          {% for h in timeline %}
+            <li class="list-group-item px-0 py-3">
+              <div class="d-flex justify-content-between">
+                <span class="badge status-{{ h.status }} mb-1">{{ h.status }}</span>
+                <small class="text-muted">{{ h.created_at }}</small>
+              </div>
+              <p class="mb-0 small text-secondary">{{ h.note | default(value='Status updated.') }}</p>
+              {% if h.admin_name %}
+                <small class="text-muted">By: {{ h.admin_name }}</small>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Customer, Status Controls & Courier -->
+  <div class="col-lg-4">
+    <!-- Status Transition Card -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Update Order Status</h5>
+        <div class="mb-3">
+          <label class="form-label text-muted small">Current Status</label>
+          <div><span class="badge status-{{ order.status }} fs-6">{{ order.status }}</span></div>
+        </div>
+
+        {% if valid_next | length > 0 %}
+          <form method="post">
+            {{ csrf_token() }}
+            <input type="hidden" name="action" value="update_status">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Next Allowed Status</label>
+              <select name="status" class="form-select" required>
+                {% for st in valid_next %}
+                  <option value="{{ st }}">{{ st | capitalize }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Status Note (optional)</label>
+              <input type="text" name="note" class="form-control" placeholder="e.g. Courier handover complete">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update Status</button>
+          </form>
+        {% else %}
+          <div class="alert alert-secondary py-2 small mb-0">This order has reached a terminal status ({{ order.status }}).</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Tracking & Delivery Card -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Courier & Tracking</h5>
+        <form method="post">
+          {{ csrf_token() }}
+          <input type="hidden" name="action" value="update_tracking">
+          <div class="mb-3">
+            <label class="form-label small">Courier Service</label>
+            <input type="text" name="courier" class="form-control" value="{{ order.courier | default(value='') }}" placeholder="e.g. Steadfast, Pathao, RedX">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Tracking Number / Consignment ID</label>
+            <input type="text" name="tracking_number" class="form-control" value="{{ order.tracking_number | default(value='') }}" placeholder="Tracking ID">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Payment Status</label>
+            <select name="payment_status" class="form-select">
+              <option value="unpaid" {% if order.payment_status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+              <option value="paid" {% if order.payment_status == 'paid' %}selected{% endif %}>Paid</option>
+              <option value="refunded" {% if order.payment_status == 'refunded' %}selected{% endif %}>Refunded</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Order Notes</label>
+            <textarea name="notes" class="form-control" rows="2">{{ order.notes | default(value='') }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-outline-secondary w-100">Save Courier Details</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Customer & Shipping Address -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Customer Details</h5>
+        <p class="mb-1 fw-bold">{{ order.customer_name }}</p>
+        <p class="mb-1 text-muted small"><i class="bi bi-envelope me-1"></i> {{ order.customer_email }}</p>
+        <p class="mb-3 text-muted small"><i class="bi bi-telephone me-1"></i> {{ order.customer_phone }}</p>
+
+        <h6 class="fw-semibold small text-muted text-uppercase mb-2">Shipping Destination</h6>
+        <p class="small mb-1">{{ order.shipping_address }}</p>
+        <p class="small text-muted mb-0">{{ order.shipping_city }}{% if order.shipping_district %}, {{ order.shipping_district }}{% endif %}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

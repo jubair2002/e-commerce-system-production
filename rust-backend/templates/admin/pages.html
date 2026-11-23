@@ -1,0 +1,72 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Content Pages (CMS)</h1>
+    <p class="text-muted small mb-0">Manage storefront informational pages (About, Terms, Privacy, FAQ, etc.).</p>
+  </div>
+  <a href="{{ admin_url(path='page_form.php') }}" class="btn btn-primary d-inline-flex align-items-center gap-1">
+    <i class="bi bi-plus-lg"></i> Add New Page
+  </a>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Title</th>
+          <th>URL Slug</th>
+          <th>Navigation Visibility</th>
+          <th>Order</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pages %}
+          <tr>
+            <td>
+              <a href="{{ admin_url(path='page_form.php?id=' ~ p.id) }}" class="fw-bold text-decoration-none">
+                {{ p.title }}
+              </a>
+            </td>
+            <td><code>/page/{{ p.slug }}</code></td>
+            <td>
+              {% if p.show_in_header == 1 %}<span class="badge bg-light text-dark border me-1">Header</span>{% endif %}
+              {% if p.show_in_footer == 1 %}<span class="badge bg-light text-dark border">Footer</span>{% endif %}
+            </td>
+            <td>{{ p.position }}</td>
+            <td>
+              <form method="post" class="d-inline">
+                {{ csrf_token() }}
+                <input type="hidden" name="action" value="toggle_status">
+                <input type="hidden" name="id" value="{{ p.id }}">
+                <button type="submit" class="badge status-{{ p.status }} border-0 cursor-pointer" title="Click to toggle status">
+                  {{ p.status }}
+                </button>
+              </form>
+            </td>
+            <td class="small text-muted">{{ p.updated_at }}</td>
+            <td class="text-end">
+              <a href="{{ url(path='page/' ~ p.slug) }}" target="_blank" class="btn btn-sm btn-light me-1" title="View page"><i class="bi bi-box-arrow-up-right"></i></a>
+              <a href="{{ admin_url(path='page_form.php?id=' ~ p.id) }}" class="btn btn-sm btn-light me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+              <form method="post" class="d-inline" onsubmit="return confirm('Permanently delete this page?');">
+                {{ csrf_token() }}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="{{ p.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if pages | length == 0 %}
+          <tr><td colspan="7" class="text-center py-4 text-muted">No CMS pages found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-indigo"><i class="bi bi-people"></i></div>
+      <div>
+        <p class="stat-label">Total Subscribers</p>
+        <p class="stat-value">{{ count_total }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-emerald"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <p class="stat-label">Active / Subscribed</p>
+        <p class="stat-value">{{ count_subscribed }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-amber"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <p class="stat-label">Pending Opt-In</p>
+        <p class="stat-value">{{ count_pending }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-rose"><i class="bi bi-x-circle"></i></div>
+      <div>
+        <p class="stat-label">Unsubscribed</p>
+        <p class="stat-value">{{ count_unsubscribed }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <form class="d-flex align-items-center gap-2" method="get">
+        <label class="small text-muted mb-0">Status:</label>
+        <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="all">All statuses</option>
+          <option value="subscribed" {% if status_filter == 'subscribed' %}selected{% endif %}>Subscribed</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="unsubscribed" {% if status_filter == 'unsubscribed' %}selected{% endif %}>Unsubscribed</option>
+        </select>
+      </form>
+      <div>
+        <a href="{{ admin_url(path='subscribers.php?export=csv') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-download me-1"></i> Export Subscribers CSV
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Table Card -->
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Source</th>
+            <th>IP Address</th>
+            <th>Subscribed At</th>
+            <th>Confirmed At</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in subscribers %}
+            <tr>
+              <td><code>#{{ s.id }}</code></td>
+              <td class="fw-bold">{{ s.email }}</td>
+              <td><span class="badge status-{{ s.status }}">{{ s.status }}</span></td>
+              <td><span class="badge text-bg-light border">{{ s.source | default(value='footer') }}</span></td>
+              <td class="small text-muted font-monospace">{{ s.ip | default(value='—') }}</td>
+              <td class="small text-muted">{{ s.created_at }}</td>
+              <td class="small text-muted">{{ s.confirmed_at | default(value='—') }}</td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  {% if s.status != 'subscribed' %}
+                    <button type="button" class="btn btn-outline-success" onclick="subAction('set_status', '{{ s.id }}', 'subscribed')" title="Mark Subscribed"><i class="bi bi-check2"></i></button>
+                  {% endif %}
+                  {% if s.status != 'unsubscribed' %}
+                    <button type="button" class="btn btn-outline-warning" onclick="subAction('set_status', '{{ s.id }}', 'unsubscribed')" title="Unsubscribe"><i class="bi bi-slash-circle"></i></button>
+                  {% endif %}
+                  <button type="button" class="btn btn-outline-danger" onclick="subAction('delete', '{{ s.id }}', '')" title="Delete"><i class="bi bi-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if subscribers | length == 0 %}
+            <tr><td colspan="8" class="text-center py-4 text-muted">No subscribers found.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form method="post" id="sub_action_form" style="display:none;">
+  {{ csrf_token() }}
+  <input type="hidden" name="action" id="saf_action">
+  <input type="hidden" name="id" id="saf_id">
+  <input type="hidden" name="status" id="saf_status">
+</form>
+
+<script>
+function subAction(act, id, st) {
+  document.getElementById('saf_action').value = act;
+  document.getElementById('saf_id').value = id;
+  document.getElementById('saf_status').value = st;
+  document.getElementById('sub_action_form').submit();
+}
+</script>
+{% endblock %}

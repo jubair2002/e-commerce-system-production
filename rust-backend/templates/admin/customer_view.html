@@ -1,0 +1,256 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">Customer #{{ customer.id }} - {{ customer.name }}</h3>
+    <small class="text-muted">Registered on {{ customer.created_at }}</small>
+  </div>
+  <div>
+    <a href="{{ admin_url(path='customers.php') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Customers
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left column: Profile, Orders, Addresses, Wishlist Tabs -->
+  <div class="col-lg-8">
+    <ul class="nav nav-pills mb-3">
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{{ admin_url(path='customer_view.php?id=' ~ customer.id ~ '&tab=profile') }}">
+          <i class="bi bi-person me-1"></i> Profile
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'orders' %}active{% endif %}" href="{{ admin_url(path='customer_view.php?id=' ~ customer.id ~ '&tab=orders') }}">
+          <i class="bi bi-receipt me-1"></i> Order History ({{ orders | length }})
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'addresses' %}active{% endif %}" href="{{ admin_url(path='customer_view.php?id=' ~ customer.id ~ '&tab=addresses') }}">
+          <i class="bi bi-geo-alt me-1"></i> Address Book ({{ addresses | length }})
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'wishlist' %}active{% endif %}" href="{{ admin_url(path='customer_view.php?id=' ~ customer.id ~ '&tab=wishlist') }}">
+          <i class="bi bi-heart me-1"></i> Wishlist ({{ wishlist | length }})
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'notes' %}active{% endif %}" href="{{ admin_url(path='customer_view.php?id=' ~ customer.id ~ '&tab=notes') }}">
+          <i class="bi bi-journal-text me-1"></i> Admin Notes
+        </a>
+      </li>
+    </ul>
+
+    {% if active_tab == 'orders' %}
+      <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Order Number</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in orders %}
+                <tr>
+                  <td><a href="{{ admin_url(path='order_view.php?id=' ~ o.id) }}" class="fw-bold text-decoration-none">{{ o.order_number }}</a></td>
+                  <td class="small text-muted">{{ o.created_at }}</td>
+                  <td class="fw-semibold">৳{{ o.total }}</td>
+                  <td><span class="badge text-bg-light border text-uppercase">{{ o.payment_method }}</span></td>
+                  <td><span class="badge status-{{ o.status }}">{{ o.status }}</span></td>
+                  <td class="text-end">
+                    <a href="{{ admin_url(path='order_view.php?id=' ~ o.id) }}" class="btn btn-sm btn-light"><i class="bi bi-eye"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+              {% if orders | length == 0 %}
+                <tr><td colspan="6" class="text-center py-4 text-muted">No orders placed yet.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    {% elif active_tab == 'addresses' %}
+      <div class="row g-3">
+        {% for a in addresses %}
+          <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-secondary">{{ a.label }}</span>
+                  {% if a.is_default_shipping == 1 %}<span class="badge bg-success">Default Shipping</span>{% endif %}
+                </div>
+                <h6 class="fw-bold mb-1">{{ a.full_name }}</h6>
+                <p class="small text-muted mb-1"><i class="bi bi-telephone me-1"></i> {{ a.phone }}</p>
+                <p class="small mb-0">{{ a.address_line1 }}{% if a.address_line2 %}, {{ a.address_line2 }}{% endif %}</p>
+                <p class="small text-muted mb-0">{{ a.city }}{% if a.district %}, {{ a.district }}{% endif %}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+        {% if addresses | length == 0 %}
+          <div class="col-12"><div class="card shadow-sm border-0 p-4 text-center text-muted">No addresses saved.</div></div>
+        {% endif %}
+      </div>
+
+    {% elif active_tab == 'wishlist' %}
+      <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Saved On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for w in wishlist %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ w.product_name }}</div>
+                  </td>
+                  <td class="fw-semibold">৳{{ w.price }}</td>
+                  <td class="small text-muted">{{ w.created_at }}</td>
+                </tr>
+              {% endfor %}
+              {% if wishlist | length == 0 %}
+                <tr><td colspan="3" class="text-center py-4 text-muted">Wishlist is empty.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    {% elif active_tab == 'notes' %}
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Internal Admin Notes</h5>
+          <form method="post">
+            {{ csrf_token() }}
+            <input type="hidden" name="action" value="save_note">
+            <div class="mb-3">
+              <textarea name="admin_note" class="form-control" rows="4" maxlength="500" placeholder="Internal customer notes (visible to staff only)...">{{ customer.admin_note | default(value='') }}</textarea>
+              <div class="form-text">Maximum 500 characters.</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Notes</button>
+          </form>
+        </div>
+      </div>
+
+    {% else %}
+      <!-- Profile tab -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Customer Information</h5>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label class="text-muted small">Full Name</label>
+              <div class="fw-bold">{{ customer.name }}</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="text-muted small">Email Address</label>
+              <div>{{ customer.email }}</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="text-muted small">Phone</label>
+              <div>{{ customer.phone | default(value='Not provided') }}</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="text-muted small">Account Status</label>
+              <div><span class="badge status-{{ customer.status }}">{{ customer.status }}</span></div>
+            </div>
+            <div class="col-sm-6">
+              <label class="text-muted small">Email Verification</label>
+              <div>
+                {% if customer.email_verified_at %}
+                  <span class="badge bg-success">Verified on {{ customer.email_verified_at }}</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Unverified</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="text-muted small">Marketing Newsletter Opt-In</label>
+              <div>
+                {% if customer.marketing_opt_in == 1 %}
+                  <span class="badge bg-info text-dark">Subscribed</span>
+                {% else %}
+                  <span class="badge bg-light text-secondary border">No</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column: Administrative actions -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Account Security & Actions</h5>
+
+        {% if unlinked_count > 0 %}
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> Found <strong>{{ unlinked_count }}</strong> guest order(s) matching this email address.
+            <form method="post" class="mt-2">
+              {{ csrf_token() }}
+              <input type="hidden" name="action" value="link_guest_orders">
+              <button class="btn btn-sm btn-info w-100 text-dark">Link {{ unlinked_count }} Guest Orders</button>
+            </form>
+          </div>
+        {% endif %}
+
+        {% if me.role == 'admin' %}
+          <div class="d-grid gap-2">
+            {% if not customer.email_verified_at %}
+              <form method="post">
+                {{ csrf_token() }}
+                <input type="hidden" name="action" value="mark_verified">
+                <button class="btn btn-outline-success w-100"><i class="bi bi-check-circle me-1"></i> Mark Email as Verified</button>
+              </form>
+            {% endif %}
+
+            {% if customer.locked_until %}
+              <form method="post">
+                {{ csrf_token() }}
+                <input type="hidden" name="action" value="unlock">
+                <button class="btn btn-outline-warning w-100"><i class="bi bi-unlock me-1"></i> Unlock Account</button>
+              </form>
+            {% endif %}
+
+            <form method="post">
+              {{ csrf_token() }}
+              <input type="hidden" name="action" value="toggle_block">
+              {% if customer.status == 'blocked' %}
+                <button class="btn btn-outline-primary w-100"><i class="bi bi-person-check me-1"></i> Unblock Customer</button>
+              {% else %}
+                <button class="btn btn-outline-warning w-100"><i class="bi bi-person-slash me-1"></i> Block Customer</button>
+              {% endif %}
+            </form>
+
+            <hr>
+
+            <form method="post" onsubmit="return confirm('Permanently delete and anonymize this customer? Order records will be preserved without customer identity.');">
+              {{ csrf_token() }}
+              <input type="hidden" name="action" value="delete">
+              <button class="btn btn-outline-danger w-100"><i class="bi bi-trash me-1"></i> Delete & Anonymize Customer</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

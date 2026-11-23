@@ -1,0 +1,47 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-4">{% if id > 0 %}Edit Category{% else %}Add New Category{% endif %}</h5>
+
+        <form method="post" autocomplete="off">
+          {{ csrf_token() }}
+          <input type="hidden" name="id" value="{{ id }}">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" value="{{ category.name | default(value='') }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Slug <small class="text-muted">(auto if blank)</small></label>
+              <input type="text" name="slug" class="form-control" value="{{ category.slug | default(value='') }}" placeholder="auto-generated">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select">
+                <option value="active" {% if category.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if category.status == 'inactive' %}selected{% endif %}>Inactive</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="4">{{ category.description | default(value='') }}</textarea>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between">
+            <a href="{{ admin_url(path='categories.php') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Category</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
