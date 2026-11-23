@@ -200,11 +200,15 @@ pub async fn admin_products_get_handler(
 
     match state.tera.render("admin/products.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-            .into_response(),
+        Err(e) => {
+            let mut err_msg = format!("Template error: {}", e);
+            let mut cur: &dyn std::error::Error = &e;
+            while let Some(source) = cur.source() {
+                err_msg.push_str(&format!(" -> {}", source));
+                cur = source;
+            }
+            (StatusCode::INTERNAL_SERVER_ERROR, err_msg).into_response()
+        }
     }
 }
 
@@ -675,6 +679,7 @@ pub async fn admin_product_form_get_handler(
         .collect();
 
     let mut ctx = build_admin_context(&state, &session, "product_form.php", page_title).await;
+    ctx.insert("id", &id);
     ctx.insert("product", &product_data);
     ctx.insert("categories", &categories);
     ctx.insert("existingOptions", &existing_options);
@@ -685,11 +690,15 @@ pub async fn admin_product_form_get_handler(
 
     match state.tera.render("admin/product_form.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-            .into_response(),
+        Err(e) => {
+            let mut err_msg = format!("Template error: {}", e);
+            let mut cur: &dyn std::error::Error = &e;
+            while let Some(source) = cur.source() {
+                err_msg.push_str(&format!(" -> {}", source));
+                cur = source;
+            }
+            (StatusCode::INTERNAL_SERVER_ERROR, err_msg).into_response()
+        }
     }
 }
 
@@ -1414,6 +1423,7 @@ pub async fn admin_categories_get_handler(
 
     let mut ctx = build_admin_context(&state, &session, "categories.php", "Categories").await;
     ctx.insert("rows", &rows);
+    ctx.insert("categories", &rows);
     ctx.insert("total", &total);
     ctx.insert("current_page", &page);
     ctx.insert("total_pages", &total_pages.max(1));
@@ -1422,11 +1432,15 @@ pub async fn admin_categories_get_handler(
 
     match state.tera.render("admin/categories.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-            .into_response(),
+        Err(e) => {
+            let mut err_msg = format!("Template error: {}", e);
+            let mut cur: &dyn std::error::Error = &e;
+            while let Some(source) = cur.source() {
+                err_msg.push_str(&format!(" -> {}", source));
+                cur = source;
+            }
+            (StatusCode::INTERNAL_SERVER_ERROR, err_msg).into_response()
+        }
     }
 }
 
@@ -1506,17 +1520,23 @@ pub async fn admin_category_form_get_handler(
     }
 
     let mut ctx = build_admin_context(&state, &session, "category_form.php", page_title).await;
+    ctx.insert("id", &id);
     ctx.insert("cat", &cat_data);
+    ctx.insert("category", &cat_data);
     let empty_errors: Vec<String> = Vec::new();
     ctx.insert("errors", &empty_errors);
 
     match state.tera.render("admin/category_form.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-            .into_response(),
+        Err(e) => {
+            let mut err_msg = format!("Template error: {}", e);
+            let mut cur: &dyn std::error::Error = &e;
+            while let Some(source) = cur.source() {
+                err_msg.push_str(&format!(" -> {}", source));
+                cur = source;
+            }
+            (StatusCode::INTERNAL_SERVER_ERROR, err_msg).into_response()
+        }
     }
 }
 
@@ -1688,6 +1708,7 @@ pub async fn admin_inventory_get_handler(
 
     let mut ctx = build_admin_context(&state, &session, "inventory.php", "Inventory & Stock Ledger").await;
     ctx.insert("subTab", tab);
+    ctx.insert("sub_tab", tab);
 
     if tab == "overview" {
         let (items, total_items) = get_inventory_overview(
@@ -1702,11 +1723,16 @@ pub async fn admin_inventory_get_handler(
 
         let total_pages = (total_items as f64 / per_page as f64).ceil() as i64;
         ctx.insert("inventoryItems", &items);
+        ctx.insert("items", &items);
         ctx.insert("totalItems", &total_items);
+        ctx.insert("total_items", &total_items);
         ctx.insert("totalPages", &total_pages.max(1));
+        ctx.insert("total_pages", &total_pages.max(1));
         ctx.insert("currentPage", &page);
+        ctx.insert("current_page", &page);
         ctx.insert("search", query.q.as_deref().unwrap_or(""));
         ctx.insert("stockFilter", query.filter.as_deref().unwrap_or("all"));
+        ctx.insert("stock_filter", query.filter.as_deref().unwrap_or("all"));
     } else if tab == "ledger" {
         let (rows, total_movements) = get_inventory_movements(
             &state.db,
@@ -1720,19 +1746,28 @@ pub async fn admin_inventory_get_handler(
 
         let total_pages = (total_movements as f64 / per_page as f64).ceil() as i64;
         ctx.insert("ledgerRows", &rows);
+        ctx.insert("rows", &rows);
         ctx.insert("totalMovements", &total_movements);
+        ctx.insert("total_movements", &total_movements);
         ctx.insert("totalPages", &total_pages.max(1));
+        ctx.insert("total_pages", &total_pages.max(1));
         ctx.insert("currentPage", &page);
+        ctx.insert("current_page", &page);
         ctx.insert("reasonFilter", query.reason.as_deref().unwrap_or(""));
+        ctx.insert("reason_filter", query.reason.as_deref().unwrap_or(""));
     }
 
     match state.tera.render("admin/inventory.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-            .into_response(),
+        Err(e) => {
+            let mut err_msg = format!("Template error: {}", e);
+            let mut cur: &dyn std::error::Error = &e;
+            while let Some(source) = cur.source() {
+                err_msg.push_str(&format!(" -> {}", source));
+                cur = source;
+            }
+            (StatusCode::INTERNAL_SERVER_ERROR, err_msg).into_response()
+        }
     }
 }
 

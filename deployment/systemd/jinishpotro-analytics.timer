@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger Jinishpotro Nightly Analytics Aggregation at 01:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 01:00:00
+Persistent=true
+Unit=jinishpotro-analytics.service
+
+[Install]
+WantedBy=timers.target

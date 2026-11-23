@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger Jinishpotro System Metrics Collector Every Minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=jinishpotro-metrics.service
+
+[Install]
+WantedBy=timers.target

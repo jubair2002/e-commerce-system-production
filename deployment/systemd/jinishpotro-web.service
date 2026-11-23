@@ -1,0 +1,29 @@
+[Unit]
+Description=Jinishpotro Rust Web Application Server (Axum)
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+EnvironmentFile=/var/www/html/.env
+ExecStart=/var/www/html/rust-backend/target/release/web
+Restart=always
+RestartSec=3s
+LimitNOFILE=65536
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jinishpotro-web
+
+# Security sandboxing
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

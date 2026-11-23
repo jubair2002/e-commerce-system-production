@@ -10,10 +10,10 @@ scrape_configs:
 
   # 2. Jinispotro E-Commerce App & Storage Metrics
   - job_name: 'jinispotro_app'
-    metrics_path: '/metrics.php'
+    metrics_path: '/metrics'
     scrape_interval: 10s
     static_configs:
-      - targets: ['app:80']
+      - targets: ['app:80', 'app:8082']
 
   # 3. MySQL Database Exporter
   - job_name: 'mysql'

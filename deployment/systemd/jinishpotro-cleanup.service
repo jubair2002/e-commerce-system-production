@@ -1,0 +1,14 @@
+[Unit]
+Description=Jinishpotro Daily Cleanup & Customer Maintenance (Rust)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+EnvironmentFile=/var/www/html/.env
+ExecStart=/bin/sh -c '/var/www/html/rust-backend/target/release/cleanup_logs && /var/www/html/rust-backend/target/release/customer_maintenance'
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jinishpotro-cleanup

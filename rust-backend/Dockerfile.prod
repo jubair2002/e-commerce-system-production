@@ -1,0 +1,50 @@
+# ==============================================================================
+# Jinishpotro Rust High-Performance Standalone Production Dockerfile
+# Multi-stage build with LTO, binary stripping, and sub-10ms response times
+# ==============================================================================
+
+# Stage 1: Build Release Binaries
+FROM rust:1.85-slim-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Cache dependencies
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+
+RUN cargo build --release
+
+# Stage 2: Minimal Distroless / Slim Runtime
+FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html
+
+# Copy compiled Rust release binaries
+COPY --from=builder /app/target/release/web /usr/local/bin/jinishpotro-web
+COPY --from=builder /app/target/release/mail_worker /usr/local/bin/jinishpotro-mail-worker
+COPY --from=builder /app/target/release/collect_metrics /usr/local/bin/jinishpotro-collect-metrics
+COPY --from=builder /app/target/release/cleanup_logs /usr/local/bin/jinishpotro-cleanup-logs
+COPY --from=builder /app/target/release/customer_maintenance /usr/local/bin/jinishpotro-customer-maintenance
+COPY --from=builder /app/target/release/aggregate_analytics /usr/local/bin/jinishpotro-aggregate-analytics
+
+# Copy Tera templates and static assets
+COPY templates ./rust-backend/templates
+COPY ../assets ./assets
+
+EXPOSE 8082
+
+HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
+    CMD curl -f http://localhost:8082/health || exit 1
+
+CMD ["/usr/local/bin/jinishpotro-web"]

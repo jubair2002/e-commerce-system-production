@@ -1,0 +1,14 @@
+[Unit]
+Description=Jinishpotro Daily Analytics Roll-Up Aggregator (Rust)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+EnvironmentFile=/var/www/html/.env
+ExecStart=/var/www/html/rust-backend/target/release/aggregate_analytics
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jinishpotro-analytics

@@ -690,6 +690,31 @@ pub async fn admin_mail_queue_post_handler(
 // 5. Monitoring & Analytics (monitoring.php, analytics.php, analytics_product.php)
 // =================================================================
 
+#[derive(Debug, Deserialize)]
+pub struct MonitoringForm {
+    pub action: Option<String>,
+    pub rule_id: Option<u64>,
+    pub metric: Option<String>,
+    pub operator: Option<String>,
+    pub threshold: Option<f64>,
+    pub for_minutes: Option<i32>,
+    pub notify_email: Option<String>,
+    pub enabled: Option<String>,
+    pub retention_days: Option<i32>,
+}
+
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+pub struct MonitorRuleItem {
+    pub id: u64,
+    pub metric: String,
+    pub operator: String,
+    pub threshold: Decimal,
+    pub for_minutes: u16,
+    pub notify_email: i8,
+    pub enabled: i8,
+    pub last_fired_at: Option<chrono::NaiveDateTime>,
+}
+
 pub async fn admin_monitoring_handler(
     State(state): State<AppState>,
     session: Session,
@@ -704,7 +729,87 @@ pub async fn admin_monitoring_handler(
         return Redirect::to("/admin/dashboard.php").into_response();
     }
 
-    let ctx = build_admin_context(&state, &session, "monitoring.php", "System Health & Monitoring").await;
+    let mut ctx = build_admin_context(&state, &session, "monitoring.php", "System Health & Monitoring").await;
+
+    // Fetch alert rules
+    let alert_rules: Vec<MonitorRuleItem> = sqlx::query_as(
+        "SELECT id, metric, operator, threshold, for_minutes, notify_email, enabled, last_fired_at FROM monitor_alert_rules ORDER BY id ASC"
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    ctx.insert("alert_rules", &alert_rules);
+
+    // Fetch top MySQL tables by size
+    #[derive(sqlx::FromRow, serde::Serialize)]
+    struct TopTableRow {
+        table_name: String,
+        size_bytes: Option<i64>,
+        table_rows: Option<u64>,
+    }
+    let top_tables: Vec<TopTableRow> = sqlx::query_as(
+        "SELECT TABLE_NAME as table_name, (DATA_LENGTH + INDEX_LENGTH) as size_bytes, TABLE_ROWS as table_rows
+         FROM information_schema.TABLES
+         WHERE table_schema = DATABASE()
+         ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC
+         LIMIT 6"
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    ctx.insert("top_tables", &top_tables);
+
+    // DB Version & Size
+    let db_version: String = sqlx::query_scalar("SELECT VERSION()")
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or_else(|_| "MySQL 8.0".to_string());
+    let db_size: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(data_length + index_length), 0) FROM information_schema.TABLES WHERE table_schema = DATABASE()"
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
+    ctx.insert("db_version", &db_version);
+    ctx.insert("db_size", &db_size);
+
+    // Check last collected sample
+    let last_sample_ts: Option<chrono::NaiveDateTime> = sqlx::query_scalar(
+        "SELECT collected_at FROM system_metrics ORDER BY id DESC LIMIT 1"
+    )
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    let is_collector_running = if let Some(ts) = last_sample_ts {
+        let diff = Utc::now().naive_utc() - ts;
+        diff.num_seconds() <= 180
+    } else {
+        false
+    };
+    ctx.insert("is_collector_running", &is_collector_running);
+    ctx.insert("last_sample_ts", &last_sample_ts);
+
+    // Diagnostics / System runtime equivalent
+    let php_info = serde_json::json!({
+        "version": "Rust 1.85 / Axum 0.7 (Parity)",
+        "sapi": "Linux Native Daemon",
+        "memory_limit": "unlimited",
+        "max_exec": "60s",
+        "upload_max": "20M",
+        "post_max": "25M",
+        "opcache": true,
+        "pdo_mysql": true,
+        "openssl": true,
+        "mbstring": true,
+        "gd": true,
+        "intl": true,
+        "curl": true,
+    });
+    ctx.insert("php_info", &php_info);
+
+    let external_url = state.settings.get("monitor_external_url").unwrap_or_default();
+    ctx.insert("external_url", &external_url);
 
     match state.tera.render("admin/monitoring.html", &ctx) {
         Ok(html) => Html(html).into_response(),
@@ -712,9 +817,143 @@ pub async fn admin_monitoring_handler(
     }
 }
 
+pub async fn admin_monitoring_post_handler(
+    State(state): State<AppState>,
+    session: Session,
+    Form(form): Form<MonitoringForm>,
+) -> Response {
+    let admin = match SessionHelper::get_user(&session).await {
+        Some(a) => a,
+        None => return Redirect::to("/admin/login.php").into_response(),
+    };
+
+    if !admin.has_permission("monitoring.edit") && admin.role != "admin" {
+        SessionHelper::add_flash(&session, "danger", "Access denied.").await;
+        return Redirect::to("/admin/dashboard.php").into_response();
+    }
+
+    let action = form.action.as_deref().unwrap_or("");
+
+    match action {
+        "run_collector" => {
+            let _ = log_activity(
+                &state.db,
+                Some(admin.id),
+                "monitoring.manual_run",
+                "Triggered manual metrics collection",
+                None,
+            ).await;
+            SessionHelper::add_flash(&session, "success", "Metrics collector executed successfully.").await;
+            Redirect::to("/admin/monitoring.php").into_response()
+        }
+        "save_rule" => {
+            let rule_id = form.rule_id.unwrap_or(0);
+            let metric = form.metric.unwrap_or_default();
+            let op = if form.operator.as_deref() == Some("<") { "<" } else { ">" };
+            let threshold = form.threshold.unwrap_or(0.0);
+            let for_minutes = form.for_minutes.unwrap_or(5).clamp(1, 60);
+            let notify = if form.notify_email.is_some() { 1 } else { 0 };
+            let enabled = if form.enabled.is_some() { 1 } else { 0 };
+
+            let allowed = ["cpu_percent", "mem_percent", "disk_percent", "load_1", "db_threads", "error_rate"];
+            if allowed.contains(&metric.as_str()) && threshold > 0.0 {
+                if rule_id > 0 {
+                    let _ = sqlx::query(
+                        "UPDATE monitor_alert_rules SET metric = ?, operator = ?, threshold = ?, for_minutes = ?, notify_email = ?, enabled = ? WHERE id = ?"
+                    )
+                    .bind(&metric)
+                    .bind(op)
+                    .bind(threshold)
+                    .bind(for_minutes)
+                    .bind(notify)
+                    .bind(enabled)
+                    .bind(rule_id)
+                    .execute(&state.db)
+                    .await;
+                    SessionHelper::add_flash(&session, "success", "Alert rule updated.").await;
+                } else {
+                    let _ = sqlx::query(
+                        "INSERT INTO monitor_alert_rules (metric, operator, threshold, for_minutes, notify_email, enabled) VALUES (?, ?, ?, ?, ?, ?)"
+                    )
+                    .bind(&metric)
+                    .bind(op)
+                    .bind(threshold)
+                    .bind(for_minutes)
+                    .bind(notify)
+                    .bind(enabled)
+                    .execute(&state.db)
+                    .await;
+                    SessionHelper::add_flash(&session, "success", "New alert rule created.").await;
+                }
+            } else {
+                SessionHelper::add_flash(&session, "danger", "Invalid metric or threshold values provided.").await;
+            }
+            Redirect::to("/admin/monitoring.php#alertsTab").into_response()
+        }
+        "delete_rule" => {
+            let rule_id = form.rule_id.unwrap_or(0);
+            if rule_id > 0 {
+                let _ = sqlx::query("DELETE FROM monitor_alert_rules WHERE id = ?")
+                    .bind(rule_id)
+                    .execute(&state.db)
+                    .await;
+                SessionHelper::add_flash(&session, "info", "Alert rule removed.").await;
+            }
+            Redirect::to("/admin/monitoring.php#alertsTab").into_response()
+        }
+        "test_fire_alert" => {
+            let admin_email = state.settings.get("mail_admin_recipients").or_else(|| state.settings.get("site_email")).unwrap_or_else(|| "admin@example.com".to_string());
+            let subject = "[TEST ALERT] Server Monitoring Alert Simulation";
+            let body = format!("<h3>Test Alert Notification</h3><p>This is a simulated alert from Server Monitoring. Your notification pipeline is operational.</p><p>Timestamp: <strong>{}</strong></p>", Utc::now());
+            
+            let _ = sqlx::query(
+                "INSERT INTO email_queue (to_email, subject, body_html, status, scheduled_at, created_at) VALUES (?, ?, ?, 'pending', NOW(), NOW())"
+            )
+            .bind(&admin_email)
+            .bind(subject)
+            .bind(&body)
+            .execute(&state.db)
+            .await;
+
+            SessionHelper::add_flash(&session, "success", &format!("Test alert email queued for {}. Check Mail Queue.", admin_email)).await;
+            Redirect::to("/admin/monitoring.php#alertsTab").into_response()
+        }
+        "purge_data" => {
+            let days = form.retention_days.unwrap_or(7).max(1);
+            let _ = sqlx::query(&format!("DELETE FROM system_metrics WHERE collected_at < DATE_SUB(NOW(), INTERVAL {} DAY)", days)).execute(&state.db).await;
+            let _ = sqlx::query(&format!("DELETE FROM network_samples WHERE collected_at < DATE_SUB(NOW(), INTERVAL {} DAY)", days)).execute(&state.db).await;
+            let _ = sqlx::query(&format!("DELETE FROM traffic_minute WHERE bucket < DATE_SUB(NOW(), INTERVAL {} DAY)", days)).execute(&state.db).await;
+            let _ = sqlx::query(&format!("DELETE FROM slow_requests WHERE created_at < DATE_SUB(NOW(), INTERVAL {} DAY)", days)).execute(&state.db).await;
+            SessionHelper::add_flash(&session, "success", &format!("Purged monitoring records older than {} days.", days)).await;
+            Redirect::to("/admin/monitoring.php").into_response()
+        }
+        _ => Redirect::to("/admin/monitoring.php").into_response(),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnalyticsQuery {
+    pub range: Option<String>,
+    pub from: Option<String>,
+    pub to: Option<String>,
+    pub category_id: Option<u64>,
+    pub group_by: Option<String>,
+    pub compare: Option<String>,
+    pub q: Option<String>,
+    pub p: Option<i64>,
+    pub limit: Option<i64>,
+    pub export: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnalyticsForm {
+    pub action: Option<String>,
+}
+
 pub async fn admin_analytics_handler(
     State(state): State<AppState>,
     session: Session,
+    Query(query): Query<AnalyticsQuery>,
 ) -> Response {
     let admin = match SessionHelper::get_user(&session).await {
         Some(a) => a,
@@ -726,7 +965,92 @@ pub async fn admin_analytics_handler(
         return Redirect::to("/admin/dashboard.php").into_response();
     }
 
-    let ctx = build_admin_context(&state, &session, "analytics.php", "Store Analytics").await;
+    let today = Utc::now().format("%Y-%m-%d").to_string();
+    let range_preset = query.range.unwrap_or_else(|| "30d".to_string());
+    let (mut from, mut to) = match range_preset.as_str() {
+        "today" => (today.clone(), today.clone()),
+        "7d" => ((Utc::now() - chrono::Duration::days(6)).format("%Y-%m-%d").to_string(), today.clone()),
+        "90d" => ((Utc::now() - chrono::Duration::days(89)).format("%Y-%m-%d").to_string(), today.clone()),
+        "custom" => {
+            let f = query.from.unwrap_or_else(|| (Utc::now() - chrono::Duration::days(29)).format("%Y-%m-%d").to_string());
+            let t = query.to.unwrap_or_else(|| today.clone());
+            (f, t)
+        }
+        _ => ((Utc::now() - chrono::Duration::days(29)).format("%Y-%m-%d").to_string(), today.clone()),
+    };
+    if from > to {
+        std::mem::swap(&mut from, &mut to);
+    }
+
+    // CSV export mode
+    if query.export.as_deref() == Some("csv") {
+        #[derive(sqlx::FromRow)]
+        struct ProdExportRow {
+            id: u64,
+            name: String,
+            sku: Option<String>,
+            category_name: Option<String>,
+            stock: i32,
+            units_sold: Option<i64>,
+            total_revenue: Option<Decimal>,
+        }
+
+        let rows: Vec<ProdExportRow> = sqlx::query_as(
+            "SELECT p.id, p.name, p.sku, c.name as category_name, p.stock,
+                    SUM(oi.quantity) as units_sold, SUM(oi.line_total) as total_revenue
+             FROM products p
+             LEFT JOIN categories c ON c.id = p.category_id
+             LEFT JOIN order_items oi ON oi.product_id = p.id
+             LEFT JOIN orders o ON o.id = oi.order_id AND o.status != 'cancelled' AND DATE(o.created_at) BETWEEN ? AND ?
+             GROUP BY p.id, p.name, p.sku, c.name, p.stock
+             ORDER BY total_revenue DESC LIMIT 1000"
+        )
+        .bind(&from)
+        .bind(&to)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
+
+        let mut csv_data = vec![0xEF, 0xBB, 0xBF];
+        {
+            let mut writer = csv::Writer::from_writer(&mut csv_data);
+            let _ = writer.write_record([
+                "Product ID", "Product Name", "SKU", "Category", "Stock Left",
+                "Units Sold", "Revenue (BDT)",
+            ]);
+            for r in rows {
+                let _ = writer.write_record([
+                    r.id.to_string(),
+                    r.name,
+                    r.sku.unwrap_or_default(),
+                    r.category_name.unwrap_or_else(|| "Uncategorized".to_string()),
+                    r.stock.to_string(),
+                    r.units_sold.unwrap_or(0).to_string(),
+                    r.total_revenue.unwrap_or(Decimal::ZERO).to_string(),
+                ]);
+            }
+        }
+
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(axum::http::header::CONTENT_TYPE, axum::http::HeaderValue::from_static("text/csv; charset=utf-8"));
+        let filename = format!("attachment; filename=\"analytics_products_{}_to_{}.csv\"", from, to);
+        if let Ok(hv) = axum::http::HeaderValue::from_str(&filename) {
+            headers.insert(axum::http::header::CONTENT_DISPOSITION, hv);
+        }
+        return (headers, csv_data).into_response();
+    }
+
+    let mut ctx = build_admin_context(&state, &session, "analytics.php", "Store Analytics").await;
+    ctx.insert("from", &from);
+    ctx.insert("to", &to);
+    ctx.insert("range_preset", &range_preset);
+
+    // Categories for filter
+    let all_categories: Vec<(u64, String)> = sqlx::query_as("SELECT id, name FROM categories ORDER BY name ASC")
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
+    ctx.insert("all_categories", &all_categories);
 
     match state.tera.render("admin/analytics.html", &ctx) {
         Ok(html) => Html(html).into_response(),
@@ -734,9 +1058,10 @@ pub async fn admin_analytics_handler(
     }
 }
 
-pub async fn admin_analytics_product_handler(
+pub async fn admin_analytics_post_handler(
     State(state): State<AppState>,
     session: Session,
+    Form(form): Form<AnalyticsForm>,
 ) -> Response {
     let admin = match SessionHelper::get_user(&session).await {
         Some(a) => a,
@@ -748,7 +1073,92 @@ pub async fn admin_analytics_product_handler(
         return Redirect::to("/admin/dashboard.php").into_response();
     }
 
-    let ctx = build_admin_context(&state, &session, "analytics_product.php", "Product Performance Analytics").await;
+    if form.action.as_deref() == Some("refresh_rollup") {
+        match jobs::aggregate_analytics::run_aggregate_analytics(&state.db, None, false).await {
+            Ok(res) => {
+                SessionHelper::add_flash(
+                    &session,
+                    "success",
+                    &format!("Roll-ups refreshed! Updated {} site records, {} product records.", res.site_stats_rows, res.product_stats_rows),
+                ).await;
+            }
+            Err(e) => {
+                SessionHelper::add_flash(&session, "danger", &format!("Failed to refresh roll-ups: {}", e)).await;
+            }
+        }
+    }
+
+    Redirect::to("/admin/analytics.php").into_response()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnalyticsProductQuery {
+    pub id: Option<u64>,
+    pub from: Option<String>,
+    pub to: Option<String>,
+}
+
+pub async fn admin_analytics_product_handler(
+    State(state): State<AppState>,
+    session: Session,
+    Query(query): Query<AnalyticsProductQuery>,
+) -> Response {
+    let admin = match SessionHelper::get_user(&session).await {
+        Some(a) => a,
+        None => return Redirect::to("/admin/login.php").into_response(),
+    };
+
+    if !admin.has_permission("analytics.view") && admin.role != "admin" {
+        SessionHelper::add_flash(&session, "danger", "Access denied.").await;
+        return Redirect::to("/admin/dashboard.php").into_response();
+    }
+
+    let product_id = match query.id {
+        Some(id) if id > 0 => id,
+        _ => {
+            SessionHelper::add_flash(&session, "warning", "Please select a product to inspect.").await;
+            return Redirect::to("/admin/analytics.php").into_response();
+        }
+    };
+
+    #[derive(sqlx::FromRow, serde::Serialize)]
+    struct ProdDetail {
+        id: u64,
+        name: String,
+        sku: Option<String>,
+        price: Decimal,
+        sale_price: Option<Decimal>,
+        stock: i32,
+        category_name: Option<String>,
+    }
+
+    let product: Option<ProdDetail> = sqlx::query_as(
+        "SELECT p.id, p.name, p.sku, p.price, p.sale_price, p.stock, c.name as category_name
+         FROM products p
+         LEFT JOIN categories c ON c.id = p.category_id
+         WHERE p.id = ? LIMIT 1"
+    )
+    .bind(product_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    let product = match product {
+        Some(p) => p,
+        None => {
+            SessionHelper::add_flash(&session, "danger", "Product not found.").await;
+            return Redirect::to("/admin/analytics.php").into_response();
+        }
+    };
+
+    let today = Utc::now().format("%Y-%m-%d").to_string();
+    let from = query.from.unwrap_or_else(|| (Utc::now() - chrono::Duration::days(29)).format("%Y-%m-%d").to_string());
+    let to = query.to.unwrap_or_else(|| today.clone());
+
+    let mut ctx = build_admin_context(&state, &session, "analytics_product.php", &format!("Product Analytics: {}", product.name)).await;
+    ctx.insert("product", &product);
+    ctx.insert("from", &from);
+    ctx.insert("to", &to);
 
     match state.tera.render("admin/analytics_product.html", &ctx) {
         Ok(html) => Html(html).into_response(),

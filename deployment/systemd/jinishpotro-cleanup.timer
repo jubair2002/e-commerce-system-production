@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger Jinishpotro Daily Cleanup at Midnight
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+Persistent=true
+Unit=jinishpotro-cleanup.service
+
+[Install]
+WantedBy=timers.target

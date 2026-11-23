@@ -778,7 +778,15 @@ pub async fn admin_banner_form_get_handler(
 
     let title_str = if bid > 0 { "Edit Banner" } else { "Add New Banner" };
     let mut ctx = build_admin_context(&state, &session, "banner_form.php", title_str).await;
-    ctx.insert("banner", &banner);
+    let banner_data = match banner {
+        Some(b) => serde_json::to_value(b).unwrap_or_default(),
+        None => serde_json::json!({
+            "id": 0, "title": "", "subtitle": "", "button_text": "", "button_url": "",
+            "image": null, "placement": "hero", "position": 0, "status": "active",
+            "starts_at": null, "ends_at": null
+        }),
+    };
+    ctx.insert("banner", &banner_data);
     ctx.insert("id", &bid);
 
     match state.tera.render("admin/banner_form.html", &ctx) {
@@ -1094,7 +1102,14 @@ pub async fn admin_page_form_get_handler(
 
     let title_str = if pid > 0 { "Edit Page" } else { "Add New Page" };
     let mut ctx = build_admin_context(&state, &session, "page_form.php", title_str).await;
-    ctx.insert("page", &page);
+    let page_data = match page {
+        Some(p) => serde_json::to_value(p).unwrap_or_default(),
+        None => serde_json::json!({
+            "id": 0, "slug": "", "title": "", "content": "", "meta_title": "", "meta_description": "",
+            "show_in_footer": 0, "show_in_header": 0, "position": 0, "status": "active"
+        }),
+    };
+    ctx.insert("page", &page_data);
     ctx.insert("id", &pid);
 
     match state.tera.render("admin/page_form.html", &ctx) {
@@ -1362,7 +1377,14 @@ pub async fn admin_user_form_get_handler(
 
     let title_str = if uid > 0 { "Edit User" } else { "Create New User" };
     let mut ctx = build_admin_context(&state, &session, "user_form.php", title_str).await;
-    ctx.insert("user", &user);
+    let user_data = match user {
+        Some(u) => serde_json::to_value(u).unwrap_or_default(),
+        None => serde_json::json!({
+            "id": 0, "name": "", "email": "", "role": "editor", "status": "active",
+            "permissions": "", "avatar": null, "phone": null
+        }),
+    };
+    ctx.insert("user", &user_data);
     ctx.insert("id", &uid);
 
     match state.tera.render("admin/user_form.html", &ctx) {

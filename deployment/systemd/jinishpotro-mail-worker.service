@@ -1,0 +1,28 @@
+[Unit]
+Description=Jinishpotro Background Mail Worker (Rust)
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+EnvironmentFile=/var/www/html/.env
+ExecStart=/var/www/html/rust-backend/target/release/mail_worker
+Restart=always
+RestartSec=5s
+LimitNOFILE=8192
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jinishpotro-mail-worker
+
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

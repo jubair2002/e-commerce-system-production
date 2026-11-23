@@ -245,6 +245,28 @@ pub async fn shop_handler(
         ((total as f64) / (per_page as f64)).ceil() as i64
     };
 
+    if let Some(ref term) = search {
+        if !term.trim().is_empty() {
+            let pool_search = state.db.clone();
+            let term_str = term.trim().to_string();
+            tokio::spawn(async move {
+                let _ = sqlx::query(
+                    "INSERT INTO search_log (term, results, created_at) VALUES (?, ?, NOW())"
+                )
+                .bind(&term_str)
+                .bind(total as u32)
+                .execute(&pool_search)
+                .await;
+                let _ = sqlx::query(
+                    "INSERT INTO analytics_events (event_type, visitor_hash, device, created_at)
+                     VALUES ('search', 'search_visitor', 'desktop', NOW())"
+                )
+                .execute(&pool_search)
+                .await;
+            });
+        }
+    }
+
     let page_numbers: Vec<i64> = (1..=total_pages).collect();
 
     ctx.insert("products", &products);
@@ -349,6 +371,28 @@ async fn render_category(
         ((total as f64) / (per_page as f64)).ceil() as i64
     };
 
+    if let Some(ref term) = search {
+        if !term.trim().is_empty() {
+            let pool_search = state.db.clone();
+            let term_str = term.trim().to_string();
+            tokio::spawn(async move {
+                let _ = sqlx::query(
+                    "INSERT INTO search_log (term, results, created_at) VALUES (?, ?, NOW())"
+                )
+                .bind(&term_str)
+                .bind(total as u32)
+                .execute(&pool_search)
+                .await;
+                let _ = sqlx::query(
+                    "INSERT INTO analytics_events (event_type, visitor_hash, device, created_at)
+                     VALUES ('search', 'search_visitor', 'desktop', NOW())"
+                )
+                .execute(&pool_search)
+                .await;
+            });
+        }
+    }
+
     let page_numbers: Vec<i64> = (1..=total_pages).collect();
 
     ctx.insert("products", &products);
@@ -420,6 +464,17 @@ async fn render_product(
 
     let category_id = pdp.product.category_id;
     let product_id = pdp.product.id;
+
+    let pool_analytics = state.db.clone();
+    tokio::spawn(async move {
+        let _ = sqlx::query(
+            "INSERT INTO analytics_events (event_type, product_id, visitor_hash, device, created_at)
+             VALUES ('product_view', ?, 'direct_view', 'desktop', NOW())"
+        )
+        .bind(product_id)
+        .execute(&pool_analytics)
+        .await;
+    });
 
     let main_img_url = resolve_image_url(pdp.product.image.as_deref());
     let mut gallery: Vec<serde_json::Value> = Vec::new();
