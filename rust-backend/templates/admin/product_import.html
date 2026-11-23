@@ -11,48 +11,180 @@
     </div>
     <h3 class="mb-1">Bulk Product CSV Import</h3>
     <p class="text-muted small mb-0">
-      Upload a CSV spreadsheet to batch-generate and update products in your store catalog.
+      Batch import or update simple and variable products into your catalog using CSV spreadsheets.
     </p>
   </div>
   <div class="d-flex flex-wrap align-items-center gap-2">
-    <a href="{{ admin_url(path='product_import.php?action=sample_csv') }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 shadow-sm">
-      <i class="bi bi-download"></i>
+    <a href="{{ admin_url(path='product_import.php?action=sample_csv') }}" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2 shadow-sm">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i>
       <span>Download Sample CSV</span>
     </a>
   </div>
 </div>
 
-<div class="row justify-content-center">
-  <div class="col-lg-8">
+<div class="row g-4">
+  <!-- Left Column: Upload Form -->
+  <div class="col-lg-7">
     <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title mb-0 fw-semibold"><i class="bi bi-cloud-arrow-up text-primary me-2"></i> Upload Spreadsheet</h5>
+      </div>
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Upload CSV File</h5>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="importForm">
           {{ csrf_token() }}
 
           <div class="mb-4">
-            <label class="form-label fw-semibold">Select CSV Spreadsheet <span class="text-danger">*</span></label>
+            <label class="form-label fw-bold">Select CSV File <span class="text-danger">*</span></label>
             <input type="file" name="csv_file" class="form-control form-control-lg" accept=".csv,text/csv" required>
             <div class="form-text mt-2">
-              Maximum file size: 10 MB. Delimiters (comma <code>,</code>, semicolon <code>;</code>, tab <code>\t</code>) and UTF-8 BOM are automatically detected.
+              Maximum file size: 15 MB. UTF-8 encoded CSV files are recommended.
             </div>
           </div>
 
-          <div class="card bg-light border-0 mb-4">
-            <div class="card-body">
-              <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-1"></i> Supported Column Headers</h6>
-              <div class="small text-muted">
-                <code>name</code>, <code>sku</code>, <code>product_type</code>, <code>category</code>, <code>price</code>, <code>sale_price</code>, <code>stock</code>, <code>color</code>, <code>size</code>, <code>model</code>, <code>short_description</code>, <code>description</code>, <code>brand</code>, <code>tags</code>, <code>status</code>, <code>featured</code>.
+          <div class="card bg-light border p-3 mb-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-gear me-1"></i> Import Settings &amp; Rules</h6>
+
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" name="update_existing" value="1" id="update_existing" checked>
+              <label class="form-check-label fw-semibold" for="update_existing">
+                Update existing products when SKU matches
+              </label>
+              <div class="form-text">If checked, existing items with the same SKU will have price, stock, and descriptions refreshed instead of skipped.</div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">Delimiter</label>
+                <select name="delimiter" class="form-select form-select-sm">
+                  <option value="auto" selected>Auto-detect (Comma, Semicolon, Tab)</option>
+                  <option value=",">Comma (,)</option>
+                  <option value=";">Semicolon (;)</option>
+                  <option value="\t">Tab (\t)</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">Character Encoding</label>
+                <select name="encoding" class="form-select form-select-sm">
+                  <option value="utf-8" selected>UTF-8 (Standard)</option>
+                  <option value="windows-1252">Windows-1252 / ISO-8859-1</option>
+                </select>
               </div>
             </div>
           </div>
 
-          <div class="d-grid">
-            <button type="submit" class="btn btn-primary btn-lg">
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
               <i class="bi bi-cloud-arrow-up me-1"></i> Start Import Process
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Documentation & Column Guide -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title mb-0 fw-semibold"><i class="bi bi-journal-code text-primary me-2"></i> CSV Column Reference</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-striped align-middle mb-0 small">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>Column Header</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>name</code></td>
+                <td><span class="badge bg-danger">Required</span></td>
+                <td>Product title / display name</td>
+              </tr>
+              <tr>
+                <td><code>price</code></td>
+                <td><span class="badge bg-danger">Required</span></td>
+                <td>Regular selling price in BDT (৳)</td>
+              </tr>
+              <tr>
+                <td><code>sku</code></td>
+                <td><span class="badge bg-info text-dark">Recommended</span></td>
+                <td>Unique Stock Keeping Unit</td>
+              </tr>
+              <tr>
+                <td><code>product_type</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td><code>simple</code> or <code>variable</code> / <code>Products with option</code></td>
+              </tr>
+              <tr>
+                <td><code>category</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Category name (auto-assigned or created)</td>
+              </tr>
+              <tr>
+                <td><code>stock</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Initial inventory count (default: 0)</td>
+              </tr>
+              <tr>
+                <td><code>sale_price</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Promotional discount price</td>
+              </tr>
+              <tr>
+                <td><code>color</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Comma-separated colors for variants</td>
+              </tr>
+              <tr>
+                <td><code>size</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Comma-separated sizes for variants</td>
+              </tr>
+              <tr>
+                <td><code>model</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Comma-separated model compatibility</td>
+              </tr>
+              <tr>
+                <td><code>short_description</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Brief catalog summary snippet</td>
+              </tr>
+              <tr>
+                <td><code>description</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Full HTML or text description</td>
+              </tr>
+              <tr>
+                <td><code>brand</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Manufacturer or brand name</td>
+              </tr>
+              <tr>
+                <td><code>tags</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td>Search tags separated by comma</td>
+              </tr>
+              <tr>
+                <td><code>status</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td><code>active</code>, <code>draft</code>, or <code>inactive</code></td>
+              </tr>
+              <tr>
+                <td><code>featured</code></td>
+                <td><span class="badge bg-secondary">Optional</span></td>
+                <td><code>1</code> to feature on homepage, <code>0</code> otherwise</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-light py-2 text-muted small">
+        <i class="bi bi-lightbulb me-1"></i> Headers are case-insensitive and spaces are ignored.
       </div>
     </div>
   </div>

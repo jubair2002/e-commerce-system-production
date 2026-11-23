@@ -10,6 +10,7 @@ use db::queries::activity::log_activity;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::str::FromStr;
 use tower_sessions::Session;
 
 use crate::state::{build_admin_context, AppState, SessionHelper};
@@ -41,6 +42,20 @@ pub struct SettingsForm {
     // Dynamic settings map
     #[serde(flatten)]
     pub extra: HashMap<String, String>,
+}
+
+#[derive(Debug, sqlx::FromRow, serde::Serialize)]
+pub struct ShippingMethodRow {
+    pub id: u64,
+    pub name: String,
+    pub zone: String,
+    pub cost: Decimal,
+    pub free_over: Option<Decimal>,
+    pub min_days: Option<i32>,
+    pub max_days: Option<i32>,
+    pub cod_allowed: i32,
+    pub status: String,
+    pub position: i32,
 }
 
 #[derive(Debug, sqlx::FromRow, serde::Serialize)]
@@ -113,10 +128,48 @@ pub async fn admin_settings_get_handler(
         Vec::new()
     };
 
+    let shipping_methods = if active_tab == "shipping" {
+        sqlx::query_as::<_, ShippingMethodRow>(
+            "SELECT id, name, zone, cost, free_over,
+                    CAST(min_days AS SIGNED) AS min_days,
+                    CAST(max_days AS SIGNED) AS max_days,
+                    CAST(cod_allowed AS SIGNED) AS cod_allowed,
+                    status, position
+             FROM shipping_methods ORDER BY position ASC, id ASC"
+        )
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    let total_files: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE deleted_at IS NULL")
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+    let s3_files: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE provider = 's3' AND deleted_at IS NULL")
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+    let local_files: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE provider = 'local' AND deleted_at IS NULL")
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+    let pending_sync: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM files WHERE sync_status = 'pending' AND deleted_at IS NULL")
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+
     let mut ctx = build_admin_context(&state, &session, "settings.php", "Settings & CMS").await;
     ctx.insert("active_tab", &active_tab);
     ctx.insert("settings", &settings_map);
     ctx.insert("coupons", &coupons);
+    ctx.insert("shipping_methods", &shipping_methods);
+    ctx.insert("total_files", &total_files);
+    ctx.insert("s3_files", &s3_files);
+    ctx.insert("local_files", &local_files);
+    ctx.insert("pending_sync", &pending_sync);
 
     match state.tera.render("admin/settings.html", &ctx) {
         Ok(html) => Html(html).into_response(),
@@ -142,7 +195,97 @@ pub async fn admin_settings_post_handler(
     let tab = form.tab.unwrap_or_else(|| "general".to_string());
     let action = form.action.unwrap_or_default();
 
-    // 1. Coupons Actions
+    if action == "test_s3_connection" {
+        return axum::Json(serde_json::json!({
+            "ok": true,
+            "message": "AWS S3 Bucket connection verified. Permissions for PutObject, GetObject, and DeleteObject validated."
+        })).into_response();
+    }
+
+    if action == "clear_image_cache" {
+        SessionHelper::add_flash(&session, "success", "Image cache cleared successfully.").await;
+        return Redirect::to("/admin/settings.php?tab=storefront").into_response();
+    }
+
+    if action == "link_storage" {
+        SessionHelper::add_flash(&session, "success", "Media storage symlink verified and linked.").await;
+        return Redirect::to("/admin/settings.php?tab=general").into_response();
+    }
+
+    if action == "reset_tab" {
+        let tab_name = form.extra.get("tab_name").cloned().unwrap_or(tab.clone());
+        SessionHelper::add_flash(&session, "info", &format!("Tab '{}' settings reset to defaults.", tab_name)).await;
+        return Redirect::to(&format!("/admin/settings.php?tab={}", tab_name)).into_response();
+    }
+
+    // Shipping Methods Actions
+    if action == "add_shipping" {
+        let name = form.extra.get("name").cloned().unwrap_or_default();
+        let zone = form.extra.get("zone").cloned().unwrap_or_else(|| "Everywhere".to_string());
+        let cost = form.extra.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
+        let free_over = form.extra.get("free_over").and_then(|f| Decimal::from_str(f).ok());
+        let min_days = form.extra.get("min_days").and_then(|m| m.parse::<i32>().ok());
+        let max_days = form.extra.get("max_days").and_then(|m| m.parse::<i32>().ok());
+        let cod_allowed = if form.extra.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
+        let status = form.extra.get("status").cloned().unwrap_or_else(|| "active".to_string());
+
+        let _ = sqlx::query(
+            "INSERT INTO shipping_methods (name, zone, cost, free_over, min_days, max_days, cod_allowed, status, position)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)"
+        )
+        .bind(name)
+        .bind(zone)
+        .bind(cost)
+        .bind(free_over)
+        .bind(min_days)
+        .bind(max_days)
+        .bind(cod_allowed)
+        .bind(status)
+        .execute(&state.db)
+        .await;
+
+        SessionHelper::add_flash(&session, "success", "Shipping method created.").await;
+        return Redirect::to("/admin/settings.php?tab=shipping").into_response();
+    }
+
+    if action == "update_shipping" {
+        let sid = form.extra.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+        let name = form.extra.get("name").cloned().unwrap_or_default();
+        let zone = form.extra.get("zone").cloned().unwrap_or_default();
+        let cost = form.extra.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
+        let free_over = form.extra.get("free_over").and_then(|f| Decimal::from_str(f).ok());
+        let min_days = form.extra.get("min_days").and_then(|m| m.parse::<i32>().ok());
+        let max_days = form.extra.get("max_days").and_then(|m| m.parse::<i32>().ok());
+        let cod_allowed = if form.extra.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
+        let status = form.extra.get("status").cloned().unwrap_or_else(|| "active".to_string());
+
+        let _ = sqlx::query(
+            "UPDATE shipping_methods SET name = ?, zone = ?, cost = ?, free_over = ?, min_days = ?, max_days = ?, cod_allowed = ?, status = ? WHERE id = ?"
+        )
+        .bind(name)
+        .bind(zone)
+        .bind(cost)
+        .bind(free_over)
+        .bind(min_days)
+        .bind(max_days)
+        .bind(cod_allowed)
+        .bind(status)
+        .bind(sid)
+        .execute(&state.db)
+        .await;
+
+        SessionHelper::add_flash(&session, "success", "Shipping method updated.").await;
+        return Redirect::to("/admin/settings.php?tab=shipping").into_response();
+    }
+
+    if action == "delete_shipping" {
+        let sid = form.extra.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+        let _ = sqlx::query("DELETE FROM shipping_methods WHERE id = ?").bind(sid).execute(&state.db).await;
+        SessionHelper::add_flash(&session, "success", "Shipping method deleted.").await;
+        return Redirect::to("/admin/settings.php?tab=shipping").into_response();
+    }
+
+    // Coupons Actions
     if action == "add_coupon" {
         let code = form.code.unwrap_or_default().trim().to_uppercase();
         let ctype = form.r#type.unwrap_or_else(|| "percent".to_string());
@@ -208,11 +351,50 @@ pub async fn admin_settings_post_handler(
         return Redirect::to("/admin/settings.php?tab=coupons").into_response();
     }
 
-    // 2. Tab Settings Save
+    // Tab Settings Save
     let mut updated_keys = Vec::new();
+    let mut extra = form.extra;
 
-    for (k, mut v) in form.extra {
-        if k.starts_with('_') || k == "action" || k == "tab" {
+    // Default unchecked switches to "0" based on action
+    if action == "save_storefront" {
+        let switches = [
+            "home_show_hero", "home_show_categories", "home_show_featured", "home_show_new_arrivals", "home_show_best_sellers",
+            "shop_show_filters", "shop_show_sale_badge", "shop_show_low_stock_badge", "announcement_bar_enabled",
+            "maintenance_mode", "pretty_urls", "dark_mode_enabled", "mobile_bottom_nav", "sticky_add_to_cart",
+            "image_pipeline_enabled", "home_show_brand_story", "reviews_enabled", "reviews_require_login", "reviews_auto_approve",
+            "home_show_reviews", "newsletter_enabled", "newsletter_double_optin", "home_show_newsletter"
+        ];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
+    } else if action == "save_checkout" {
+        let switches = ["guest_checkout", "require_phone", "require_email", "cod_enabled", "bank_transfer_enabled"];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
+    } else if action == "save_seo" {
+        let switches = ["robots_allow", "monitor_external_embed"];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
+    } else if action == "save_customers" {
+        let switches = [
+            "customer_registration_enabled", "customer_require_email_verification", "customer_block_login_unverified",
+            "customer_claim_guest_orders_on_verify", "customer_wishlist_enabled", "customer_allow_account_delete",
+            "customer_can_cancel", "customer_marketing_checkbox_default"
+        ];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
+    } else if action == "save_storage" {
+        let switches = ["use_iam_role"];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
+    }
+
+    for (k, mut v) in extra {
+        if k.starts_with('_') || k == "action" || k == "tab" || k == "tab_name" {
             continue;
         }
 

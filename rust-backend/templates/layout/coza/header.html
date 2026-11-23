@@ -206,7 +206,7 @@
 		<div class="modal-search-header flex-c-m trans-04 js-hide-modal-search">
 			<div class="container-search-header">
 				<button type="button" class="flex-c-m btn-hide-modal-search trans-04 js-hide-modal-search">
-					<img src="{{ url(path='assets/coza/images/icons/icon-close2.png') }}" alt="CLOSE">
+					<img src="{{ url(path='assets/coza/images/icons/icon-close2.png') | safe }}" alt="CLOSE">
 				</button>
 
 				<form action="{{ route(name='shop') }}" method="get" class="wrap-search-header flex-w p-l-15">

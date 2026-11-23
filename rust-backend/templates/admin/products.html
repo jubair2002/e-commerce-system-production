@@ -189,6 +189,31 @@
           </tbody>
         </table>
       </div>
+
+      {% if total_pages and total_pages > 1 %}
+        <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="small text-muted">
+            Showing Page <strong>{{ current_page | default(value=1) }}</strong> of <strong>{{ total_pages }}</strong> (Total <strong>{{ total }}</strong> products)
+          </div>
+          <nav aria-label="Products pagination">
+            <ul class="pagination pagination-sm mb-0">
+              {% if current_page and current_page > 1 %}
+                <li class="page-item">
+                  <a class="page-link" href="{{ admin_url(path='products.php') }}?page={{ current_page - 1 }}{% if search %}&q={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">&laquo; Prev</a>
+                </li>
+              {% endif %}
+              <li class="page-item active">
+                <span class="page-link">{{ current_page | default(value=1) }}</span>
+              </li>
+              {% if current_page and current_page < total_pages %}
+                <li class="page-item">
+                  <a class="page-link" href="{{ admin_url(path='products.php') }}?page={{ current_page + 1 }}{% if search %}&q={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Next &raquo;</a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
     </form>
   </div>
 </div>
@@ -199,6 +224,24 @@
   <input type="hidden" name="action" value="delete">
   <input type="hidden" name="id" id="delete_target_id" value="">
 </form>
+
+<!-- Quick Stock Modal -->
+<div class="modal fade" id="quickStockModal" tabindex="-1" aria-labelledby="quickStockModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickStockModalLabel"><i class="bi bi-box-seam me-1 text-primary"></i> Quick Stock Update</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="quickStockModalBody">
+        <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -235,6 +278,126 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('delete_target_id').value = id;
         document.getElementById('single_delete_form').submit();
       }
+    });
+  });
+
+  // Quick Stock Modal Integration
+  const quickStockModalEl = document.getElementById('quickStockModal');
+  const quickStockModal = quickStockModalEl ? new bootstrap.Modal(quickStockModalEl) : null;
+  const modalBody = document.getElementById('quickStockModalBody');
+  const csrfToken = "{{ csrf_token }}";
+
+  document.querySelectorAll('.quick-stock-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const pid = this.dataset.id;
+      if (!quickStockModal) return;
+      modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+      quickStockModal.show();
+
+      fetch(`{{ admin_url(path='ajax/stock_update.php') }}?action=get_stock&product_id=${pid}`)
+        .then(r => r.json())
+        .then(res => {
+          if (!res.ok) {
+            modalBody.innerHTML = `<div class="alert alert-danger py-2">${res.error || 'Failed to load stock.'}</div>`;
+            return;
+          }
+
+          let html = `<h6 class="fw-bold mb-1">${res.product_name}</h6>`;
+          html += `<p class="text-muted small mb-3">Total current stock: <strong id="modal_total_stock">${res.total_stock}</strong></p>`;
+
+          if (res.product_type === 'variable' && res.variants && res.variants.length > 0) {
+            html += `<div class="list-group">`;
+            res.variants.forEach(v => {
+              html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                  <div>
+                    <div class="fw-semibold small">${v.label}</div>
+                    <small class="text-muted">${v.sku || 'No SKU'} &bull; Stock: <strong id="var_stock_${v.id}">${v.stock}</strong></small>
+                  </div>
+                  <div class="d-flex align-items-center gap-1">
+                    <button class="btn btn-sm btn-outline-danger stock-delta-btn" data-pid="${res.product_id}" data-vid="${v.id}" data-delta="-1">-1</button>
+                    <button class="btn btn-sm btn-outline-success stock-delta-btn" data-pid="${res.product_id}" data-vid="${v.id}" data-delta="1">+1</button>
+                    <button class="btn btn-sm btn-outline-primary stock-delta-btn" data-pid="${res.product_id}" data-vid="${v.id}" data-delta="5">+5</button>
+                  </div>
+                </div>
+              `;
+            });
+            html += `</div>`;
+          } else {
+            html += `
+              <div class="d-flex justify-content-between align-items-center border p-3 rounded bg-light">
+                <div>Current Stock: <strong class="fs-5" id="simple_modal_stock">${res.stock}</strong></div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn btn-outline-danger stock-delta-btn" data-pid="${res.product_id}" data-delta="-1">-1</button>
+                  <button class="btn btn-outline-success stock-delta-btn" data-pid="${res.product_id}" data-delta="1">+1</button>
+                  <button class="btn btn-outline-primary stock-delta-btn" data-pid="${res.product_id}" data-delta="5">+5</button>
+                  <button class="btn btn-outline-primary stock-delta-btn" data-pid="${res.product_id}" data-delta="10">+10</button>
+                </div>
+              </div>
+            `;
+          }
+
+          modalBody.innerHTML = html;
+
+          // Attach listeners to delta buttons
+          modalBody.querySelectorAll('.stock-delta-btn').forEach(dBtn => {
+            dBtn.addEventListener('click', function () {
+              const pid = this.dataset.pid;
+              const vid = this.dataset.vid || '';
+              const delta = parseInt(this.dataset.delta, 10);
+
+              this.disabled = true;
+
+              const fd = new FormData();
+              fd.append('_csrf', csrfToken);
+              fd.append('product_id', pid);
+              if (vid) fd.append('variant_id', vid);
+              fd.append('delta', delta);
+
+              fetch('{{ admin_url(path="ajax/stock_update.php") }}', {
+                method: 'POST',
+                body: fd
+              })
+                .then(r => r.json())
+                .then(updateRes => {
+                  dBtn.disabled = false;
+                  if (updateRes.ok) {
+                    if (vid) {
+                      const vEl = document.getElementById(`var_stock_${vid}`);
+                      if (vEl) vEl.textContent = updateRes.new_stock;
+                    } else {
+                      const sEl = document.getElementById('simple_modal_stock');
+                      if (sEl) sEl.textContent = updateRes.new_stock;
+                    }
+                    const totalEl = document.getElementById('modal_total_stock');
+                    if (totalEl) totalEl.textContent = updateRes.total_stock;
+
+                    // Update row badge in main table
+                    const badgeCol = document.getElementById(`stock_badge_col_${pid}`);
+                    if (badgeCol) {
+                      const count = updateRes.total_stock;
+                      let badgeHtml = count <= 0
+                        ? '<span class="badge text-bg-danger">Out of stock</span>'
+                        : `<span class="badge text-bg-success">${count}</span>`;
+                      if (vid) {
+                        badgeHtml += `<small class="text-muted d-block">updated</small>`;
+                      }
+                      badgeCol.innerHTML = badgeHtml;
+                    }
+                  } else {
+                    alert(updateRes.error || 'Failed to update stock.');
+                  }
+                })
+                .catch(err => {
+                  dBtn.disabled = false;
+                  alert('Network error updating stock.');
+                });
+            });
+          });
+        })
+        .catch(err => {
+          modalBody.innerHTML = '<div class="alert alert-danger py-2">Network error loading stock.</div>';
+        });
     });
   });
 });

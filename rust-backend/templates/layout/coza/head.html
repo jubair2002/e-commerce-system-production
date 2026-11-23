@@ -21,39 +21,39 @@
 	</script>
 
 	{% if favicon_url %}
-	<link rel="icon" type="image/png" href="{{ favicon_url }}">
+	<link rel="icon" type="image/png" href="{{ favicon_url | safe }}">
 	{% else %}
-	<link rel="icon" type="image/png" href="{{ url(path='assets/coza/images/icons/favicon.png') }}">
+	<link rel="icon" type="image/png" href="{{ url(path='assets/coza/images/icons/favicon.png') | safe }}">
 	{% endif %}
 
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/bootstrap/css/bootstrap.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/bootstrap/css/bootstrap.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/font-awesome-4.7.0/css/font-awesome.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/font-awesome-4.7.0/css/font-awesome.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/iconic/css/material-design-iconic-font.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/iconic/css/material-design-iconic-font.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/linearicons-v1.0.0/icon-font.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/fonts/linearicons-v1.0.0/icon-font.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animate/animate.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animate/animate.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/css-hamburgers/hamburgers.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/css-hamburgers/hamburgers.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animsition/css/animsition.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/animsition/css/animsition.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/select2/select2.min.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/select2/select2.min.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/daterangepicker/daterangepicker.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/daterangepicker/daterangepicker.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/slick/slick.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/slick/slick.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/MagnificPopup/magnific-popup.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/MagnificPopup/magnific-popup.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/perfect-scrollbar/perfect-scrollbar.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/vendor/perfect-scrollbar/perfect-scrollbar.css') | safe }}">
 <!--===============================================================================================-->
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/util.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/main.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/coza-custom.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/util.css') | safe }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/main.css') | safe }}">
+	<link rel="stylesheet" type="text/css" href="{{ url(path='assets/coza/css/coza-custom.css') | safe }}">
 <!--===============================================================================================-->
 
 	<script>

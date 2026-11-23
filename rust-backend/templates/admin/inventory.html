@@ -6,10 +6,10 @@
     <h3 class="mb-1">Inventory Management</h3>
     <p class="text-muted small mb-0">Live stock overview, atomic adjustment controls, and full inventory movement audit trail.</p>
   </div>
-  {% if sub_tab == 'ledger' %}
+  {% if sub_tab == 'ledger' or subTab == 'ledger' %}
     <div>
       <a href="{{ admin_url(path='inventory.php?tab=ledger&export=csv') }}" class="btn btn-outline-success btn-sm">
-        <i class="bi bi-download me-1"></i> Export Ledger CSV
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Ledger CSV
       </a>
     </div>
   {% endif %}
@@ -18,36 +18,48 @@
 <!-- Sub Navigation Tabs -->
 <ul class="nav nav-pills mb-4">
   <li class="nav-item">
-    <a class="nav-link {% if sub_tab == 'overview' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=overview') }}">
-      <i class="bi bi-grid-3x3 me-1"></i> Stock Overview
+    <a class="nav-link {% if not sub_tab or sub_tab == 'overview' or subTab == 'overview' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=overview') }}">
+      <i class="bi bi-boxes me-1"></i> Stock Overview
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if sub_tab == 'ledger' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=ledger') }}">
+    <a class="nav-link {% if sub_tab == 'ledger' or subTab == 'ledger' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=ledger') }}">
       <i class="bi bi-journal-text me-1"></i> Movements Ledger
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if sub_tab == 'import' or subTab == 'import' %}active{% endif %}" href="{{ admin_url(path='inventory.php?tab=import') }}">
+      <i class="bi bi-file-earmark-arrow-up me-1"></i> Import Stock CSV
     </a>
   </li>
 </ul>
 
-{% if sub_tab == 'overview' %}
-  <!-- Filters -->
+<!-- ================================================================= -->
+<!-- TAB 1: STOCK OVERVIEW                                             -->
+<!-- ================================================================= -->
+{% if not sub_tab or sub_tab == 'overview' or subTab == 'overview' %}
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-center">
         <input type="hidden" name="tab" value="overview">
         <div class="col-md-5">
-          <input type="text" name="q" class="form-control" placeholder="Search by name or SKU..." value="{{ search | default(value='') }}">
+          <input type="text" name="q" class="form-control" placeholder="Search by name, SKU or variant label..." value="{{ search | default(value='') }}">
         </div>
         <div class="col-md-3">
           <select name="filter" class="form-select" onchange="this.form.submit()">
-            <option value="all" {% if stock_filter == 'all' %}selected{% endif %}>All Stock Statuses</option>
-            <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock Only (&le; Threshold)</option>
-            <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of Stock Only (&le; 0)</option>
+            <option value="all" {% if not stock_filter or stock_filter == 'all' or stockFilter == 'all' %}selected{% endif %}>All Stock Statuses</option>
+            <option value="low" {% if stock_filter == 'low' or stockFilter == 'low' %}selected{% endif %}>Low Stock Only (&le; Threshold)</option>
+            <option value="out" {% if stock_filter == 'out' or stockFilter == 'out' %}selected{% endif %}>Out of Stock Only (&le; 0)</option>
           </select>
         </div>
         <div class="col-md-2">
           <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Search</button>
         </div>
+        {% if search or (stock_filter and stock_filter != 'all') %}
+          <div class="col-md-2">
+            <a href="{{ admin_url(path='inventory.php?tab=overview') }}" class="btn btn-outline-secondary w-100">Clear</a>
+          </div>
+        {% endif %}
       </form>
     </div>
   </div>
@@ -57,7 +69,7 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Product & Variant</th>
+            <th>Product &amp; Variant</th>
             <th>Type</th>
             <th>SKU</th>
             <th class="text-center">Current Stock</th>
@@ -67,119 +79,302 @@
           </tr>
         </thead>
         <tbody>
-          {% for item in items %}
+          {% set display_items = items | default(value=inventoryItems) %}
+          {% if not display_items or display_items | length == 0 %}
             <tr>
-              <td>
-                <div class="fw-semibold">{{ item.product_name }}</div>
-                {% if item.variant_id %}
-                  <small class="text-muted">Variant #{{ item.variant_id }}</small>
-                {% endif %}
-              </td>
-              <td>
-                {% if item.variant_id %}
-                  <span class="badge bg-indigo-subtle text-indigo border">Variant</span>
-                {% else %}
-                  <span class="badge bg-light text-secondary border">Simple</span>
-                {% endif %}
-              </td>
-              <td><code>{{ item.sku | default(value='—') }}</code></td>
-              <td class="text-center fw-bold">{{ item.stock }}</td>
-              <td class="text-center text-muted">{{ item.low_stock_threshold | default(value=5) }}</td>
-              <td>
-                {% if item.stock <= 0 %}
-                  <span class="badge text-bg-danger">Out of stock</span>
-                {% elif item.stock <= 5 %}
-                  <span class="badge text-bg-warning">Low stock</span>
-                {% else %}
-                  <span class="badge text-bg-success">In stock</span>
-                {% endif %}
-              </td>
-              <td class="text-end">
-                <button type="button" class="btn btn-sm btn-outline-primary"
-                        onclick="promptAdjustStock('{{ item.product_id }}', '{{ item.variant_id | default(value='') }}')">
-                  Adjust
-                </button>
-              </td>
+              <td colspan="7" class="text-center py-4 text-muted">No inventory items matching filter.</td>
             </tr>
-          {% endfor %}
-          {% if items | length == 0 %}
-            <tr><td colspan="7" class="text-center py-4 text-muted">No inventory items found.</td></tr>
+          {% else %}
+            {% for item in display_items %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ item.product_name }}</div>
+                  {% if item.variant_label %}
+                    <span class="badge bg-light text-dark border">{{ item.variant_label }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border text-uppercase" style="font-size: 11px;">
+                    {{ item.item_type | default(value='simple') }}
+                  </span>
+                </td>
+                <td><code>{{ item.sku | default(value='-') }}</code></td>
+                <td class="text-center fw-bold fs-6">
+                  {{ item.stock }}
+                </td>
+                <td class="text-center text-muted">
+                  {{ item.low_stock_threshold | default(value=5) }}
+                </td>
+                <td>
+                  {% if item.stock <= 0 %}
+                    <span class="badge bg-danger">Out of Stock</span>
+                  {% elif item.stock <= 5 %}
+                    <span class="badge bg-warning text-dark">Low Stock</span>
+                  {% else %}
+                    <span class="badge bg-success">In Stock</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#adjustModal"
+                          data-pid="{{ item.product_id }}"
+                          data-vid="{% if item.variant_id %}{{ item.variant_id }}{% endif %}"
+                          data-name="{{ item.product_name }}{% if item.variant_label %} - {{ item.variant_label }}{% endif %}"
+                          data-cur="{{ item.stock }}">
+                    <i class="bi bi-pencil-square me-1"></i> Adjust
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
           {% endif %}
         </tbody>
       </table>
     </div>
+
+    {% if totalPages and totalPages > 1 %}
+      <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="small text-muted">
+          Page <strong>{{ currentPage | default(value=1) }}</strong> of <strong>{{ totalPages }}</strong>
+        </div>
+        <nav aria-label="Inventory navigation">
+          <ul class="pagination pagination-sm mb-0">
+            {% if currentPage and currentPage > 1 %}
+              <li class="page-item">
+                <a class="page-link" href="{{ admin_url(path='inventory.php') }}?tab=overview&page={{ currentPage - 1 }}">&laquo; Prev</a>
+              </li>
+            {% endif %}
+            <li class="page-item active">
+              <span class="page-link">{{ currentPage | default(value=1) }}</span>
+            </li>
+            {% if currentPage and totalPages and currentPage < totalPages %}
+              <li class="page-item">
+                <a class="page-link" href="{{ admin_url(path='inventory.php') }}?tab=overview&page={{ currentPage + 1 }}">Next &raquo;</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
   </div>
 
-{% elif sub_tab == 'ledger' %}
-  <!-- Ledger Table -->
+  <!-- Adjustment Modal -->
+  <div class="modal fade" id="adjustModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{{ admin_url(path='inventory.php') }}">
+          {{ csrf_token() }}
+          <input type="hidden" name="action" value="adjust_stock">
+          <input type="hidden" name="product_id" id="modalPid">
+          <input type="hidden" name="variant_id" id="modalVid">
+
+          <div class="modal-header">
+            <h5 class="modal-title">Adjust Stock Level</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p id="modalItemName" class="fw-bold mb-2"></p>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Current Stock: <strong id="modalCurrentStock">0</strong></label>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Quantity Adjustment (+ or -)</label>
+              <input type="number" name="delta" class="form-control" placeholder="e.g. +10 or -3" required>
+              <div class="form-text">Positive number to add stock, negative to deduct stock.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Reason</label>
+              <select name="reason" class="form-select">
+                <option value="restock">Restock / New Shipment Received</option>
+                <option value="manual_adjust">Manual Stock Adjustment</option>
+                <option value="correction">Inventory Audit Count Correction</option>
+                <option value="return">Customer Return</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Audit Note</label>
+              <input type="text" name="note" class="form-control" placeholder="Optional reference note">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Apply Adjustment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('adjustModal');
+    if (modal) {
+      modal.addEventListener('show.bs.modal', function(event) {
+        const btn = event.relatedTarget;
+        if (btn) {
+          document.getElementById('modalPid').value = btn.getAttribute('data-pid');
+          document.getElementById('modalVid').value = btn.getAttribute('data-vid') || '';
+          document.getElementById('modalItemName').textContent = btn.getAttribute('data-name');
+          document.getElementById('modalCurrentStock').textContent = btn.getAttribute('data-cur');
+        }
+      });
+    }
+  });
+  </script>
+{% endif %}
+
+<!-- ================================================================= -->
+<!-- TAB 2: MOVEMENTS LEDGER                                           -->
+<!-- ================================================================= -->
+{% if sub_tab == 'ledger' or subTab == 'ledger' %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <form method="get" class="d-flex gap-2">
+          <input type="hidden" name="tab" value="ledger">
+          <select name="reason" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Movement Reasons</option>
+            <option value="order" {% if reasonFilter == 'order' or reason_filter == 'order' %}selected{% endif %}>Customer Orders</option>
+            <option value="cancel_restock" {% if reasonFilter == 'cancel_restock' or reason_filter == 'cancel_restock' %}selected{% endif %}>Order Cancel Restock</option>
+            <option value="restock" {% if reasonFilter == 'restock' or reason_filter == 'restock' %}selected{% endif %}>Shipment Restock</option>
+            <option value="manual_adjust" {% if reasonFilter == 'manual_adjust' or reason_filter == 'manual_adjust' %}selected{% endif %}>Manual Adjustments</option>
+            <option value="correction" {% if reasonFilter == 'correction' or reason_filter == 'correction' %}selected{% endif %}>Audit Corrections</option>
+          </select>
+        </form>
+        <a href="{{ admin_url(path='inventory.php?tab=ledger&export=csv') }}" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Ledger CSV
+        </a>
+      </div>
+    </div>
+  </div>
+
   <div class="card shadow-sm border-0">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>ID</th>
-            <th>Date</th>
-            <th>Product</th>
+            <th>Date &amp; Time</th>
+            <th>Item</th>
             <th class="text-center">Change</th>
             <th class="text-center">Stock After</th>
             <th>Reason</th>
-            <th>User / System</th>
+            <th>Order Ref</th>
+            <th>Logged By</th>
             <th>Note</th>
           </tr>
         </thead>
         <tbody>
-          {% for row in ledger %}
+          {% set display_ledger = ledgerRows | default(value=ledger) %}
+          {% if not display_ledger or display_ledger | length == 0 %}
             <tr>
-              <td><code>#{{ row.id }}</code></td>
-              <td class="text-muted small">{{ row.created_at }}</td>
-              <td>{{ row.product_name }}</td>
-              <td class="text-center">
-                {% if row.change_qty > 0 %}
-                  <span class="badge text-bg-success">+{{ row.change_qty }}</span>
-                {% else %}
-                  <span class="badge text-bg-danger">{{ row.change_qty }}</span>
-                {% endif %}
-              </td>
-              <td class="text-center fw-semibold">{{ row.stock_after | default(value='—') }}</td>
-              <td><span class="badge text-bg-light border">{{ row.reason }}</span></td>
-              <td class="small">{{ row.user_name | default(value='System') }}</td>
-              <td class="small text-muted">{{ row.note | default(value='—') }}</td>
+              <td colspan="8" class="text-center py-4 text-muted">No inventory movements recorded yet.</td>
             </tr>
-          {% endfor %}
-          {% if ledger | length == 0 %}
-            <tr><td colspan="8" class="text-center py-4 text-muted">No ledger movements recorded.</td></tr>
+          {% else %}
+            {% for lr in display_ledger %}
+              <tr>
+                <td class="small text-muted">
+                  {{ lr.created_at }}
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ lr.product_name | default(value='Product #' ~ lr.product_id) }}</div>
+                  {% if lr.variant_label %}
+                    <span class="badge bg-light text-dark border">{{ lr.variant_label }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if lr.change_qty > 0 %}
+                    <span class="badge bg-success">+{{ lr.change_qty }}</span>
+                  {% else %}
+                    <span class="badge bg-danger">{{ lr.change_qty }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-center fw-bold">
+                  {{ lr.stock_after | default(value='-') }}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border text-uppercase" style="font-size: 11px;">
+                    {{ lr.reason }}
+                  </span>
+                </td>
+                <td>
+                  {% if lr.order_id %}
+                    <a href="{{ admin_url(path='order_view.php') }}?id={{ lr.order_id }}" class="small fw-bold">
+                      #{{ lr.order_id }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="small text-muted">
+                  {{ lr.user_name | default(value='System') }}
+                </td>
+                <td class="small text-muted">
+                  {{ lr.note | default(value='-') }}
+                </td>
+              </tr>
+            {% endfor %}
           {% endif %}
         </tbody>
       </table>
     </div>
+
+    {% if totalPages and totalPages > 1 %}
+      <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="small text-muted">
+          Page <strong>{{ currentPage | default(value=1) }}</strong> of <strong>{{ totalPages }}</strong>
+        </div>
+        <nav aria-label="Inventory ledger navigation">
+          <ul class="pagination pagination-sm mb-0">
+            {% if currentPage and currentPage > 1 %}
+              <li class="page-item">
+                <a class="page-link" href="{{ admin_url(path='inventory.php') }}?tab=ledger&page={{ currentPage - 1 }}">&laquo; Prev</a>
+              </li>
+            {% endif %}
+            <li class="page-item active">
+              <span class="page-link">{{ currentPage | default(value=1) }}</span>
+            </li>
+            {% if currentPage and totalPages and currentPage < totalPages %}
+              <li class="page-item">
+                <a class="page-link" href="{{ admin_url(path='inventory.php') }}?tab=ledger&page={{ currentPage + 1 }}">Next &raquo;</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
   </div>
 {% endif %}
 
-<form method="post" id="stock_adjust_form" style="display:none;">
-  {{ csrf_token() }}
-  <input type="hidden" name="action" value="adjust_stock">
-  <input type="hidden" name="product_id" id="adj_product_id">
-  <input type="hidden" name="variant_id" id="adj_variant_id">
-  <input type="hidden" name="change_qty" id="adj_change_qty">
-  <input type="hidden" name="reason" value="manual_adjust">
-  <input type="hidden" name="note" id="adj_note">
-</form>
+<!-- ================================================================= -->
+<!-- TAB 3: IMPORT STOCK CSV                                           -->
+<!-- ================================================================= -->
+{% if sub_tab == 'import' or subTab == 'import' %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3">Bulk Stock CSV Import</h5>
+      <p class="text-muted small">
+        Upload a CSV file containing <code>sku</code> and <code>stock</code> columns to update inventory quantities across simple and variable products in one go.
+      </p>
 
-<script>
-function promptAdjustStock(pid, vid) {
-  const qtyStr = prompt("Enter stock change amount (e.g. +10 or -5):");
-  if (!qtyStr) return;
-  const qty = parseInt(qtyStr, 10);
-  if (isNaN(qty) || qty === 0) {
-    alert("Invalid stock quantity.");
-    return;
-  }
-  const note = prompt("Optional reason / note for stock adjustment:") || "Manual inventory adjustment";
-  document.getElementById('adj_product_id').value = pid;
-  document.getElementById('adj_variant_id').value = vid;
-  document.getElementById('adj_change_qty').value = qty;
-  document.getElementById('adj_note').value = note;
-  document.getElementById('stock_adjust_form').submit();
-}
-</script>
+      <form method="post" action="{{ admin_url(path='product_import.php') }}" enctype="multipart/form-data" class="row g-3">
+        {{ csrf_token() }}
+        <input type="hidden" name="action" value="preview_csv">
+        <div class="col-md-6">
+          <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-eye me-1"></i> Preview Dry-Run</button>
+        </div>
+        <div class="col-md-3">
+          <a href="{{ admin_url(path='product_import.php?download=template') }}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-download me-1"></i> Download Template
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

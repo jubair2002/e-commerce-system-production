@@ -6,10 +6,25 @@
     <h3 class="mb-1">Server &amp; Infrastructure Monitoring</h3>
     <p class="text-muted small mb-0">Real-time CPU, RAM, Disk, MySQL queries, active threads, and OS health.</p>
   </div>
-  <div class="d-flex gap-2 align-items-center">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group btn-group-sm" role="group" id="rangeButtonGroup">
+      <button type="button" class="btn btn-outline-secondary range-btn active" data-range="1h">1h</button>
+      <button type="button" class="btn btn-outline-secondary range-btn" data-range="6h">6h</button>
+      <button type="button" class="btn btn-outline-secondary range-btn" data-range="24h">24h</button>
+      <button type="button" class="btn btn-outline-secondary range-btn" data-range="7d">7d</button>
+    </div>
+
+    <select class="form-select form-select-sm" style="width: auto;" id="ifaceSelect">
+      <option value="auto" selected>Interface: Auto</option>
+    </select>
+
     <button type="button" class="btn btn-outline-secondary btn-sm" id="autoRefreshBtn" title="Toggle Auto Refresh">
       <i class="bi bi-arrow-repeat"></i> <span id="autoRefreshLabel">Auto (30s)</span>
     </button>
+
+    <a href="{{ admin_url(path='ajax/monitor_data.php?format=csv&range=1h') }}" class="btn btn-outline-success btn-sm" id="exportCsvBtn" title="Export metrics to CSV">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    </a>
   </div>
 </div>
 
@@ -86,81 +101,550 @@
     </div>
   </div>
 
-  <!-- MySQL Threads & Status -->
+  <!-- Network Rates -->
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card h-100 shadow-sm border-0 stat-tile">
       <div class="card-body p-3">
         <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
-          <span>MySQL Threads</span>
-          <i class="bi bi-database fs-5"></i>
+          <span>Network I/O</span>
+          <i class="bi bi-ethernet fs-5"></i>
         </div>
-        <div class="fs-4 fw-bold" id="tileDbVal">--</div>
-        <div class="small text-muted mt-1" id="tileDbQueries">Connected clients</div>
+        <div class="small fw-semibold text-truncate">RX: <span id="tileNetRx">-- B/s</span></div>
+        <div class="small fw-semibold text-truncate mt-1">TX: <span id="tileNetTx">-- B/s</span></div>
       </div>
     </div>
   </div>
 
-  <!-- Uptime -->
+  <!-- MySQL QPS & Threads -->
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card h-100 shadow-sm border-0 stat-tile">
       <div class="card-body p-3">
         <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
-          <span>System Uptime</span>
-          <i class="bi bi-clock-history fs-5"></i>
+          <span>Database &amp; Web</span>
+          <i class="bi bi-database fs-5"></i>
         </div>
-        <div class="fs-5 fw-bold" id="tileUptimeVal">--</div>
-        <div class="small text-muted mt-1" id="tilePhpVersion">Rust / Linux</div>
+        <div class="small fw-semibold">QPS: <span id="tileDbQps">--</span></div>
+        <div class="small text-muted mt-1">Req/m: <span id="tileReqMin">--</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+  <!-- Chart 1: CPU Utilization & Load Average -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-activity text-primary me-2"></i> CPU % &amp; Load Average</h6>
+        <span class="badge text-bg-light border text-muted">Dual Y-Axis</span>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="chartCpuLoad"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 2: Memory & Swap Area -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-layers text-primary me-2"></i> Memory &amp; Swap Utilization</h6>
+        <span class="badge text-bg-light border text-muted">Area (%)</span>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="chartMemory"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 3: Network Throughput -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-ethernet text-primary me-2"></i> Network Throughput (RX / TX)</h6>
+        <span class="badge text-bg-light border text-muted" id="chartIfaceLabel">Interface: auto</span>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="chartNetwork"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 4: Application Bandwidth & Monthly Quota -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart-fill text-primary me-2"></i> Application Bandwidth (In / Out)</h6>
+        <span class="badge text-bg-light border text-muted" id="quotaHeaderBadge">Month-to-date</span>
+      </div>
+      <div class="card-body">
+        <div id="quotaContainer" class="mb-3 d-none">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Monthly Quota Usage</span>
+            <span id="quotaText">0 / 0 GB (0%)</span>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" id="quotaBar" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div style="height: 220px;">
+          <canvas id="chartBandwidth"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 5: Requests/min & Response Latency -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-stopwatch text-primary me-2"></i> Requests / min &amp; Avg Response Time</h6>
+        <span class="badge text-bg-light border text-muted">ms Latency</span>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="chartRequests"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 6: HTTP Response Status Mix -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart text-primary me-2"></i> HTTP Response Status Mix</h6>
+        <span class="badge text-bg-light border text-muted">2xx / 3xx / 4xx / 5xx</span>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Diagnostics & Integrations Tabs Section -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white p-0 border-bottom">
+    <ul class="nav nav-tabs px-3 pt-2" id="monitorTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active fw-medium" data-bs-toggle="tab" data-bs-target="#slowReqTab">
+          <i class="bi bi-clock-history me-1"></i> Slow Requests (<span id="slowReqCount">0</span>)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-medium" data-bs-toggle="tab" data-bs-target="#diagnosticsTab">
+          <i class="bi bi-hdd-stack me-1"></i> System &amp; Runtime Diagnostics
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-medium" data-bs-toggle="tab" data-bs-target="#externalTab">
+          <i class="bi bi-box-arrow-up-right me-1"></i> External Integrations
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body p-4">
+    <div class="tab-content">
+      <!-- TAB 1: SLOW REQUESTS -->
+      <div class="tab-pane fade show active" id="slowReqTab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Recent Slow Requests</h6>
+          <span class="text-muted small">Capped at top 10 recent transactions</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Time</th>
+                <th>Method</th>
+                <th>Request Path</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Queries</th>
+                <th>Peak RAM</th>
+              </tr>
+            </thead>
+            <tbody id="slowRequestsTableBody">
+              <tr><td colspan="7" class="text-center text-muted py-3">No slow requests recorded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: SYSTEM DIAGNOSTICS -->
+      <div class="tab-pane fade" id="diagnosticsTab">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card bg-light border p-3">
+              <h6 class="fw-bold mb-3"><i class="bi bi-cpu me-1"></i> Runtime Environment</h6>
+              <ul class="list-unstyled small mb-0">
+                <li class="mb-2"><strong>Runtime:</strong> {{ php_info.version | default(value='Rust 1.85 / Axum 0.7') }}</li>
+                <li class="mb-2"><strong>Execution Mode:</strong> {{ php_info.sapi | default(value='Linux Native Daemon') }}</li>
+                <li class="mb-2"><strong>Memory Limit:</strong> {{ php_info.memory_limit | default(value='unlimited') }}</li>
+                <li class="mb-0"><strong>Max Execution Time:</strong> {{ php_info.max_exec | default(value='60s') }}</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-light border p-3">
+              <h6 class="fw-bold mb-3"><i class="bi bi-database me-1"></i> Database &amp; Extensions</h6>
+              <ul class="list-unstyled small mb-0">
+                <li class="mb-2"><strong>Database Driver:</strong> MySQL 8.0 (Async SQLx connection pool)</li>
+                <li class="mb-2"><strong>OPcache / JIT:</strong> Native Machine Code (AOT Compiled)</li>
+                <li class="mb-2"><strong>Security:</strong> OpenSSL, Argon2id, CSRF Protection</li>
+                <li class="mb-0"><strong>Image Pipeline:</strong> WebP, PNG, JPEG, AVIF Hardware Accelerated</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: EXTERNAL INTEGRATIONS -->
+      <div class="tab-pane fade" id="externalTab">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <h6 class="fw-bold mb-2"><i class="bi bi-link-45deg text-primary me-2"></i> Dedicated APM &amp; Prometheus Exporter</h6>
+            <p class="text-muted small">
+              This panel functions independently with zero third-party dependencies. If you prefer high-frequency (1-second) kernel metrics or Prometheus dashboards, you can link Netdata or Grafana here.
+            </p>
+            <div class="card bg-light border-0 mb-3 p-3">
+              <h6 class="fw-bold mb-1">Prometheus Metrics Endpoint</h6>
+              <div class="small text-muted mb-2">Native Prometheus metrics available at:</div>
+              <pre class="bg-dark text-white p-2 rounded small mb-0">GET /metrics</pre>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border">
+              <div class="card-header bg-white py-3 fw-semibold">
+                External Monitoring URL
+              </div>
+              <div class="card-body">
+                <p class="small text-muted">Configure external monitor URL in <a href="{{ admin_url(path='settings.php?tab=seo') }}">Settings</a>.</p>
+                {% if external_url %}
+                  <a href="{{ external_url }}" target="_blank" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Open Netdata / Grafana Dashboard
+                  </a>
+                {% else %}
+                  <div class="text-muted small">No external monitoring URL configured yet.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  function fetchMetrics() {
-    fetch("{{ admin_url(path='ajax/monitor_data.php') }}")
-      .then(res => res.json())
-      .then(data => {
-        if (data.cpu) {
-          const cpuVal = Math.round(data.cpu.usage_percent || 0);
-          document.getElementById("tileCpuVal").textContent = cpuVal + "%";
-          document.getElementById("tileCpuBar").style.width = cpuVal + "%";
-          if (data.cpu.cores) document.getElementById("tileCpuCores").textContent = "(" + data.cpu.cores + " cores)";
-        }
-        if (data.load) {
-          document.getElementById("tileLoadVal").textContent = (data.load["1m"] || 0) + " / " + (data.load["5m"] || 0) + " / " + (data.load["15m"] || 0);
-        }
-        if (data.memory) {
-          const memVal = Math.round(data.memory.usage_percent || 0);
-          document.getElementById("tileMemVal").textContent = memVal + "%";
-          document.getElementById("tileMemBar").style.width = memVal + "%";
-          if (data.memory.total_mb) {
-            const usedGb = (data.memory.used_mb / 1024).toFixed(1);
-            const totalGb = (data.memory.total_mb / 1024).toFixed(1);
-            document.getElementById("tileMemSub").textContent = "(" + usedGb + " / " + totalGb + " GB)";
-          }
-        }
-        if (data.disk) {
-          const diskVal = Math.round(data.disk.usage_percent || 0);
-          document.getElementById("tileDiskVal").textContent = diskVal + "%";
-          document.getElementById("tileDiskBar").style.width = diskVal + "%";
-          if (data.disk.total_gb) {
-            document.getElementById("tileDiskSub").textContent = "(" + data.disk.used_gb + " / " + data.disk.total_gb + " GB)";
-          }
-        }
-        if (data.database) {
-          document.getElementById("tileDbVal").textContent = data.database.threads_connected || "1";
-          document.getElementById("tileDbQueries").textContent = (data.database.questions || 0) + " queries executed";
-        }
-        if (data.uptime) {
-          document.getElementById("tileUptimeVal").textContent = data.uptime;
-        }
-      })
-      .catch(err => console.error("Error fetching monitor data:", err));
-  }
+document.addEventListener('DOMContentLoaded', function () {
+    let currentRange = '1h';
+    let currentIface = 'auto';
+    let autoRefreshActive = true;
+    let refreshTimer = null;
 
-  fetchMetrics();
-  setInterval(fetchMetrics, 30000);
+    let chartCpuLoad = null;
+    let chartMemory  = null;
+    let chartNetwork = null;
+    let chartBandwidth = null;
+    let chartRequests = null;
+    let chartStatus  = null;
+
+    function formatBytes(bytes, decimals = 1) {
+        if (!bytes || bytes <= 0) return '0 B';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function formatRate(bytesSec) {
+        if (!bytesSec || bytesSec <= 0) return '0 B/s';
+        return formatBytes(bytesSec) + '/s';
+    }
+
+    function createCharts() {
+        if (typeof Chart === 'undefined') return;
+        const gridColor = 'rgba(150, 150, 150, 0.15)';
+
+        // 1. CPU & Load
+        const elCpu = document.getElementById('chartCpuLoad');
+        if (elCpu) {
+            chartCpuLoad = new Chart(elCpu.getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [
+                    { label: 'CPU %', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', yAxisID: 'yCpu', fill: true, tension: 0.3 },
+                    { label: 'Load 1m', data: [], borderColor: '#f59e0b', borderDash: [4, 4], yAxisID: 'yLoad', fill: false, tension: 0.3 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { grid: { color: gridColor } },
+                    yCpu: { type: 'linear', position: 'left', min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: gridColor } },
+                    yLoad: { type: 'linear', position: 'right', min: 0, grid: { drawOnChartArea: false } }
+                }}
+            });
+        }
+
+        // 2. Memory & Swap
+        const elMem = document.getElementById('chartMemory');
+        if (elMem) {
+            chartMemory = new Chart(elMem.getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [
+                    { label: 'RAM Used %', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3 },
+                    { label: 'Swap Used %', data: [], borderColor: '#6b7280', backgroundColor: 'rgba(107, 114, 128, 0.1)', fill: true, tension: 0.3 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { grid: { color: gridColor } },
+                    y: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: gridColor } }
+                }}
+            });
+        }
+
+        // 3. Network Throughput
+        const elNet = document.getElementById('chartNetwork');
+        if (elNet) {
+            chartNetwork = new Chart(elNet.getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [
+                    { label: 'RX Rate ↓', data: [], borderColor: '#0ea5e9', fill: false, tension: 0.2 },
+                    { label: 'TX Rate ↑', data: [], borderColor: '#8b5cf6', fill: false, tension: 0.2 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { grid: { color: gridColor } },
+                    y: { grid: { color: gridColor }, ticks: { callback: v => formatRate(v) } }
+                }}
+            });
+        }
+
+        // 4. Bandwidth
+        const elBw = document.getElementById('chartBandwidth');
+        if (elBw) {
+            chartBandwidth = new Chart(elBw.getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [
+                    { label: 'Outbound', data: [], backgroundColor: '#3b82f6' },
+                    { label: 'Inbound', data: [], backgroundColor: '#93c5fd' }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { stacked: true, grid: { color: gridColor } },
+                    y: { stacked: true, grid: { color: gridColor }, ticks: { callback: v => formatBytes(v) } }
+                }}
+            });
+        }
+
+        // 5. Requests & Latency
+        const elReq = document.getElementById('chartRequests');
+        if (elReq) {
+            chartRequests = new Chart(elReq.getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [
+                    { label: 'Requests', data: [], type: 'bar', backgroundColor: 'rgba(99, 102, 241, 0.5)', yAxisID: 'yReq' },
+                    { label: 'Avg Latency (ms)', data: [], type: 'line', borderColor: '#ef4444', yAxisID: 'yRt', tension: 0.3 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { grid: { color: gridColor } },
+                    yReq: { type: 'linear', position: 'left', min: 0, grid: { color: gridColor } },
+                    yRt: { type: 'linear', position: 'right', min: 0, ticks: { callback: v => v + ' ms' }, grid: { drawOnChartArea: false } }
+                }}
+            });
+        }
+
+        // 6. HTTP Status Mix
+        const elStatus = document.getElementById('chartStatus');
+        if (elStatus) {
+            chartStatus = new Chart(elStatus.getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [
+                    { label: '2xx OK', data: [], backgroundColor: '#10b981' },
+                    { label: '3xx Redirect', data: [], backgroundColor: '#3b82f6' },
+                    { label: '4xx Client Err', data: [], backgroundColor: '#f59e0b' },
+                    { label: '5xx Server Err', data: [], backgroundColor: '#ef4444' }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, scales: {
+                    x: { stacked: true, grid: { color: gridColor } },
+                    y: { stacked: true, grid: { color: gridColor } }
+                }}
+            });
+        }
+    }
+
+    createCharts();
+
+    function fetchMonitorData() {
+        const url = '{{ admin_url(path="ajax/monitor_data.php") }}?range=' + encodeURIComponent(currentRange) + '&iface=' + encodeURIComponent(currentIface);
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.tiles) updateTiles(data.tiles);
+                if (data.series) updateCharts(data.series);
+                if (data.bandwidth) updateBandwidth(data.bandwidth);
+                if (data.tables) updateTables(data.tables);
+            })
+            .catch(err => {
+                console.error("Monitoring fetch failed:", err);
+            });
+    }
+
+    function updateTiles(t) {
+        if (!t) return;
+        const cpu = t.cpu_percent !== null ? t.cpu_percent : 0;
+        document.getElementById('tileCpuVal').textContent = (t.cpu_percent !== null ? t.cpu_percent.toFixed(1) + '%' : 'N/A');
+        document.getElementById('tileCpuCores').textContent = '(' + (t.cpu_cores || 1) + ' cores)';
+        const cpuBar = document.getElementById('tileCpuBar');
+        if (cpuBar) {
+            cpuBar.style.width = Math.min(100, cpu) + '%';
+            cpuBar.className = 'progress-bar ' + (cpu >= 90 ? 'bg-danger' : (cpu >= 70 ? 'bg-warning' : 'bg-success'));
+        }
+
+        const l1 = t.load_1 !== null ? t.load_1.toFixed(2) : '--';
+        const l5 = t.load_5 !== null ? t.load_5.toFixed(2) : '--';
+        const l15 = t.load_15 !== null ? t.load_15.toFixed(2) : '--';
+        document.getElementById('tileLoadVal').textContent = l1 + ' / ' + l5 + ' / ' + l15;
+
+        const ramPct = t.mem_percent || 0;
+        document.getElementById('tileMemVal').textContent = ramPct.toFixed(1) + '%';
+        if (t.mem_total) {
+            document.getElementById('tileMemSub').textContent = '(' + (t.mem_used / 1024).toFixed(1) + ' / ' + (t.mem_total / 1024).toFixed(1) + ' GB)';
+        }
+        const memBar = document.getElementById('tileMemBar');
+        if (memBar) {
+            memBar.style.width = Math.min(100, ramPct) + '%';
+            memBar.className = 'progress-bar ' + (ramPct >= 90 ? 'bg-danger' : (ramPct >= 75 ? 'bg-warning' : 'bg-info'));
+        }
+
+        const diskPct = t.disk_percent || 0;
+        document.getElementById('tileDiskVal').textContent = diskPct.toFixed(1) + '%';
+        if (t.disk_total) {
+            document.getElementById('tileDiskSub').textContent = '(' + t.disk_used + ' / ' + t.disk_total + ' GB)';
+        }
+        const diskBar = document.getElementById('tileDiskBar');
+        if (diskBar) {
+            diskBar.style.width = Math.min(100, diskPct) + '%';
+            diskBar.className = 'progress-bar ' + (diskPct >= 95 ? 'bg-danger' : (diskPct >= 85 ? 'bg-warning' : 'bg-primary'));
+        }
+
+        document.getElementById('tileNetRx').textContent = formatRate(t.net_rx_rate);
+        document.getElementById('tileNetTx').textContent = formatRate(t.net_tx_rate);
+        document.getElementById('tileDbQps').textContent = t.db_qps !== null ? t.db_qps.toFixed(1) : '--';
+        document.getElementById('tileReqMin').textContent = t.req_per_min || 0;
+    }
+
+    function updateCharts(s) {
+        if (!s) return;
+        const labels = s.labels || [];
+
+        if (chartCpuLoad) {
+            chartCpuLoad.data.labels = labels;
+            chartCpuLoad.data.datasets[0].data = s.cpu || [];
+            chartCpuLoad.data.datasets[1].data = s.load || [];
+            chartCpuLoad.update('none');
+        }
+
+        if (chartMemory) {
+            chartMemory.data.labels = labels;
+            chartMemory.data.datasets[0].data = s.mem || [];
+            chartMemory.data.datasets[1].data = s.swap || [];
+            chartMemory.update('none');
+        }
+
+        if (chartNetwork) {
+            chartNetwork.data.labels = labels;
+            chartNetwork.data.datasets[0].data = s.net_rx || [];
+            chartNetwork.data.datasets[1].data = s.net_tx || [];
+            chartNetwork.update('none');
+        }
+
+        if (chartBandwidth) {
+            chartBandwidth.data.labels = labels;
+            chartBandwidth.data.datasets[0].data = s.bw_out || [];
+            chartBandwidth.data.datasets[1].data = s.bw_in || [];
+            chartBandwidth.update('none');
+        }
+
+        if (chartRequests) {
+            chartRequests.data.labels = labels;
+            chartRequests.data.datasets[0].data = s.req || [];
+            chartRequests.data.datasets[1].data = s.rt_avg || [];
+            chartRequests.update('none');
+        }
+
+        if (chartStatus) {
+            chartStatus.data.labels = labels;
+            chartStatus.data.datasets[0].data = s.status ? s.status.s2xx : [];
+            chartStatus.data.datasets[1].data = s.status ? s.status.s3xx : [];
+            chartStatus.data.datasets[2].data = s.status ? s.status.s4xx : [];
+            chartStatus.data.datasets[3].data = s.status ? s.status.s5xx : [];
+            chartStatus.update('none');
+        }
+    }
+
+    function updateBandwidth(bw) {
+        if (!bw) return;
+        const quotaContainer = document.getElementById('quotaContainer');
+        if (quotaContainer && bw.quota_gb > 0) {
+            quotaContainer.classList.remove('d-none');
+            const usedGb = (bw.month_bytes / 1073741824).toFixed(2);
+            document.getElementById('quotaText').textContent = usedGb + ' / ' + bw.quota_gb + ' GB (' + bw.quota_percent + '%)';
+            const qb = document.getElementById('quotaBar');
+            if (qb) {
+                qb.style.width = Math.min(100, bw.quota_percent) + '%';
+                qb.className = 'progress-bar ' + (bw.quota_percent >= 90 ? 'bg-danger' : (bw.quota_percent >= 75 ? 'bg-warning' : 'bg-success'));
+            }
+        }
+    }
+
+    function updateTables(tb) {
+        if (!tb) return;
+        const ifSelect = document.getElementById('ifaceSelect');
+        if (ifSelect && tb.interfaces && tb.interfaces.length > 0) {
+            const currentVal = ifSelect.value;
+            ifSelect.innerHTML = '';
+            tb.interfaces.forEach(iface => {
+                const opt = document.createElement('option');
+                opt.value = iface;
+                opt.textContent = iface === 'auto' ? 'Interface: Auto' : iface;
+                if (iface === currentVal) opt.selected = true;
+                ifSelect.appendChild(opt);
+            });
+        }
+    }
+
+    document.querySelectorAll('.range-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentRange = this.dataset.range;
+            const exportBtn = document.getElementById('exportCsvBtn');
+            if (exportBtn) {
+                exportBtn.href = `{{ admin_url(path='ajax/monitor_data.php') }}?format=csv&range=${currentRange}`;
+            }
+            fetchMonitorData();
+        });
+    });
+
+    const ifSelect = document.getElementById('ifaceSelect');
+    if (ifSelect) {
+        ifSelect.addEventListener('change', function() {
+            currentIface = this.value;
+            fetchMonitorData();
+        });
+    }
+
+    fetchMonitorData();
+    setInterval(fetchMonitorData, 30000);
 });
 </script>
 {% endblock %}

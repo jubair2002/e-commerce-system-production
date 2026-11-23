@@ -1,28 +1,31 @@
 {% extends "admin/layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
-    <h3 class="mb-1">Settings &amp; Configuration</h3>
-    <p class="text-muted small mb-0">Manage global store parameters, integrations, checkout policies, and infrastructure.</p>
+    <h1 class="h3 mb-1 fw-bold">Store Settings &amp; Configuration</h1>
+    <p class="text-muted small mb-0">Manage global store parameters, design, payment gateways, shipping zones, SEO, and cloud storage.</p>
   </div>
+  <a href="{{ route(name='home') }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-box-arrow-up-right me-1"></i> Preview Storefront
+  </a>
 </div>
 
-<!-- Nav Tabs -->
-<ul class="nav nav-tabs mb-4" id="settingsTab" role="tablist">
+<!-- Settings Tab Navigation -->
+<ul class="nav nav-pills mb-4 border-bottom pb-3 gap-2 flex-wrap">
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'general' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=general') }}">
-      <i class="bi bi-sliders me-1"></i> General
+      <i class="bi bi-gear me-1"></i> General
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'storefront' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=storefront') }}">
-      <i class="bi bi-shop me-1"></i> Storefront
+      <i class="bi bi-palette me-1"></i> Storefront CMS
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'inventory' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=inventory') }}">
-      <i class="bi bi-boxes me-1"></i> Inventory &amp; Stock
+      <i class="bi bi-boxes me-1"></i> Inventory
     </a>
   </li>
   <li class="nav-item">
@@ -32,22 +35,22 @@
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'shipping' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=shipping') }}">
-      <i class="bi bi-truck me-1"></i> Shipping Methods
+      <i class="bi bi-truck me-1"></i> Shipping
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'coupons' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=coupons') }}">
-      <i class="bi bi-ticket-perforated me-1"></i> Coupons ({{ coupons | length }})
+      <i class="bi bi-ticket-perforated me-1"></i> Coupons
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'seo' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=seo') }}">
-      <i class="bi bi-search me-1"></i> SEO &amp; Sitemap
+      <i class="bi bi-search me-1"></i> SEO &amp; Monitoring
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if active_tab == 'customers' %}active fw-bold{% endif %}" href="{{ admin_url(path='settings.php?tab=customers') }}">
-      <i class="bi bi-people me-1"></i> Customers
+      <i class="bi bi-people me-1"></i> Customers &amp; Security
     </a>
   </li>
   <li class="nav-item">
@@ -58,452 +61,1463 @@
 </ul>
 
 <div class="tab-content">
-  <!-- TAB 1: GENERAL -->
+
+  <!-- ==================== TAB 1: GENERAL ==================== -->
   {% if active_tab == 'general' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">General Store Settings</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0">General Store Configuration</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="generalForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+            <form method="post" onsubmit="return confirm('Reset general settings to defaults?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="reset_tab">
+              <input type="hidden" name="tab_name" value="general">
+              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" id="generalForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="general">
           <input type="hidden" name="action" value="save_general">
 
-          <div class="row g-3">
+          <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label fw-medium">Store Name</label>
-              <input type="text" name="site_name" class="form-control" value="{{ settings.site_name | default(value='Jinish Potro') }}">
+              <label class="form-label fw-semibold">Store / Site Name</label>
+              <input type="text" name="site_name" class="form-control" value="{{ settings.site_name | default(value='Jinish Potro') }}" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-medium">Tagline</label>
-              <input type="text" name="store_tagline" class="form-control" value="{{ settings.store_tagline | default(value='') }}">
+              <label class="form-label fw-semibold">Store Tagline</label>
+              <input type="text" name="store_tagline" class="form-control" value="{{ settings.store_tagline | default(value='Quality products delivered to your door') }}">
             </div>
+
             <div class="col-md-6">
-              <label class="form-label fw-medium">Contact Email</label>
+              <label class="form-label fw-semibold">Contact Email</label>
               <input type="email" name="site_email" class="form-control" value="{{ settings.site_email | default(value='') }}">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-medium">Contact Phone</label>
-              <input type="text" name="store_phone" class="form-control" value="{{ settings.store_phone | default(value='') }}">
+              <label class="form-label fw-semibold">Support Phone</label>
+              <input type="text" name="store_phone" class="form-control" value="{{ settings.store_phone | default(value='+880 1700-000000') }}" placeholder="+880 1700 000000">
             </div>
+
             <div class="col-12">
-              <label class="form-label fw-medium">Store Physical Address</label>
-              <textarea name="store_address" class="form-control" rows="2">{{ settings.store_address | default(value='') }}</textarea>
+              <label class="form-label fw-semibold">Physical Address</label>
+              <textarea name="store_address" class="form-control" rows="2">{{ settings.store_address | default(value='Dhaka, Bangladesh') }}</textarea>
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-medium">Timezone</label>
-              <input type="text" name="timezone" class="form-control" value="{{ settings.timezone | default(value='Asia/Dhaka') }}">
+
+            <!-- Branding Uploads & Paths -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Store Logo Path / Filename</label>
+              <input type="text" name="site_logo" class="form-control" value="{{ settings.site_logo | default(value='') }}" placeholder="e.g. logo.png or uploads/logo.png">
+              <div class="form-text">Place files in assets/uploads/ or enter absolute/relative path.</div>
+              {% if settings.site_logo %}
+                <div class="mt-2 p-2 bg-light rounded border d-inline-block">
+                  <img src="/{{ settings.site_logo | trim_start_matches(pat='/') }}" alt="Logo" style="max-height: 40px;" onerror="this.style.display='none';">
+                  <span class="text-muted small ms-2">{{ settings.site_logo }}</span>
+                </div>
+              {% endif %}
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-medium">Currency Code</label>
-              <input type="text" name="currency_code" class="form-control" value="{{ settings.currency_code | default(value='BDT') }}">
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Store Favicon Path</label>
+              <input type="text" name="site_favicon" class="form-control" value="{{ settings.site_favicon | default(value='') }}" placeholder="assets/coza/images/icons/favicon.png">
+              <div class="form-text">Path to browser favicon (ICO, PNG, SVG).</div>
+              {% if settings.site_favicon %}
+                <div class="mt-2 p-2 bg-light rounded border d-inline-block">
+                  <img src="/{{ settings.site_favicon | trim_start_matches(pat='/') }}" alt="Favicon" style="max-height: 24px;" onerror="this.style.display='none';">
+                  <span class="text-muted small ms-2">{{ settings.site_favicon }}</span>
+                </div>
+              {% endif %}
             </div>
+
             <div class="col-md-4">
-              <label class="form-label fw-medium">Currency Symbol</label>
-              <input type="text" name="currency_symbol" class="form-control" value="{{ settings.currency_symbol | default(value='৳') }}">
+              <label class="form-label fw-semibold">Timezone</label>
+              {% set cur_tz = settings.timezone | default(value='Asia/Dhaka') %}
+              <select name="timezone" class="form-select">
+                <option value="Asia/Dhaka" {% if cur_tz == 'Asia/Dhaka' %}selected{% endif %}>Asia/Dhaka (GMT+6)</option>
+                <option value="UTC" {% if cur_tz == 'UTC' %}selected{% endif %}>UTC</option>
+                <option value="Asia/Kolkata" {% if cur_tz == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (GMT+5:30)</option>
+                <option value="America/New_York" {% if cur_tz == 'America/New_York' %}selected{% endif %}>America/New_York (EST)</option>
+                <option value="Europe/London" {% if cur_tz == 'Europe/London' %}selected{% endif %}>Europe/London (GMT)</option>
+              </select>
             </div>
+
             <div class="col-md-4">
-              <label class="form-label fw-medium">Catalog Items Per Page</label>
-              <input type="number" name="items_per_page" class="form-control" value="{{ settings.items_per_page | default(value='24') }}">
+              <label class="form-label fw-semibold">Currency Code</label>
+              <input type="text" name="currency_code" class="form-control" value="{{ settings.currency_code | default(value='BDT') }}" maxlength="5">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Currency Symbol</label>
+              <input type="text" name="currency_symbol" class="form-control" value="{{ settings.currency_symbol | default(value='৳') }}" maxlength="5">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Items per page (Admin lists)</label>
+              <input type="number" name="items_per_page" class="form-control" min="5" max="100" value="{{ settings.items_per_page | default(value='10') }}">
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
-          </div>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save General Settings
+          </button>
         </form>
+
+        <!-- Media Storage Diagnostics -->
+        <div class="mt-4 pt-4 border-top">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+              <h6 class="fw-bold mb-1"><i class="bi bi-hdd-network me-1"></i> Media Storage &amp; Uploads Status</h6>
+              <p class="text-muted small mb-0">Production storage paths, write permissions, and web server delivery symlinks.</p>
+            </div>
+            <form method="post" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="tab" value="general">
+              <input type="hidden" name="action" value="link_storage">
+              <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-link-45deg me-1"></i> Verify / Re-link Storage
+              </button>
+            </form>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border small">
+                <div class="text-muted">Uploads Path:</div>
+                <div class="fw-bold text-dark text-break">assets/uploads/</div>
+                <span class="badge bg-success mt-1"><i class="bi bi-check-circle me-1"></i> Writable &amp; Mounted</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border small">
+                <div class="text-muted">Web Delivery Prefix:</div>
+                <div class="fw-bold text-dark">/uploads/ &rarr; assets/uploads/</div>
+                <span class="badge bg-success mt-1"><i class="bi bi-check-circle me-1"></i> Direct Route Active (200 OK)</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 2: STOREFRONT -->
+  <!-- ==================== TAB 2: STOREFRONT CMS ==================== -->
   {% if active_tab == 'storefront' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Storefront Display &amp; Features</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0">Storefront Design &amp; CMS Options</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="storefrontForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+            <form method="post" onsubmit="return confirm('Reset storefront settings to defaults?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="reset_tab">
+              <input type="hidden" name="tab_name" value="storefront">
+              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" id="storefrontForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="storefront">
           <input type="hidden" name="action" value="save_storefront">
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Tax Rate (%)</label>
-              <input type="text" name="tax_rate" class="form-control" value="{{ settings.tax_rate | default(value='0') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Catalog Mode</label>
-              <select name="catalog_mode" class="form-select">
-                <option value="0" {% if settings.catalog_mode | default(value='0') == '0' %}selected{% endif %}>Normal Store (Buy &amp; Cart Active)</option>
-                <option value="1" {% if settings.catalog_mode | default(value='0') == '1' %}selected{% endif %}>Catalog Only (Purchases Disabled)</option>
-              </select>
-            </div>
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Homepage Sections</h6>
+          <div class="row g-3 mb-4">
             <div class="col-md-4">
-              <div class="form-check form-switch mt-3">
-                <input class="form-check-input" type="checkbox" name="enable_wishlist" value="1" id="swWishlist" {% if settings.enable_wishlist | default(value='1') == '1' %}checked{% endif %}>
-                <label class="form-check-label fw-medium" for="swWishlist">Enable Customer Wishlists</label>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_hero" value="1" {% if settings.home_show_hero | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Hero / Main Slider Banner</label>
               </div>
             </div>
             <div class="col-md-4">
-              <div class="form-check form-switch mt-3">
-                <input class="form-check-input" type="checkbox" name="enable_reviews" value="1" id="swReviews" {% if settings.enable_reviews | default(value='1') == '1' %}checked{% endif %}>
-                <label class="form-check-label fw-medium" for="swReviews">Enable Product Reviews</label>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_categories" value="1" {% if settings.home_show_categories | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Featured Categories Row</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_featured" value="1" {% if settings.home_show_featured | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Featured Products Grid</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_new_arrivals" value="1" {% if settings.home_show_new_arrivals | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">New Arrivals Section</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_best_sellers" value="1" {% if settings.home_show_best_sellers | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Best Sellers Section</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Featured Products Count</label>
+              <input type="number" name="home_featured_count" class="form-control form-control-sm" min="1" max="40" value="{{ settings.home_featured_count | default(value='8') }}">
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Shop Catalog &amp; Badges</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Products per Page</label>
+              <input type="number" name="shop_products_per_page" class="form-control" min="4" max="60" value="{{ settings.shop_products_per_page | default(value='12') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Default Catalog Sort</label>
+              {% set cur_sort = settings.shop_default_sort | default(value='newest') %}
+              <select name="shop_default_sort" class="form-select">
+                <option value="newest" {% if cur_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                <option value="popular" {% if cur_sort == 'popular' %}selected{% endif %}>Most Popular / Sold</option>
+                <option value="price_asc" {% if cur_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                <option value="price_desc" {% if cur_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                <option value="name_asc" {% if cur_sort == 'name_asc' %}selected{% endif %}>Name: A to Z</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-flex flex-column justify-content-center">
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" name="shop_show_filters" value="1" {% if settings.shop_show_filters | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small fw-medium">Show Filters Sidebar</label>
+              </div>
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" name="shop_show_sale_badge" value="1" {% if settings.shop_show_sale_badge | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small fw-medium">Show Sale Badges</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="shop_show_low_stock_badge" value="1" {% if settings.shop_show_low_stock_badge | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small fw-medium">Show Low Stock Badges</label>
               </div>
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Theme &amp; Announcement</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Theme Accent Color</label>
+              {% set accent = settings.theme_accent_color | default(value='#111111') %}
+              <div class="input-group">
+                <input type="color" class="form-control form-control-color" id="accentColorPicker" value="{{ accent }}" oninput="document.getElementById('accentText').value = this.value; document.getElementById('swatchPreview').style.backgroundColor = this.value;">
+                <input type="text" name="theme_accent_color" id="accentText" class="form-control" value="{{ accent }}" maxlength="7" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) { document.getElementById('accentColorPicker').value = this.value; document.getElementById('swatchPreview').style.backgroundColor = this.value; }">
+              </div>
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <span class="small text-muted">Preview:</span>
+                <span id="swatchPreview" class="d-inline-block rounded border" style="width: 28px; height: 28px; background-color: {{ accent }};"></span>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#111111'; document.getElementById('accentText').value='#111111'; document.getElementById('swatchPreview').style.backgroundColor='#111111';">Black</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#2563eb'; document.getElementById('accentText').value='#2563eb'; document.getElementById('swatchPreview').style.backgroundColor='#2563eb';">Blue</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#16a34a'; document.getElementById('accentText').value='#16a34a'; document.getElementById('swatchPreview').style.backgroundColor='#16a34a';">Green</button>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Top Announcement Bar</label>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="announcement_bar_enabled" value="1" {% if settings.announcement_bar_enabled | default(value='0') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Enable Announcement Bar</label>
+              </div>
+              <input type="text" name="announcement_bar_text" class="form-control" value="{{ settings.announcement_bar_text | default(value='') }}" placeholder="e.g. Complimentary nationwide delivery on orders over ৳3,000">
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label fw-semibold">Footer Text / Copyright</label>
+              <input type="text" name="footer_text" class="form-control" value="{{ settings.footer_text | default(value='') }}" placeholder="e.g. Crafted with passion. All rights reserved.">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Facebook URL</label>
+              <input type="url" name="social_facebook" class="form-control form-control-sm" value="{{ settings.social_facebook | default(value='') }}" placeholder="https://facebook.com/yourpage">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Instagram URL</label>
+              <input type="url" name="social_instagram" class="form-control form-control-sm" value="{{ settings.social_instagram | default(value='') }}" placeholder="https://instagram.com/yourpage">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">WhatsApp Number</label>
+              <input type="text" name="social_whatsapp" class="form-control form-control-sm" value="{{ settings.social_whatsapp | default(value='') }}" placeholder="+8801700000000">
+            </div>
           </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Storefront Maintenance Window</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <div class="p-3 bg-warning bg-opacity-10 border border-warning rounded">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="maintenance_mode" value="1" id="maintModeSwitch" {% if settings.maintenance_mode | default(value='0') == '1' %}checked{% endif %}>
+                    <label class="form-check-label fw-bold text-dark" for="maintModeSwitch">
+                      Enable Maintenance Mode
+                      {% if settings.maintenance_mode | default(value='0') == '1' %}
+                        <span class="badge bg-danger ms-2">Active (Store Closed)</span>
+                      {% else %}
+                        <span class="badge bg-success ms-2">Live (Store Open)</span>
+                      {% endif %}
+                    </label>
+                  </div>
+                  <a href="/maintenance" target="_blank" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-eye me-1"></i> Preview Maintenance Window
+                  </a>
+                </div>
+                <div class="small text-muted mt-2">
+                  When enabled, storefront visitors see the scheduled maintenance screen. Logged-in admin and editor users can bypass and view the store normally.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Architecture, UI &amp; Image Pipeline</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="pretty_urls" value="1" {% if settings.pretty_urls | default(value='0') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Clean / Pretty URLs (/shop, /product/slug)</label>
+              </div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="dark_mode_enabled" value="1" {% if settings.dark_mode_enabled | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Allow Customer Dark Theme Toggle</label>
+              </div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="mobile_bottom_nav" value="1" {% if settings.mobile_bottom_nav | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Mobile Bottom Navigation Bar</label>
+              </div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="sticky_add_to_cart" value="1" {% if settings.sticky_add_to_cart | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Sticky Mobile Add-to-Cart Bar</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="image_pipeline_enabled" value="1" {% if settings.image_pipeline_enabled | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Responsive WebP Image Pipeline</label>
+              </div>
+              <div class="small text-muted mb-3">Generates optimized WebP variants and responsive srcset tags lazily.</div>
+
+              <div class="p-3 bg-light rounded border">
+                <div class="fw-semibold small mb-1">Image Pipeline Cache</div>
+                <div class="text-muted small mb-2">Cached resized variants stored in assets/uploads/cache/.</div>
+                <button type="submit" form="clearCacheForm" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-trash me-1"></i> Clear Image Cache
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Homepage Trust Bar &amp; Brand Story</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 1 (COD)</label>
+              <input type="text" name="trust_item_1_title" class="form-control form-control-sm mb-1" value="{{ settings.trust_item_1_title | default(value='Nationwide COD') }}" placeholder="Title">
+              <input type="text" name="trust_item_1_desc" class="form-control form-control-sm" value="{{ settings.trust_item_1_desc | default(value='Cash on delivery across all 64 districts') }}" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 2 (Fast Delivery)</label>
+              <input type="text" name="trust_item_2_title" class="form-control form-control-sm mb-1" value="{{ settings.trust_item_2_title | default(value='Fast Dispatch') }}" placeholder="Title">
+              <input type="text" name="trust_item_2_desc" class="form-control form-control-sm" value="{{ settings.trust_item_2_desc | default(value='24h in Dhaka, 48-72h outside') }}" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 3 (Authentic)</label>
+              <input type="text" name="trust_item_3_title" class="form-control form-control-sm mb-1" value="{{ settings.trust_item_3_title | default(value='100% Authentic') }}" placeholder="Title">
+              <input type="text" name="trust_item_3_desc" class="form-control form-control-sm" value="{{ settings.trust_item_3_desc | default(value='Guaranteed genuine products direct from makers') }}" placeholder="Subtitle">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Trust Item 4 (Support)</label>
+              <input type="text" name="trust_item_4_title" class="form-control form-control-sm mb-1" value="{{ settings.trust_item_4_title | default(value='Dedicated Support') }}" placeholder="Title">
+              <input type="text" name="trust_item_4_desc" class="form-control form-control-sm" value="{{ settings.trust_item_4_desc | default(value='Friendly phone & WhatsApp assistance') }}" placeholder="Subtitle">
+            </div>
+
+            <div class="col-12 mt-3">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="home_show_brand_story" value="1" {% if settings.home_show_brand_story | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Show Brand Story Section on Homepage</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Brand Story Headline</label>
+              <input type="text" name="brand_story_title" class="form-control form-control-sm" value="{{ settings.brand_story_title | default(value='Crafted with Intention') }}">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold">Brand Story Paragraph</label>
+              <textarea name="brand_story_text" class="form-control form-control-sm" rows="2">{{ settings.brand_story_text | default(value='We believe everyday objects should be both functional and beautiful. Every piece in our collection is curated with care and designed to last.') }}</textarea>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3 mt-4">Reviews, Newsletter &amp; Size Guide</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_enabled" value="1" {% if settings.reviews_enabled | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Enable Customer Reviews</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_require_login" value="1" {% if settings.reviews_require_login | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small">Require Account Login to Review</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="reviews_auto_approve" value="1" {% if settings.reviews_auto_approve | default(value='0') == '1' %}checked{% endif %}>
+                <label class="form-check-label small">Auto-Approve Reviews (No Moderation)</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_reviews" value="1" {% if settings.home_show_reviews | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small">Show Customer Reviews on Homepage</label>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="newsletter_enabled" value="1" {% if settings.newsletter_enabled | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Enable Newsletter Subscription</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="newsletter_double_optin" value="1" {% if settings.newsletter_double_optin | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small">Double Opt-in Confirmation Email</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="home_show_newsletter" value="1" {% if settings.home_show_newsletter | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label small">Show Newsletter on Homepage</label>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Size Guide Page Slug</label>
+              <input type="text" name="size_guide_page_slug" class="form-control form-control-sm" value="{{ settings.size_guide_page_slug | default(value='size-guide') }}" placeholder="size-guide">
+              <div class="form-text">Slug of the CMS Page to load in the Product Detail modal.</div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-save me-1"></i> Save Storefront Settings
+            </button>
+          </div>
+        </form>
+
+        <form method="post" id="clearCacheForm" class="d-none">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tab" value="storefront">
+          <input type="hidden" name="action" value="clear_image_cache">
         </form>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 3: INVENTORY -->
+  <!-- ==================== TAB 3: INVENTORY & STOCK ==================== -->
   {% if active_tab == 'inventory' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Inventory &amp; Stock Policy</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0">Inventory &amp; Realtime Stock Display</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="inventoryForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+            <form method="post" onsubmit="return confirm('Reset inventory settings to defaults?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="reset_tab">
+              <input type="hidden" name="tab_name" value="inventory">
+              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" id="inventoryForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="inventory">
           <input type="hidden" name="action" value="save_inventory">
 
-          <div class="row g-3">
+          <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label fw-medium">Stock Management</label>
-              <select name="manage_stock" class="form-select">
-                <option value="1" {% if settings.manage_stock | default(value='1') == '1' %}selected{% endif %}>Track Inventory Quantities</option>
-                <option value="0" {% if settings.manage_stock | default(value='1') == '0' %}selected{% endif %}>Unlimited / Do Not Track</option>
+              <label class="form-label fw-semibold">Stock Display Mode</label>
+              {% set s_mode = settings.stock_display_mode | default(value='count_when_low') %}
+              <select name="stock_display_mode" class="form-select">
+                <option value="always" {% if s_mode == 'always' %}selected{% endif %}>Always show exact stock count (e.g. "12 in stock")</option>
+                <option value="count_when_low" {% if s_mode == 'count_when_low' %}selected{% endif %}>Show exact count ONLY when stock is low (e.g. "Only 3 left")</option>
+                <option value="in_out_only" {% if s_mode == 'in_out_only' %}selected{% endif %}>In stock / Out of stock only (no numbers displayed)</option>
+                <option value="hidden" {% if s_mode == 'hidden' %}selected{% endif %}>Hidden (Never show stock counts; API does not leak numbers)</option>
               </select>
             </div>
+
             <div class="col-md-6">
-              <label class="form-label fw-medium">Low Stock Alert Threshold</label>
-              <input type="number" name="low_stock_threshold" class="form-control" value="{{ settings.low_stock_threshold | default(value='5') }}">
+              <label class="form-label fw-semibold">Global Low-Stock Threshold</label>
+              <input type="number" name="low_stock_threshold" class="form-control" min="1" max="100" value="{{ settings.low_stock_threshold | default(value='5') }}">
+              <div class="form-text">Default threshold when product-level threshold is not customized.</div>
             </div>
+
             <div class="col-md-6">
-              <label class="form-label fw-medium">Out of Stock Visibility</label>
-              <select name="show_out_of_stock" class="form-select">
-                <option value="1" {% if settings.show_out_of_stock | default(value='1') == '1' %}selected{% endif %}>Keep Out of Stock Items Visible</option>
-                <option value="0" {% if settings.show_out_of_stock | default(value='1') == '0' %}selected{% endif %}>Hide Out of Stock Items From Catalog</option>
+              <label class="form-label fw-semibold">Out of Stock Behavior</label>
+              {% set oos = settings.out_of_stock_behavior | default(value='show_disabled') %}
+              <select name="out_of_stock_behavior" class="form-select">
+                <option value="show_disabled" {% if oos == 'show_disabled' %}selected{% endif %}>Show product with "Out of stock" badge (Add to Cart disabled)</option>
+                <option value="hide" {% if oos == 'hide' %}selected{% endif %}>Hide out-of-stock products completely from storefront catalog</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Realtime Stock Polling Interval (Seconds)</label>
+              <input type="number" name="realtime_poll_seconds" class="form-control" min="5" max="60" value="{{ settings.realtime_poll_seconds | default(value='10') }}">
+              <div class="form-text">Rate at which client browsers poll for stock changes (5–60 seconds).</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Realtime Mode</label>
+              {% set rt_mode = settings.realtime_mode | default(value='polling') %}
+              <select name="realtime_mode" class="form-select">
+                <option value="polling" {% if rt_mode == 'polling' %}selected{% endif %}>Standard Polling (ETag 304 conditional HTTP)</option>
+                <option value="sse" {% if rt_mode == 'sse' %}selected{% endif %}>Server-Sent Events (SSE stream fallback)</option>
               </select>
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
-          </div>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save Inventory Settings
+          </button>
         </form>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 4: CHECKOUT -->
+  <!-- ==================== TAB 4: CHECKOUT & COD ==================== -->
   {% if active_tab == 'checkout' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Checkout &amp; Payment Options</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0">Checkout &amp; Payment Gateways</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="checkoutForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+            <form method="post" onsubmit="return confirm('Reset checkout settings to defaults?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="reset_tab">
+              <input type="hidden" name="tab_name" value="checkout">
+              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" id="checkoutForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="checkout">
           <input type="hidden" name="action" value="save_checkout">
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Guest Checkout</label>
-              <select name="guest_checkout" class="form-select">
-                <option value="1" {% if settings.guest_checkout | default(value='1') == '1' %}selected{% endif %}>Allow Guest Checkout</option>
-                <option value="0" {% if settings.guest_checkout | default(value='1') == '0' %}selected{% endif %}>Require Account Login</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Cash on Delivery (COD)</label>
-              <select name="cod_enabled" class="form-select">
-                <option value="1" {% if settings.cod_enabled | default(value='1') == '1' %}selected{% endif %}>Enabled</option>
-                <option value="0" {% if settings.cod_enabled | default(value='1') == '0' %}selected{% endif %}>Disabled</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Minimum Order Amount</label>
-              <input type="text" name="min_order_amount" class="form-control" value="{{ settings.min_order_amount | default(value='0') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Maximum Order Amount (0 for unlimited)</label>
-              <input type="text" name="max_order_amount" class="form-control" value="{{ settings.max_order_amount | default(value='0') }}">
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  {% endif %}
-
-  <!-- TAB 5: SHIPPING -->
-  {% if active_tab == 'shipping' %}
-    <div class="card shadow-sm border-0">
-      <div class="card-body p-4">
-        <h5 class="card-title mb-3">Shipping Rates &amp; Free Delivery</h5>
-        <form method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <input type="hidden" name="tab" value="shipping">
-          <input type="hidden" name="action" value="save_shipping">
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Inside Dhaka Default Rate</label>
-              <input type="text" name="shipping_inside_dhaka" class="form-control" value="{{ settings.shipping_inside_dhaka | default(value='60') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Outside Dhaka Default Rate</label>
-              <input type="text" name="shipping_outside_dhaka" class="form-control" value="{{ settings.shipping_outside_dhaka | default(value='120') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Free Shipping Minimum Subtotal (0 to disable)</label>
-              <input type="text" name="free_shipping_threshold" class="form-control" value="{{ settings.free_shipping_threshold | default(value='2000') }}">
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  {% endif %}
-
-  <!-- TAB 6: COUPONS -->
-  {% if active_tab == 'coupons' %}
-    <div class="row g-4">
-      <div class="col-lg-4">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white py-3">
-            <h6 class="card-title mb-0 fw-bold">Create Coupon</h6>
-          </div>
-          <div class="card-body">
-            <form method="post">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input type="hidden" name="tab" value="coupons">
-              <input type="hidden" name="action" value="add_coupon">
-
-              <div class="mb-3">
-                <label class="form-label small fw-medium">Coupon Code <span class="text-danger">*</span></label>
-                <input type="text" name="code" class="form-control text-uppercase" placeholder="e.g. SUMMER20" required>
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Customer &amp; Order Fields</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="guest_checkout" value="1" {% if settings.guest_checkout | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Allow Guest Checkout</label>
               </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="require_phone" value="1" {% if settings.require_phone | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Require Valid Phone (BD format)</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="require_email" value="1" {% if settings.require_email | default(value='0') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Require Email at Checkout</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Order Number Prefix</label>
+              <input type="text" name="order_number_prefix" class="form-control" value="{{ settings.order_number_prefix | default(value='ORD') }}" maxlength="10">
+              <div class="form-text">e.g. ORD &rarr; ORD-202611-0001</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Anti-Spam Order Limit per IP (30 min)</label>
+              <input type="number" name="antispam_orders_limit" class="form-control" min="1" max="50" value="{{ settings.antispam_orders_limit | default(value='5') }}">
+            </div>
+          </div>
 
-              <div class="mb-3">
-                <label class="form-label small fw-medium">Discount Type</label>
-                <select name="type" class="form-select">
-                  <option value="percent">Percentage (%)</option>
-                  <option value="fixed">Fixed Amount</option>
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Cash on Delivery (COD) Rules</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="cod_enabled" value="1" {% if settings.cod_enabled | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-bold">Enable Cash on Delivery (COD)</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">COD Handling Fee (৳)</label>
+              <input type="number" step="0.01" min="0" name="cod_fee" class="form-control" value="{{ settings.cod_fee | default(value='0.00') }}">
+              <div class="form-text">Extra fee added to order total if paid via COD.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Minimum Order for COD (৳)</label>
+              <input type="number" step="0.01" min="0" name="cod_min_order" class="form-control" value="{{ settings.cod_min_order | default(value='0') }}">
+              <div class="form-text">0 = no minimum required.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Maximum Order for COD (৳)</label>
+              <input type="number" step="0.01" min="0" name="cod_max_order" class="form-control" value="{{ settings.cod_max_order | default(value='0') }}">
+              <div class="form-text">0 = no maximum limit.</div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Direct Bank Transfer</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="bank_transfer_enabled" value="1" {% if settings.bank_transfer_enabled | default(value='0') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-bold">Enable Bank Transfer</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Bank Instructions Text</label>
+              <textarea name="bank_transfer_instructions" class="form-control" rows="3" placeholder="Bank name, account number, branch, routing code...">{{ settings.bank_transfer_instructions | default(value='') }}</textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save Checkout Settings
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- ==================== TAB 5: SHIPPING METHODS CRUD ==================== -->
+  {% if active_tab == 'shipping' %}
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Active Shipping Delivery Zones &amp; Methods</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addShippingForm">
+          <i class="bi bi-plus-circle me-1"></i> Add Shipping Method
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <!-- Add Shipping Method Form -->
+        <div class="collapse p-4 border-bottom bg-light" id="addShippingForm">
+          <h6 class="fw-bold mb-3">Add New Shipping Method</h6>
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="tab" value="shipping">
+            <input type="hidden" name="action" value="add_shipping">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Method Name</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Express Delivery" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Zone / Region</label>
+                <input type="text" name="zone" class="form-control" placeholder="Inside Dhaka / Nationwide" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Cost (৳)</label>
+                <input type="number" step="0.01" min="0" name="cost" class="form-control" value="60.00" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Free Over (৳)</label>
+                <input type="number" step="0.01" min="0" name="free_over" class="form-control" placeholder="e.g. 3000">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Est. Days (Min-Max)</label>
+                <div class="input-group">
+                  <input type="number" name="min_days" class="form-control" value="1" min="1" max="30">
+                  <span class="input-group-text">-</span>
+                  <input type="number" name="max_days" class="form-control" value="3" min="1" max="30">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="form-check mt-4">
+                  <input class="form-check-input" type="checkbox" name="cod_allowed" value="1" checked id="addCodAllowed">
+                  <label class="form-check-label small fw-semibold" for="addCodAllowed">COD Allowed</label>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Status</label>
+                <select name="status" class="form-select">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
-
-              <div class="mb-3">
-                <label class="form-label small fw-medium">Discount Value <span class="text-danger">*</span></label>
-                <input type="number" step="0.01" name="value" class="form-control" required placeholder="10.00">
+              <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> Create Method</button>
               </div>
-
-              <div class="mb-3">
-                <label class="form-label small fw-medium">Minimum Subtotal</label>
-                <input type="number" step="0.01" name="min_subtotal" class="form-control" value="0.00">
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label small fw-medium">Usage Limit</label>
-                <input type="number" name="usage_limit" class="form-control" placeholder="Unlimited">
-              </div>
-
-              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle me-1"></i> Add Coupon</button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
-      </div>
 
-      <div class="col-lg-8">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white py-3">
-            <h6 class="card-title mb-0 fw-bold">Active &amp; Expired Coupons</h6>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
+        <!-- Shipping Methods Table -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Method Name</th>
+                <th>Zone</th>
+                <th>Standard Cost</th>
+                <th>Free Over</th>
+                <th>ETA (Days)</th>
+                <th>COD Allowed</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if not shipping_methods %}
                 <tr>
-                  <th>Code</th>
-                  <th>Discount</th>
-                  <th>Min Subtotal</th>
-                  <th>Used / Limit</th>
-                  <th>Status</th>
-                  <th class="text-end">Actions</th>
+                  <td colspan="8" class="text-center py-4 text-muted">No shipping methods configured yet.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {% if coupons | length == 0 %}
+              {% else %}
+                {% for sm in shipping_methods %}
                   <tr>
-                    <td colspan="6" class="text-center py-4 text-muted">No coupons created yet.</td>
-                  </tr>
-                {% else %}
-                  {% for c in coupons %}
-                    <tr>
-                      <td class="fw-bold font-monospace">{{ c.code }}</td>
+                    <form method="post">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="tab" value="shipping">
+                      <input type="hidden" name="action" value="update_shipping">
+                      <input type="hidden" name="shipping_id" value="{{ sm.id }}">
+
                       <td>
-                        {% if c.type == 'percent' %}
-                          {{ c.value }}%
-                        {% else %}
-                          ৳{{ c.value }}
-                        {% endif %}
-                      </td>
-                      <td>৳{{ c.min_subtotal }}</td>
-                      <td>
-                        {{ c.used_count }} / {% if c.usage_limit %}{{ c.usage_limit }}{% else %}∞{% endif %}
+                        <input type="text" name="name" class="form-control form-control-sm" value="{{ sm.name }}" required>
                       </td>
                       <td>
-                        {% if c.status == 'active' %}
-                          <span class="badge bg-success-subtle text-success">Active</span>
-                        {% else %}
-                          <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
-                        {% endif %}
+                        <input type="text" name="zone" class="form-control form-control-sm" value="{{ sm.zone }}">
                       </td>
-                      <td class="text-end">
-                        <form method="post" class="d-inline">
+                      <td style="width: 110px;">
+                        <input type="number" step="0.01" min="0" name="cost" class="form-control form-control-sm" value="{{ sm.cost }}" required>
+                      </td>
+                      <td style="width: 110px;">
+                        <input type="number" step="0.01" min="0" name="free_over" class="form-control form-control-sm" value="{% if sm.free_over %}{{ sm.free_over }}{% endif %}" placeholder="None">
+                      </td>
+                      <td style="width: 120px;">
+                        <div class="input-group input-group-sm">
+                          <input type="number" name="min_days" class="form-control" value="{{ sm.min_days | default(value='') }}">
+                          <span class="input-group-text">-</span>
+                          <input type="number" name="max_days" class="form-control" value="{{ sm.max_days | default(value='') }}">
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <input type="checkbox" name="cod_allowed" value="1" {% if sm.cod_allowed == 1 %}checked{% endif %} class="form-check-input">
+                      </td>
+                      <td>
+                        <select name="status" class="form-select form-select-sm">
+                          <option value="active" {% if sm.status == 'active' %}selected{% endif %}>Active</option>
+                          <option value="inactive" {% if sm.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                      </td>
+                      <td class="text-end text-nowrap">
+                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Save changes">
+                          <i class="bi bi-check-lg"></i>
+                        </button>
+                    </form>
+                        <form method="post" class="d-inline" onsubmit="return confirm('Delete this shipping method?');">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                          <input type="hidden" name="tab" value="coupons">
-                          <input type="hidden" name="action" value="toggle_coupon">
-                          <input type="hidden" name="id" value="{{ c.id }}">
-                          <button type="submit" class="btn btn-sm btn-outline-secondary" title="Toggle Active">
-                            <i class="bi bi-arrow-repeat"></i>
-                          </button>
-                        </form>
-                        <form method="post" class="d-inline" onsubmit="return confirm('Delete coupon {{ c.code }}?');">
-                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                          <input type="hidden" name="tab" value="coupons">
-                          <input type="hidden" name="action" value="delete_coupon">
-                          <input type="hidden" name="id" value="{{ c.id }}">
+                          <input type="hidden" name="tab" value="shipping">
+                          <input type="hidden" name="action" value="delete_shipping">
+                          <input type="hidden" name="shipping_id" value="{{ sm.id }}">
                           <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                             <i class="bi bi-trash"></i>
                           </button>
                         </form>
                       </td>
-                    </tr>
-                  {% endfor %}
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 7: SEO -->
+  <!-- ==================== TAB 6: COUPONS CRUD ==================== -->
+  {% if active_tab == 'coupons' %}
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Discount Coupons Management</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addCouponForm">
+          <i class="bi bi-plus-circle me-1"></i> Add New Coupon
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <!-- Add Coupon Collapse -->
+        <div class="collapse p-4 border-bottom bg-light" id="addCouponForm">
+          <h6 class="fw-bold mb-3">Add New Coupon</h6>
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="tab" value="coupons">
+            <input type="hidden" name="action" value="add_coupon">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Coupon Code</label>
+                <input type="text" name="code" class="form-control text-uppercase font-monospace" placeholder="e.g. WELCOME10" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Discount Type</label>
+                <select name="type" class="form-select">
+                  <option value="percent">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount (৳)</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Discount Value</label>
+                <input type="number" step="0.01" min="0.01" name="value" class="form-control" placeholder="e.g. 10 or 150" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Min Subtotal (৳)</label>
+                <input type="number" step="0.01" min="0" name="min_subtotal" class="form-control" value="0.00">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Max Discount (৳)</label>
+                <input type="number" step="0.01" min="0" name="max_discount" class="form-control" placeholder="Optional">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Usage Limit</label>
+                <input type="number" min="1" name="usage_limit" class="form-control" placeholder="Leave empty for unlimited">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Start Date</label>
+                <input type="datetime-local" name="starts_at" class="form-control">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Expiry Date</label>
+                <input type="datetime-local" name="expires_at" class="form-control">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Status</label>
+                <select name="status" class="form-select">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> Create Coupon</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Coupons List Table -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Code</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Min Spend</th>
+                <th>Usage</th>
+                <th>Validity</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if not coupons %}
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">No coupons created yet.</td>
+                </tr>
+              {% else %}
+                {% for c in coupons %}
+                  <tr>
+                    <td><span class="badge bg-light text-dark border font-monospace fs-6">{{ c.code }}</span></td>
+                    <td><span class="badge {% if c.type == 'percent' %}bg-info{% else %}bg-secondary{% endif %}">{{ c.type | capitalize }}</span></td>
+                    <td class="fw-bold">{% if c.type == 'percent' %}{{ c.value }}%{% else %}৳{{ c.value }}{% endif %}</td>
+                    <td>{% if c.min_subtotal > 0 %}৳{{ c.min_subtotal }}{% else %}No min{% endif %}</td>
+                    <td>{{ c.used_count }} / {% if c.usage_limit %}{{ c.usage_limit }}{% else %}&infin;{% endif %}</td>
+                    <td class="small text-muted">
+                      {% if c.expires_at %}Expires {{ c.expires_at | format_date(format='%b %d, %Y') }}{% else %}No expiry{% endif %}
+                    </td>
+                    <td>
+                      <span class="badge {% if c.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ c.status | capitalize }}</span>
+                    </td>
+                    <td class="text-end text-nowrap">
+                      <form method="post" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="tab" value="coupons">
+                        <input type="hidden" name="action" value="toggle_coupon">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Toggle Status">
+                          <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                      </form>
+                      <form method="post" class="d-inline" onsubmit="return confirm('Delete coupon {{ c.code }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="tab" value="coupons">
+                        <input type="hidden" name="action" value="delete_coupon">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- ==================== TAB 7: SEO & MONITORING ==================== -->
   {% if active_tab == 'seo' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">SEO &amp; Metadata</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0">Search Engine Optimization &amp; Sitemaps</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" form="seoForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+            <form method="post" onsubmit="return confirm('Reset SEO settings to defaults?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="reset_tab">
+              <input type="hidden" name="tab_name" value="seo">
+              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" id="seoForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="seo">
           <input type="hidden" name="action" value="save_seo">
 
-          <div class="row g-3">
+          <div class="row g-3 mb-4">
             <div class="col-12">
-              <label class="form-label fw-medium">Default Meta Title</label>
-              <input type="text" name="meta_title" class="form-control" value="{{ settings.meta_title | default(value='') }}">
+              <label class="form-label fw-semibold">Default Meta Title</label>
+              <input type="text" name="seo_default_title" class="form-control" value="{{ settings.seo_default_title | default(value='') }}" placeholder="e.g. Jinish Potro | Quality Essentials for Everyday Living">
             </div>
+
             <div class="col-12">
-              <label class="form-label fw-medium">Default Meta Description</label>
-              <textarea name="meta_description" class="form-control" rows="3">{{ settings.meta_description | default(value='') }}</textarea>
+              <label class="form-label fw-semibold">Default Meta Description</label>
+              <textarea name="seo_default_description" class="form-control" rows="3" placeholder="Compelling 150-160 character description of your store for Google search snippets...">{{ settings.seo_default_description | default(value='') }}</textarea>
             </div>
+
             <div class="col-12">
-              <label class="form-label fw-medium">Default Meta Keywords</label>
-              <input type="text" name="meta_keywords" class="form-control" value="{{ settings.meta_keywords | default(value='') }}">
+              <label class="form-label fw-semibold">Default Meta Keywords</label>
+              <input type="text" name="seo_default_keywords" class="form-control" value="{{ settings.seo_default_keywords | default(value='') }}" placeholder="e.g. online shopping, electronics, clothing, bangladesh">
+              <div class="form-text">Comma-separated keywords used when a page does not specify its own keywords.</div>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="robots_allow" value="1" {% if settings.robots_allow | default(value='1') == '1' %}checked{% endif %}>
+                <label class="form-check-label fw-medium">Allow Search Engine Crawlers (robots.txt index)</label>
+              </div>
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          <div class="p-3 bg-light rounded border mb-4">
+            <h6 class="fw-bold mb-2"><i class="bi bi-speedometer text-primary me-2"></i> External Monitoring Integration (Netdata / Grafana)</h6>
+            <p class="small text-muted mb-2">
+              Optionally link an external APM dashboard (like Netdata, Grafana, or Glances) inside the <a href="{{ admin_url(path='monitoring.php') }}">Server Monitoring</a> dashboard.
+            </p>
+            <div class="row g-2">
+              <div class="col-md-8">
+                <label class="form-label small fw-semibold">Dashboard URL</label>
+                <input type="url" name="monitor_external_url" class="form-control form-control-sm" value="{{ settings.monitor_external_url | default(value='') }}" placeholder="https://netdata.yourdomain.com">
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check form-switch pb-1">
+                  <input class="form-check-input" type="checkbox" name="monitor_external_embed" value="1" {% if settings.monitor_external_embed | default(value='0') == '1' %}checked{% endif %}>
+                  <label class="form-check-label small fw-medium">Embed as iframe (HTTPS required)</label>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save SEO Settings
+          </button>
         </form>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 8: CUSTOMERS -->
+  <!-- ==================== TAB 8: CUSTOMERS & SECURITY ==================== -->
   {% if active_tab == 'customers' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Customer Policies &amp; Account Protection</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1">Customer Accounts &amp; Security Policy</h5>
+            <p class="text-muted small mb-0">Control registration, email verification, session timeouts, lockout thresholds, and data privacy policies.</p>
+          </div>
+          <form method="post" class="d-inline" onsubmit="return confirm('Reset all Customer settings to system defaults?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="reset_tab">
+            <input type="hidden" name="tab_name" value="customers">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Defaults
+            </button>
+          </form>
+        </div>
+
+        <form method="post" id="customersForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="customers">
           <input type="hidden" name="action" value="save_customers">
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Email Verification</label>
-              <select name="require_email_verification" class="form-select">
-                <option value="0" {% if settings.require_email_verification | default(value='0') == '0' %}selected{% endif %}>Disabled</option>
-                <option value="1" {% if settings.require_email_verification | default(value='0') == '1' %}selected{% endif %}>Required before login</option>
-              </select>
+          <!-- Registration & Verification -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-person-plus text-primary me-2"></i> Registration &amp; Email Verification
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Max Failed Login Attempts</label>
-              <input type="number" name="max_login_attempts" class="form-control" value="{{ settings.max_login_attempts | default(value='5') }}">
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_registration_enabled" value="1" {% if settings.customer_registration_enabled | default(value='1') == '1' %}checked{% endif %} id="regEnabledToggle">
+                    <label class="form-check-label fw-semibold" for="regEnabledToggle">Allow Public Registration</label>
+                  </div>
+                  <div class="form-text small">When disabled, new customers cannot register via the storefront.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_require_email_verification" value="1" {% if settings.customer_require_email_verification | default(value='1') == '1' %}checked{% endif %} id="reqVerifToggle">
+                    <label class="form-check-label fw-semibold" for="reqVerifToggle">Require Email Verification</label>
+                  </div>
+                  <div class="form-text small">Sends an activation link upon customer registration.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_block_login_unverified" value="1" {% if settings.customer_block_login_unverified | default(value='0') == '1' %}checked{% endif %} id="blockUnverifiedToggle">
+                    <label class="form-check-label fw-semibold" for="blockUnverifiedToggle">Block Login Until Verified</label>
+                  </div>
+                  <div class="form-text small">If enabled, customers cannot log in until their email has been verified.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_claim_guest_orders_on_verify" value="1" {% if settings.customer_claim_guest_orders_on_verify | default(value='1') == '1' %}checked{% endif %} id="claimOrdersToggle">
+                    <label class="form-check-label fw-semibold" for="claimOrdersToggle">Auto-Claim Guest Orders</label>
+                  </div>
+                  <div class="form-text small">Automatically links past guest orders matching the verified email.</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          <!-- Password Policy & Brute-Force Protection -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-shield-lock text-primary me-2"></i> Passwords &amp; Brute-Force Lockout
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Minimum Password Length</label>
+                  <input type="number" name="customer_password_min_length" class="form-control" value="{{ settings.customer_password_min_length | default(value='8') }}" min="6" max="64" required>
+                  <div class="form-text small">Recommended: 8 characters or more.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Max Login Attempts</label>
+                  <input type="number" name="customer_login_max_attempts" class="form-control" value="{{ settings.customer_login_max_attempts | default(value='5') }}" min="3" max="20" required>
+                  <div class="form-text small">Before account is temporarily locked.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Lockout Duration (Minutes)</label>
+                  <input type="number" name="customer_lockout_minutes" class="form-control" value="{{ settings.customer_lockout_minutes | default(value='15') }}" min="1" max="1440" required>
+                  <div class="form-text small">Cooldown after exceeding maximum attempts.</div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- Tokens, Sessions & Timeouts -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-clock-history text-primary me-2"></i> Tokens &amp; Session Lifetimes
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Password Reset TTL (Minutes)</label>
+                  <input type="number" name="customer_password_reset_minutes" class="form-control" value="{{ settings.customer_password_reset_minutes | default(value='60') }}" min="5" max="1440" required>
+                  <div class="form-text small">Expiration for password reset tokens.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Verify Email TTL (Hours)</label>
+                  <input type="number" name="customer_verify_token_hours" class="form-control" value="{{ settings.customer_verify_token_hours | default(value='24') }}" min="1" max="168" required>
+                  <div class="form-text small">Activation link lifetime.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Remember-Me Lifetime (Days)</label>
+                  <input type="number" name="customer_remember_me_days" class="form-control" value="{{ settings.customer_remember_me_days | default(value='30') }}" min="1" max="365" required>
+                  <div class="form-text small">Persistent login token validity.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Idle Timeout (Minutes)</label>
+                  <input type="number" name="customer_session_idle_minutes" class="form-control" value="{{ settings.customer_session_idle_minutes | default(value='120') }}" min="0" max="10080" required>
+                  <div class="form-text small">Auto-logout after inactivity (0 = disabled).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features, Privacy & Compliance -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-toggles text-primary me-2"></i> Features, Wishlist &amp; Privacy
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_wishlist_enabled" value="1" {% if settings.customer_wishlist_enabled | default(value='1') == '1' %}checked{% endif %} id="wishlistEnabledToggle">
+                    <label class="form-check-label fw-semibold" for="wishlistEnabledToggle">Enable Customer Wishlist</label>
+                  </div>
+                  <div class="form-text small">Allows customers to save favorite items.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_allow_account_delete" value="1" {% if settings.customer_allow_account_delete | default(value='1') == '1' %}checked{% endif %} id="allowDeleteToggle">
+                    <label class="form-check-label fw-semibold" for="allowDeleteToggle">Allow Self-Service Account Deletion</label>
+                  </div>
+                  <div class="form-text small">Permits customers to anonymize and delete their accounts.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_can_cancel" value="1" {% if settings.customer_can_cancel | default(value='1') == '1' %}checked{% endif %} id="canCancelToggle">
+                    <label class="form-check-label fw-semibold" for="canCancelToggle">Allow Customer Order Cancellation</label>
+                  </div>
+                  <div class="form-text small">Customers can cancel their orders while status is "pending".</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="customer_marketing_checkbox_default" value="1" {% if settings.customer_marketing_checkbox_default | default(value='1') == '1' %}checked{% endif %} id="mktOptinToggle">
+                    <label class="form-check-label fw-semibold" for="mktOptinToggle">Pre-Check Marketing Opt-In</label>
+                  </div>
+                  <div class="form-text small">Default state of newsletter checkbox on registration/checkout.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Terms &amp; Conditions URL</label>
+                  <input type="text" name="customer_terms_url" class="form-control" value="{{ settings.customer_terms_url | default(value='') }}" placeholder="/terms.php or https://example.com/terms">
+                  <div class="form-text small">Optional link displayed on registration page.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Purge Unverified Accounts After (Days)</label>
+                  <input type="number" name="customer_unverified_ttl_days" class="form-control" value="{{ settings.customer_unverified_ttl_days | default(value='14') }}" min="0" max="365" required>
+                  <div class="form-text small">Maintenance cron cleans up abandoned pending registrations (0 = keep forever).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save Customer Settings
+          </button>
         </form>
       </div>
     </div>
   {% endif %}
 
-  <!-- TAB 9: STORAGE -->
+  <!-- ==================== TAB 9: STORAGE & AWS S3 ==================== -->
   {% if active_tab == 'storage' %}
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h5 class="card-title mb-3">Storage Layer &amp; AWS S3 Configuration</h5>
-        <form method="post">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up text-primary me-2"></i> Object Storage &amp; AWS S3 Configuration</h5>
+            <p class="text-muted small mb-0">Production-grade dual storage layer supporting local disk and AWS S3 with automatic failover and CloudFront CDN.</p>
+          </div>
+          <div>
+            <button type="button" id="btnTestS3" class="btn btn-outline-info btn-sm me-2">
+              <i class="bi bi-broadcast me-1"></i> Test S3 Connection
+            </button>
+            <button type="submit" form="storageForm" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+          </div>
+        </div>
+
+        <div id="s3TestAlert" style="display: none;" class="mb-4"></div>
+
+        <!-- Metric Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Primary Provider</div>
+              <div class="h5 fw-bold mb-0 mt-1 text-uppercase text-primary">{{ settings.storage_primary | default(value='local') }}</div>
+              <small class="text-muted">Target for all new uploads</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Fallback Provider</div>
+              <div class="h5 fw-bold mb-0 mt-1 text-uppercase text-secondary">{{ settings.storage_fallback | default(value='none') }}</div>
+              <small class="text-muted">High-availability failover</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Files Tracked</div>
+              <div class="h5 fw-bold mb-0 mt-1">{{ total_files }} <span class="fs-6 fw-normal text-muted">(S3: {{ s3_files }}, Local: {{ local_files }})</span></div>
+              <small class="text-muted">Managed file objects</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="p-3 bg-light rounded border">
+              <div class="text-muted small fw-semibold">Pending S3 Sync</div>
+              <div class="h5 fw-bold mb-0 mt-1 {% if pending_sync > 0 %}text-warning{% else %}text-success{% endif %}">{{ pending_sync }}</div>
+              <small class="text-muted">{% if pending_sync > 0 %}Awaiting sync job{% else %}All files synced{% endif %}</small>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" id="storageForm" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tab" value="storage">
           <input type="hidden" name="action" value="save_storage">
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-medium">Primary Storage Driver</label>
-              <select name="storage_driver" class="form-select">
-                <option value="local" {% if settings.storage_driver | default(value='local') == 'local' %}selected{% endif %}>Local Server Storage</option>
-                <option value="s3" {% if settings.storage_driver | default(value='local') == 's3' %}selected{% endif %}>Amazon S3 / S3-Compatible</option>
-              </select>
+          <!-- Storage Strategy Card -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-toggles text-primary me-2"></i> Storage Mode &amp; Failover Strategy
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">S3 Bucket Name</label>
-              <input type="text" name="storage_s3_bucket" class="form-control" value="{{ settings.storage_s3_bucket | default(value='') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">AWS Region</label>
-              <input type="text" name="storage_s3_region" class="form-control" value="{{ settings.storage_s3_region | default(value='us-east-1') }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">AWS Access Key ID</label>
-              <input type="text" name="storage_s3_key" class="form-control" value="{{ settings.storage_s3_key | default(value='') }}">
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-medium">AWS Secret Access Key</label>
-              <input type="password" name="storage_s3_secret_key" class="form-control" value="{{ settings.storage_s3_secret_key | default(value='') }}">
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Primary Storage Driver <span class="text-danger">*</span></label>
+                  {% set cur_pri = settings.storage_primary | default(value='local') %}
+                  <select name="storage_primary" id="storage_primary" class="form-select">
+                    <option value="local" {% if cur_pri == 'local' %}selected{% endif %}>Local Disk (Single-server / Development)</option>
+                    <option value="s3" {% if cur_pri == 's3' %}selected{% endif %}>AWS S3 (Scalable Cloud Object Storage)</option>
+                  </select>
+                  <div class="form-text small">Where new files are written first.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Fallback Storage Driver</label>
+                  {% set cur_fall = settings.storage_fallback | default(value='none') %}
+                  <select name="storage_fallback" id="storage_fallback" class="form-select">
+                    <option value="none" {% if cur_fall == 'none' %}selected{% endif %}>None (No fallback)</option>
+                    <option value="local" {% if cur_fall == 'local' %}selected{% endif %}>Local Disk (Failover if S3 unreachable)</option>
+                    <option value="s3" {% if cur_fall == 's3' %}selected{% endif %}>AWS S3 (Failover if local disk fails)</option>
+                  </select>
+                  <div class="form-text small">If primary fails, file is written to fallback with sync_status='pending'.</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Changes</button>
+          <!-- AWS S3 Credentials & Settings -->
+          <div class="card mb-4 border">
+            <div class="card-header bg-light py-2 fw-semibold">
+              <i class="bi bi-amazon text-primary me-2"></i> AWS S3 Credentials &amp; Bucket Details
+            </div>
+            <div class="card-body">
+              <div class="alert alert-light border small py-2 mb-3">
+                <i class="bi bi-shield-check text-success me-1"></i>
+                <strong>Security Best Practice:</strong> When hosting on an AWS EC2 instance, prefer attaching an <strong>IAM Instance Profile/Role</strong> with S3 permissions. If an instance role is attached, leave Access Key ID and Secret blank!
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">AWS Region <span class="text-danger">*</span></label>
+                  <input type="text" name="storage_aws_region" id="storage_aws_region" class="form-control" value="{{ settings.storage_aws_region | default(value='us-east-1') }}" placeholder="us-east-1" required>
+                  <div class="form-text small">e.g. us-east-1, ap-southeast-1, eu-west-1.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Bucket Name <span class="text-danger">*</span></label>
+                  <input type="text" name="storage_s3_bucket" id="storage_s3_bucket" class="form-control" value="{{ settings.storage_s3_bucket | default(value='') }}" placeholder="my-ecommerce-media-bucket" required>
+                  <div class="form-text small">Target S3 bucket configured with ACLs disabled.</div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-check form-switch p-3 bg-light rounded border">
+                    <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="use_iam_role_toggle" name="use_iam_role" value="1" {% if settings.use_iam_role | default(value='0') == '1' %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="use_iam_role_toggle">
+                      <i class="bi bi-shield-check text-success me-1"></i> Use EC2 IAM Instance Role (Recommended on EC2)
+                    </label>
+                    <div class="form-text small mt-1 ms-0">
+                      When enabled, the app queries the EC2 Instance Profile directly. Static Access Key ID and Secret are bypassed.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6" id="wrap_key_id">
+                  <label class="form-label small fw-semibold">AWS Access Key ID (Optional)</label>
+                  <input type="text" name="storage_aws_access_key_id" id="storage_aws_access_key_id" class="form-control" value="{{ settings.storage_aws_access_key_id | default(value='') }}" placeholder="AKIA..." autocomplete="off">
+                  <div class="form-text small">Leave blank or toggle switch above to use EC2 IAM Role.</div>
+                </div>
+
+                <div class="col-md-6" id="wrap_secret">
+                  <label class="form-label small fw-semibold">AWS Secret Access Key (Optional)</label>
+                  <input type="password" name="storage_aws_secret_access_key" id="storage_aws_secret_access_key" class="form-control" value="{{ settings.storage_s3_secret_key | default(value='') }}" placeholder="Leave blank to use IAM Role or keep existing" autocomplete="new-password">
+                  <div class="form-text small">Stored encrypted using AES-256-CBC. Never echoed back plain.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">CloudFront / Public Base URL (Recommended)</label>
+                  <input type="url" name="storage_s3_public_base_url" id="storage_s3_public_base_url" class="form-control" value="{{ settings.storage_s3_public_base_url | default(value='') }}" placeholder="https://d123456abcdef8.cloudfront.net">
+                  <div class="form-text small">Origin Access Control (OAC) CloudFront distribution domain for global caching.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Key Prefix (Optional)</label>
+                  <input type="text" name="storage_s3_key_prefix" id="storage_s3_key_prefix" class="form-control" value="{{ settings.storage_s3_key_prefix | default(value='') }}" placeholder="e.g. media or uploads">
+                  <div class="form-text small">Optional folder prefix inside bucket. Leave empty for root.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">S3 Image Delivery Method</label>
+                  {% set cur_deliv = settings.storage_s3_delivery | default(value='public') %}
+                  <select name="storage_s3_delivery" id="storage_s3_delivery" class="form-select">
+                    <option value="public" {% if cur_deliv == 'public' %}selected{% endif %}>Direct Public S3 / CloudFront (Fastest, requires S3 Bucket Policy)</option>
+                    <option value="presigned" {% if cur_deliv == 'presigned' %}selected{% endif %}>Auto-Presigned URLs (Works with 100% Private Buckets, no bucket policy needed)</option>
+                  </select>
+                  <div class="form-text small">If your S3 bucket is private and has no policy, select "Auto-Presigned URLs" so images load without 403 Forbidden errors.</div>
+                </div>
+              </div>
+
+              <!-- Collapsible S3 Bucket Policy Helper -->
+              <div class="mt-4 pt-3 border-top">
+                <a class="text-decoration-none small fw-semibold text-primary" data-bs-toggle="collapse" href="#bucketPolicyHelper" role="button" aria-expanded="false" aria-controls="bucketPolicyHelper">
+                  <i class="bi bi-info-circle me-1"></i> How to allow public image access on your S3 Bucket (Click to view AWS Bucket Policy)
+                </a>
+                <div class="collapse mt-2" id="bucketPolicyHelper">
+                  <div class="alert alert-secondary small mb-0">
+                    <p class="mb-2">If images show as broken (HTTP 403 Access Denied), AWS S3 is blocking public reads by default. You can either select <strong>"Auto-Presigned URLs"</strong> above, or add this policy to AWS:</p>
+                    <pre class="bg-dark text-light p-2 rounded mb-0 user-select-all" style="font-size: 11px;">{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::{{ settings.storage_s3_bucket | default(value='your-bucket-name') }}/*"
+        }
+    ]
+}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-save me-1"></i> Save Storage Configuration
+            </button>
+            <button type="button" id="btnTestS3Footer" class="btn btn-outline-info">
+              <i class="bi bi-broadcast me-1"></i> Test S3 Connection
+            </button>
           </div>
         </form>
+
+        <script>
+        (function() {
+          var iamToggle = document.getElementById('use_iam_role_toggle');
+          var keyInput = document.getElementById('storage_aws_access_key_id');
+          var secretInput = document.getElementById('storage_aws_secret_access_key');
+          var wrapKey = document.getElementById('wrap_key_id');
+          var wrapSec = document.getElementById('wrap_secret');
+
+          function updateIamState() {
+            if (iamToggle && iamToggle.checked) {
+              if (wrapKey) wrapKey.style.opacity = '0.5';
+              if (wrapSec) wrapSec.style.opacity = '0.5';
+              if (keyInput) {
+                keyInput.disabled = true;
+                keyInput.value = '';
+                keyInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
+              }
+              if (secretInput) {
+                secretInput.disabled = true;
+                secretInput.value = '';
+                secretInput.placeholder = "Disabled (Using EC2 IAM Instance Role)";
+              }
+            } else {
+              if (wrapKey) wrapKey.style.opacity = '1';
+              if (wrapSec) wrapSec.style.opacity = '1';
+              if (keyInput) {
+                keyInput.disabled = false;
+                keyInput.placeholder = "AKIA...";
+              }
+              if (secretInput) {
+                secretInput.disabled = false;
+                secretInput.placeholder = "Leave blank to keep existing";
+              }
+            }
+          }
+          if (iamToggle) {
+            iamToggle.addEventListener('change', updateIamState);
+            updateIamState();
+          }
+
+          function runS3Test() {
+            var btn = document.getElementById('btnTestS3');
+            var btnFoot = document.getElementById('btnTestS3Footer');
+            var alertBox = document.getElementById('s3TestAlert');
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...'; }
+            if (btnFoot) { btnFoot.disabled = true; btnFoot.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...'; }
+
+            alertBox.className = 'alert alert-info py-2 small';
+            alertBox.style.display = 'block';
+            alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Connecting to S3, testing PutObject, GetObject, and DeleteObject on a temporary object...';
+
+            var formData = new FormData();
+            formData.append('csrf_token', '{{ csrf_token }}');
+            formData.append('action', 'test_s3_connection');
+            formData.append('region', document.getElementById('storage_aws_region').value);
+            formData.append('bucket', document.getElementById('storage_s3_bucket').value);
+
+            fetch('settings.php', {
+              method: 'POST',
+              body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection'; }
+              if (btnFoot) { btnFoot.disabled = false; btnFoot.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection'; }
+
+              if (data.ok) {
+                alertBox.className = 'alert alert-success py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> <strong>S3 Connection Verified:</strong> ' + data.message;
+              } else {
+                alertBox.className = 'alert alert-danger py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>S3 Connection Failed:</strong> ' + data.error;
+              }
+            })
+            .catch(function(err) {
+              if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection'; }
+              if (btnFoot) { btnFoot.disabled = false; btnFoot.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test S3 Connection'; }
+              alertBox.className = 'alert alert-danger py-2 small';
+              alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Network error: ' + err.message;
+            });
+          }
+
+          var btnTest = document.getElementById('btnTestS3');
+          if (btnTest) btnTest.addEventListener('click', runS3Test);
+          var btnFoot = document.getElementById('btnTestS3Footer');
+          if (btnFoot) btnFoot.addEventListener('click', runS3Test);
+        })();
+        </script>
       </div>
     </div>
   {% endif %}
+
 </div>
-{% endblock %}
+{% endblock content %}

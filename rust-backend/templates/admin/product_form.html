@@ -1,224 +1,378 @@
 {% extends "admin/layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h3 class="mb-1">{% if id > 0 %}Edit Product{% else %}Add New Product{% endif %}</h3>
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb mb-0 small">
-        <li class="breadcrumb-item"><a href="{{ admin_url(path='products.php') }}">Products</a></li>
-        <li class="breadcrumb-item active">{% if id > 0 %}{{ product.name }}{% else %}New{% endif %}</li>
-      </ol>
-    </nav>
-  </div>
-  <div>
-    <a href="{{ admin_url(path='products.php') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i> Back to Products
-    </a>
-  </div>
-</div>
-
-<form method="post" enctype="multipart/form-data" id="product_form">
+<form method="post" id="product_form" enctype="multipart/form-data" autocomplete="off" novalidate>
   {{ csrf_token() }}
-  <input type="hidden" name="id" value="{{ id }}">
-  <input type="hidden" name="updated_at" value="{{ product.updated_at | default(value='') }}">
+  <input type="hidden" name="original_updated_at" value="{{ product.updated_at | default(value='') }}">
+  <input type="hidden" name="options_json" id="options_json" value="">
+  <input type="hidden" name="variants_json" id="variants_json" value="">
 
-  <div class="row g-4">
-    <!-- Left Column: Core Product Info -->
+  <datalist id="presets_datalist"></datalist>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">{% if id > 0 %}Edit product{% else %}Add product{% endif %}</h4>
+      <small class="text-muted">{% if id > 0 %}Manage product details, inventory, and combinations{% else %}Create a single product or product with options{% endif %}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ admin_url(path='products.php') }}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check2"></i> {% if id > 0 %}Save changes{% else %}Create product{% endif %}
+      </button>
+    </div>
+  </div>
+
+  {% if errors %}
+    {% for err in errors %}
+      <div class="alert alert-danger py-2 mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ err }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3">
+    <!-- Left Main Column -->
     <div class="col-lg-8">
-      <div class="card shadow-sm border-0 mb-4">
+
+      <!-- Product Type Selector Card -->
+      <div class="card mb-3 border-indigo shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">General Information</h5>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" class="form-control form-control-lg" required value="{{ product.name | default(value='') }}" placeholder="e.g. Premium Cotton T-Shirt">
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label">SKU (Stock Keeping Unit)</label>
-              <input type="text" name="sku" class="form-control" value="{{ product.sku | default(value='') }}" placeholder="e.g. JP-TSHIRT-001">
+          <label class="form-label fw-bold mb-2">Product Type</label>
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <label class="card p-3 h-100 border text-center cursor-pointer shadow-sm type-choice-card">
+                <input type="radio" name="product_type" id="type_simple" value="simple"
+                       class="form-check-input mb-2 mx-auto" {% if product.product_type | default(value='simple') == 'simple' %}checked{% endif %}>
+                <div class="fw-bold"><i class="bi bi-box me-1"></i> Simple product</div>
+                <small class="text-muted">A standalone product with a single stock count and SKU.</small>
+              </label>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">URL Slug</label>
-              <input type="text" name="slug" class="form-control" value="{{ product.slug | default(value='') }}" placeholder="auto-generated from name if blank">
+            <div class="col-sm-6">
+              <label class="card p-3 h-100 border text-center cursor-pointer shadow-sm type-choice-card">
+                <input type="radio" name="product_type" id="type_variable" value="variable"
+                       class="form-check-input mb-2 mx-auto" {% if product.product_type | default(value='simple') == 'variable' %}checked{% endif %}>
+                <div class="fw-bold"><i class="bi bi-diagram-3 me-1"></i> Product with options</div>
+                <small class="text-muted">Multiple combinations (Size, Color, etc.) with per-variant stock, price, and SKU.</small>
+              </label>
             </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Short Description</label>
-            <textarea name="short_description" class="form-control" rows="2" placeholder="Brief summary for catalog cards...">{{ product.short_description | default(value='') }}</textarea>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Full Description</label>
-            <textarea name="description" class="form-control" rows="8" placeholder="Detailed product specifications, features, sizing...">{{ product.description | default(value='') }}</textarea>
           </div>
         </div>
       </div>
 
-      <!-- Pricing & Inventory for Simple Product -->
-      <div class="card shadow-sm border-0 mb-4" id="simple_pricing_card">
+      <!-- General Product Information -->
+      <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">Pricing & Stock</h5>
+          <h5 class="card-title mb-3"><i class="bi bi-info-circle me-1"></i> Basic information</h5>
+
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" value="{{ product.name | default(value='') }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Base SKU</label>
+              <input type="text" name="sku" id="sku" class="form-control"
+                     value="{{ product.sku | default(value='') }}" placeholder="e.g. TEE-001">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Slug <small class="text-muted">(auto if blank)</small></label>
+              <input type="text" name="slug" class="form-control"
+                     value="{{ product.slug | default(value='') }}" placeholder="auto-generated">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Category</label>
+              <select name="category_id" class="form-select">
+                <option value="0">— None —</option>
+                {% for c in categories %}
+                  <option value="{{ c.id }}" {% if product.category_id | default(value=0) == c.id %}selected{% endif %}>
+                    {{ c.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Short description</label>
+              <textarea name="short_description" class="form-control" rows="2" maxlength="500">{{ product.short_description | default(value='') }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Full description</label>
+              <textarea name="description" class="form-control" rows="5">{{ product.description | default(value='') }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing & Base Stock Card -->
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><i class="bi bi-tag me-1"></i> Pricing &amp; Stock</h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Price ({{ setting(key='currency_symbol', default='৳') }}) <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" min="0" name="price" id="price" class="form-control"
+                     value="{{ product.price | default(value='0.00') }}" required>
+              <small class="text-muted" id="base_price_hint" style="display:none;">Used as default for variants.</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Sale price <small class="text-muted">(optional)</small></label>
+              <input type="number" step="0.01" min="0" name="sale_price" id="sale_price" class="form-control"
+                     value="{{ product.sale_price | default(value='') }}">
+            </div>
+            <div class="col-md-4" id="simple_stock_wrapper">
+              <label class="form-label">Stock quantity</label>
+              <input type="number" step="1" min="0" name="stock" class="form-control"
+                     value="{{ product.stock | default(value='0') }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Options Builder Card (shown only for variable products) -->
+      <div class="card mb-3 shadow-sm border-indigo" id="options_builder_card" style="display:none;">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2">
+          <div class="fw-semibold"><i class="bi bi-sliders me-1"></i> Product options (Size, Color, etc.)</div>
+          <button type="button" class="btn btn-sm btn-primary" id="add_option_btn">
+            <i class="bi bi-plus-lg"></i> Add option
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="options_container"></div>
+          <div class="mt-3 text-end">
+            <button type="button" class="btn btn-success" id="generate_combos_btn">
+              <i class="bi bi-lightning-charge"></i> Generate combinations
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variants Table Card (shown only for variable products) -->
+      <div class="card mb-3 shadow-sm border-indigo" id="variants_card" style="display:none;">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2">
+          <div class="fw-semibold">
+            <i class="bi bi-grid-3x3-gap me-1"></i> Variants
+            <span class="badge bg-secondary ms-1" id="variants_count_badge">0 variants</span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+
+          <!-- Bulk Edit Bar -->
+          <div class="p-2 border-bottom bg-light d-flex flex-wrap align-items-center gap-2">
+            <span class="small fw-semibold text-muted ms-1">Bulk edit:</span>
+            <div class="input-group input-group-sm" style="max-width:140px;">
+              <input type="number" step="0.01" min="0" class="form-control" id="bulk_price_input" placeholder="Price">
+              <button class="btn btn-outline-secondary" type="button" id="bulk_set_price_btn">Set</button>
+            </div>
+            <div class="input-group input-group-sm" style="max-width:140px;">
+              <input type="number" min="0" class="form-control" id="bulk_stock_input" placeholder="Stock">
+              <button class="btn btn-outline-secondary" type="button" id="bulk_set_stock_btn">Set</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="bulk_add_10_stock_btn">
+              +10 Stock
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" id="variants_table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:40px;" class="text-center">
+                    <input type="checkbox" class="form-check-input" id="select_all_variants" title="Select all">
+                  </th>
+                  <th style="width:50px;" class="text-center">Status</th>
+                  <th>Combination</th>
+                  <th>SKU</th>
+                  <th>Price override</th>
+                  <th>Sale price</th>
+                  <th>Stock</th>
+                  <th>Weight</th>
+                  <th>Image</th>
+                </tr>
+              </thead>
+              <tbody id="variants_tbody">
+                <tr><td colspan="9" class="text-center text-muted py-3">No variants generated yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory & Advanced Attributes Card -->
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><i class="bi bi-box-seam me-1"></i> Inventory rules &amp; attributes</h5>
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Regular Price (৳) <span class="text-danger">*</span></label>
-              <input type="number" step="0.01" name="price" class="form-control" value="{{ product.price | default(value='0.00') }}" required>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="track_inventory" id="track_inventory" value="1"
+                       {% if product.track_inventory | default(value=1) == 1 %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="track_inventory">Track inventory for this product</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="allow_backorder" id="allow_backorder" value="1"
+                       {% if product.allow_backorder | default(value=0) == 1 %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="allow_backorder">Allow backorders when out of stock</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="show_stock_count" id="show_stock_count" value="1"
+                       {% if product.show_stock_count | default(value=1) == 1 %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="show_stock_count">Display stock count on storefront</label>
+              </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Sale Price (৳)</label>
-              <input type="number" step="0.01" name="sale_price" class="form-control" value="{{ product.sale_price | default(value='') }}" placeholder="Leave empty if not on sale">
+              <label class="form-label">Low stock threshold</label>
+              <input type="number" min="0" name="low_stock_threshold" class="form-control"
+                     value="{{ product.low_stock_threshold | default(value=5) }}">
+              <div class="form-text">Alerts are sent when stock reaches or drops below this count.</div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Stock Quantity</label>
-              <input type="number" name="stock" class="form-control" value="{{ product.stock | default(value='0') }}">
+
+            <div class="col-md-4">
+              <label class="form-label">Weight (grams)</label>
+              <input type="number" min="0" name="weight_g" class="form-control"
+                     value="{{ product.weight_g | default(value='') }}" placeholder="e.g. 250">
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Low Stock Threshold</label>
-              <input type="number" name="low_stock_threshold" class="form-control" value="{{ product.low_stock_threshold | default(value='5') }}">
+            <div class="col-md-4">
+              <label class="form-label">Brand</label>
+              <input type="text" name="brand" class="form-control"
+                     value="{{ product.brand | default(value='') }}" placeholder="e.g. Nike, Apple">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tags <small class="text-muted">(comma-separated)</small></label>
+              <input type="text" name="tags" class="form-control"
+                     value="{{ product.tags | default(value='') }}" placeholder="cotton, t-shirt, summer">
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Variants Builder Section -->
-      <div class="card shadow-sm border-0 mb-4">
+      <!-- SEO Meta Details Card -->
+      <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <h5 class="card-title mb-0">Product Options & Variants</h5>
-              <small class="text-muted">Generate variant matrix for size, color, storage, etc.</small>
-            </div>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="toggle_variable_product"
-                     {% if product.product_type == 'variable' %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="toggle_variable_product">This product has options</label>
-            </div>
+          <h5 class="card-title mb-3"><i class="bi bi-search me-1"></i> Search engine optimization (SEO)</h5>
+          <div class="mb-3">
+            <label class="form-label">Meta title</label>
+            <input type="text" name="meta_title" class="form-control" maxlength="160"
+                   value="{{ product.meta_title | default(value='') }}" placeholder="Leave blank to use product name">
           </div>
-
-          <div id="variants_builder_wrapper" {% if product.product_type != 'variable' %}style="display:none;"{% endif %}>
-            <div id="options_container" class="mb-4"></div>
-            <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add_option_btn">
-              <i class="bi bi-plus-circle me-1"></i> Add Another Option
-            </button>
-            <div id="variants_matrix_container"></div>
+          <div class="mb-3">
+            <label class="form-label">Meta description</label>
+            <textarea name="meta_description" class="form-control" rows="2" maxlength="255">{{ product.meta_description | default(value='') }}</textarea>
+          </div>
+          <div>
+            <label class="form-label">Meta keywords <small class="text-muted">(comma-separated)</small></label>
+            <input type="text" name="meta_keywords" class="form-control" maxlength="255"
+                   value="{{ product.meta_keywords | default(value='') }}" placeholder="e.g. fashion, clothing, summer, cotton">
           </div>
         </div>
       </div>
 
-      <!-- SEO Meta Data -->
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Search Engine Optimization (SEO)</h5>
-          <div class="mb-3">
-            <label class="form-label">Meta Title</label>
-            <input type="text" name="meta_title" class="form-control" value="{{ product.meta_title | default(value='') }}" placeholder="Title displayed in search engine results">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Meta Description</label>
-            <textarea name="meta_description" class="form-control" rows="3" placeholder="Brief search snippet summary...">{{ product.meta_description | default(value='') }}</textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Meta Keywords</label>
-            <input type="text" name="meta_keywords" class="form-control" value="{{ product.meta_keywords | default(value='') }}" placeholder="comma-separated keywords">
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Right Column: Settings & Media -->
+    <!-- Right Sidebar Column -->
     <div class="col-lg-4">
-      <div class="card shadow-sm border-0 mb-4">
+
+      <!-- Status Card -->
+      <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">Publishing</h5>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Status</label>
-            <select name="status" class="form-select">
-              <option value="active" {% if product.status == 'active' %}selected{% endif %}>Active (Published)</option>
-              <option value="inactive" {% if product.status == 'inactive' %}selected{% endif %}>Inactive (Hidden)</option>
-              <option value="draft" {% if product.status == 'draft' %}selected{% endif %}>Draft</option>
-            </select>
+          <h6 class="card-title">Status &amp; Visibility</h6>
+          <select name="status" class="form-select mb-3">
+            <option value="active" {% if product.status | default(value='active') == 'active' %}selected{% endif %}>Active</option>
+            <option value="draft" {% if product.status | default(value='active') == 'draft' %}selected{% endif %}>Draft</option>
+            <option value="inactive" {% if product.status | default(value='active') == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+          <div class="form-check">
+            <input type="checkbox" name="featured" id="featured" class="form-check-input" value="1"
+                   {% if product.featured | default(value=0) == 1 %}checked{% endif %}>
+            <label for="featured" class="form-check-label">
+              <i class="bi bi-star-fill text-warning"></i> Featured product
+            </label>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Category</label>
-            <select name="category_id" class="form-select">
-              <option value="">Uncategorized</option>
-              {% for c in categories %}
-                <option value="{{ c.id }}" {% if product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="form-check form-switch mb-3">
-            <input class="form-check-input" type="checkbox" name="featured" value="1" id="featured_check" {% if product.featured == 1 %}checked{% endif %}>
-            <label class="form-check-label" for="featured_check">Featured on Home Page</label>
-          </div>
-          <hr>
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary btn-lg">
-              <i class="bi bi-check2-circle me-1"></i> Save Product
-            </button>
-            {% if id > 0 %}
-              <a href="{{ url(path='product/' ~ product.slug) }}" target="_blank" class="btn btn-outline-secondary">
-                <i class="bi bi-box-arrow-up-right me-1"></i> View on Store
-              </a>
+        </div>
+      </div>
+
+      <!-- Primary Image Card -->
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">Primary Image</h6>
+          <div class="text-center mb-3">
+            {% if product.image %}
+              <img src="{{ product.image | product_img }}"
+                   id="primary_image_preview" class="img-fluid rounded border p-1" style="max-height:180px; object-fit:cover;"
+                   alt="Product image preview">
+            {% else %}
+              <img src="{{ url(path='assets/coza/images/product-placeholder.svg') | safe }}"
+                   id="primary_image_preview" class="img-fluid rounded border p-1" style="max-height:180px; object-fit:cover;"
+                   alt="Product image preview">
             {% endif %}
           </div>
+          <input type="file" name="image" class="form-control mb-1" accept="image/*">
+          <small class="text-muted">JPG, PNG, GIF, WEBP &le; 4 MB.</small>
         </div>
       </div>
 
-      <!-- Primary Image Upload -->
-      <div class="card shadow-sm border-0 mb-4">
+      <!-- Image Gallery Card -->
+      <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">Primary Image</h5>
-          {% if product.image %}
-            <div class="mb-3 text-center">
-              <img src="{{ url(path='uploads/' ~ product.image) }}" class="img-fluid rounded border" style="max-height: 200px;" alt="">
+          <h6 class="card-title mb-2">Product Gallery</h6>
+          <p class="text-muted small mb-2">Upload multiple images. Hold Ctrl/Cmd to select multiple files.</p>
+          <input type="file" name="gallery_images[]" class="form-control mb-3" multiple accept="image/*">
+
+          {% if existingImages %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-semibold text-muted">Gallery Images</span>
+              <span class="small text-muted" style="font-size:11px;">Radio = Primary | Checkbox = Delete</span>
             </div>
+            <div class="row g-2">
+              {% for img in existingImages %}
+                <div class="col-4 text-center">
+                  <div class="border rounded p-1 position-relative bg-light">
+                    <img src="{{ img.filename | product_img }}" class="img-fluid rounded" style="height:60px; object-fit:cover;" alt="">
+                    <div class="d-flex align-items-center justify-content-between mt-1 px-1">
+                      <div class="form-check mb-0" title="Set as primary image">
+                        <input type="radio" name="selected_primary_image" value="{{ img.filename }}"
+                               class="form-check-input" {% if product.image == img.filename %}checked{% endif %}>
+                      </div>
+                      <div class="form-check mb-0" title="Delete image on save">
+                        <input type="checkbox" name="delete_gallery_images[]" value="{{ img.id }}" class="form-check-input border-danger">
+                        <label class="form-check-label text-danger" style="font-size:11px;"><i class="bi bi-trash"></i></label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            <small class="text-muted d-block mt-2" style="font-size:11px;">Select radio to set as primary, check trash to delete on save.</small>
           {% endif %}
-          <div class="mb-3">
-            <input type="file" name="primary_image" class="form-control" accept="image/*">
-            <small class="text-muted">WebP, JPEG, PNG, or AVIF. Auto-converted to optimized WebP.</small>
-          </div>
         </div>
       </div>
 
-      <!-- Additional Images Gallery -->
-      <div class="card shadow-sm border-0 mb-4">
+      <!-- Actions Card -->
+      <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">Image Gallery</h5>
-          <div class="mb-3">
-            <input type="file" name="gallery_images[]" class="form-control" accept="image/*" multiple>
-            <small class="text-muted">Select multiple images to append to the product gallery.</small>
-          </div>
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="bi bi-check2"></i> {% if id > 0 %}Save changes{% else %}Create product{% endif %}
+          </button>
+          <a href="{{ admin_url(path='products.php') }}" class="btn btn-light w-100 mb-2">Cancel</a>
+          {% if id > 0 and product.slug %}
+            <a href="{{ route(name='product', slug=product.slug) }}" target="_blank" class="btn btn-outline-secondary w-100">
+              <i class="bi bi-box-arrow-up-right"></i> View on store
+            </a>
+          {% endif %}
         </div>
       </div>
+
     </div>
   </div>
 </form>
 
-<script src="{{ url(path='assets/js/admin-variants.js') }}"></script>
+<script src="{{ url(path='assets/js/admin-variants.js') | safe }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const initialOptions  = {{ existing_options | default(value='[]') | safe }};
-  const initialVariants = {{ existing_variants | default(value='[]') | safe }};
-  const initialGallery  = {{ existing_images | default(value='[]') | safe }};
+  const initialOptions  = {{ existingOptions | default(value='[]') | json_encode() | safe }};
+  const initialVariants = {{ existingVariants | default(value='[]') | json_encode() | safe }};
+  const initialGallery  = {{ existingImages | default(value='[]') | json_encode() | safe }};
 
   if (window.initProductVariantsBuilder) {
     window.initProductVariantsBuilder(initialOptions, initialVariants, initialGallery);
-  }
-
-  const toggleVar = document.getElementById('toggle_variable_product');
-  const wrapper = document.getElementById('variants_builder_wrapper');
-  const pricingCard = document.getElementById('simple_pricing_card');
-  if (toggleVar && wrapper) {
-    toggleVar.addEventListener('change', function () {
-      wrapper.style.display = this.checked ? 'block' : 'none';
-      if (pricingCard) {
-        pricingCard.style.display = this.checked ? 'none' : 'block';
-      }
-    });
   }
 });
 </script>
