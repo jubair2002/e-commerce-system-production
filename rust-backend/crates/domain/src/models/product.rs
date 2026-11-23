@@ -39,7 +39,9 @@ pub struct Category {
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
+    #[sqlx(default)]
     pub image: Option<String>,
+    #[sqlx(default)]
     pub parent_id: Option<u64>,
     pub status: String,
     pub created_at: Option<NaiveDateTime>,
@@ -52,6 +54,7 @@ pub struct CategoryWithCount {
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
+    #[sqlx(default)]
     pub image: Option<String>,
     pub product_count: i64,
 }

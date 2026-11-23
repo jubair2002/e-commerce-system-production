@@ -1733,6 +1733,8 @@ pub async fn admin_inventory_get_handler(
         ctx.insert("search", query.q.as_deref().unwrap_or(""));
         ctx.insert("stockFilter", query.filter.as_deref().unwrap_or("all"));
         ctx.insert("stock_filter", query.filter.as_deref().unwrap_or("all"));
+        let empty_ledger: Vec<serde_json::Value> = Vec::new();
+        ctx.insert("ledger", &empty_ledger);
     } else if tab == "ledger" {
         let (rows, total_movements) = get_inventory_movements(
             &state.db,
@@ -1746,6 +1748,7 @@ pub async fn admin_inventory_get_handler(
 
         let total_pages = (total_movements as f64 / per_page as f64).ceil() as i64;
         ctx.insert("ledgerRows", &rows);
+        ctx.insert("ledger", &rows);
         ctx.insert("rows", &rows);
         ctx.insert("totalMovements", &total_movements);
         ctx.insert("total_movements", &total_movements);
@@ -1755,6 +1758,9 @@ pub async fn admin_inventory_get_handler(
         ctx.insert("current_page", &page);
         ctx.insert("reasonFilter", query.reason.as_deref().unwrap_or(""));
         ctx.insert("reason_filter", query.reason.as_deref().unwrap_or(""));
+        let empty_items: Vec<serde_json::Value> = Vec::new();
+        ctx.insert("items", &empty_items);
+        ctx.insert("stock_filter", "all");
     }
 
     match state.tera.render("admin/inventory.html", &ctx) {
