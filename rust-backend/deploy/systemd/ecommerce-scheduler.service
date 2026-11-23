@@ -1,0 +1,20 @@
+[Unit]
+Description=Ecommerce Background Job Scheduler Daemon
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html/rust-backend
+EnvironmentFile=/var/www/html/rust-backend/.env
+ExecStart=/var/www/html/rust-backend/target/release/jobs-runner --scheduler
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ecommerce-scheduler
+
+[Install]
+WantedBy=multi-user.target

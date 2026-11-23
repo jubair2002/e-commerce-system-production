@@ -12,3 +12,69 @@ sqlx.workspace = true
 tokio.workspace = true
 chrono.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rust_decimal.workspace = true
+clap.workspace = true
+bcrypt.workspace = true
+libc.workspace = true
+hex.workspace = true
+sha2.workspace = true
+rand.workspace = true
+image.workspace = true
+webp.workspace = true
+infer.workspace = true
+
+[[bin]]
+name = "mail-worker"
+path = "src/bin/mail_worker.rs"
+
+[[bin]]
+name = "customer-maintenance"
+path = "src/bin/customer_maintenance.rs"
+
+[[bin]]
+name = "collect-metrics"
+path = "src/bin/collect_metrics.rs"
+
+[[bin]]
+name = "rebuild-sales-summary"
+path = "src/bin/rebuild_sales_summary.rs"
+
+[[bin]]
+name = "cleanup-logs"
+path = "src/bin/cleanup_logs.rs"
+
+[[bin]]
+name = "aggregate-analytics"
+path = "src/bin/aggregate_analytics.rs"
+
+[[bin]]
+name = "parse-access-log"
+path = "src/bin/parse_access_log.rs"
+
+[[bin]]
+name = "purge-image-cache"
+path = "src/bin/purge_image_cache.rs"
+
+[[bin]]
+name = "cleanup-orphans"
+path = "src/bin/cleanup_orphans.rs"
+
+[[bin]]
+name = "migrate-files-to-s3"
+path = "src/bin/migrate_files_to_s3.rs"
+
+[[bin]]
+name = "sync-storage"
+path = "src/bin/sync_storage.rs"
+
+[[bin]]
+name = "create-admin"
+path = "src/bin/create_admin.rs"
+
+[[bin]]
+name = "jobs-runner"
+path = "src/bin/jobs_runner.rs"

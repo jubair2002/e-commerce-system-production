@@ -555,6 +555,29 @@ pub async fn verify_email_handler(
         return Redirect::to("/login").into_response();
     }
 
+    if let Ok(Some(tok)) = token_consume(&state.db, "email_change", &token).await {
+        let new_email = tok.payload.unwrap_or_default();
+        if new_email.contains('@') {
+            let _ = sqlx::query(
+                "UPDATE customers SET email = ?, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(&new_email)
+            .bind(tok.customer_id)
+            .execute(&state.db)
+            .await;
+
+            if let Some(mut cust) = SessionHelper::get_customer(&session).await {
+                if cust.id == tok.customer_id {
+                    cust.email = new_email;
+                    SessionHelper::set_customer(&session, &cust).await;
+                }
+            }
+
+            SessionHelper::add_flash(&session, "success", "Your email address has been updated successfully!").await;
+            return Redirect::to("/account").into_response();
+        }
+    }
+
     SessionHelper::add_flash(&session, "danger", "Invalid or expired verification link.").await;
     Redirect::to("/login").into_response()
 }

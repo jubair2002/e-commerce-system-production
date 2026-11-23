@@ -464,7 +464,8 @@ pub async fn stock_restore_for_order(pool: &Pool<MySql>, order_id: u64) -> Resul
                 .execute(&mut *tx)
                 .await?;
 
-            sqlx::query("UPDATE products SET stock = stock + ?, sold_count = GREATEST(0, sold_count - ?) WHERE id = ?")
+            sqlx::query("UPDATE products SET stock = stock + ?, sold_count = CASE WHEN sold_count >= ? THEN sold_count - ? ELSE 0 END WHERE id = ?")
+                .bind(item.quantity)
                 .bind(item.quantity)
                 .bind(item.quantity)
                 .bind(item.product_id)
@@ -477,7 +478,8 @@ pub async fn stock_restore_for_order(pool: &Pool<MySql>, order_id: u64) -> Resul
                 .await?
                 .unwrap_or(0)
         } else {
-            sqlx::query("UPDATE products SET stock = stock + ?, sold_count = GREATEST(0, sold_count - ?) WHERE id = ?")
+            sqlx::query("UPDATE products SET stock = stock + ?, sold_count = CASE WHEN sold_count >= ? THEN sold_count - ? ELSE 0 END WHERE id = ?")
+                .bind(item.quantity)
                 .bind(item.quantity)
                 .bind(item.quantity)
                 .bind(item.product_id)

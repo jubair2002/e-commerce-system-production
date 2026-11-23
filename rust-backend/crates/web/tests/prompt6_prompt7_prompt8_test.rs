@@ -440,7 +440,7 @@ async fn test_concurrency_100_checkouts_1_unit_stock() {
          VALUES ('Concurrency Test Item', ?, ?, 100.00, 1, 1, 0, 'active', NOW(), NOW())"
     )
     .bind(&slug)
-    .bind(format!("SKU-{}", &slug))
+    .bind(format!("SKU-{}", slug))
     .execute(&state.db)
     .await
     .expect("Failed to insert concurrency test product");
