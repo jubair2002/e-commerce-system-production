@@ -1,5 +1,5 @@
 # Multi-stage build for Jinish Potro Rust Backend
-FROM rust:1.85-bookworm AS builder
+FROM rust:bookworm AS builder
 
 WORKDIR /usr/src/app
 
