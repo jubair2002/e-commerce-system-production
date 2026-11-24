@@ -208,6 +208,9 @@ pub async fn register_get_handler(
     let mut ctx = build_base_context(&state, &session, "register").await;
     ctx.insert("_form_rendered_at", &Utc::now().timestamp());
 
+    let reg_enabled = state.settings.get_or("customer_registration_enabled", "1") != "0";
+    ctx.insert("registration_enabled", &reg_enabled);
+
     state
         .tera
         .render("auth/register.html", &ctx)
@@ -229,6 +232,11 @@ pub async fn register_post_handler(
     if !SessionHelper::verify_csrf(&session, form._csrf.as_deref()).await {
         SessionHelper::add_flash(&session, "danger", "Invalid session token. Please try again.").await;
         return Redirect::to("/register").into_response();
+    }
+
+    if state.settings.get_or("customer_registration_enabled", "1") == "0" {
+        SessionHelper::add_flash(&session, "warning", "Customer registration is temporarily disabled. Please check back later.").await;
+        return Redirect::to("/login").into_response();
     }
 
     // 1. Honeypot check: website_url must be empty

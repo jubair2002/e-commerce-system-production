@@ -1,25 +1,29 @@
 # ==============================================================================
-# Jinishpotro Production Stack
-# Services: Web Application (PHP 8.2 + Apache), MySQL 8.0 Database
-# Domain: jinishpotro.store
+# Jinish Potro Production Stack
+# Services: Rust High-Performance Backend (Axum), MySQL 8.0, Prometheus, Grafana
+# Accessible via port 80 from outside (0.0.0.0:80)
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # 1. Main Web Application & Background Workers (PHP 8.2 + Apache)
+  # 1. Main Web Application (High-Performance Rust Backend)
   # ----------------------------------------------------------------------------
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: rust-backend/Dockerfile
     container_name: jinispotro_app
     restart: unless-stopped
     ports:
-      - "${PORT_HTTP:-80}:80"
-      - "${PORT_HTTPS:-443}:443"
-      - "${PORT_METRICS:-8082}:8082"
+      - "0.0.0.0:${PORT_HTTP:-80}:80"
+      - "0.0.0.0:${PORT_HTTPS:-443}:443"
+      - "127.0.0.1:${PORT_METRICS:-8082}:8082"
     environment:
-      # Database connection
+      # Network binding
+      HOST: "0.0.0.0"
+      PORT: "80"
+
+      # Database connection (Connects to internal 'db' service)
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: ${DB_NAME:-php_admin_panel}
@@ -28,8 +32,8 @@ services:
       DB_CHARSET: utf8mb4
 
       # AWS S3 Storage (Configurable via Admin Panel or .env)
-      STORAGE_PRIMARY: ${STORAGE_PRIMARY:-s3}
-      STORAGE_FALLBACK: ${STORAGE_FALLBACK:-local}
+      STORAGE_PRIMARY: ${STORAGE_PRIMARY:-local}
+      STORAGE_FALLBACK: ${STORAGE_FALLBACK:-none}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -38,38 +42,36 @@ services:
       S3_KEY_PREFIX: ${S3_KEY_PREFIX:-uploads/}
       STORAGE_S3_DELIVERY: ${STORAGE_S3_DELIVERY:-public}
 
-      # App Settings
-      APP_NAME: "${APP_NAME:-Jinishpotro E-Commerce}"
+      # Application Configuration
+      APP_NAME: "${APP_NAME:-Jinish Potro}"
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY:-c84f1a29e46a78b901d3e5f72a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b}
       BASE_URL: ${BASE_URL:-/}
-      SITE_URL: ${SITE_URL:-https://jinishpotro.store}
-      FORCE_HTTPS: ${FORCE_HTTPS:-true}
+      SITE_URL: ${SITE_URL:-http://localhost}
+      TEMPLATES_DIR: /app/templates
+      ASSETS_DIR: /app/assets
+      UPLOADS_DIR: /app/assets/uploads
+      RUST_LOG: info
     volumes:
-      - app_uploads:/var/www/html/assets/uploads
-      - app_storage:/var/www/html/storage
-      # Mount host Let's Encrypt certificates if available on host
-      - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
+      - app_uploads:/app/assets/uploads
+      - ./assets:/app/assets:ro
+      - ./rust-backend/templates:/app/templates:ro
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
     networks:
       - jinispotro_net
-    labels:
-      - "application_name=laravel_app"
-      - "stream=laravel_app"
     logging:
-      driver: gelf
+      driver: "json-file"
       options:
-        gelf-address: "${GRAYLOG_ENDPOINT:-udp://172.31.47.132:12202}"
-        tag: "laravel_app"
-        labels: "application_name,stream"
+        max-size: "20m"
+        max-file: "5"
 
   # ----------------------------------------------------------------------------
   # 2. Database Service (MySQL 8.0)
@@ -101,25 +103,21 @@ services:
       start_period: 25s
     networks:
       - jinispotro_net
-    labels:
-      - "application_name=laravel_app"
-      - "stream=laravel_app"
     logging:
-      driver: gelf
+      driver: "json-file"
       options:
-        gelf-address: "${GRAYLOG_ENDPOINT:-udp://172.31.47.132:12202}"
-        tag: "laravel_app"
-        labels: "application_name,stream"
+        max-size: "20m"
+        max-file: "5"
 
   # ----------------------------------------------------------------------------
-  # 3. Prometheus Monitoring Service (Scrapes /metrics)
+  # 3. Prometheus Monitoring Service (Scrapes Rust /metrics)
   # ----------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
     container_name: jinispotro_prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -139,7 +137,7 @@ services:
     container_name: jinispotro_grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
@@ -149,6 +147,41 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+    networks:
+      - jinispotro_net
+
+  # ----------------------------------------------------------------------------
+  # 5. Optional Legacy PHP Application (Accessible with --profile php on :8081)
+  # ----------------------------------------------------------------------------
+  php-app:
+    profiles:
+      - php
+      - legacy
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jinispotro_php_legacy
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-php_admin_panel}
+      DB_USER: ${DB_USER:-jinispotro}
+      DB_PASS: ${DB_PASS:-secret123}
+      DB_CHARSET: utf8mb4
+      APP_NAME: "${APP_NAME:-Jinishpotro E-Commerce (PHP)}"
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY:-c84f1a29e46a78b901d3e5f72a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b}
+      BASE_URL: ${BASE_URL:-/}
+      SITE_URL: ${SITE_URL:-http://localhost:8081}
+    volumes:
+      - app_uploads:/var/www/html/assets/uploads
+      - app_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - jinispotro_net
 

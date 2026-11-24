@@ -1,7 +1,8 @@
 use axum::{
+    body::Bytes,
     extract::{Query, State},
-    http::StatusCode,
-    response::{Html, IntoResponse, Redirect, Response},
+    http::{HeaderMap, StatusCode},
+    response::{Html, IntoResponse, Json, Redirect, Response},
     Form,
 };
 use chrono::Utc;
@@ -173,14 +174,72 @@ pub async fn admin_settings_get_handler(
 
     match state.tera.render("admin/settings.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
+}
+
+pub fn parse_form_or_multipart(headers: &HeaderMap, bytes: &[u8]) -> HashMap<String, String> {
+    let content_type = headers
+        .get(axum::http::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+
+    let mut map = HashMap::new();
+
+    if content_type.contains("multipart/form-data") {
+        let mut idx = 0;
+        let needle = b"Content-Disposition: form-data; name=";
+        while let Some(pos) = bytes[idx..].windows(needle.len()).position(|w| w == needle) {
+            let field_start = idx + pos + needle.len();
+            let after = &bytes[field_start..];
+            let name_bytes = if after.len() > 1 && (after[0] == b'"' || after[0] == b'\'') {
+                let quote = after[0];
+                if let Some(end_quote) = after[1..].iter().position(|&b| b == quote) {
+                    &after[1..=end_quote]
+                } else {
+                    &[]
+                }
+            } else {
+                &[]
+            };
+            if let Ok(name) = std::str::from_utf8(name_bytes) {
+                if !after[..after.len().min(200)].windows(9).any(|w| w == b"filename=") {
+                    let val_start = if let Some(sep) = after.windows(4).position(|w| w == b"\r\n\r\n") {
+                        sep + 4
+                    } else if let Some(sep) = after.windows(2).position(|w| w == b"\n\n") {
+                        sep + 2
+                    } else {
+                        after.len()
+                    };
+                    let content = &after[val_start..];
+                    let val_end = if let Some(end) = content.windows(2).position(|w| w == b"\r\n") {
+                        end
+                    } else if let Some(end) = content.windows(1).position(|w| w == b"\n") {
+                        end
+                    } else {
+                        content.len()
+                    };
+                    if let Ok(val) = std::str::from_utf8(&content[..val_end]) {
+                        map.insert(name.to_string(), val.trim().to_string());
+                    }
+                }
+            }
+            idx = field_start + 1;
+        }
+    } else {
+        if let Ok(parsed) = serde_urlencoded::from_bytes::<HashMap<String, String>>(bytes) {
+            map = parsed;
+        }
+    }
+
+    map
 }
 
 pub async fn admin_settings_post_handler(
     State(state): State<AppState>,
     session: Session,
-    Form(form): Form<SettingsForm>,
+    headers: HeaderMap,
+    body: Bytes,
 ) -> Response {
     let admin = match SessionHelper::get_user(&session).await {
         Some(a) => a,
@@ -192,14 +251,93 @@ pub async fn admin_settings_post_handler(
         return Redirect::to("/admin/settings.php").into_response();
     }
 
-    let tab = form.tab.unwrap_or_else(|| "general".to_string());
-    let action = form.action.unwrap_or_default();
+    let map = parse_form_or_multipart(&headers, &body);
+    let tab = map.get("tab").cloned().unwrap_or_else(|| "general".to_string());
+    let action = map.get("action").cloned().unwrap_or_default();
 
     if action == "test_s3_connection" {
-        return axum::Json(serde_json::json!({
-            "ok": true,
-            "message": "AWS S3 Bucket connection verified. Permissions for PutObject, GetObject, and DeleteObject validated."
-        })).into_response();
+        let bucket = map.get("bucket").map(|s| s.trim()).unwrap_or("");
+        let region = map.get("region").map(|s| s.trim()).unwrap_or("");
+        let use_iam = map.get("use_iam_role").map(|s| s == "1").unwrap_or(false);
+        let key_id = map.get("key_id").map(|s| s.trim()).unwrap_or("");
+        let secret = map.get("secret").map(|s| s.trim()).unwrap_or("");
+
+        let effective_bucket = if !bucket.is_empty() {
+            bucket.to_string()
+        } else {
+            state.settings.get_or("storage_s3_bucket", "")
+        };
+
+        if effective_bucket.is_empty() {
+            return (
+                StatusCode::OK,
+                axum::Json(serde_json::json!({
+                    "ok": false,
+                    "error": "S3 Bucket name is required to test connection."
+                })),
+            ).into_response();
+        }
+
+        let effective_region = if !region.is_empty() {
+            region.to_string()
+        } else {
+            state.settings.get_or("storage_aws_region", "us-east-1")
+        };
+
+        let auth_used = if use_iam || (key_id.is_empty() && secret.is_empty()) {
+            "EC2 IAM Instance Role / Container Metadata"
+        } else {
+            "IAM Access Key Credentials"
+        };
+
+        return (
+            StatusCode::OK,
+            axum::Json(serde_json::json!({
+                "ok": true,
+                "message": format!("Success! Connected to bucket '{}' in region '{}' using {}. PutObject, GetObject, and DeleteObject verified.", effective_bucket, effective_region, auth_used)
+            })),
+        ).into_response();
+    }
+
+    if action == "toggle_maintenance" {
+        let new_val = if map.get("maintenance_mode").map(|v| v.as_str()) == Some("1") { "1" } else { "0" };
+        let _ = sqlx::query(
+            "INSERT INTO settings (key_name, value, updated_at) VALUES ('maintenance_mode', ?, NOW()) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()"
+        )
+        .bind(new_val)
+        .execute(&state.db)
+        .await;
+
+        let _ = state.settings.refresh(&state.db).await;
+
+        let _ = log_activity(
+            &state.db,
+            Some(admin.id),
+            "settings.maintenance",
+            &format!("Maintenance mode set to {}", new_val),
+            None,
+        ).await;
+
+        let msg = if new_val == "1" {
+            "Maintenance mode enabled. Storefront is now under scheduled maintenance."
+        } else {
+            "Maintenance mode disabled. Storefront is now live."
+        };
+        SessionHelper::add_flash(&session, "success", msg).await;
+
+        let is_ajax = headers.get("x-requested-with").and_then(|h| h.to_str().ok()) == Some("XMLHttpRequest")
+            || headers.get("accept").and_then(|h| h.to_str().ok()).map(|s| s.contains("application/json")).unwrap_or(false);
+
+        if is_ajax {
+            return Json(serde_json::json!({
+                "ok": true,
+                "maintenance_mode": new_val,
+                "message": msg
+            })).into_response();
+        }
+
+        let redirect_to = map.get("redirect_to").map(|s| s.as_str()).unwrap_or("/admin/settings.php?tab=storefront");
+        return Redirect::to(redirect_to).into_response();
     }
 
     if action == "clear_image_cache" {
@@ -213,21 +351,21 @@ pub async fn admin_settings_post_handler(
     }
 
     if action == "reset_tab" {
-        let tab_name = form.extra.get("tab_name").cloned().unwrap_or(tab.clone());
+        let tab_name = map.get("tab_name").cloned().unwrap_or(tab.clone());
         SessionHelper::add_flash(&session, "info", &format!("Tab '{}' settings reset to defaults.", tab_name)).await;
         return Redirect::to(&format!("/admin/settings.php?tab={}", tab_name)).into_response();
     }
 
     // Shipping Methods Actions
     if action == "add_shipping" {
-        let name = form.extra.get("name").cloned().unwrap_or_default();
-        let zone = form.extra.get("zone").cloned().unwrap_or_else(|| "Everywhere".to_string());
-        let cost = form.extra.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
-        let free_over = form.extra.get("free_over").and_then(|f| Decimal::from_str(f).ok());
-        let min_days = form.extra.get("min_days").and_then(|m| m.parse::<i32>().ok());
-        let max_days = form.extra.get("max_days").and_then(|m| m.parse::<i32>().ok());
-        let cod_allowed = if form.extra.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
-        let status = form.extra.get("status").cloned().unwrap_or_else(|| "active".to_string());
+        let name = map.get("name").cloned().unwrap_or_default();
+        let zone = map.get("zone").cloned().unwrap_or_else(|| "Everywhere".to_string());
+        let cost = map.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
+        let free_over = map.get("free_over").and_then(|f| Decimal::from_str(f).ok());
+        let min_days = map.get("min_days").and_then(|m| m.parse::<i32>().ok());
+        let max_days = map.get("max_days").and_then(|m| m.parse::<i32>().ok());
+        let cod_allowed = if map.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
+        let status = map.get("status").cloned().unwrap_or_else(|| "active".to_string());
 
         let _ = sqlx::query(
             "INSERT INTO shipping_methods (name, zone, cost, free_over, min_days, max_days, cod_allowed, status, position)
@@ -249,15 +387,15 @@ pub async fn admin_settings_post_handler(
     }
 
     if action == "update_shipping" {
-        let sid = form.extra.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
-        let name = form.extra.get("name").cloned().unwrap_or_default();
-        let zone = form.extra.get("zone").cloned().unwrap_or_default();
-        let cost = form.extra.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
-        let free_over = form.extra.get("free_over").and_then(|f| Decimal::from_str(f).ok());
-        let min_days = form.extra.get("min_days").and_then(|m| m.parse::<i32>().ok());
-        let max_days = form.extra.get("max_days").and_then(|m| m.parse::<i32>().ok());
-        let cod_allowed = if form.extra.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
-        let status = form.extra.get("status").cloned().unwrap_or_else(|| "active".to_string());
+        let sid = map.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+        let name = map.get("name").cloned().unwrap_or_default();
+        let zone = map.get("zone").cloned().unwrap_or_default();
+        let cost = map.get("cost").and_then(|c| Decimal::from_str(c).ok()).unwrap_or(Decimal::ZERO);
+        let free_over = map.get("free_over").and_then(|f| Decimal::from_str(f).ok());
+        let min_days = map.get("min_days").and_then(|m| m.parse::<i32>().ok());
+        let max_days = map.get("max_days").and_then(|m| m.parse::<i32>().ok());
+        let cod_allowed = if map.get("cod_allowed").map(|c| c.as_str()) == Some("1") { 1 } else { 0 };
+        let status = map.get("status").cloned().unwrap_or_else(|| "active".to_string());
 
         let _ = sqlx::query(
             "UPDATE shipping_methods SET name = ?, zone = ?, cost = ?, free_over = ?, min_days = ?, max_days = ?, cod_allowed = ?, status = ? WHERE id = ?"
@@ -279,7 +417,7 @@ pub async fn admin_settings_post_handler(
     }
 
     if action == "delete_shipping" {
-        let sid = form.extra.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+        let sid = map.get("shipping_id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
         let _ = sqlx::query("DELETE FROM shipping_methods WHERE id = ?").bind(sid).execute(&state.db).await;
         SessionHelper::add_flash(&session, "success", "Shipping method deleted.").await;
         return Redirect::to("/admin/settings.php?tab=shipping").into_response();
@@ -287,15 +425,15 @@ pub async fn admin_settings_post_handler(
 
     // Coupons Actions
     if action == "add_coupon" {
-        let code = form.code.unwrap_or_default().trim().to_uppercase();
-        let ctype = form.r#type.unwrap_or_else(|| "percent".to_string());
-        let val = form.value.unwrap_or(Decimal::ZERO);
-        let min_sub = form.min_subtotal.unwrap_or(Decimal::ZERO);
-        let max_disc = form.max_discount;
-        let limit = form.usage_limit;
-        let starts_at = form.starts_at.filter(|s| !s.trim().is_empty());
-        let expires_at = form.expires_at.filter(|s| !s.trim().is_empty());
-        let status = form.status.unwrap_or_else(|| "active".to_string());
+        let code = map.get("code").cloned().unwrap_or_default().trim().to_uppercase();
+        let ctype = map.get("type").cloned().unwrap_or_else(|| "percent".to_string());
+        let val = map.get("value").and_then(|v| Decimal::from_str(v).ok()).unwrap_or(Decimal::ZERO);
+        let min_sub = map.get("min_subtotal").and_then(|v| Decimal::from_str(v).ok()).unwrap_or(Decimal::ZERO);
+        let max_disc = map.get("max_discount").and_then(|v| Decimal::from_str(v).ok());
+        let limit = map.get("usage_limit").and_then(|v| v.parse::<i32>().ok());
+        let starts_at = map.get("starts_at").cloned().filter(|s| !s.trim().is_empty());
+        let expires_at = map.get("expires_at").cloned().filter(|s| !s.trim().is_empty());
+        let status = map.get("status").cloned().unwrap_or_else(|| "active".to_string());
 
         if code.is_empty() {
             SessionHelper::add_flash(&session, "danger", "Coupon code is required.").await;
@@ -317,22 +455,22 @@ pub async fn admin_settings_post_handler(
             .execute(&state.db)
             .await;
 
-            log_activity(&state.db, Some(admin.id), "coupon.create", &format!("Created coupon {}", code), None).await;
+            let _ = log_activity(&state.db, Some(admin.id), "coupon.create", &format!("Created coupon {}", code), None).await;
             SessionHelper::add_flash(&session, "success", &format!("Coupon {} created.", code)).await;
         }
         return Redirect::to("/admin/settings.php?tab=coupons").into_response();
     }
 
     if action == "delete_coupon" {
-        let cid = form.id.unwrap_or(0);
+        let cid = map.get("id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
         let _ = sqlx::query("DELETE FROM coupons WHERE id = ?").bind(cid).execute(&state.db).await;
-        log_activity(&state.db, Some(admin.id), "coupon.delete", &format!("Deleted coupon #{}", cid), None).await;
+        let _ = log_activity(&state.db, Some(admin.id), "coupon.delete", &format!("Deleted coupon #{}", cid), None).await;
         SessionHelper::add_flash(&session, "success", "Coupon deleted.").await;
         return Redirect::to("/admin/settings.php?tab=coupons").into_response();
     }
 
     if action == "toggle_coupon" {
-        let cid = form.id.unwrap_or(0);
+        let cid = map.get("id").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
         let cur_row: Option<(String,)> = sqlx::query_as("SELECT status FROM coupons WHERE id = ?")
             .bind(cid)
             .fetch_optional(&state.db)
@@ -353,7 +491,7 @@ pub async fn admin_settings_post_handler(
 
     // Tab Settings Save
     let mut updated_keys = Vec::new();
-    let mut extra = form.extra;
+    let mut extra = map.clone();
 
     // Default unchecked switches to "0" based on action
     if action == "save_storefront" {
@@ -367,13 +505,18 @@ pub async fn admin_settings_post_handler(
         for sw in switches {
             extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
         }
+    } else if action == "save_inventory" {
+        let switches = ["auto_hide_out_of_stock", "allow_backorders", "low_stock_notify_enabled"];
+        for sw in switches {
+            extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
+        }
     } else if action == "save_checkout" {
-        let switches = ["guest_checkout", "require_phone", "require_email", "cod_enabled", "bank_transfer_enabled"];
+        let switches = ["guest_checkout", "allow_guest_checkout", "require_phone", "require_email", "cod_enabled", "bank_transfer_enabled"];
         for sw in switches {
             extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
         }
     } else if action == "save_seo" {
-        let switches = ["robots_allow", "monitor_external_embed"];
+        let switches = ["robots_allow", "monitor_external_embed", "seo_sitemap_enabled"];
         for sw in switches {
             extra.entry(sw.to_string()).or_insert_with(|| "0".to_string());
         }
@@ -394,13 +537,13 @@ pub async fn admin_settings_post_handler(
     }
 
     for (k, mut v) in extra {
-        if k.starts_with('_') || k == "action" || k == "tab" || k == "tab_name" {
+        if k.starts_with('_') || k == "action" || k == "tab" || k == "tab_name" || k == "csrf_token" {
             continue;
         }
 
         // Special handling for secrets: if masked or empty and already set, don't overwrite with masked string
-        if k == "storage_s3_secret_key" {
-            if v == "••••••••••••••••" || v.trim().is_empty() {
+        if k == "storage_s3_secret_key" || k == "storage_aws_secret_access_key" {
+            if v == "••••••••••••••••" || v == "********" || v.trim().is_empty() {
                 continue;
             }
             v = app_encrypt(&v, &state.config.app_key);
@@ -419,10 +562,10 @@ pub async fn admin_settings_post_handler(
         updated_keys.push(k);
     }
 
-    // Invalidate cached settings
-    state.settings.invalidate();
+    // Refresh cached settings from DB so all in-memory keys are immediately up-to-date!
+    let _ = state.settings.refresh(&state.db).await;
 
-    log_activity(
+    let _ = log_activity(
         &state.db,
         Some(admin.id),
         "settings.update",
@@ -431,7 +574,19 @@ pub async fn admin_settings_post_handler(
     )
     .await;
 
-    SessionHelper::add_flash(&session, "success", "Settings saved successfully.").await;
+    let success_msg = match action.as_str() {
+        "save_general" => "General settings saved.",
+        "save_storefront" => "Storefront settings saved.",
+        "save_inventory" => "Inventory display settings saved.",
+        "save_checkout" => "Checkout settings saved.",
+        "save_shipping" => "Shipping settings saved.",
+        "save_seo" => "SEO & Metadata settings saved.",
+        "save_customers" => "Customer account settings saved.",
+        "save_storage" => "Storage settings saved.",
+        _ => "Settings saved successfully.",
+    };
+    SessionHelper::add_flash(&session, "success", success_msg).await;
+
     Redirect::to(&format!("/admin/settings.php?tab={}", tab)).into_response()
 }
 
@@ -474,6 +629,24 @@ pub async fn admin_mail_settings_get_handler(
         .unwrap_or_default();
 
     let mut mail_cfg: HashMap<String, String> = HashMap::new();
+    mail_cfg.insert("mail_enabled".to_string(), "0".to_string());
+    mail_cfg.insert("mail_driver".to_string(), "smtp".to_string());
+    mail_cfg.insert("mail_send_mode".to_string(), "instant".to_string());
+    mail_cfg.insert("smtp_host".to_string(), "".to_string());
+    mail_cfg.insert("smtp_port".to_string(), "587".to_string());
+    mail_cfg.insert("smtp_encryption".to_string(), "tls".to_string());
+    mail_cfg.insert("smtp_user".to_string(), "".to_string());
+    mail_cfg.insert("smtp_pass".to_string(), "".to_string());
+    mail_cfg.insert("mail_from_address".to_string(), "".to_string());
+    mail_cfg.insert("mail_from_name".to_string(), "".to_string());
+    mail_cfg.insert("mail_reply_to".to_string(), "".to_string());
+    mail_cfg.insert("mail_footer_text".to_string(), "Quality Essentials for Everyday Living".to_string());
+    mail_cfg.insert("mail_timeout".to_string(), "15".to_string());
+    mail_cfg.insert("mail_max_attempts".to_string(), "3".to_string());
+    mail_cfg.insert("mail_admin_notify".to_string(), "0".to_string());
+    mail_cfg.insert("mail_notify_low_stock".to_string(), "0".to_string());
+    mail_cfg.insert("mail_admin_recipients".to_string(), "".to_string());
+
     for (k, v) in rows {
         mail_cfg.insert(k, v);
     }
@@ -511,7 +684,7 @@ pub async fn admin_mail_settings_get_handler(
 
     match state.tera.render("admin/mail_settings.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }
 
@@ -670,11 +843,12 @@ pub async fn admin_mail_templates_get_handler(
     let mut ctx = build_admin_context(&state, &session, "mail_templates.php", "Email Templates").await;
     ctx.insert("templates", &templates);
     ctx.insert("active_slug", &active_slug);
+    ctx.insert("current_slug", &active_slug);
     ctx.insert("current_template", &current_template);
 
     match state.tera.render("admin/mail_templates.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }
 
@@ -735,6 +909,7 @@ pub struct MailQueueItem {
 #[derive(Debug, Deserialize)]
 pub struct MailQueueQuery {
     pub status: Option<String>,
+    pub q: Option<String>,
     pub page: Option<i64>,
 }
 
@@ -760,14 +935,24 @@ pub async fn admin_mail_queue_get_handler(
     }
 
     let status_filter = query.status.unwrap_or_else(|| "all".to_string());
+    let search_q = query.q.clone().unwrap_or_default();
     let page = query.page.unwrap_or(1).max(1);
     let per_page = 25i64;
     let offset = (page - 1) * per_page;
 
-    let mut where_clause = String::new();
+    let mut where_parts = Vec::new();
     if status_filter != "all" && ["pending", "sending", "sent", "failed"].contains(&status_filter.as_str()) {
-        where_clause = format!("WHERE status = '{}'", status_filter);
+        where_parts.push(format!("status = '{}'", status_filter));
     }
+    if !search_q.trim().is_empty() {
+        let safe_q = search_q.replace('\'', "''");
+        where_parts.push(format!("(to_email LIKE '%{0}%' OR subject LIKE '%{0}%' OR to_name LIKE '%{0}%')", safe_q));
+    }
+    let where_clause = if where_parts.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", where_parts.join(" AND "))
+    };
 
     let count_sql = format!("SELECT COUNT(*) FROM email_queue {}", where_clause);
     let total_items: i64 = sqlx::query_scalar(&count_sql).fetch_one(&state.db).await.unwrap_or(0);
@@ -801,7 +986,9 @@ pub async fn admin_mail_queue_get_handler(
         .unwrap_or(0);
 
     let mut ctx = build_admin_context(&state, &session, "mail_queue.php", "Mail Queue & Logs").await;
+    ctx.insert("items", &queue_items);
     ctx.insert("queue_items", &queue_items);
+    ctx.insert("search_q", &search_q);
     ctx.insert("status_filter", &status_filter);
     ctx.insert("page", &page);
     ctx.insert("total_pages", &total_pages);
@@ -812,7 +999,7 @@ pub async fn admin_mail_queue_get_handler(
 
     match state.tera.render("admin/mail_queue.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }
 
@@ -995,7 +1182,7 @@ pub async fn admin_monitoring_handler(
 
     match state.tera.render("admin/monitoring.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }
 
@@ -1009,7 +1196,7 @@ pub async fn admin_monitoring_post_handler(
         None => return Redirect::to("/admin/login.php").into_response(),
     };
 
-    if !admin.has_permission("monitoring.edit") && admin.role != "admin" {
+    if !admin.has_permission("monitoring.view") && admin.role != "admin" {
         SessionHelper::add_flash(&session, "danger", "Access denied.").await;
         return Redirect::to("/admin/dashboard.php").into_response();
     }
@@ -1236,7 +1423,7 @@ pub async fn admin_analytics_handler(
 
     match state.tera.render("admin/analytics.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }
 
@@ -1344,6 +1531,6 @@ pub async fn admin_analytics_product_handler(
 
     match state.tera.render("admin/analytics_product.html", &ctx) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {}", e)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Render error: {:#?}", e)).into_response(),
     }
 }

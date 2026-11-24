@@ -14,10 +14,26 @@
       Configure user identity, assigned role preset, and fine-grained module permissions.
     </p>
   </div>
+  {% if id > 0 %}
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-uppercase px-3 py-2 fs-6">
+        {{ user.role }}
+      </span>
+      {% if user.status == 'active' %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+          <i class="bi bi-check-circle me-1"></i>Active
+        </span>
+      {% else %}
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 fs-6">
+          <i class="bi bi-pause-circle me-1"></i>Inactive
+        </span>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>
 
 <form method="post" enctype="multipart/form-data" id="adminUserForm">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
   <input type="hidden" name="id" value="{{ id }}">
 
   <div class="row g-4">
@@ -126,25 +142,576 @@
 
       <!-- Section 3: Role & Granular Permission Matrix -->
       <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 border-bottom">
-          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
-            <i class="bi bi-shield-check text-primary"></i>
-            <span>Role &amp; Permissions</span>
-          </h5>
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+          <div>
+            <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-primary"></i>
+              <span>Role &amp; Permissions Matrix</span>
+            </h5>
+            <small class="text-muted">Choose an administrative role preset or tailor custom individual permissions.</small>
+          </div>
         </div>
 
         <div class="card-body">
+          <!-- Role Selector -->
           <div class="mb-4">
-            <label for="roleSelector" class="form-label fw-semibold">Administrative Role</label>
+            <label for="roleSelector" class="form-label fw-semibold">Administrative Role Preset</label>
             <select name="role" id="roleSelector" class="form-select form-select-lg">
-              <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Super Administrator (Full Wildcard Access)</option>
-              <option value="manager" {% if user and user.role == 'manager' %}selected{% endif %}>Store Manager (Orders, Catalog, Customers)</option>
-              <option value="editor" {% if not user or user.role == 'editor' %}selected{% endif %}>Content Editor (Catalog, Reviews, Pages)</option>
-              <option value="support" {% if user and user.role == 'support' %}selected{% endif %}>Customer Support (Orders, Messages)</option>
-              <option value="analyst" {% if user and user.role == 'analyst' %}selected{% endif %}>Analyst (Analytics, Reports)</option>
-              <option value="custom" {% if user and user.role == 'custom' %}selected{% endif %}>Custom Role</option>
+              <option value="admin" data-desc="Unrestricted access to all features, settings, user management, and server tools." {% if user and user.role == 'admin' %}selected{% endif %}>Super Administrator (Admin)</option>
+              <option value="manager" data-desc="Full access to sales, catalog, customers, inventory, analytics, and marketing." {% if user and user.role == 'manager' %}selected{% endif %}>Store Manager (Manager)</option>
+              <option value="editor" data-desc="Manage products, categories, reviews, banners, and static store pages." {% if not user or user.role == 'editor' %}selected{% endif %}>Catalog &amp; Content Editor (Editor)</option>
+              <option value="support" data-desc="Handle order fulfillment, inspect customer accounts, view reviews, and reply to messages." {% if user and user.role == 'support' %}selected{% endif %}>Customer Support (Support)</option>
+              <option value="analyst" data-desc="Access sales analytics, report exports, inventory views, and monitor system health." {% if user and user.role == 'analyst' %}selected{% endif %}>Reports &amp; Analyst (Analyst)</option>
+              <option value="custom" data-desc="Manually selected custom permission set tailored to this specific user." {% if user and user.role == 'custom' %}selected{% endif %}>Custom Role (Custom)</option>
             </select>
+            <div id="roleDescription" class="form-text text-primary mt-2 fw-medium"></div>
           </div>
+
+          <!-- Quick Presets Toolbar -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 bg-light rounded-3 mb-4 border">
+            <div class="small fw-semibold text-muted text-uppercase" style="letter-spacing: 0.5px;">
+              <i class="bi bi-sliders me-1"></i> Quick Presets:
+            </div>
+            <div class="btn-group btn-group-sm flex-wrap" role="group">
+              <button type="button" class="btn btn-outline-primary btn-preset" data-preset="admin">
+                <i class="bi bi-shield-shaded me-1"></i> Super Admin
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-preset" data-preset="manager">
+                <i class="bi bi-briefcase me-1"></i> Store Manager
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-preset" data-preset="editor">
+                <i class="bi bi-pen me-1"></i> Content Editor
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-preset" data-preset="support">
+                <i class="bi bi-headset me-1"></i> Support
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-preset" data-preset="analyst">
+                <i class="bi bi-graph-up me-1"></i> Analyst
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-preset-clear">
+                <i class="bi bi-x-circle me-1"></i> Clear All
+              </button>
+            </div>
+          </div>
+
+          <!-- Super Admin Notice Banner -->
+          <div id="adminNoticeBanner" class="alert alert-primary d-flex align-items-center gap-3 mb-4 {% if user and user.role != 'admin' %}d-none{% endif %}">
+            <i class="bi bi-info-circle-fill fs-3 flex-shrink-0"></i>
+            <div>
+              <strong>Super Administrator (Wildcard *) Access Active</strong>
+              <div class="small mt-1">
+                Super Admins automatically inherit unrestricted access to all operations, controllers, and administrative sections. All module permissions below are automatically granted.
+              </div>
+            </div>
+          </div>
+
+          <!-- Module Permissions Cards -->
+          <div id="permissionsAccordion" class="d-flex flex-column gap-3">
+            
+            <!-- Module 1: Orders & Fulfillment -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="orders">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-receipt fs-5 text-primary"></i>
+                  <span class="fw-bold">Orders &amp; Fulfillment</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/4
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_orders" data-target-module="orders">
+                    <label class="form-check-label small fw-medium" for="select_all_orders">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="orders.view" id="perm_orders_view" data-module="orders">
+                        <label class="form-check-label w-100" for="perm_orders_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Orders</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Browse order lists, search, filter, and inspect detailed order items.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="orders.manage" id="perm_orders_manage" data-module="orders">
+                        <label class="form-check-label w-100" for="perm_orders_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Orders</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Update order fulfillment status, edit shipping tracking numbers, and add notes.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="orders.delete" id="perm_orders_delete" data-module="orders">
+                        <label class="form-check-label w-100" for="perm_orders_delete" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Delete Orders</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Permanently delete orders and order history records.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="orders.print" id="perm_orders_print" data-module="orders">
+                        <label class="form-check-label w-100" for="perm_orders_print" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Print Invoices</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Generate and print customer invoices, packing slips, and delivery receipts.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 2: Products & Catalog -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="catalog">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-box-seam fs-5 text-primary"></i>
+                  <span class="fw-bold">Products &amp; Catalog</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/5
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_catalog" data-target-module="catalog">
+                    <label class="form-check-label small fw-medium" for="select_all_catalog">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="products.view" id="perm_products_view" data-module="catalog">
+                        <label class="form-check-label w-100" for="perm_products_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Products</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Browse product list, view SKUs, pricing, stock levels, and variants.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="products.create" id="perm_products_create" data-module="catalog">
+                        <label class="form-check-label w-100" for="perm_products_create" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Create Products</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Add new simple and configurable/variable products.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="products.edit" id="perm_products_edit" data-module="catalog">
+                        <label class="form-check-label w-100" for="perm_products_edit" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Edit Products</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Edit product details, pricing, variants, gallery images, attributes, and SEO.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="products.delete" id="perm_products_delete" data-module="catalog">
+                        <label class="form-check-label w-100" for="perm_products_delete" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Delete Products</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Delete products and bulk-remove catalog items.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="categories.manage" id="perm_categories_manage" data-module="catalog">
+                        <label class="form-check-label w-100" for="perm_categories_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Categories</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Create, edit, organize category trees, and delete categories.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 3: Inventory & Warehouse -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="inventory">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-boxes fs-5 text-primary"></i>
+                  <span class="fw-bold">Inventory &amp; Warehouse</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/2
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_inventory" data-target-module="inventory">
+                    <label class="form-check-label small fw-medium" for="select_all_inventory">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="inventory.view" id="perm_inventory_view" data-module="inventory">
+                        <label class="form-check-label w-100" for="perm_inventory_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Inventory</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Inspect stock availability, low-stock thresholds, and stock movement history.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="inventory.manage" id="perm_inventory_manage" data-module="inventory">
+                        <label class="form-check-label w-100" for="perm_inventory_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Inventory</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Perform quick stock adjustments and update warehouse quantities.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 4: Customers & Reviews -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="customers">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-people fs-5 text-primary"></i>
+                  <span class="fw-bold">Customers &amp; Reviews</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/5
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_customers" data-target-module="customers">
+                    <label class="form-check-label small fw-medium" for="select_all_customers">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="customers.view" id="perm_customers_view" data-module="customers">
+                        <label class="form-check-label w-100" for="perm_customers_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Customers</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Browse customer directory, inspect profiles, addresses, and order history.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="customers.manage" id="perm_customers_manage" data-module="customers">
+                        <label class="form-check-label w-100" for="perm_customers_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Customers</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Edit customer details, reset passwords, and unlock accounts.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="customers.delete" id="perm_customers_delete" data-module="customers">
+                        <label class="form-check-label w-100" for="perm_customers_delete" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Delete / Ban Customers</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Permanently delete customer accounts or ban users.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="reviews.view" id="perm_reviews_view" data-module="customers">
+                        <label class="form-check-label w-100" for="perm_reviews_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Reviews</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Read customer product ratings and reviews.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="reviews.manage" id="perm_reviews_manage" data-module="customers">
+                        <label class="form-check-label w-100" for="perm_reviews_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Moderate Reviews</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Approve, reject, feature, or delete submitted product reviews.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 5: Marketing & CMS -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="marketing">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-megaphone fs-5 text-primary"></i>
+                  <span class="fw-bold">Marketing &amp; CMS</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/7
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_marketing" data-target-module="marketing">
+                    <label class="form-check-label small fw-medium" for="select_all_marketing">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="analytics.view" id="perm_analytics_view" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_analytics_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Analytics</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Access revenue charts, visitor analytics, sales statistics, and top product metrics.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="analytics.export" id="perm_analytics_export" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_analytics_export" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Export Reports</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Export revenue and order data to CSV / Excel.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="banners.manage" id="perm_banners_manage" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_banners_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Banners</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Create, edit, schedule, and delete homepage and storefront promo banners.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="pages.manage" id="perm_pages_manage" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_pages_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Pages (CMS)</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Create, edit, and publish static CMS store pages.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="messages.manage" id="perm_messages_manage" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_messages_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Contact Messages</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">View customer contact submissions, mark resolved, and reply.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="subscribers.manage" id="perm_subscribers_manage" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_subscribers_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Newsletter Subscribers</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">View and export newsletter subscriber lists.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="coupons.manage" id="perm_coupons_manage" data-module="marketing">
+                        <label class="form-check-label w-100" for="perm_coupons_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Coupons &amp; Discounts</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Create and configure promo discount codes, expiration dates, and min spend.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 6: Settings & Infrastructure -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="settings">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-gear fs-5 text-primary"></i>
+                  <span class="fw-bold">Settings &amp; Infrastructure</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/5
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_settings" data-target-module="settings">
+                    <label class="form-check-label small fw-medium" for="select_all_settings">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="settings.general" id="perm_settings_general" data-module="settings">
+                        <label class="form-check-label w-100" for="perm_settings_general" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Store Settings</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Configure store details, currency, taxes, and storefront appearance.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="settings.storage" id="perm_settings_storage" data-module="settings">
+                        <label class="form-check-label w-100" for="perm_settings_storage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Storage / AWS S3</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Configure cloud S3 storage, credentials, and CloudFront CDN.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="mail.manage" id="perm_mail_manage" data-module="settings">
+                        <label class="form-check-label w-100" for="perm_mail_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Mail System</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Manage SMTP mail settings, email templates, and failed queue items.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="monitoring.view" id="perm_monitoring_view" data-module="settings">
+                        <label class="form-check-label w-100" for="perm_monitoring_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">System Monitoring</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Inspect server CPU, memory, disk usage, background jobs, and system health.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="activity.view" id="perm_activity_view" data-module="settings">
+                        <label class="form-check-label w-100" for="perm_activity_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Activity Log</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Review the administrative audit log of all staff and system events.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module 7: Users & Permissions -->
+            <div class="permission-module-card border rounded-3 bg-white shadow-sm overflow-hidden" data-module="users">
+              <div class="permission-module-header d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-shield-lock fs-5 text-primary"></i>
+                  <span class="fw-bold">Users &amp; Permissions</span>
+                  <span class="badge bg-secondary-subtle text-secondary module-count-badge" style="font-size: 0.72rem;">
+                    <span class="checked-count">0</span>/3
+                  </span>
+                </div>
+                <div>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input module-select-all" type="checkbox" id="select_all_users" data-target-module="users">
+                    <label class="form-check-label small fw-medium" for="select_all_users">Select All</label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-3">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="users.view" id="perm_users_view" data-module="users">
+                        <label class="form-check-label w-100" for="perm_users_view" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">View Users &amp; Permissions</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">View user accounts and their assigned role and permissions.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="users.manage" id="perm_users_manage" data-module="users">
+                        <label class="form-check-label w-100" for="perm_users_manage" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Manage Users &amp; Permissions</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Create new user accounts, edit credentials, roles, and configure permission sets.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="permission-item h-100 border rounded p-2">
+                      <div class="form-check m-0">
+                        <input class="form-check-input perm-checkbox" type="checkbox" name="permissions[]" value="users.delete" id="perm_users_delete" data-module="users">
+                        <label class="form-check-label w-100" for="perm_users_delete" style="cursor: pointer;">
+                          <div class="fw-semibold small text-dark">Delete Users</div>
+                          <div class="text-muted" style="font-size: 0.75rem; line-height: 1.25;">Delete user accounts.</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </div>
 
@@ -160,8 +727,10 @@
 
     </div>
 
-    <!-- Right Sidebar Column: Avatar -->
+    <!-- Right Sidebar Column: Avatar & Role Summary -->
     <div class="col-lg-4">
+
+      <!-- Avatar Upload Card -->
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 border-bottom">
           <h5 class="card-title mb-0 d-flex align-items-center gap-2">
@@ -171,7 +740,7 @@
         </div>
         <div class="card-body text-center">
           <div class="mb-3">
-            <img src="{% if user %}{{ avatar_url(avatar=user.avatar, name=user.name) }}{% else %}{{ avatar_url(avatar='', name='User') }}{% endif %}"
+            <img src="{% if user and user.avatar %}{{ avatar_url(avatar=user.avatar, name=user.name) }}{% else %}{{ avatar_url(avatar='', name='User') }}{% endif %}"
                  id="avatarPreview"
                  class="rounded-circle border shadow-sm"
                  width="110" height="110"
@@ -190,7 +759,239 @@
           </div>
         </div>
       </div>
+
+      <!-- Role Presets Guide -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle text-primary"></i>
+            <span>Role Presets Guide</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush small">
+            <div class="list-group-item p-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-uppercase px-2">Super Administrator</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">Wildcard (*)</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.78rem;">Unrestricted access to all features, settings, user management, and server tools.</div>
+            </div>
+            <div class="list-group-item p-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-success-subtle text-success border border-success-subtle text-uppercase px-2">Store Manager</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">18 perms</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.78rem;">Full access to sales, catalog, customers, inventory, analytics, and marketing.</div>
+            </div>
+            <div class="list-group-item p-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-info-subtle text-info border border-info-subtle text-uppercase px-2">Catalog &amp; Content Editor</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">9 perms</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.78rem;">Manage products, categories, reviews, banners, and static store pages.</div>
+            </div>
+            <div class="list-group-item p-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-uppercase px-2">Customer Support</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">8 perms</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.78rem;">Handle order fulfillment, inspect customer accounts, view reviews, and reply to messages.</div>
+            </div>
+            <div class="list-group-item p-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle text-uppercase px-2">Reports &amp; Analyst</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">4 perms</span>
+              </div>
+              <div class="text-muted" style="font-size: 0.78rem;">Access sales analytics, report exports, inventory views, and monitor system health.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </form>
+
+<script>
+(function() {
+  const ROLE_PRESETS = {
+    "admin": ["*"],
+    "manager": [
+      "orders.view", "orders.manage", "orders.print",
+      "products.view", "products.create", "products.edit", "products.delete", "categories.manage",
+      "inventory.view", "inventory.manage",
+      "customers.view", "customers.manage", "reviews.view", "reviews.manage",
+      "analytics.view", "analytics.export", "banners.manage", "pages.manage",
+      "messages.manage", "subscribers.manage", "coupons.manage",
+      "activity.view"
+    ],
+    "editor": [
+      "products.view", "products.create", "products.edit", "categories.manage",
+      "inventory.view", "reviews.view", "reviews.manage",
+      "banners.manage", "pages.manage"
+    ],
+    "support": [
+      "orders.view", "orders.manage", "orders.print",
+      "customers.view", "customers.manage", "reviews.view",
+      "messages.manage", "products.view"
+    ],
+    "analyst": [
+      "analytics.view", "analytics.export", "inventory.view", "monitoring.view"
+    ],
+    "custom": []
+  };
+
+  const roleSelect = document.getElementById('roleSelector');
+  const roleDesc = document.getElementById('roleDescription');
+  const adminBanner = document.getElementById('adminNoticeBanner');
+  const checkboxes = Array.from(document.querySelectorAll('.perm-checkbox'));
+  const moduleSelectAlls = Array.from(document.querySelectorAll('.module-select-all'));
+  const avatarInput = document.getElementById('avatarInput');
+  const avatarPreview = document.getElementById('avatarPreview');
+
+  // Preview uploaded avatar
+  if (avatarInput && avatarPreview) {
+    avatarInput.addEventListener('change', function() {
+      const file = this.files && this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          avatarPreview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Update counter badges for each module
+  function updateModuleCounters() {
+    document.querySelectorAll('.permission-module-card').forEach(card => {
+      const boxList = card.querySelectorAll('.perm-checkbox');
+      const checked = card.querySelectorAll('.perm-checkbox:checked').length;
+      const countSpan = card.querySelector('.checked-count');
+      if (countSpan) countSpan.textContent = checked;
+
+      const selectAll = card.querySelector('.module-select-all');
+      if (selectAll) {
+        selectAll.checked = (checked === boxList.length && boxList.length > 0);
+      }
+    });
+  }
+
+  // Apply a specific list of permissions to checkboxes
+  function applyPermissionList(permList) {
+    const isWildcard = permList.includes('*');
+
+    checkboxes.forEach(cb => {
+      if (isWildcard) {
+        cb.checked = true;
+      } else {
+        cb.checked = permList.includes(cb.value);
+      }
+    });
+
+    updateModuleCounters();
+  }
+
+  // Handle Role selection changes
+  function onRoleChange() {
+    const selectedRole = roleSelect.value;
+    const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+    if (selectedOption && roleDesc) {
+      roleDesc.textContent = selectedOption.getAttribute('data-desc') || '';
+    }
+
+    if (selectedRole === 'admin') {
+      adminBanner.classList.remove('d-none');
+      checkboxes.forEach(cb => {
+        cb.checked = true;
+        cb.disabled = true;
+      });
+      moduleSelectAlls.forEach(cb => {
+        cb.checked = true;
+        cb.disabled = true;
+      });
+    } else {
+      adminBanner.classList.add('d-none');
+      checkboxes.forEach(cb => cb.disabled = false);
+      moduleSelectAlls.forEach(cb => cb.disabled = false);
+
+      if (ROLE_PRESETS[selectedRole] && selectedRole !== 'custom') {
+        applyPermissionList(ROLE_PRESETS[selectedRole]);
+      }
+    }
+
+    updateModuleCounters();
+  }
+
+  // Preset buttons in toolbar
+  document.querySelectorAll('.btn-preset').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const preset = this.getAttribute('data-preset');
+      if (roleSelect) {
+        roleSelect.value = preset;
+        onRoleChange();
+      }
+    });
+  });
+
+  const clearBtn = document.querySelector('.btn-preset-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+      if (roleSelect) {
+        roleSelect.value = 'custom';
+        onRoleChange();
+        checkboxes.forEach(cb => cb.checked = false);
+        moduleSelectAlls.forEach(cb => cb.checked = false);
+        updateModuleCounters();
+      }
+    });
+  }
+
+  // Module Select All toggles
+  moduleSelectAlls.forEach(sa => {
+    sa.addEventListener('change', function() {
+      const targetMod = this.getAttribute('data-target-module');
+      const isChecked = this.checked;
+      document.querySelectorAll(`.perm-checkbox[data-module="${targetMod}"]`).forEach(cb => {
+        if (!cb.disabled) {
+          cb.checked = isChecked;
+        }
+      });
+      if (roleSelect && roleSelect.value !== 'custom' && roleSelect.value !== 'admin') {
+        roleSelect.value = 'custom';
+        if (roleDesc) roleDesc.textContent = 'Custom permissions set.';
+      }
+      updateModuleCounters();
+    });
+  });
+
+  // Individual checkbox toggling switches role to custom if not matching
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (roleSelect && roleSelect.value !== 'custom' && roleSelect.value !== 'admin') {
+        roleSelect.value = 'custom';
+        if (roleDesc) roleDesc.textContent = 'Custom permissions set.';
+      }
+      updateModuleCounters();
+    });
+  });
+
+  // Initial user permissions
+  {% if user_permissions %}
+    const INITIAL_PERMS = {{ user_permissions | json_encode | safe }};
+    if (INITIAL_PERMS.length > 0) {
+      applyPermissionList(INITIAL_PERMS);
+    }
+  {% endif %}
+
+  if (roleSelect) {
+    roleSelect.addEventListener('change', onRoleChange);
+    onRoleChange();
+  }
+
+  updateModuleCounters();
+})();
+</script>
 {% endblock %}

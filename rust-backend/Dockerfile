@@ -31,13 +31,13 @@ COPY assets /app/assets
 # Create uploads directory
 RUN mkdir -p /app/assets/uploads
 
-ENV PORT=8082 \
+ENV PORT=80 \
     HOST=0.0.0.0 \
     TEMPLATES_DIR=/app/templates \
     ASSETS_DIR=/app/assets \
     UPLOADS_DIR=/app/assets/uploads \
     RUST_LOG=info
 
-EXPOSE 8082
+EXPOSE 80 8082
 
 CMD ["/usr/local/bin/web"]

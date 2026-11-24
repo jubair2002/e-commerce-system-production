@@ -1209,6 +1209,143 @@ pub async fn admin_page_form_post_handler(
 // 6. Users & Roles (users.php & user_form.php)
 // =================================================================
 
+pub fn get_permissions_catalog() -> serde_json::Value {
+    serde_json::json!({
+        "orders": {
+            "label": "Orders & Fulfillment",
+            "icon": "bi-receipt",
+            "permissions": {
+                "orders.view": { "label": "View Orders", "description": "Browse order lists, search, filter, and inspect detailed order items and customer info." },
+                "orders.manage": { "label": "Manage Orders", "description": "Update order fulfillment status, edit shipping tracking numbers, and add notes." },
+                "orders.delete": { "label": "Delete Orders", "description": "Permanently delete orders and order history records." },
+                "orders.print": { "label": "Print Invoices", "description": "Generate and print customer invoices, packing slips, and delivery receipts." }
+            }
+        },
+        "catalog": {
+            "label": "Products & Catalog",
+            "icon": "bi-box-seam",
+            "permissions": {
+                "products.view": { "label": "View Products", "description": "Browse product list, view SKUs, pricing, stock levels, and variants." },
+                "products.create": { "label": "Create Products", "description": "Add new simple and configurable/variable products." },
+                "products.edit": { "label": "Edit Products", "description": "Edit product details, pricing, variants, gallery images, attributes, and SEO." },
+                "products.delete": { "label": "Delete Products", "description": "Delete products and bulk-remove catalog items." },
+                "categories.manage": { "label": "Manage Categories", "description": "Create, edit, organize category trees, and delete categories." }
+            }
+        },
+        "inventory": {
+            "label": "Inventory & Warehouse",
+            "icon": "bi-boxes",
+            "permissions": {
+                "inventory.view": { "label": "View Inventory", "description": "Inspect stock availability, low-stock thresholds, and stock movement history." },
+                "inventory.manage": { "label": "Manage Inventory", "description": "Perform quick stock adjustments and update warehouse quantities." }
+            }
+        },
+        "customers": {
+            "label": "Customers & Reviews",
+            "icon": "bi-people",
+            "permissions": {
+                "customers.view": { "label": "View Customers", "description": "Browse customer directory, inspect profiles, addresses, and order history." },
+                "customers.manage": { "label": "Manage Customers", "description": "Edit customer details, reset passwords, unlock accounts, and verify emails." },
+                "customers.delete": { "label": "Delete / Ban Customers", "description": "Permanently delete customer accounts or soft-delete/ban users." },
+                "reviews.view": { "label": "View Reviews", "description": "Read customer product ratings and reviews." },
+                "reviews.manage": { "label": "Moderate Reviews", "description": "Approve, reject, feature, or delete submitted product reviews." }
+            }
+        },
+        "marketing": {
+            "label": "Marketing, CMS & Communications",
+            "icon": "bi-megaphone",
+            "permissions": {
+                "analytics.view": { "label": "View Analytics", "description": "Access revenue charts, visitor analytics, sales statistics, and top product metrics." },
+                "analytics.export": { "label": "Export Reports", "description": "Export revenue and order data to CSV / Excel." },
+                "banners.manage": { "label": "Manage Banners", "description": "Create, edit, schedule, and delete homepage and storefront promo banners." },
+                "pages.manage": { "label": "Manage Pages (CMS)", "description": "Create, edit, and publish static CMS store pages (About Us, Terms, FAQ)." },
+                "messages.manage": { "label": "Contact Messages", "description": "View customer contact submissions, mark resolved, and reply." },
+                "subscribers.manage": { "label": "Newsletter Subscribers", "description": "View and export newsletter subscriber lists." },
+                "coupons.manage": { "label": "Coupons & Discounts", "description": "Create and configure promo discount codes, expiration dates, and minimum spend." }
+            }
+        },
+        "settings": {
+            "label": "Settings & Infrastructure",
+            "icon": "bi-gear",
+            "permissions": {
+                "settings.general": { "label": "Store Settings", "description": "Configure store details, currency, taxes, and storefront appearance." },
+                "settings.storage": { "label": "Storage / AWS S3", "description": "Configure cloud S3 storage, credentials, and CloudFront CDN." },
+                "mail.manage": { "label": "Mail System", "description": "Manage SMTP mail settings, email templates, and failed queue items." },
+                "monitoring.view": { "label": "System Monitoring", "description": "Inspect server CPU, memory, disk usage, background jobs, and system health." },
+                "activity.view": { "label": "Activity Log", "description": "Review the administrative audit log of all staff and system events." }
+            }
+        },
+        "users": {
+            "label": "Users & Permissions",
+            "icon": "bi-shield-lock",
+            "permissions": {
+                "users.view": { "label": "View Users & Permissions", "description": "View user accounts and their assigned role and permissions." },
+                "users.manage": { "label": "Manage Users & Permissions", "description": "Create new user accounts, edit credentials, roles, and configure permission sets." },
+                "users.delete": { "label": "Delete Users", "description": "Delete user accounts." }
+            }
+        }
+    })
+}
+
+pub fn get_roles_catalog() -> serde_json::Value {
+    serde_json::json!({
+        "admin": {
+            "label": "Super Administrator",
+            "badge_class": "bg-primary-subtle text-primary border border-primary-subtle",
+            "description": "Unrestricted access to all features, settings, user management, and server tools.",
+            "permissions": ["*"]
+        },
+        "manager": {
+            "label": "Store Manager",
+            "badge_class": "bg-success-subtle text-success border border-success-subtle",
+            "description": "Full access to sales, catalog, customers, inventory, analytics, and marketing.",
+            "permissions": [
+                "orders.view", "orders.manage", "orders.print",
+                "products.view", "products.create", "products.edit", "products.delete", "categories.manage",
+                "inventory.view", "inventory.manage",
+                "customers.view", "customers.manage", "reviews.view", "reviews.manage",
+                "analytics.view", "analytics.export", "banners.manage", "pages.manage",
+                "messages.manage", "subscribers.manage", "coupons.manage",
+                "activity.view"
+            ]
+        },
+        "editor": {
+            "label": "Catalog & Content Editor",
+            "badge_class": "bg-info-subtle text-info border border-info-subtle",
+            "description": "Manage products, categories, reviews, banners, and static store pages.",
+            "permissions": [
+                "products.view", "products.create", "products.edit", "categories.manage",
+                "inventory.view", "reviews.view", "reviews.manage",
+                "banners.manage", "pages.manage"
+            ]
+        },
+        "support": {
+            "label": "Customer Support",
+            "badge_class": "bg-warning-subtle text-warning border border-warning-subtle",
+            "description": "Handle order fulfillment, inspect customer accounts, view reviews, and reply to messages.",
+            "permissions": [
+                "orders.view", "orders.manage", "orders.print",
+                "customers.view", "customers.manage", "reviews.view",
+                "messages.manage", "products.view"
+            ]
+        },
+        "analyst": {
+            "label": "Reports & Analyst",
+            "badge_class": "bg-secondary-subtle text-secondary border border-secondary-subtle",
+            "description": "Access sales analytics, report exports, inventory views, and monitor system health.",
+            "permissions": [
+                "analytics.view", "analytics.export", "inventory.view", "monitoring.view"
+            ]
+        },
+        "custom": {
+            "label": "Custom Role",
+            "badge_class": "bg-dark-subtle text-dark border border-dark-subtle",
+            "description": "Manually selected custom permission set tailored to this specific user.",
+            "permissions": []
+        }
+    })
+}
+
 #[derive(Debug, sqlx::FromRow, serde::Serialize)]
 pub struct StaffUserItem {
     pub id: u64,
@@ -1222,6 +1359,13 @@ pub struct StaffUserItem {
     pub created_at: chrono::NaiveDateTime,
 }
 
+#[derive(Debug, Deserialize, Default)]
+pub struct UsersFilterQuery {
+    pub q: Option<String>,
+    pub role: Option<String>,
+    pub status: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UserActionForm {
     pub action: Option<String>,
@@ -1231,6 +1375,7 @@ pub struct UserActionForm {
 pub async fn admin_users_get_handler(
     State(state): State<AppState>,
     session: Session,
+    Query(query): Query<UsersFilterQuery>,
 ) -> Response {
     let admin = match SessionHelper::get_user(&session).await {
         Some(a) => a,
@@ -1242,17 +1387,46 @@ pub async fn admin_users_get_handler(
         return Redirect::to("/admin/dashboard.php").into_response();
     }
 
-    let users = sqlx::query_as::<_, StaffUserItem>(
-        "SELECT id, name, email, role, status, permissions, avatar, phone, created_at
-         FROM users ORDER BY role ASC, name ASC"
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let stats_total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users").fetch_one(&state.db).await.unwrap_or(0);
+    let stats_admins: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetch_one(&state.db).await.unwrap_or(0);
+    let stats_staff: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE role != 'admin'").fetch_one(&state.db).await.unwrap_or(0);
+    let stats_active: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE status = 'active'").fetch_one(&state.db).await.unwrap_or(0);
+
+    let q_param = query.q.clone().unwrap_or_default().trim().to_string();
+    let role_param = query.role.clone().unwrap_or_default().trim().to_string();
+    let status_param = query.status.clone().unwrap_or_default().trim().to_string();
+
+    let mut sql = "SELECT * FROM users WHERE 1=1".to_string();
+    if !q_param.is_empty() {
+        let safe_q = q_param.replace('\'', "''");
+        sql.push_str(&format!(" AND (name LIKE '%{0}%' OR email LIKE '%{0}%' OR phone LIKE '%{0}%')", safe_q));
+    }
+    if !role_param.is_empty() {
+        let safe_role = role_param.replace('\'', "''");
+        sql.push_str(&format!(" AND role = '{}'", safe_role));
+    }
+    if status_param == "active" || status_param == "inactive" {
+        sql.push_str(&format!(" AND status = '{}'", status_param));
+    }
+    sql.push_str(" ORDER BY (role = 'admin') DESC, id ASC");
+
+    let users = sqlx::query_as::<_, domain::models::user::User>(&sql)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
 
     let mut ctx = build_admin_context(&state, &session, "users.php", "Staff & Admin Users").await;
     ctx.insert("users", &users);
     ctx.insert("current_user_id", &admin.id);
+    ctx.insert("stats_total", &stats_total);
+    ctx.insert("stats_admins", &stats_admins);
+    ctx.insert("stats_staff", &stats_staff);
+    ctx.insert("stats_active", &stats_active);
+    ctx.insert("q", &q_param);
+    ctx.insert("f_role", &role_param);
+    ctx.insert("f_status", &status_param);
+    ctx.insert("roles_catalog", &get_roles_catalog());
+    ctx.insert("permissions_catalog", &get_permissions_catalog());
 
     match state.tera.render("admin/users.html", &ctx) {
         Ok(html) => Html(html).into_response(),
@@ -1377,15 +1551,34 @@ pub async fn admin_user_form_get_handler(
 
     let title_str = if uid > 0 { "Edit User" } else { "Create New User" };
     let mut ctx = build_admin_context(&state, &session, "user_form.php", title_str).await;
+    let user_perms: Vec<String> = if let Some(ref u) = user {
+        if u.role == "admin" {
+            vec!["*".to_string()]
+        } else if let Some(ref p_str) = u.permissions {
+            serde_json::from_str::<Vec<String>>(p_str).unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    } else {
+        vec![
+            "products.view".to_string(), "products.create".to_string(), "products.edit".to_string(),
+            "categories.manage".to_string(), "inventory.view".to_string(), "reviews.view".to_string(),
+            "reviews.manage".to_string(), "banners.manage".to_string(), "pages.manage".to_string()
+        ]
+    };
+
     let user_data = match user {
         Some(u) => serde_json::to_value(u).unwrap_or_default(),
         None => serde_json::json!({
             "id": 0, "name": "", "email": "", "role": "editor", "status": "active",
-            "permissions": "", "avatar": null, "phone": null
+            "permissions": "[]", "avatar": null, "phone": null
         }),
     };
     ctx.insert("user", &user_data);
     ctx.insert("id", &uid);
+    ctx.insert("user_permissions", &user_perms);
+    ctx.insert("roles_catalog", &get_roles_catalog());
+    ctx.insert("permissions_catalog", &get_permissions_catalog());
 
     match state.tera.render("admin/user_form.html", &ctx) {
         Ok(html) => Html(html).into_response(),

@@ -16,6 +16,108 @@
   </div>
 </div>
 
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm stat-card">
+      <div class="stat-icon bg-primary-subtle text-primary">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats_total }}</div>
+        <div class="stat-label">Total Staff Accounts</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm stat-card">
+      <div class="stat-icon" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5;">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats_admins }}</div>
+        <div class="stat-label">Super Administrators</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm stat-card">
+      <div class="stat-icon bg-info-subtle text-info">
+        <i class="bi bi-person-badge-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats_staff }}</div>
+        <div class="stat-label">Role-Restricted Staff</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm stat-card">
+      <div class="stat-icon bg-success-subtle text-success">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats_active }}</div>
+        <div class="stat-label">Active Accounts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-3">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text"
+                 name="q"
+                 class="form-control form-control-sm border-start-0"
+                 placeholder="Search by name, email, or phone..."
+                 value="{{ q }}">
+        </div>
+      </div>
+
+      <div class="col-sm-4 col-md-3">
+        <select name="role" class="form-select form-select-sm">
+          <option value="">All Roles</option>
+          <option value="admin" {% if f_role == 'admin' %}selected{% endif %}>Super Administrator</option>
+          <option value="manager" {% if f_role == 'manager' %}selected{% endif %}>Store Manager</option>
+          <option value="editor" {% if f_role == 'editor' %}selected{% endif %}>Catalog &amp; Content Editor</option>
+          <option value="support" {% if f_role == 'support' %}selected{% endif %}>Customer Support</option>
+          <option value="analyst" {% if f_role == 'analyst' %}selected{% endif %}>Reports &amp; Analyst</option>
+          <option value="custom" {% if f_role == 'custom' %}selected{% endif %}>Custom Role</option>
+        </select>
+      </div>
+
+      <div class="col-sm-4 col-md-2">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="active" {% if f_status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if f_status == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+
+      <div class="col-sm-4 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+          <i class="bi bi-funnel me-1"></i> Filter
+        </button>
+        {% if q or f_role or f_status %}
+          <a href="{{ admin_url(path='users.php') }}" class="btn btn-sm btn-light" title="Reset Filters">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Users Table Card -->
 <div class="card border-0 shadow-sm">
   <div class="table-responsive">
@@ -35,7 +137,7 @@
           <tr>
             <td colspan="6" class="text-center py-5 text-muted">
               <i class="bi bi-person-x fs-1 text-muted d-block mb-2"></i>
-              No admin users found.
+              No admin users match your search criteria.
             </td>
           </tr>
         {% else %}
@@ -64,9 +166,19 @@
               </td>
 
               <td>
-                <span class="badge bg-primary-subtle text-primary text-uppercase px-2 py-1" style="font-size: 0.75rem;">
-                  {{ u.role }}
-                </span>
+                {% if u.role == "admin" %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">Super Admin</span>
+                {% elif u.role == "manager" %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">Store Manager</span>
+                {% elif u.role == "editor" %}
+                  <span class="badge bg-info-subtle text-info border border-info-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">Editor</span>
+                {% elif u.role == "support" %}
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">Support</span>
+                {% elif u.role == "analyst" %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">Analyst</span>
+                {% else %}
+                  <span class="badge bg-dark-subtle text-dark border border-dark-subtle text-uppercase px-2 py-1" style="font-size: 0.75rem;">{{ u.role }}</span>
+                {% endif %}
               </td>
 
               <td>
@@ -75,9 +187,14 @@
                     <i class="bi bi-shield-shaded me-1"></i> Full Access (Wildcard *)
                   </span>
                 {% else %}
-                  <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
-                    Role-based permissions
-                  </span>
+                  <div class="d-flex flex-wrap align-items-center gap-1">
+                    <span class="badge bg-light text-dark border">
+                      <i class="bi bi-key me-1 text-muted"></i>Role Assigned
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">
+                      {{ u.role | capitalize }} Modules
+                    </span>
+                  </div>
                 {% endif %}
               </td>
 
@@ -107,7 +224,7 @@
 
                   {% if u.id != current_user_id %}
                     <form method="post" class="d-inline" onsubmit="return confirm('Toggle status for this user?');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                       <input type="hidden" name="action" value="toggle_status">
                       <input type="hidden" name="id" value="{{ u.id }}">
                       <button type="submit"
@@ -118,7 +235,7 @@
                     </form>
 
                     <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this user? This cannot be undone.');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="id" value="{{ u.id }}">
                       <button type="submit" class="btn btn-outline-danger" title="Delete User">

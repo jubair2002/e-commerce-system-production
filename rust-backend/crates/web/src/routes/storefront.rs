@@ -1,11 +1,15 @@
 use axum::{
+    body::Bytes,
     extract::{Path, Query, State},
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
     Form,
 };
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::collections::HashMap;
+use tera::Context;
 use tower_sessions::Session;
 
 use crate::state::{build_base_context, AppState, SessionHelper};
@@ -415,7 +419,7 @@ async fn render_category(
         .render("shop/index.html", &ctx)
         .map(Html)
         .map_err(|e| {
-            tracing::error!("Template render error: {}", e);
+            tracing::error!("Template render error in checkout: {:#?}", e);
             Redirect::to("/500").into_response()
         })
 }
@@ -622,8 +626,73 @@ pub async fn cart_get_handler(
         Decimal::ZERO
     };
 
-    let shipping_fee = get_shipping_fee(&state.settings, loaded_cart.subtotal);
-    let grand_total = (loaded_cart.subtotal - coupon_discount + shipping_fee).max(Decimal::ZERO);
+    let shipping_methods_raw: Vec<ShippingMethod> = sqlx::query_as(
+        "SELECT * FROM shipping_methods WHERE status = 'active' ORDER BY position ASC, id ASC",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let session_smid: Option<u64> = session
+        .get(SessionHelper::KEY_SHIPPING_METHOD)
+        .await
+        .ok()
+        .flatten();
+
+    let selected_shipping_id = if let Some(smid) = session_smid {
+        if shipping_methods_raw.iter().any(|sm| sm.id == smid) {
+            smid
+        } else {
+            shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+        }
+    } else {
+        shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+    };
+
+    let selected_method = shipping_methods_raw
+        .iter()
+        .find(|sm| sm.id == selected_shipping_id)
+        .or_else(|| shipping_methods_raw.first());
+
+    let discounted_subtotal = (loaded_cart.subtotal - coupon_discount).max(Decimal::ZERO);
+    let shipping_fee = if let Some(sm) = selected_method {
+        let is_free = sm.free_over.map(|fo| discounted_subtotal >= fo).unwrap_or(false);
+        if is_free {
+            Decimal::ZERO
+        } else {
+            sm.cost
+        }
+    } else {
+        get_shipping_fee(&state.settings, loaded_cart.subtotal)
+    };
+
+    let grand_total = (discounted_subtotal + shipping_fee).max(Decimal::ZERO);
+
+    let shipping_methods: Vec<serde_json::Value> = shipping_methods_raw
+        .iter()
+        .map(|sm| {
+            let is_free = sm.free_over.map(|fo| discounted_subtotal >= fo).unwrap_or(false);
+            serde_json::json!({
+                "id": sm.id,
+                "name": sm.name,
+                "zone": sm.zone,
+                "cost": sm.cost,
+                "min_days": sm.min_days,
+                "max_days": sm.max_days,
+                "cod_allowed": sm.cod_allowed,
+                "is_free": is_free,
+            })
+        })
+        .collect();
+
+    let totals_val = serde_json::json!({
+        "subtotal": loaded_cart.subtotal,
+        "discount": coupon_discount,
+        "discounted_subtotal": discounted_subtotal,
+        "shipping_fee": shipping_fee,
+        "total": grand_total,
+        "coupon": applied_coupon.as_ref().map(|code| serde_json::json!({ "code": code })),
+    });
 
     let free_shipping_threshold: Decimal = state
         .settings
@@ -651,6 +720,10 @@ pub async fn cart_get_handler(
     ctx.insert("free_shipping_pct", &free_shipping_pct);
 
     ctx.insert("cart", &loaded_cart);
+    ctx.insert("cart_count", &loaded_cart.total_count);
+    ctx.insert("shipping_methods", &shipping_methods);
+    ctx.insert("selected_shipping_id", &selected_shipping_id);
+    ctx.insert("totals", &totals_val);
     ctx.insert("shipping_fee", &format_money(Some(shipping_fee), &currency_sym));
     ctx.insert("discount_amount", &format_money(Some(coupon_discount), &currency_sym));
     ctx.insert("grand_total", &format_money(Some(grand_total), &currency_sym));
@@ -665,53 +738,244 @@ pub async fn cart_get_handler(
         })
 }
 
+async fn respond_cart_json(
+    state: &AppState,
+    session: &Session,
+    raw_cart: &HashMap<String, i32>,
+    ok: bool,
+    message: &str,
+) -> Response {
+    let currency_sym = state.settings.get_or("currency_symbol", "৳");
+    let loaded_cart = cart_load(&state.db, raw_cart, &currency_sym)
+        .await
+        .unwrap_or(HydratedCart {
+            items: Vec::new(),
+            subtotal: Decimal::ZERO,
+            formatted_subtotal: format_money(Some(Decimal::ZERO), &currency_sym),
+            total_count: 0,
+            alerts: Vec::new(),
+        });
+
+    let applied_coupon: Option<String> = session
+        .get(SessionHelper::KEY_APPLIED_COUPON)
+        .await
+        .ok()
+        .flatten();
+
+    let coupon_discount = if let Some(ref code) = applied_coupon {
+        match validate_coupon(&state.db, code, loaded_cart.subtotal, &currency_sym).await {
+            Ok(c) => c.discount,
+            Err(_) => Decimal::ZERO,
+        }
+    } else {
+        Decimal::ZERO
+    };
+
+    let shipping_methods_raw: Vec<ShippingMethod> = sqlx::query_as(
+        "SELECT * FROM shipping_methods WHERE status = 'active' ORDER BY position ASC, id ASC",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let session_smid: Option<u64> = session
+        .get(SessionHelper::KEY_SHIPPING_METHOD)
+        .await
+        .ok()
+        .flatten();
+
+    let selected_shipping_id = if let Some(smid) = session_smid {
+        if shipping_methods_raw.iter().any(|sm| sm.id == smid) {
+            smid
+        } else {
+            shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+        }
+    } else {
+        shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+    };
+
+    let selected_method = shipping_methods_raw
+        .iter()
+        .find(|sm| sm.id == selected_shipping_id)
+        .or_else(|| shipping_methods_raw.first());
+
+    let discounted_subtotal = (loaded_cart.subtotal - coupon_discount).max(Decimal::ZERO);
+    let shipping_fee = if let Some(sm) = selected_method {
+        let is_free = sm.free_over.map(|fo| discounted_subtotal >= fo).unwrap_or(false);
+        if is_free {
+            Decimal::ZERO
+        } else {
+            sm.cost
+        }
+    } else {
+        get_shipping_fee(&state.settings, loaded_cart.subtotal)
+    };
+
+    let grand_total = (discounted_subtotal + shipping_fee).max(Decimal::ZERO);
+
+    let lines: Vec<serde_json::Value> = loaded_cart
+        .items
+        .iter()
+        .map(|item| {
+            serde_json::json!({
+                "cart_key": item.cart_key,
+                "qty": item.qty,
+                "unit_price": item.unit_price,
+                "unit_price_fmt": format_money(Some(item.unit_price), &currency_sym),
+                "line_total": item.line_total,
+                "line_total_fmt": format_money(Some(item.line_total), &currency_sym),
+                "available_qty": item.available_qty,
+            })
+        })
+        .collect();
+
+    let totals_json = serde_json::json!({
+        "subtotal": loaded_cart.subtotal,
+        "discount": coupon_discount,
+        "discounted_subtotal": discounted_subtotal,
+        "shipping_fee": shipping_fee,
+        "total": grand_total,
+        "coupon": applied_coupon.as_ref().map(|code| serde_json::json!({ "code": code })),
+    });
+
+    (
+        StatusCode::OK,
+        axum::Json(serde_json::json!({
+            "ok": ok,
+            "message": message,
+            "count": loaded_cart.total_count,
+            "subtotal": loaded_cart.subtotal,
+            "subtotal_fmt": format_money(Some(loaded_cart.subtotal), &currency_sym),
+            "total": grand_total,
+            "total_fmt": format_money(Some(grand_total), &currency_sym),
+            "discount": coupon_discount,
+            "discount_fmt": format_money(Some(coupon_discount), &currency_sym),
+            "shipping_fee": shipping_fee,
+            "shipping_fee_fmt": if shipping_fee > Decimal::ZERO { format_money(Some(shipping_fee), &currency_sym) } else { "Free".to_string() },
+            "totals": totals_json,
+            "lines": lines,
+            "alerts": loaded_cart.alerts,
+        })),
+    ).into_response()
+}
+
 // -------------------------------------------------------------
 // POST /cart
 // -------------------------------------------------------------
 pub async fn cart_post_handler(
     State(state): State<AppState>,
     session: Session,
-    Form(form): Form<CartForm>,
+    headers: HeaderMap,
+    Query(query): Query<HashMap<String, String>>,
+    body: Bytes,
 ) -> Response {
-    if !SessionHelper::verify_csrf(&session, form._csrf.as_deref()).await {
+    let map = crate::routes::admin::settings::parse_form_or_multipart(&headers, &body);
+
+    let is_ajax = query.contains_key("ajax")
+        || headers.get("x-requested-with").and_then(|h| h.to_str().ok()).map(|v| v.eq_ignore_ascii_case("xmlhttprequest")).unwrap_or(false)
+        || headers.get("accept").and_then(|h| h.to_str().ok()).map(|v| v.contains("application/json")).unwrap_or(false);
+
+    let csrf_val = map.get("_csrf").or_else(|| map.get("csrf_token")).map(|s| s.as_str());
+    if !SessionHelper::verify_csrf(&session, csrf_val).await {
+        if is_ajax {
+            return (
+                StatusCode::FORBIDDEN,
+                axum::Json(serde_json::json!({ "ok": false, "message": "Invalid or expired session security token." })),
+            ).into_response();
+        }
         SessionHelper::add_flash(&session, "danger", "Invalid session token. Please try again.").await;
         return Redirect::to("/cart").into_response();
     }
 
-    let action = form.action.as_deref().unwrap_or("add");
+    let action = map.get("action").map(|s| s.as_str()).unwrap_or("add");
     let mut raw_cart = SessionHelper::get_cart(&session).await;
 
     match action {
         "add" => {
-            if let Some(pid) = form.product_id {
-                let qty = form.qty.or(form.quantity).unwrap_or(1).max(1);
-                cart_add(&mut raw_cart, pid, form.variant_id, qty);
+            let pid = map.get("product_id").and_then(|v| v.parse::<u64>().ok());
+            let vid = map.get("variant_id").and_then(|v| v.parse::<u64>().ok());
+            let qty = map.get("quantity").or_else(|| map.get("qty")).and_then(|v| v.parse::<i32>().ok()).unwrap_or(1).clamp(1, 99);
+
+            if let Some(p) = pid {
+                cart_add(&mut raw_cart, p, vid, qty);
                 SessionHelper::set_cart(&session, &raw_cart).await;
+                if is_ajax {
+                    return respond_cart_json(&state, &session, &raw_cart, true, "Item added to cart.").await;
+                }
                 SessionHelper::add_flash(&session, "success", "Item added to cart.").await;
+                if map.get("action_type").map(|s| s.as_str()) == Some("buy_now") {
+                    return Redirect::to("/checkout").into_response();
+                }
+            } else {
+                if is_ajax {
+                    return respond_cart_json(&state, &session, &raw_cart, false, "Invalid product.").await;
+                }
+                SessionHelper::add_flash(&session, "danger", "Invalid product.").await;
             }
         }
         "update" => {
-            if let Some(ref key) = form.cart_key {
-                let qty = form.qty.or(form.quantity).unwrap_or(1);
-                cart_set_key(&mut raw_cart, key, qty);
+            if let Some(rem_key) = map.get("remove_key").filter(|s| !s.is_empty()) {
+                cart_remove_key(&mut raw_cart, rem_key);
                 SessionHelper::set_cart(&session, &raw_cart).await;
+                if is_ajax {
+                    return respond_cart_json(&state, &session, &raw_cart, true, "Item removed.").await;
+                }
+                SessionHelper::add_flash(&session, "success", "Item removed from cart.").await;
+            } else {
+                for (k, v) in &map {
+                    if k.starts_with("qty[") && k.ends_with(']') {
+                        let key = &k[4..k.len() - 1];
+                        let q = v.parse::<i32>().unwrap_or(1);
+                        if q <= 0 {
+                            cart_remove_key(&mut raw_cart, key);
+                        } else {
+                            cart_set_key(&mut raw_cart, key, q);
+                        }
+                    } else if k == "cart_key" {
+                        let q = map.get("qty").or_else(|| map.get("quantity")).and_then(|val| val.parse::<i32>().ok()).unwrap_or(1);
+                        if q <= 0 {
+                            cart_remove_key(&mut raw_cart, v);
+                        } else {
+                            cart_set_key(&mut raw_cart, v, q);
+                        }
+                    }
+                }
+                SessionHelper::set_cart(&session, &raw_cart).await;
+                if is_ajax {
+                    return respond_cart_json(&state, &session, &raw_cart, true, "Cart updated.").await;
+                }
                 SessionHelper::add_flash(&session, "success", "Cart updated.").await;
             }
         }
         "remove" => {
-            if let Some(ref key) = form.cart_key {
+            if let Some(key) = map.get("cart_key").or_else(|| map.get("remove_key")) {
                 cart_remove_key(&mut raw_cart, key);
                 SessionHelper::set_cart(&session, &raw_cart).await;
+                if is_ajax {
+                    return respond_cart_json(&state, &session, &raw_cart, true, "Item removed.").await;
+                }
                 SessionHelper::add_flash(&session, "info", "Item removed from cart.").await;
             }
         }
         "clear" => {
             cart_clear(&mut raw_cart);
+            let _ = session.remove::<String>(SessionHelper::KEY_APPLIED_COUPON).await;
             SessionHelper::set_cart(&session, &raw_cart).await;
+            if is_ajax {
+                return respond_cart_json(&state, &session, &raw_cart, true, "Cart cleared.").await;
+            }
             SessionHelper::add_flash(&session, "info", "Cart cleared.").await;
         }
+        "set_shipping" => {
+            if let Some(smid) = map.get("shipping_method_id").and_then(|v| v.parse::<u64>().ok()) {
+                let _ = session.insert(SessionHelper::KEY_SHIPPING_METHOD, smid).await;
+            }
+            if is_ajax {
+                return respond_cart_json(&state, &session, &raw_cart, true, "Shipping method updated.").await;
+            }
+        }
         "apply_coupon" => {
-            if let Some(ref code) = form.coupon_code {
+            if let Some(code) = map.get("coupon_code").filter(|s| !s.trim().is_empty()) {
                 let currency_sym = state.settings.get_or("currency_symbol", "৳");
                 let loaded = cart_load(&state.db, &raw_cart, &currency_sym)
                     .await
@@ -729,32 +993,109 @@ pub async fn cart_post_handler(
                                 let _ = session
                                     .insert(SessionHelper::KEY_APPLIED_COUPON, &cp.code)
                                     .await;
-                                SessionHelper::add_flash(
-                                    &session,
-                                    "success",
-                                    &format!("Coupon \"{}\" applied successfully!", cp.code),
-                                )
-                                .await;
+                                let msg = format!("Coupon \"{}\" applied successfully!", cp.code);
+                                if is_ajax {
+                                    return respond_cart_json(&state, &session, &raw_cart, true, &msg).await;
+                                }
+                                SessionHelper::add_flash(&session, "success", &msg).await;
                             }
                         } else {
                             let err_msg = cres.error.unwrap_or_else(|| "Invalid coupon code.".to_string());
+                            if is_ajax {
+                                return respond_cart_json(&state, &session, &raw_cart, false, &err_msg).await;
+                            }
                             SessionHelper::add_flash(&session, "danger", &err_msg).await;
                         }
                     }
                     Err(e) => {
-                        SessionHelper::add_flash(&session, "danger", &e.to_string()).await;
+                        let err_msg = e.to_string();
+                        if is_ajax {
+                            return respond_cart_json(&state, &session, &raw_cart, false, &err_msg).await;
+                        }
+                        SessionHelper::add_flash(&session, "danger", &err_msg).await;
                     }
                 }
             }
         }
         "remove_coupon" => {
             let _ = session.remove::<String>(SessionHelper::KEY_APPLIED_COUPON).await;
+            if is_ajax {
+                return respond_cart_json(&state, &session, &raw_cart, true, "Coupon removed.").await;
+            }
             SessionHelper::add_flash(&session, "info", "Coupon removed.").await;
         }
         _ => {}
     }
 
     Redirect::to("/cart").into_response()
+}
+
+pub fn get_bd_districts() -> Vec<serde_json::Value> {
+    vec![
+        serde_json::json!({"name": "Dhaka", "zone": "inside_dhaka"}),
+        serde_json::json!({"name": "Bagerhat", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Bandarban", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Barguna", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Barishal", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Bhola", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Bogura", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Brahmanbaria", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Chandpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Chattogram", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Chuadanga", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Cox's Bazar", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Cumilla", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Dinajpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Faridpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Feni", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Gaibandha", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Gazipur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Gopalganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Habiganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Jamalpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Jashore", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Jhalokati", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Jhenaidah", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Joypurhat", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Khagrachhari", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Khulna", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Kishoreganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Kurigram", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Kushtia", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Lakshmipur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Lalmonirhat", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Madaripur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Magura", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Manikganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Meherpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Moulvibazar", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Munshiganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Mymensingh", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Naogaon", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Narail", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Narayanganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Narsingdi", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Natore", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Netrokona", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Nilphamari", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Noakhali", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Pabna", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Panchagarh", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Patuakhali", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Pirojpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Rajbari", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Rajshahi", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Rangamati", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Rangpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Satkhira", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Shariatpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Sherpur", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Sirajganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Sunamganj", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Sylhet", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Tangail", "zone": "outside_dhaka"}),
+        serde_json::json!({"name": "Thakurgaon", "zone": "outside_dhaka"}),
+    ]
 }
 
 // -------------------------------------------------------------
@@ -816,10 +1157,6 @@ pub async fn checkout_get_handler(
         Decimal::ZERO
     };
 
-    let shipping_fee = get_shipping_fee(&state.settings, loaded_cart.subtotal);
-    let cod_fee = Decimal::ZERO;
-    let grand_total = (loaded_cart.subtotal - coupon_discount + shipping_fee + cod_fee).max(Decimal::ZERO);
-
     let shipping_methods_raw: Vec<ShippingMethod> = sqlx::query_as(
         "SELECT * FROM shipping_methods WHERE status = 'active' ORDER BY position ASC, id ASC",
     )
@@ -827,10 +1164,46 @@ pub async fn checkout_get_handler(
     .await
     .unwrap_or_default();
 
+    let session_smid: Option<u64> = session
+        .get(SessionHelper::KEY_SHIPPING_METHOD)
+        .await
+        .ok()
+        .flatten();
+
+    let selected_shipping_id = if let Some(smid) = session_smid {
+        if shipping_methods_raw.iter().any(|sm| sm.id == smid) {
+            smid
+        } else {
+            shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+        }
+    } else {
+        shipping_methods_raw.first().map(|sm| sm.id).unwrap_or(1)
+    };
+
+    let selected_method = shipping_methods_raw
+        .iter()
+        .find(|sm| sm.id == selected_shipping_id)
+        .or_else(|| shipping_methods_raw.first());
+
+    let discounted_subtotal = (loaded_cart.subtotal - coupon_discount).max(Decimal::ZERO);
+    let shipping_fee = if let Some(sm) = selected_method {
+        let is_free = sm.free_over.map(|fo| discounted_subtotal >= fo).unwrap_or(false);
+        if is_free {
+            Decimal::ZERO
+        } else {
+            sm.cost
+        }
+    } else {
+        get_shipping_fee(&state.settings, loaded_cart.subtotal)
+    };
+
+    let cod_fee = Decimal::ZERO;
+    let grand_total = (discounted_subtotal + shipping_fee + cod_fee).max(Decimal::ZERO);
+
     let shipping_methods: Vec<serde_json::Value> = shipping_methods_raw
-        .into_iter()
+        .iter()
         .map(|sm| {
-            let is_free = sm.free_over.map(|fo| loaded_cart.subtotal >= fo).unwrap_or(false);
+            let is_free = sm.free_over.map(|fo| discounted_subtotal >= fo).unwrap_or(false);
             serde_json::json!({
                 "id": sm.id,
                 "name": sm.name,
@@ -844,16 +1217,22 @@ pub async fn checkout_get_handler(
         })
         .collect();
 
-    let selected_shipping_id = shipping_methods
-        .first()
-        .and_then(|s| s.get("id").and_then(|v| v.as_u64()))
-        .unwrap_or(1);
-
     let require_phone = state.settings.get_or("require_phone", "1") == "1";
     let require_email = state.settings.get_or("require_email", "0") == "1";
     let cod_enabled = state.settings.get_or("cod_enabled", "1") == "1";
     let bank_enabled = state.settings.get_or("bank_transfer_enabled", "0") == "1";
     let bank_instructions = state.settings.get_or("bank_transfer_instructions", "");
+
+    let old_map = serde_json::json!({
+        "customer_name": customer.as_ref().map(|c| c.name.clone()).unwrap_or_default(),
+        "customer_email": customer.as_ref().map(|c| c.email.clone()).unwrap_or_default(),
+        "customer_phone": customer.as_ref().and_then(|c| c.phone.clone()).unwrap_or_default(),
+        "shipping_address": "",
+        "shipping_city": "Dhaka",
+        "shipping_zip": "",
+        "payment_method": "cod",
+        "notes": "",
+    });
 
     ctx.insert("shipping_methods", &shipping_methods);
     ctx.insert("selected_shipping_id", &selected_shipping_id);
@@ -863,32 +1242,47 @@ pub async fn checkout_get_handler(
     ctx.insert("bank_enabled", &bank_enabled);
     ctx.insert("bank_instructions", &bank_instructions);
     ctx.insert("errors", &Vec::<String>::new());
-    ctx.insert("old", &serde_json::json!({}));
+    ctx.insert("old", &old_map);
     ctx.insert("now_ts", &now_ts);
+    ctx.insert("bd_districts", &get_bd_districts());
 
     ctx.insert("cart", &loaded_cart);
+    ctx.insert("cart_count", &loaded_cart.total_count);
     ctx.insert("subtotal", &format_money(Some(loaded_cart.subtotal), &currency_sym));
     ctx.insert("shipping_fee", &format_money(Some(shipping_fee), &currency_sym));
     ctx.insert("discount_amount", &format_money(Some(coupon_discount), &currency_sym));
     ctx.insert("grand_total", &format_money(Some(grand_total), &currency_sym));
+    ctx.insert("cod_fee", &cod_fee);
 
-    if let Some(ref c) = customer {
-        let addresses: Vec<CustomerAddress> = sqlx::query_as(
+    let totals_val = serde_json::json!({
+        "subtotal": loaded_cart.subtotal,
+        "discount": coupon_discount,
+        "shipping_fee": shipping_fee,
+        "cod_fee": cod_fee,
+        "total": grand_total,
+        "coupon": applied_coupon.as_ref().map(|code| serde_json::json!({ "code": code })),
+    });
+    ctx.insert("totals", &totals_val);
+
+    let addresses: Vec<CustomerAddress> = if let Some(ref c) = customer {
+        sqlx::query_as(
             "SELECT * FROM customer_addresses WHERE customer_id = ? ORDER BY is_default DESC, id DESC",
         )
         .bind(c.id)
         .fetch_all(&state.db)
         .await
-        .unwrap_or_default();
-        ctx.insert("saved_addresses", &addresses);
-    }
+        .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    ctx.insert("saved_addresses", &addresses);
 
     state
         .tera
         .render("cart/checkout.html", &ctx)
         .map(Html)
         .map_err(|e| {
-            tracing::error!("Template render error: {}", e);
+            tracing::error!("Template render error in checkout: {:#?}", e);
             Redirect::to("/500").into_response()
         })
 }
@@ -1123,7 +1517,7 @@ pub async fn order_confirmation_handler(
         .render("cart/confirmation.html", &ctx)
         .map(Html)
         .map_err(|e| {
-            tracing::error!("Template render error: {}", e);
+            tracing::error!("Template render error in checkout: {:#?}", e);
             Redirect::to("/500").into_response()
         })
 }
@@ -1141,7 +1535,7 @@ pub async fn track_get_handler(
         .render("track/index.html", &ctx)
         .map(Html)
         .map_err(|e| {
-            tracing::error!("Template render error: {}", e);
+            tracing::error!("Template render error in checkout: {:#?}", e);
             Redirect::to("/500").into_response()
         })
 }
@@ -1197,7 +1591,7 @@ pub async fn track_post_handler(
         .render("track/index.html", &ctx)
         .map(Html)
         .map_err(|e| {
-            tracing::error!("Template render error: {}", e);
+            tracing::error!("Template render error in checkout: {:#?}", e);
             Redirect::to("/500").into_response()
         })
 }
@@ -1355,4 +1749,25 @@ pub async fn robots_txt_handler(State(state): State<AppState>) -> Response {
         base_url
     );
     ([(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")], robots).into_response()
+}
+
+pub async fn maintenance_get_handler(
+    State(state): State<AppState>,
+    session: Session,
+) -> Result<Html<String>, Response> {
+    let mut ctx = Context::new();
+    ctx.insert("site_name", &state.settings.get_or("site_name", "Jinish Potro"));
+    ctx.insert("base_url", &state.config.app_url);
+    if let Some(user) = SessionHelper::get_user(&session).await {
+        ctx.insert("user", &user);
+    }
+
+    state
+        .tera
+        .render("errors/maintenance.html", &ctx)
+        .map(Html)
+        .map_err(|e| {
+            tracing::error!("Failed to render errors/maintenance.html: {:#?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        })
 }

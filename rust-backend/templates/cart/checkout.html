@@ -468,6 +468,31 @@ document.addEventListener('DOMContentLoaded', function() {
     shippingRadios.forEach(r => r.addEventListener('change', recalculate));
     paymentRadios.forEach(r => r.addEventListener('change', recalculate));
 
+    // Handle city dropdown changes
+    if (cityInput) {
+        cityInput.addEventListener('change', function() {
+            const selectedOpt = cityInput.options ? cityInput.options[cityInput.selectedIndex] : null;
+            const zone = selectedOpt ? selectedOpt.getAttribute('data-zone') : '';
+            const val = (cityInput.value || '').toLowerCase();
+            for (const radio of shippingRadios) {
+                const name = (radio.getAttribute('data-name') || '').toLowerCase();
+                const rZone = (radio.getAttribute('data-zone') || '').toLowerCase();
+                if (zone === 'inside_dhaka' || val === 'dhaka') {
+                    if (name.includes('inside dhaka') || rZone.includes('inside dhaka') || rZone === 'dhaka') {
+                        radio.checked = true;
+                        break;
+                    }
+                } else if (zone === 'outside_dhaka' || (val !== '' && !val.includes('dhaka'))) {
+                    if (name.includes('outside dhaka') || rZone.includes('outside dhaka') || rZone === 'outside') {
+                        radio.checked = true;
+                        break;
+                    }
+                }
+            }
+            recalculate();
+        });
+    }
+
     const toggleCoupon = document.getElementById('toggleCouponBtn');
     if (toggleCoupon) {
         toggleCoupon.addEventListener('click', function() {

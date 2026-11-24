@@ -1363,7 +1363,7 @@
 
                 <div class="col-md-6" id="wrap_secret">
                   <label class="form-label small fw-semibold">AWS Secret Access Key (Optional)</label>
-                  <input type="password" name="storage_aws_secret_access_key" id="storage_aws_secret_access_key" class="form-control" value="{{ settings.storage_s3_secret_key | default(value='') }}" placeholder="Leave blank to use IAM Role or keep existing" autocomplete="new-password">
+                  <input type="password" name="storage_aws_secret_access_key" id="storage_aws_secret_access_key" class="form-control" value="{% if settings.storage_aws_secret_access_key or settings.storage_s3_secret_key %}••••••••••••••••{% endif %}" placeholder="Leave blank to use IAM Role or keep existing" autocomplete="new-password">
                   <div class="form-text small">Stored encrypted using AES-256-CBC. Never echoed back plain.</div>
                 </div>
 
@@ -1479,14 +1479,31 @@
             alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Connecting to S3, testing PutObject, GetObject, and DeleteObject on a temporary object...';
 
             var formData = new FormData();
+            formData.append('_csrf', '{{ csrf_token }}');
             formData.append('csrf_token', '{{ csrf_token }}');
             formData.append('action', 'test_s3_connection');
-            formData.append('region', document.getElementById('storage_aws_region').value);
-            formData.append('bucket', document.getElementById('storage_s3_bucket').value);
+            formData.append('region', (document.getElementById('storage_aws_region') || {}).value || '');
+            formData.append('bucket', (document.getElementById('storage_s3_bucket') || {}).value || '');
+            var iamToggle = document.getElementById('use_iam_role');
+            if (iamToggle && iamToggle.checked) {
+              formData.append('use_iam_role', '1');
+              formData.append('key_id', '');
+              formData.append('secret', '');
+            } else {
+              var keyInput = document.getElementById('storage_aws_access_key_id');
+              var secretInput = document.getElementById('storage_aws_secret_access_key');
+              formData.append('key_id', keyInput ? keyInput.value : '');
+              formData.append('secret', secretInput ? secretInput.value : '');
+            }
 
             fetch('settings.php', {
               method: 'POST',
-              body: formData
+              body: formData,
+              headers: {
+                'X-CSRF-Token': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+              }
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -1513,6 +1530,38 @@
           if (btnTest) btnTest.addEventListener('click', runS3Test);
           var btnFoot = document.getElementById('btnTestS3Footer');
           if (btnFoot) btnFoot.addEventListener('click', runS3Test);
+
+          // Instant Maintenance Mode Switch Handler
+          var maintSwitch = document.getElementById('maintModeSwitch');
+          if (maintSwitch) {
+            maintSwitch.addEventListener('change', function() {
+              maintSwitch.disabled = true;
+              var formData = new FormData();
+              formData.append('_csrf', '{{ csrf_token }}');
+              formData.append('csrf_token', '{{ csrf_token }}');
+              formData.append('action', 'toggle_maintenance');
+              formData.append('maintenance_mode', maintSwitch.checked ? '1' : '0');
+              formData.append('tab', 'storefront');
+
+              fetch('settings.php', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                  'X-CSRF-Token': '{{ csrf_token }}',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                }
+              })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                window.location.reload();
+              })
+              .catch(function(err) {
+                // If fetch fails, submit the storefrontForm normally
+                document.getElementById('storefrontForm').submit();
+              });
+            });
+          }
         })();
         </script>
       </div>

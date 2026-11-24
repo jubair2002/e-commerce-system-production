@@ -349,6 +349,8 @@ pub async fn build_base_context(
         .ok()
         .flatten();
         wishlist_count = count.unwrap_or(0);
+    } else {
+        ctx.insert("customer", &Option::<serde_json::Value>::None);
     }
 
     ctx.insert("CUSTOMER_LOGGED_IN", &customer.is_some());

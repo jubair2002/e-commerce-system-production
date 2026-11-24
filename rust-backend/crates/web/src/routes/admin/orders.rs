@@ -60,6 +60,7 @@ pub struct OrderViewActionForm {
 #[derive(Debug, Deserialize)]
 pub struct OrderPrintQuery {
     pub id: Option<u64>,
+    pub order_id: Option<u64>,
     pub order: Option<String>,
     pub order_number: Option<String>,
 }
@@ -840,7 +841,7 @@ pub async fn admin_order_print_handler(
         return (StatusCode::FORBIDDEN, "Access denied").into_response();
     }
 
-    let id = query.id.unwrap_or(0);
+    let id = query.id.or(query.order_id).unwrap_or(0);
     let order_num = query.order.or(query.order_number).unwrap_or_default().trim().to_string();
 
     let order_opt = if id > 0 {

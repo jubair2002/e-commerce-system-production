@@ -530,3 +530,139 @@ pub fn verify_admin_permission(admin: &AdminSession, required: &str) -> Result<(
             .into_response())
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct AdminInstallForm {
+    pub _csrf: Option<String>,
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub password: Option<String>,
+}
+
+/// GET /admin/install, GET /admin/install.php
+pub async fn admin_install_get_handler(
+    State(state): State<AppState>,
+    session: Session,
+) -> Response {
+    let mut ctx = tera::Context::new();
+    let app_name = state.settings.get_or("site_name", "Jinish Potro");
+    let app_name = if app_name.is_empty() || app_name == "PHP Admin Panel" || app_name == "Store" {
+        "Jinish Potro"
+    } else {
+        &app_name
+    };
+    ctx.insert("app_name", app_name);
+    ctx.insert("db_host", &state.config.db_host);
+    ctx.insert("db_name", &state.config.db_name);
+    ctx.insert("db_user", &state.config.db_user);
+    ctx.insert("csrf_token", &SessionHelper::get_csrf(&session).await);
+    ctx.insert("done", &false);
+    let empty_msgs: Vec<String> = Vec::new();
+    let empty_errs: Vec<String> = Vec::new();
+    ctx.insert("messages", &empty_msgs);
+    ctx.insert("errors", &empty_errs);
+    ctx.insert("name", "Super Admin");
+    ctx.insert("email", "");
+
+    match state.tera.render("admin/install.html", &ctx) {
+        Ok(html) => Html(html).into_response(),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Template error: {}", err),
+        )
+            .into_response(),
+    }
+}
+
+/// POST /admin/install, POST /admin/install.php
+pub async fn admin_install_post_handler(
+    State(state): State<AppState>,
+    session: Session,
+    Form(form): Form<AdminInstallForm>,
+) -> Response {
+    let mut messages: Vec<String> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+    let mut done = false;
+
+    let admin_name = form.name.as_deref().unwrap_or("Super Admin").trim();
+    let admin_name = if admin_name.is_empty() { "Super Admin" } else { admin_name };
+    let admin_email = form.email.as_deref().unwrap_or("").trim().to_lowercase();
+    let admin_pass = form.password.as_deref().unwrap_or("");
+
+    if admin_email.is_empty() || !admin_email.contains('@') {
+        errors.push("A valid admin email is required.".to_string());
+    }
+    if admin_pass.len() < 6 {
+        errors.push("Password must be at least 6 characters.".to_string());
+    }
+
+    if errors.is_empty() {
+        let db_name = &state.config.db_name;
+        messages.push(format!("Database <code>{}</code> ready.", db_name));
+
+        let hash = match admin_password_hash(admin_pass) {
+            Ok(h) => h,
+            Err(e) => {
+                errors.push(format!("Failed to hash password: {}", e));
+                String::new()
+            }
+        };
+
+        if errors.is_empty() {
+            let res = sqlx::query(
+                r#"
+                INSERT INTO users (name, email, password, role, status, created_at, updated_at)
+                VALUES (?, ?, ?, 'admin', 'active', NOW(), NOW())
+                ON DUPLICATE KEY UPDATE
+                    name = VALUES(name),
+                    password = VALUES(password),
+                    role = 'admin',
+                    status = 'active',
+                    updated_at = NOW()
+                "#
+            )
+            .bind(admin_name)
+            .bind(&admin_email)
+            .bind(&hash)
+            .execute(&state.db)
+            .await;
+
+            match res {
+                Ok(_) => {
+                    messages.push(format!("Admin user <code>{}</code> created.", admin_email));
+                    done = true;
+                }
+                Err(e) => {
+                    errors.push(format!("Installer failed: {}", e));
+                }
+            }
+        }
+    }
+
+    let mut ctx = tera::Context::new();
+    let app_name = state.settings.get_or("site_name", "Jinish Potro");
+    let app_name = if app_name.is_empty() || app_name == "PHP Admin Panel" || app_name == "Store" {
+        "Jinish Potro"
+    } else {
+        &app_name
+    };
+    ctx.insert("app_name", app_name);
+    ctx.insert("db_host", &state.config.db_host);
+    ctx.insert("db_name", &state.config.db_name);
+    ctx.insert("db_user", &state.config.db_user);
+    ctx.insert("csrf_token", &SessionHelper::get_csrf(&session).await);
+    ctx.insert("done", &done);
+    ctx.insert("messages", &messages);
+    ctx.insert("errors", &errors);
+    ctx.insert("name", admin_name);
+    ctx.insert("email", &admin_email);
+
+    match state.tera.render("admin/install.html", &ctx) {
+        Ok(html) => Html(html).into_response(),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Template error: {}", err),
+        )
+            .into_response(),
+    }
+}

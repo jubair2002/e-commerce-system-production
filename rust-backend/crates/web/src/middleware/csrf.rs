@@ -23,6 +23,12 @@ pub async fn csrf_middleware(
         return next.run(req).await;
     }
 
+    // Whitelist installer routes
+    let path = req.uri().path();
+    if path == "/admin/install" || path == "/admin/install.php" {
+        return next.run(req).await;
+    }
+
     let expected_token = SessionHelper::get_csrf(&session).await;
 
     // 1. Check header: X-CSRF-Token or X-Csrf-Token
@@ -64,6 +70,11 @@ pub async fn csrf_middleware(
         }
     }
 
+    // Try parsing as multipart form data
+    if token_found.is_none() {
+        token_found = extract_csrf_from_multipart(&bytes);
+    }
+
     let is_valid = match token_found {
         Some(ref t) => verify_csrf_token(t.trim(), &expected_token),
         None => false,
@@ -78,14 +89,69 @@ pub async fn csrf_middleware(
     }
 }
 
+fn extract_csrf_from_multipart(bytes: &[u8]) -> Option<String> {
+    for needle in [
+        b"name=\"_csrf\"".as_slice(),
+        b"name=\"csrf_token\"".as_slice(),
+        b"name='_csrf'".as_slice(),
+        b"name='csrf_token'".as_slice(),
+    ] {
+        if let Some(pos) = bytes.windows(needle.len()).position(|w| w == needle) {
+            let after = &bytes[pos + needle.len()..];
+            let value_start = if let Some(sep) = after.windows(4).position(|w| w == b"\r\n\r\n") {
+                sep + 4
+            } else if let Some(sep) = after.windows(2).position(|w| w == b"\n\n") {
+                sep + 2
+            } else {
+                continue;
+            };
+            let content = &after[value_start..];
+            let value_end = if let Some(end) = content.windows(2).position(|w| w == b"\r\n") {
+                end
+            } else if let Some(end) = content.windows(1).position(|w| w == b"\n") {
+                end
+            } else {
+                content.len()
+            };
+            if let Ok(s) = std::str::from_utf8(&content[..value_end]) {
+                let trimmed = s.trim();
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 fn reject_csrf(req: &Request) -> Response {
-    let is_api = req.uri().path().starts_with("/api")
-        || req
-            .headers()
-            .get("accept")
-            .and_then(|h| h.to_str().ok())
-            .map(|a| a.contains("application/json"))
-            .unwrap_or(false);
+    let path = req.uri().path();
+    let query = req.uri().query().unwrap_or("");
+    let is_ajax = req
+        .headers()
+        .get("x-requested-with")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v.eq_ignore_ascii_case("xmlhttprequest"))
+        .unwrap_or(false);
+    let accepts_json = req
+        .headers()
+        .get("accept")
+        .and_then(|h| h.to_str().ok())
+        .map(|a| a.contains("application/json"))
+        .unwrap_or(false);
+    let is_json_content = req
+        .headers()
+        .get("content-type")
+        .and_then(|h| h.to_str().ok())
+        .map(|c| c.contains("application/json"))
+        .unwrap_or(false);
+
+    let is_api = path.starts_with("/api")
+        || path.contains("/ajax/")
+        || query.contains("ajax=1")
+        || is_ajax
+        || accepts_json
+        || is_json_content;
 
     if is_api {
         (

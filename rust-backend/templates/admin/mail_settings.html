@@ -1,148 +1,304 @@
 {% extends "admin/layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
   <div>
-    <h3 class="mb-1">Mail Configuration</h3>
-    <p class="text-muted small mb-0">Manage SMTP transport credentials, sender identities, and dispatch daemon status.</p>
+    <h3 class="mb-1">Mail System Configuration</h3>
+    <p class="text-muted small mb-0">Configure SMTP credentials, manage transactional email templates, and monitor delivery queue.</p>
   </div>
   <div class="d-flex gap-2">
-    <a href="{{ admin_url(path='mail_templates.php') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-file-earmark-text me-1"></i> Templates
+    <a href="{{ admin_url(path='mail_templates.php') }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-file-earmark-code me-1"></i> Email Templates
     </a>
-    <a href="{{ admin_url(path='mail_queue.php') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-inbox me-1"></i> Mail Queue
+    <a href="{{ admin_url(path='mail_queue.php') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-list-columns-reverse me-1"></i> Mail Queue ({{ queue_pending + queue_failed }})
     </a>
   </div>
 </div>
 
-<!-- Queue KPI Strip -->
+{% if not mail_cfg.mail_enabled or mail_cfg.mail_enabled == "0" %}
+  <div class="alert alert-warning mb-4 d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+    <div>
+      <h6 class="alert-heading mb-1 fw-bold">Mail System is Currently Disabled</h6>
+      <span class="small">Outgoing emails (including customer order confirmations) are currently turned OFF. Toggle the <strong>"Enable Mail System"</strong> switch in the SMTP card header and save settings to start sending emails.</span>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Health & Queue Panel -->
 <div class="row g-3 mb-4">
-  <div class="col-sm-6 col-md-4">
-    <div class="card shadow-sm border-0 stat-card">
-      <div class="stat-icon bg-warning text-dark"><i class="bi bi-hourglass-split"></i></div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-indigo" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;"><i class="bi bi-hourglass-split"></i></div>
       <div>
-        <p class="stat-label">Pending Queue</p>
+        <p class="stat-label">Pending in Queue</p>
         <p class="stat-value">{{ queue_pending }}</p>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-md-4">
-    <div class="card shadow-sm border-0 stat-card">
-      <div class="stat-icon bg-success text-white"><i class="bi bi-check2-all"></i></div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-emerald" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="bi bi-check2-circle"></i></div>
       <div>
-        <p class="stat-label">Total Sent</p>
+        <p class="stat-label">Successfully Sent</p>
         <p class="stat-value">{{ queue_sent }}</p>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-md-4">
-    <div class="card shadow-sm border-0 stat-card">
-      <div class="stat-icon bg-danger text-white"><i class="bi bi-exclamation-triangle"></i></div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0">
+      <div class="stat-icon bg-rose" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;"><i class="bi bi-exclamation-octagon"></i></div>
       <div>
-        <p class="stat-label">Failed</p>
-        <p class="stat-value">{{ queue_failed }}</p>
+        <p class="stat-label">Failed Deliveries</p>
+        <p class="stat-value text-danger">{{ queue_failed }}</p>
       </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card stat-card shadow-sm border-0 d-flex flex-column justify-content-center p-3">
+      <div class="small text-muted">Last Sent: <strong>{% if last_sent %}{{ last_sent }}{% else %}Never{% endif %}</strong></div>
+      <form method="post" class="mt-2" action="{{ admin_url(path='mail_queue.php') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="retry_all_failed">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-arrow-repeat me-1"></i> Process Failed Queue
+        </button>
+      </form>
     </div>
   </div>
 </div>
 
-<div class="row g-4">
-  <div class="col-lg-8">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0">SMTP Server Settings</h5>
-      </div>
-      <div class="card-body p-4">
-        <form method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <input type="hidden" name="action" value="save_settings">
+<form method="post" id="mailSettingsForm">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <input type="hidden" name="action" value="save_settings">
+
+  <div class="row g-4">
+    <!-- Connection Card -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0"><i class="bi bi-hdd-network text-primary me-2"></i> SMTP Connection</h5>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="mail_enabled" value="1" {% if mail_cfg.mail_enabled and mail_cfg.mail_enabled != '0' %}checked{% endif %} id="mailEnabledToggle">
+            <label class="form-check-label fw-bold" for="mailEnabledToggle">Enable Mail System</label>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <!-- Provider Presets -->
+          <div class="mb-4 p-3 bg-light rounded border">
+            <label class="form-label small fw-semibold text-muted text-uppercase mb-1">
+              <i class="bi bi-lightning-charge text-warning"></i> Load Provider Preset
+            </label>
+            <select id="presetSelect" class="form-select form-select-sm" onchange="applyPreset(this.value)">
+              <option value="">-- Choose a pre-configured provider --</option>
+              <option value="gmail">Gmail (smtp.gmail.com - Port 587 - TLS) [App Password required]</option>
+              <option value="outlook">Outlook / Office 365 (smtp.office365.com - Port 587 - TLS)</option>
+              <option value="zoho">Zoho Mail (smtp.zoho.com - Port 587 - TLS)</option>
+              <option value="brevo">Brevo / Sendinblue (smtp-relay.brevo.com - Port 587 - TLS)</option>
+              <option value="mailgun">Mailgun (smtp.mailgun.org - Port 587 - TLS)</option>
+              <option value="ses">Amazon SES (email-smtp.us-east-1.amazonaws.com - Port 587 - TLS)</option>
+              <option value="sendgrid">SendGrid (smtp.sendgrid.net - Port 587 - TLS)</option>
+            </select>
+          </div>
 
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label fw-medium">Mail Driver</label>
-              <select name="mail_driver" class="form-select">
-                <option value="smtp" {% if mail_cfg.mail_driver | default(value='smtp') == 'smtp' %}selected{% endif %}>SMTP (Recommended)</option>
-                <option value="sendmail" {% if mail_cfg.mail_driver | default(value='smtp') == 'sendmail' %}selected{% endif %}>Sendmail / PHP mail()</option>
-                <option value="log" {% if mail_cfg.mail_driver | default(value='smtp') == 'log' %}selected{% endif %}>Log Only (Testing)</option>
+              <label class="form-label fw-semibold">Mail Driver</label>
+              <select name="mail_driver" id="mailDriver" class="form-select">
+                <option value="smtp" {% if mail_cfg.mail_driver == 'smtp' %}selected{% endif %}>SMTP (Recommended for production)</option>
+                <option value="sendmail" {% if mail_cfg.mail_driver == 'sendmail' %}selected{% endif %}>Sendmail / Local agent</option>
+                <option value="log" {% if mail_cfg.mail_driver == 'log' %}selected{% endif %}>Log Only (Development: logs without sending)</option>
               </select>
             </div>
+
             <div class="col-md-6">
-              <label class="form-label fw-medium">SMTP Encryption</label>
-              <select name="smtp_encryption" class="form-select">
-                <option value="tls" {% if mail_cfg.smtp_encryption | default(value='tls') == 'tls' %}selected{% endif %}>TLS (Port 587)</option>
-                <option value="ssl" {% if mail_cfg.smtp_encryption | default(value='tls') == 'ssl' %}selected{% endif %}>SSL (Port 465)</option>
-                <option value="none" {% if mail_cfg.smtp_encryption | default(value='tls') == 'none' %}selected{% endif %}>None (Port 25)</option>
+              <label class="form-label fw-semibold">Send Mode</label>
+              <select name="mail_send_mode" class="form-select">
+                <option value="instant" {% if mail_cfg.mail_send_mode != 'queue' %}selected{% endif %}>Instant (Send immediately on checkout - recommended)</option>
+                <option value="queue" {% if mail_cfg.mail_send_mode == 'queue' %}selected{% endif %}>Queue (Background runner)</option>
               </select>
             </div>
+
             <div class="col-md-8">
-              <label class="form-label fw-medium">SMTP Host</label>
-              <input type="text" name="smtp_host" class="form-control" value="{{ mail_cfg.smtp_host | default(value='smtp.gmail.com') }}" placeholder="smtp.example.com">
+              <label class="form-label fw-semibold">SMTP Host</label>
+              <input type="text" name="mail_host" id="mailHost" class="form-control" value="{{ mail_cfg.smtp_host | default(value='') }}" placeholder="e.g. smtp.gmail.com">
             </div>
+
             <div class="col-md-4">
-              <label class="form-label fw-medium">SMTP Port</label>
-              <input type="number" name="smtp_port" class="form-control" value="{{ mail_cfg.smtp_port | default(value='587') }}">
+              <label class="form-label fw-semibold">SMTP Port</label>
+              <input type="number" name="mail_port" id="mailPort" class="form-control" value="{{ mail_cfg.smtp_port | default(value='587') }}" placeholder="587">
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">SMTP Username</label>
-              <input type="text" name="smtp_user" class="form-control" value="{{ mail_cfg.smtp_user | default(value='') }}">
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Encryption</label>
+              <select name="mail_encryption" id="mailEnc" class="form-select">
+                <option value="tls" {% if mail_cfg.smtp_encryption == 'tls' %}selected{% endif %}>TLS (Port 587)</option>
+                <option value="ssl" {% if mail_cfg.smtp_encryption == 'ssl' %}selected{% endif %}>SSL (Port 465)</option>
+                <option value="none" {% if mail_cfg.smtp_encryption == 'none' %}selected{% endif %}>None</option>
+              </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">SMTP Password</label>
-              <input type="password" name="smtp_pass" class="form-control" value="{{ mail_cfg.smtp_pass | default(value='') }}">
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Timeout (Seconds)</label>
+              <input type="number" name="mail_timeout" class="form-control" min="5" max="60" value="{{ mail_cfg.mail_timeout | default(value='15') }}">
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-medium">From Address</label>
-              <input type="email" name="mail_from_address" class="form-control" value="{{ mail_cfg.mail_from_address | default(value='noreply@example.com') }}">
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Max Delivery Retries</label>
+              <input type="number" name="mail_max_attempts" class="form-control" min="1" max="10" value="{{ mail_cfg.mail_max_attempts | default(value='3') }}">
             </div>
+
             <div class="col-md-6">
-              <label class="form-label fw-medium">From Name</label>
-              <input type="text" name="mail_from_name" class="form-control" value="{{ mail_cfg.mail_from_name | default(value='Jinish Potro') }}">
+              <label class="form-label fw-semibold">SMTP Username</label>
+              <input type="text" name="mail_username" id="mailUser" class="form-control" value="{{ mail_cfg.smtp_user | default(value='') }}" placeholder="e.g. yourname@gmail.com">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">SMTP Password</label>
+              <input type="password" name="mail_password" class="form-control" placeholder="•••••••• (saved - leave empty to keep unchanged)">
+            </div>
+
+            <hr class="my-3">
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">From Email Address</label>
+              <input type="email" name="mail_from_address" class="form-control" value="{{ mail_cfg.mail_from_address | default(value='') }}" placeholder="orders@yourstore.com">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">From Name</label>
+              <input type="text" name="mail_from_name" class="form-control" value="{{ mail_cfg.mail_from_name | default(value='') }}" placeholder="Your Store Name">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Reply-To Email</label>
+              <input type="email" name="mail_reply_to" class="form-control" value="{{ mail_cfg.mail_reply_to | default(value='') }}" placeholder="support@yourstore.com">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Email Footer Note</label>
+              <input type="text" name="mail_footer_text" class="form-control" value="{{ mail_cfg.mail_footer_text | default(value='Quality Essentials for Everyday Living') }}" placeholder="Dhaka, Bangladesh · support@store.com">
             </div>
           </div>
 
           <div class="mt-4">
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Configuration</button>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-save me-1"></i> Save Mail Configuration
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="col-lg-4">
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0">Send Test Email</h5>
+    <!-- Right: Test Mail & Notifications Cards -->
+    <div class="col-lg-4">
+      <!-- Test Email Card -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-send text-primary me-2"></i> Send Test Email</h6>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted">
+            Send an instant test email using your current configuration to verify SMTP connectivity and authentication.
+          </p>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Recipient Email</label>
+            <input type="email" id="testRecipient" class="form-control form-control-sm" value="admin@example.com" required>
+          </div>
+
+          <button type="button" id="btnSendTest" class="btn btn-outline-primary btn-sm w-100" onclick="sendTestEmail()">
+            <i class="bi bi-send-check me-1"></i> Send Test Email Now
+          </button>
+
+          <!-- Test Result Box -->
+          <div id="testResultBox" class="mt-3" style="display: none;"></div>
+        </div>
       </div>
-      <div class="card-body">
-        <p class="text-muted small">Send a verification email immediately to test the SMTP credentials above.</p>
-        <form method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <input type="hidden" name="action" value="send_test_email">
+
+      <!-- Notifications Settings Card -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-bell text-primary me-2"></i> Notification Alerts</h6>
+        </div>
+        <div class="card-body">
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="mail_admin_notify" value="1" {% if mail_cfg.mail_admin_notify and mail_cfg.mail_admin_notify != '0' %}checked{% endif %} id="adminNotifyToggle">
+            <label class="form-check-label small fw-semibold" for="adminNotifyToggle">Admin New Order Alerts</label>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="mail_notify_low_stock" value="1" {% if mail_cfg.mail_notify_low_stock and mail_cfg.mail_notify_low_stock != '0' %}checked{% endif %} id="lowStockToggle">
+            <label class="form-check-label small fw-semibold" for="lowStockToggle">Admin Low Stock Alerts</label>
+          </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-medium">Recipient Email</label>
-            <input type="email" name="recipient" class="form-control" placeholder="admin@example.com" required>
+            <label class="form-label small fw-semibold">Admin Recipient Emails</label>
+            <input type="text" name="mail_admin_recipients" class="form-control form-control-sm" value="{{ mail_cfg.mail_admin_recipients | default(value='') }}" placeholder="admin@store.com, manager@store.com">
+            <div class="form-text" style="font-size: 11px;">Comma-separated list of administrative notification recipients.</div>
           </div>
-
-          <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-send me-1"></i> Dispatch Test</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0">Dispatch Daemon</h5>
-      </div>
-      <div class="card-body">
-        <form method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <input type="hidden" name="action" value="process_queue_now">
-          <p class="text-muted small">Immediately trigger the queue worker to process up to 50 pending emails.</p>
-          <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-arrow-repeat me-1"></i> Process Queue Now</button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</form>
+
+<script>
+function applyPreset(val) {
+  const presets = {
+    gmail: { host: 'smtp.gmail.com', port: 587, enc: 'tls' },
+    outlook: { host: 'smtp.office365.com', port: 587, enc: 'tls' },
+    zoho: { host: 'smtp.zoho.com', port: 587, enc: 'tls' },
+    brevo: { host: 'smtp-relay.brevo.com', port: 587, enc: 'tls' },
+    mailgun: { host: 'smtp.mailgun.org', port: 587, enc: 'tls' },
+    ses: { host: 'email-smtp.us-east-1.amazonaws.com', port: 587, enc: 'tls' },
+    sendgrid: { host: 'smtp.sendgrid.net', port: 587, enc: 'tls' }
+  };
+  if (presets[val]) {
+    document.getElementById('mailHost').value = presets[val].host;
+    document.getElementById('mailPort').value = presets[val].port;
+    document.getElementById('mailEnc').value = presets[val].enc;
+    document.getElementById('mailDriver').value = 'smtp';
+  }
+}
+
+function sendTestEmail() {
+  const btn = document.getElementById('btnSendTest');
+  const recipient = document.getElementById('testRecipient').value.trim();
+  const resBox = document.getElementById('testResultBox');
+
+  if (!recipient) {
+    alert('Please enter a recipient email.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+  resBox.style.display = 'none';
+
+  const formData = new FormData();
+  formData.append('_csrf', '{{ csrf_token }}');
+  formData.append('action', 'send_test_email');
+  formData.append('test_email', recipient);
+
+  fetch('mail_settings.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send-check me-1"></i> Send Test Email Now';
+    resBox.style.display = 'block';
+    resBox.className = 'alert alert-success py-2 small mb-0';
+    resBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Test email successfully queued for delivery to ' + recipient + '! Check Mail Queue.';
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send-check me-1"></i> Send Test Email Now';
+    resBox.style.display = 'block';
+    resBox.className = 'alert alert-danger py-2 small mb-0';
+    resBox.textContent = 'Error sending test email: ' + err;
+  });
+}
+</script>
 {% endblock %}

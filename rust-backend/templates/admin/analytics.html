@@ -6,17 +6,64 @@
     <h3 class="mb-1">Store Analytics &amp; Intelligence</h3>
     <p class="text-muted small mb-0">Sales trends, customer conversion funnels, top selling products, and traffic intelligence.</p>
   </div>
-  <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload();">
-      <i class="bi bi-arrow-repeat me-1"></i> Refresh
-    </button>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <form method="post" class="d-inline">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="action" value="refresh_rollup">
+      <button type="submit" class="btn btn-outline-secondary btn-sm" title="Re-aggregate hourly and daily roll-up metrics">
+        <i class="bi bi-arrow-repeat me-1"></i> Refresh Roll-ups
+      </button>
+    </form>
+    <a href="{{ admin_url(path='analytics.php?export=csv') }}&from={{ from }}&to={{ to }}" class="btn btn-outline-success btn-sm" title="Export product analytics to CSV">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    </a>
   </div>
 </div>
 
-<!-- KPI Cards -->
+<!-- Date Presets & Filters Card -->
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-body p-3">
+    <form method="get" class="row g-2 align-items-center" id="analyticsFilterForm">
+      <input type="hidden" name="range" id="rangeInput" value="{{ range_preset | default(value='30d') }}">
+
+      <div class="col-auto">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-secondary range-btn {% if range_preset == 'today' %}active{% endif %}" onclick="setPreset('today')">Today</button>
+          <button type="button" class="btn btn-outline-secondary range-btn {% if range_preset == '7d' %}active{% endif %}" onclick="setPreset('7d')">7 d</button>
+          <button type="button" class="btn btn-outline-secondary range-btn {% if range_preset == '30d' or not range_preset %}active{% endif %}" onclick="setPreset('30d')">30 d</button>
+          <button type="button" class="btn btn-outline-secondary range-btn {% if range_preset == '90d' %}active{% endif %}" onclick="setPreset('90d')">90 d</button>
+          <button type="button" class="btn btn-outline-secondary range-btn {% if range_preset == 'month' %}active{% endif %}" onclick="setPreset('month')">Month</button>
+        </div>
+      </div>
+
+      <div class="col-auto d-flex align-items-center gap-1">
+        <input type="date" name="from" id="fromDate" class="form-control form-control-sm" value="{{ from }}">
+        <span class="text-muted small">to</span>
+        <input type="date" name="to" id="toDate" class="form-control form-control-sm" value="{{ to }}">
+      </div>
+
+      <div class="col-auto">
+        <select name="category_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All Categories</option>
+          {% for cat in all_categories %}
+            <option value="{{ cat.0 }}">{{ cat.1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm px-3">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6 KPI Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card shadow-sm border-0">
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
       <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-cash-stack"></i></div>
       <div>
         <p class="stat-label">Total Revenue</p>
@@ -24,8 +71,8 @@
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card shadow-sm border-0">
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
       <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-receipt"></i></div>
       <div>
         <p class="stat-label">Total Orders</p>
@@ -33,8 +80,8 @@
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card shadow-sm border-0">
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
       <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-box-seam"></i></div>
       <div>
         <p class="stat-label">Units Sold</p>
@@ -42,9 +89,27 @@
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="card stat-card shadow-sm border-0">
-      <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-graph-up"></i></div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
+      <div class="stat-icon bg-secondary-subtle text-secondary"><i class="bi bi-wallet2"></i></div>
+      <div>
+        <p class="stat-label">Avg Order Value</p>
+        <p class="stat-value" id="kpiAov">৳0.00</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
+      <div class="stat-icon" style="background: rgba(147, 51, 234, 0.1); color: #9333ea;"><i class="bi bi-people"></i></div>
+      <div>
+        <p class="stat-label">Unique Visitors</p>
+        <p class="stat-value" id="kpiVisitors">0</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card stat-card shadow-sm border-0 h-100">
+      <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-graph-up-arrow"></i></div>
       <div>
         <p class="stat-label">Conversion Rate</p>
         <p class="stat-value" id="kpiConversion">0.0%</p>
@@ -53,57 +118,175 @@
   </div>
 </div>
 
-<!-- Charts Row -->
+<!-- Charts Row 1: Sales Trend & Funnel -->
 <div class="row g-4 mb-4">
   <div class="col-lg-8">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0">Sales &amp; Revenue Overview</h5>
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-graph-up text-primary me-2"></i> Sales &amp; Revenue Trends</h5>
+        <span class="badge bg-light text-muted border">Daily Aggregation</span>
       </div>
       <div class="card-body">
-        <div id="salesChartPlaceholder" class="p-5 text-center text-muted">
-          <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>
-          <span>Dynamic chart loads via /admin/ajax/analytics_data.php</span>
+        <div style="position: relative; height: 320px; width: 100%;">
+          <canvas id="salesTrendChart"></canvas>
         </div>
       </div>
     </div>
   </div>
+
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0">Order Status Breakdown</h5>
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-funnel text-primary me-2"></i> Conversion Funnel</h5>
       </div>
-      <div class="card-body">
-        <ul class="list-group list-group-flush small" id="statusBreakdownList">
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>Completed</span>
-            <span class="badge bg-success">Active</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>Processing</span>
-            <span class="badge bg-info">In Delivery</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>Pending</span>
-            <span class="badge bg-warning text-dark">Awaiting</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>Cancelled</span>
-            <span class="badge bg-danger">Void</span>
-          </li>
-        </ul>
+      <div class="card-body d-flex flex-column justify-content-center">
+        <div class="funnel-step p-3 mb-2 rounded bg-light border">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>1. Product Views</span>
+            <span id="funnelViews">0</span>
+          </div>
+          <div class="progress" style="height: 6px;"><div class="progress-bar bg-primary" style="width: 100%;"></div></div>
+        </div>
+
+        <div class="funnel-step p-3 mb-2 rounded bg-light border">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>2. Add to Cart</span>
+            <span id="funnelCart">0</span>
+          </div>
+          <div class="progress" style="height: 6px;"><div class="progress-bar bg-info" id="funnelCartBar" style="width: 25%;"></div></div>
+        </div>
+
+        <div class="funnel-step p-3 mb-2 rounded bg-light border">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>3. Checkout Started</span>
+            <span id="funnelCheckout">0</span>
+          </div>
+          <div class="progress" style="height: 6px;"><div class="progress-bar bg-warning" id="funnelCheckoutBar" style="width: 15%;"></div></div>
+        </div>
+
+        <div class="funnel-step p-3 rounded bg-light border">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>4. Orders Placed</span>
+            <span id="funnelOrders" class="text-success">0</span>
+          </div>
+          <div class="progress" style="height: 6px;"><div class="progress-bar bg-success" id="funnelOrdersBar" style="width: 8%;"></div></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Charts Row 2: Top Selling Products & Order Status Breakdown -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-trophy text-warning me-2"></i> Top Selling Products</h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Product Name</th>
+              <th class="text-center">Units Sold</th>
+              <th class="text-end">Total Revenue</th>
+            </tr>
+          </thead>
+          <tbody id="topProductsTableBody">
+            <tr>
+              <td colspan="3" class="text-center py-4 text-muted">Loading top products...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-pie-chart text-primary me-2"></i> Order Status Distribution</h5>
+      </div>
+      <div class="card-body">
+        <div style="position: relative; height: 260px; width: 100%;">
+          <canvas id="orderStatusChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Automated Insights & Recommendations -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3 border-bottom">
+    <h5 class="card-title mb-0 fw-bold"><i class="bi bi-lightbulb text-warning me-2"></i> Automated Store Intelligence</h5>
+  </div>
+  <div class="card-body">
+    <div class="row g-3" id="insightsContainer">
+      <div class="col-md-6">
+        <div class="p-3 border rounded bg-light d-flex align-items-start gap-3">
+          <i class="bi bi-check-circle-fill text-success fs-4"></i>
+          <div>
+            <h6 class="mb-1 fw-bold">Conversion Rate Optimal</h6>
+            <p class="small text-muted mb-0">Store checkout flow is converting efficiently across desktop and mobile storefront traffic.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 border rounded bg-light d-flex align-items-start gap-3">
+          <i class="bi bi-cash-coin text-primary fs-4"></i>
+          <div>
+            <h6 class="mb-1 fw-bold">Cash on Delivery Dominance</h6>
+            <p class="small text-muted mb-0">Cash on Delivery remains the most requested payment option across all active Bangladeshi shipping zones.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+let trendChartInstance = null;
+let statusChartInstance = null;
+
+function setPreset(val) {
+  document.getElementById('rangeInput').value = val;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('toDate').value = today;
+
+  const d = new Date();
+  if (val === 'today') {
+    document.getElementById('fromDate').value = today;
+  } else if (val === '7d') {
+    d.setDate(d.getDate() - 6);
+    document.getElementById('fromDate').value = d.toISOString().split('T')[0];
+  } else if (val === '30d') {
+    d.setDate(d.getDate() - 29);
+    document.getElementById('fromDate').value = d.toISOString().split('T')[0];
+  } else if (val === '90d') {
+    d.setDate(d.getDate() - 89);
+    document.getElementById('fromDate').value = d.toISOString().split('T')[0];
+  } else if (val === 'month') {
+    d.setDate(1);
+    document.getElementById('fromDate').value = d.toISOString().split('T')[0];
+  }
+  document.getElementById('analyticsFilterForm').submit();
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-  fetch("{{ admin_url(path='ajax/analytics_data.php?range=30d') }}")
+  const from = "{{ from }}";
+  const to = "{{ to }}";
+  const url = "{{ admin_url(path='ajax/analytics_data.php') }}?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+
+  fetch(url)
     .then(r => r.json())
     .then(data => {
+      // 1. Update KPIs
       if (data.revenue !== undefined) {
-        document.getElementById("kpiRevenue").textContent = "৳" + Number(data.revenue).toLocaleString();
+        document.getElementById("kpiRevenue").textContent = "৳" + Number(data.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
       }
       if (data.orders !== undefined) {
         document.getElementById("kpiOrders").textContent = Number(data.orders).toLocaleString();
@@ -111,11 +294,135 @@ document.addEventListener("DOMContentLoaded", function() {
       if (data.units_sold !== undefined) {
         document.getElementById("kpiUnits").textContent = Number(data.units_sold).toLocaleString();
       }
+      if (data.aov !== undefined) {
+        document.getElementById("kpiAov").textContent = "৳" + Number(data.aov).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      }
+      if (data.visitors !== undefined) {
+        document.getElementById("kpiVisitors").textContent = Number(data.visitors).toLocaleString();
+      }
       if (data.conversion_rate !== undefined) {
         document.getElementById("kpiConversion").textContent = data.conversion_rate + "%";
       }
+
+      // 2. Funnel
+      if (data.funnel) {
+        document.getElementById("funnelViews").textContent = data.funnel.views || 0;
+        document.getElementById("funnelCart").textContent = data.funnel.cart || 0;
+        document.getElementById("funnelCheckout").textContent = data.funnel.checkout || 0;
+        document.getElementById("funnelOrders").textContent = data.funnel.orders || 0;
+
+        const maxV = Math.max(1, data.funnel.views || 1);
+        const cPct = Math.min(100, Math.round(((data.funnel.cart || 0) / maxV) * 100));
+        const ckPct = Math.min(100, Math.round(((data.funnel.checkout || 0) / maxV) * 100));
+        const oPct = Math.min(100, Math.round(((data.funnel.orders || 0) / maxV) * 100));
+
+        document.getElementById("funnelCartBar").style.width = cPct + "%";
+        document.getElementById("funnelCheckoutBar").style.width = ckPct + "%";
+        document.getElementById("funnelOrdersBar").style.width = oPct + "%";
+      }
+
+      // 3. Top Products Table
+      if (data.top_products && data.top_products.length > 0) {
+        let rows = "";
+        data.top_products.forEach(p => {
+          rows += `<tr>
+            <td><strong>${p.product_name}</strong></td>
+            <td class="text-center"><span class="badge bg-light text-dark border">${p.units_sold}</span></td>
+            <td class="text-end fw-bold text-success">৳${Number(p.total_revenue).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          </tr>`;
+        });
+        document.getElementById("topProductsTableBody").innerHTML = rows;
+      } else {
+        document.getElementById("topProductsTableBody").innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">No products sold in this date range.</td></tr>';
+      }
+
+      // 4. Sales Trend Chart
+      const trendCtx = document.getElementById("salesTrendChart").getContext("2d");
+      const labels = (data.trend && data.trend.labels) || [from, to];
+      const revData = (data.trend && data.trend.revenue) || [data.revenue || 0, data.revenue || 0];
+      const ordData = (data.trend && data.trend.orders) || [data.orders || 0, data.orders || 0];
+
+      if (trendChartInstance) trendChartInstance.destroy();
+      trendChartInstance = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Revenue (৳)',
+              data: revData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Orders Count',
+              data: ordData,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: false,
+              tension: 0.3,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: 'Revenue (৳)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Orders' }
+            }
+          }
+        }
+      });
+
+      // 5. Order Status Doughnut Chart
+      const statusCtx = document.getElementById("orderStatusChart").getContext("2d");
+      const statusLabels = [];
+      const statusCounts = [];
+      if (data.order_status_breakdown && data.order_status_breakdown.length > 0) {
+        data.order_status_breakdown.forEach(s => {
+          statusLabels.push(s.status.toUpperCase());
+          statusCounts.push(s.count);
+        });
+      } else {
+        statusLabels.push("NO ORDERS");
+        statusCounts.push(1);
+      }
+
+      if (statusChartInstance) statusChartInstance.destroy();
+      statusChartInstance = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: statusCounts,
+            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
     })
-    .catch(e => console.error("Analytics fetch error:", e));
+    .catch(err => console.error("Error loading analytics data:", err));
 });
 </script>
 {% endblock %}

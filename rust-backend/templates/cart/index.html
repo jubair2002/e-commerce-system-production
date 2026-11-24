@@ -106,11 +106,11 @@
 									<tr data-cart-row="{{ item.cart_key }}">
 										<td class="cart-product-cell-td">
 											<div class="cart-product-cell">
-												<a href="{{ route(name='product', slug=item.product.slug) }}" class="cart-product-thumb">
+												<a href="{{ route(name='product', slug=item.slug) }}" class="cart-product-thumb">
 													<img src="{{ item.image | product_img }}" alt="{{ item.product_name }}">
 												</a>
 												<div class="cart-product-info">
-													<a href="{{ route(name='product', slug=item.product.slug) }}" class="cart-product-title">
+													<a href="{{ route(name='product', slug=item.slug) }}" class="cart-product-title">
 														{{ item.product_name }}
 													</a>
 													{% if item.variant_label %}

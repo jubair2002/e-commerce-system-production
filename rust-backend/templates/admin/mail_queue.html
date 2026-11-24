@@ -3,47 +3,56 @@
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
   <div>
-    <h3 class="mb-1">Mail Queue &amp; Delivery Logs</h3>
-    <p class="text-muted small mb-0">Track background email dispatches, retry failed deliveries, and purge delivery logs.</p>
+    <h3 class="mb-1">Mail Queue &amp; Audit Logs</h3>
+    <p class="text-muted small mb-0">Monitor background transactional email delivery, inspect failures, and retry stalled messages.</p>
   </div>
   <div class="d-flex gap-2">
-    <form method="post" class="d-inline">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="action" value="retry_all_failed">
-      <button type="submit" class="btn btn-outline-warning btn-sm" {% if count_failed == 0 %}disabled{% endif %}>
-        <i class="bi bi-arrow-clockwise me-1"></i> Retry All Failed ({{ count_failed }})
+    <form method="post" class="d-inline" onsubmit="return confirm('Reschedule all failed emails for re-sending?');">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="action" value="retry_all">
+      <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-repeat me-1"></i> Retry All Failed
       </button>
     </form>
-    <form method="post" class="d-inline" onsubmit="return confirm('Purge all sent email logs?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <form method="post" class="d-inline" onsubmit="return confirm('Purge all sent email records from the database?');">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
       <input type="hidden" name="action" value="purge_sent">
-      <button type="submit" class="btn btn-outline-secondary btn-sm" {% if count_sent == 0 %}disabled{% endif %}>
-        <i class="bi bi-trash me-1"></i> Purge Sent Logs ({{ count_sent }})
+      <button type="submit" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i> Purge Sent
       </button>
     </form>
   </div>
 </div>
 
-<!-- Queue Stats & Filters -->
+<!-- Filters Toolbar -->
 <div class="card shadow-sm border-0 mb-4">
-  <div class="card-body p-3">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <a href="{{ admin_url(path='mail_queue.php?status=all') }}" class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-light{% endif %}">
-        All ({{ total_items }})
-      </a>
-      <a href="{{ admin_url(path='mail_queue.php?status=pending') }}" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-light{% endif %}">
-        Pending ({{ count_pending }})
-      </a>
-      <a href="{{ admin_url(path='mail_queue.php?status=sent') }}" class="btn btn-sm {% if status_filter == 'sent' %}btn-success{% else %}btn-light{% endif %}">
-        Sent ({{ count_sent }})
-      </a>
-      <a href="{{ admin_url(path='mail_queue.php?status=failed') }}" class="btn btn-sm {% if status_filter == 'failed' %}btn-danger{% else %}btn-light{% endif %}">
-        Failed ({{ count_failed }})
-      </a>
-    </div>
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <input type="text" name="q" class="form-control" placeholder="Search recipient, name or subject..." value="{{ search_q | default(value='') }}">
+      </div>
+      <div class="col-md-3">
+        <select name="status" class="form-select" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="sending" {% if status_filter == 'sending' %}selected{% endif %}>Sending</option>
+          <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+          <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Search</button>
+      </div>
+      {% if search_q or status_filter %}
+        <div class="col-md-2">
+          <a href="{{ admin_url(path='mail_queue.php') }}" class="btn btn-outline-secondary w-100">Clear</a>
+        </div>
+      {% endif %}
+    </form>
   </div>
 </div>
 
+<!-- Queue Table -->
 <div class="card shadow-sm border-0">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
@@ -51,72 +60,86 @@
         <tr>
           <th>ID</th>
           <th>Recipient</th>
-          <th>Subject / Template</th>
+          <th>Subject</th>
+          <th>Template</th>
+          <th class="text-center">Attempts</th>
           <th>Status</th>
-          <th>Attempts</th>
           <th>Date</th>
-          <th class="text-end">Actions</th>
+          <th class="text-end" style="width: 130px;">Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% if queue_items | length == 0 %}
+        {% if items | length == 0 %}
           <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
-              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-              No email queue records match current filter.
-            </td>
+            <td colspan="8" class="text-center py-5 text-muted">No mail queue records found.</td>
           </tr>
         {% else %}
-          {% for item in queue_items %}
+          {% for row in items %}
             <tr>
-              <td class="font-monospace text-muted">#{{ item.id }}</td>
+              <td><code>#{{ row.id }}</code></td>
               <td>
-                <div class="fw-semibold">{{ item.to_name | default(value='Customer') }}</div>
-                <small class="text-muted">{{ item.to_email }}</small>
-              </td>
-              <td>
-                <div class="text-truncate" style="max-width: 320px;">{{ item.subject }}</div>
-                {% if item.template_slug %}
-                  <small class="badge bg-light text-muted font-monospace">{{ item.template_slug }}</small>
+                <div class="fw-semibold">{{ row.to_email }}</div>
+                {% if row.to_name %}
+                  <div class="small text-muted">{{ row.to_name }}</div>
                 {% endif %}
               </td>
               <td>
-                {% if item.status == 'sent' %}
-                  <span class="badge bg-success-subtle text-success">Sent</span>
-                {% elif item.status == 'pending' %}
-                  <span class="badge bg-warning-subtle text-warning">Pending</span>
-                {% elif item.status == 'failed' %}
-                  <span class="badge bg-danger-subtle text-danger" title="{{ item.last_error | default(value='Error') }}">Failed</span>
+                <div class="fw-medium text-truncate" style="max-width: 260px;">
+                  {{ row.subject }}
+                </div>
+                {% if row.last_error %}
+                  <div class="small text-danger text-truncate" style="max-width: 260px;" title="{{ row.last_error }}">
+                    <i class="bi bi-exclamation-triangle"></i> {{ row.last_error }}
+                  </div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border">
+                  {{ row.template_slug | default(value='direct') }}
+                </span>
+              </td>
+              <td class="text-center">{{ row.attempts }}</td>
+              <td>
+                {% if row.status == 'sent' %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle text-uppercase">sent</span>
+                {% elif row.status == 'failed' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-uppercase">failed</span>
+                {% elif row.status == 'pending' %}
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-uppercase">pending</span>
                 {% else %}
-                  <span class="badge bg-secondary-subtle text-secondary">{{ item.status }}</span>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge bg-light text-dark">{{ item.attempts }}</span>
-                {% if item.last_error %}
-                  <i class="bi bi-info-circle text-danger ms-1" title="{{ item.last_error }}"></i>
+                  <span class="badge bg-info-subtle text-info border border-info-subtle text-uppercase">{{ row.status }}</span>
                 {% endif %}
               </td>
               <td class="small text-muted">
-                {{ item.created_at }}
+                {{ row.created_at }}
               </td>
               <td class="text-end">
                 <div class="btn-group btn-group-sm">
-                  {% if item.status == 'failed' %}
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#viewBodyModal"
+                          data-subject="{{ row.subject }}"
+                          data-body="{{ row.body_html }}"
+                          title="View Email Body">
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+                  {% if row.status == 'failed' or row.status == 'pending' %}
                     <form method="post" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                       <input type="hidden" name="action" value="retry">
-                      <input type="hidden" name="id" value="{{ item.id }}">
-                      <button type="submit" class="btn btn-outline-warning" title="Retry Delivery">
-                        <i class="bi bi-arrow-clockwise"></i>
+                      <input type="hidden" name="id" value="{{ row.id }}">
+                      <button type="submit" class="btn btn-outline-primary" title="Reschedule / Retry">
+                        <i class="bi bi-arrow-repeat"></i>
                       </button>
                     </form>
                   {% endif %}
-                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this queue log entry?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this queue record?');">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                     <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="{{ item.id }}">
-                    <button type="submit" class="btn btn-outline-danger" title="Delete Log">
+                    <input type="hidden" name="id" value="{{ row.id }}">
+                    <button type="submit" class="btn btn-outline-danger" title="Delete">
                       <i class="bi bi-trash"></i>
                     </button>
                   </form>
@@ -129,4 +152,32 @@
     </table>
   </div>
 </div>
+
+<!-- View Rendered Body Modal -->
+<div class="modal fade" id="viewBodyModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewModalSubject">Rendered Email</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div id="viewModalContent" class="border rounded p-3 bg-light" style="min-height: 250px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('viewBodyModal');
+  if (modal) {
+    modal.addEventListener('show.bs.modal', function(event) {
+      const btn = event.relatedTarget;
+      document.getElementById('viewModalSubject').textContent = btn.getAttribute('data-subject') || 'Email Preview';
+      document.getElementById('viewModalContent').innerHTML = btn.getAttribute('data-body') || '<em>No body content</em>';
+    });
+  }
+});
+</script>
 {% endblock %}

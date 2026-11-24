@@ -78,6 +78,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/admin", get(admin_auth::admin_index_handler))
         .route("/admin/", get(admin_auth::admin_index_handler))
         .route("/admin/index.php", get(admin_auth::admin_index_handler))
+        .route("/admin/install", get(admin_auth::admin_install_get_handler).post(admin_auth::admin_install_post_handler))
+        .route("/admin/install.php", get(admin_auth::admin_install_get_handler).post(admin_auth::admin_install_post_handler))
         .route("/admin/login", get(admin_auth::admin_login_get_handler).post(admin_auth::admin_login_post_handler))
         .route("/admin/login.php", get(admin_auth::admin_login_get_handler).post(admin_auth::admin_login_post_handler))
         .route("/admin/logout", get(admin_auth::admin_logout_handler).post(admin_auth::admin_logout_handler))
@@ -237,6 +239,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/storefront/auth/resend-verification.php", get(auth::resend_verification_get_handler).post(auth::resend_verification_post_handler))
         .route("/storefront/pages/view.php", get(storefront::page_handler))
         .route("/storefront/pages/contact.php", get(storefront::contact_get_handler).post(storefront::contact_post_handler))
+
+        // Maintenance
+        .route("/maintenance", get(storefront::maintenance_get_handler))
+        .route("/storefront/errors/maintenance.php", get(storefront::maintenance_get_handler))
 
         // Robots
         .route("/robots.txt", get(storefront::robots_txt_handler))
