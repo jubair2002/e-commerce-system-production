@@ -1257,3 +1257,52 @@ INSERT INTO `email_templates` (`slug`,`name`,`audience`,`subject`,`body_html`,`v
   '<p>{{author_name}} left a {{rating}}-star review on <strong>{{product_name}}</strong>:</p><blockquote>{{body}}</blockquote><p><a href="{{admin_review_url}}">Moderate</a></p>',
   'author_name, rating, product_name, body, admin_review_url')
 ON DUPLICATE KEY UPDATE `slug` = `slug`;
+
+-- Runtime Tables for Rust High-Performance Backend
+CREATE TABLE IF NOT EXISTS `tower_sessions` (
+  `id` CHAR(22) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `data` BLOB NOT NULL,
+  `expiry_date` TIMESTAMP(6) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `files` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `storage_key` VARCHAR(512) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider` ENUM('local','s3') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local',
+  `bucket` VARCHAR(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `original_name` VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` VARCHAR(127) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `size` BIGINT UNSIGNED NOT NULL DEFAULT '0',
+  `checksum_sha256` CHAR(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `width` INT DEFAULT NULL,
+  `height` INT DEFAULT NULL,
+  `visibility` ENUM('public','private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public',
+  `purpose` VARCHAR(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner_type` VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_id` BIGINT UNSIGNED DEFAULT NULL,
+  `status` ENUM('pending','ready','failed','deleted') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ready',
+  `sync_status` ENUM('synced','pending','failed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'synced',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_provider_storage_key` (`provider`,`storage_key`(250)),
+  KEY `idx_files_owner` (`owner_type`,`owner_id`),
+  KEY `idx_files_purpose` (`purpose`),
+  KEY `idx_files_status_sync` (`status`,`sync_status`),
+  KEY `idx_files_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `product_sales_summary` (
+  `product_id` INT UNSIGNED NOT NULL,
+  `variant_id` INT UNSIGNED NOT NULL DEFAULT '0',
+  `variant_label` VARCHAR(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `units` INT UNSIGNED NOT NULL DEFAULT '0',
+  `revenue` DECIMAL(12,2) NOT NULL DEFAULT '0.00',
+  `orders_count` INT UNSIGNED NOT NULL DEFAULT '0',
+  `last_sale` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`product_id`,`variant_id`),
+  KEY `idx_units` (`units` DESC),
+  KEY `idx_revenue` (`revenue` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -31,6 +31,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting Jinish Potro Rust backend on port {}", config.port);
 
     let db_pool = create_pool_with_tz(&config.database_url(), &config.time_zone_offset).await?;
+
+    // Auto-create runtime tables if missing
+    let _ = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS `tower_sessions` (
+            id CHAR(22) PRIMARY KEY NOT NULL,
+            data BLOB NOT NULL,
+            expiry_date TIMESTAMP(6) NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    )
+    .execute(&db_pool)
+    .await;
+
+    let _ = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS `files` (
+          `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+          `storage_key` varchar(512) COLLATE utf8mb4_unicode_ci NOT NULL,
+          `provider` enum('local','s3') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local',
+          `bucket` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+          `original_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+          `mime_type` varchar(127) COLLATE utf8mb4_unicode_ci NOT NULL,
+          `size` bigint unsigned NOT NULL DEFAULT '0',
+          `checksum_sha256` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+          `width` int DEFAULT NULL,
+          `height` int DEFAULT NULL,
+          `visibility` enum('public','private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public',
+          `purpose` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+          `owner_type` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+          `owner_id` bigint unsigned DEFAULT NULL,
+          `status` enum('pending','ready','failed','deleted') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ready',
+          `sync_status` enum('synced','pending','failed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'synced',
+          `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          `deleted_at` datetime DEFAULT NULL,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_provider_storage_key` (`provider`,`storage_key`(250)),
+          KEY `idx_files_owner` (`owner_type`,`owner_id`),
+          KEY `idx_files_purpose` (`purpose`),
+          KEY `idx_files_status_sync` (`status`,`sync_status`),
+          KEY `idx_files_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    )
+    .execute(&db_pool)
+    .await;
+
+    let _ = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS `product_sales_summary` (
+          `product_id` int unsigned NOT NULL,
+          `variant_id` int unsigned NOT NULL DEFAULT '0',
+          `variant_label` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+          `units` int unsigned NOT NULL DEFAULT '0',
+          `revenue` decimal(12,2) NOT NULL DEFAULT '0.00',
+          `orders_count` int unsigned NOT NULL DEFAULT '0',
+          `last_sale` datetime DEFAULT NULL,
+          PRIMARY KEY (`product_id`,`variant_id`),
+          KEY `idx_units` (`units` DESC),
+          KEY `idx_revenue` (`revenue` DESC)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    )
+    .execute(&db_pool)
+    .await;
     let settings = SettingsRepository::load(&db_pool).await?;
 
     let templates_dir = std::env::var("TEMPLATES_DIR").unwrap_or_else(|_| {
