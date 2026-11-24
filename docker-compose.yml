@@ -1,10 +1,40 @@
 # ==============================================================================
-# Jinish Potro Production Stack
-# Services: Rust High-Performance Backend (Axum), MySQL 8.0, Prometheus, Grafana
-# Accessible via port 80 from outside (0.0.0.0:80)
+# Jinish Potro Production Stack with Automatic SSL
+# Services:
+#   - caddy: Automatic HTTPS Reverse Proxy (Let's Encrypt / ZeroSSL TLS)
+#   - app: Rust High-Performance Backend (Axum + SQLx + Tokio)
+#   - db: MySQL 8.0 Database (Auto-initialized with schema.sql)
+#   - prometheus & grafana: Monitoring & Observability
 # ==============================================================================
 
 services:
+  # ----------------------------------------------------------------------------
+  # 0. Edge Reverse Proxy (Automatic HTTPS SSL for jinishpotro.store)
+  # ----------------------------------------------------------------------------
+  proxy:
+    image: caddy:2-alpine
+    container_name: jinispotro_proxy
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:443:443/udp" # HTTP/3 QUIC support
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./assets:/app/assets:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - jinispotro_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
   # ----------------------------------------------------------------------------
   # 1. Main Web Application (High-Performance Rust Backend)
   # ----------------------------------------------------------------------------
@@ -14,9 +44,11 @@ services:
       dockerfile: rust-backend/Dockerfile
     container_name: jinispotro_app
     restart: unless-stopped
+    expose:
+      - "80"
     ports:
-      - "0.0.0.0:${PORT_HTTP:-80}:80"
-      - "0.0.0.0:${PORT_HTTPS:-443}:443"
+      # Direct loopback access for local CLI or metrics check
+      - "127.0.0.1:8080:80"
       - "127.0.0.1:${PORT_METRICS:-8082}:8082"
     environment:
       # Network binding
@@ -47,7 +79,7 @@ services:
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY:-c84f1a29e46a78b901d3e5f72a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b}
       BASE_URL: ${BASE_URL:-/}
-      SITE_URL: ${SITE_URL:-http://localhost}
+      SITE_URL: ${SITE_URL:-https://jinishpotro.store}
       TEMPLATES_DIR: /app/templates
       ASSETS_DIR: /app/assets
       UPLOADS_DIR: /app/assets/uploads
@@ -186,11 +218,13 @@ services:
       - jinispotro_net
 
 volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
   db_data:
     driver: local
   app_uploads:
-    driver: local
-  app_storage:
     driver: local
   prometheus_data:
     driver: local

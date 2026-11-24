@@ -1,10 +1,10 @@
 # Multi-stage build for Jinish Potro Rust Backend
-FROM rust:1.80-bookworm AS builder
+FROM rust:1.85-bookworm AS builder
 
 WORKDIR /usr/src/app
 
 # Copy Cargo workspace configuration
-COPY rust-backend/Cargo.toml rust-backend/Cargo.lock* ./
+COPY rust-backend/Cargo.toml rust-backend/Cargo.lock ./
 COPY rust-backend/crates ./crates
 
 # Build release binary for web

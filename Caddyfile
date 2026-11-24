@@ -1,0 +1,51 @@
+{
+    email admin@jinishpotro.store
+}
+
+# ==============================================================================
+# 1. Production Domain: jinishpotro.store & www.jinishpotro.store
+# Automatically obtains & renews Let's Encrypt / ZeroSSL TLS certificates
+# Automatically redirects HTTP (port 80) -> HTTPS (port 443)
+# ==============================================================================
+jinishpotro.store, www.jinishpotro.store {
+    encode gzip zstd
+
+    # High-performance static assets delivery with 1-year immutable caching
+    handle_path /assets/* {
+        root * /app/assets
+        file_server
+        header Cache-Control "public, max-age=31536000, immutable"
+    }
+
+    # Application reverse proxy to Rust backend
+    handle {
+        reverse_proxy app:80 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto https
+        }
+    }
+}
+
+# ==============================================================================
+# 2. Direct IP / Localhost HTTP Fallback (e.g. before DNS propagation)
+# ==============================================================================
+:80 {
+    encode gzip zstd
+
+    handle_path /assets/* {
+        root * /app/assets
+        file_server
+        header Cache-Control "public, max-age=31536000, immutable"
+    }
+
+    handle {
+        reverse_proxy app:80 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto http
+        }
+    }
+}
