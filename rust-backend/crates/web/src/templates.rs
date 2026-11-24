@@ -52,6 +52,7 @@ pub fn init_templates(
     tera.register_function("order_number", OrderNumberFunction);
     tera.register_function("old", OldFunction);
     tera.register_function("csrf_token", CsrfTokenFunction);
+    tera.register_function("csrf_field", CsrfTokenFunction);
     tera.register_function("admin_url", AdminUrlFunction);
     tera.register_function("avatar_url", AvatarUrlFunction);
 
@@ -481,6 +482,14 @@ struct CsrfTokenFunction;
 impl Function for CsrfTokenFunction {
     fn call(&self, args: &HashMap<String, Value>) -> TeraResult<Value> {
         let token = args.get("token").and_then(|v| v.as_str()).unwrap_or("");
-        Ok(Value::String(token.to_string()))
+        if !token.is_empty() {
+            Ok(Value::String(format!(
+                r#"<input type="hidden" name="_csrf" value="{}"><input type="hidden" name="csrf_token" value="{}">"#,
+                escape_html(token),
+                escape_html(token)
+            )))
+        } else {
+            Ok(Value::String(String::new()))
+        }
     }
 }

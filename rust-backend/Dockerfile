@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 COPY rust-backend/Cargo.toml rust-backend/Cargo.lock ./
 COPY rust-backend/crates ./crates
 
-# Build release binary for web
-RUN cargo build --release --bin web
+# Build release binary for web and strip unneeded symbols for minimal image size
+RUN cargo build --release --bin web && strip /usr/src/app/target/release/web
 
 # Minimal runtime image
 FROM debian:bookworm-slim AS runner

@@ -31,17 +31,21 @@ pub async fn csrf_middleware(
 
     let expected_token = SessionHelper::get_csrf(&session).await;
 
-    // 1. Check header: X-CSRF-Token or X-Csrf-Token
+    // 1. Check header: X-CSRF-Token or X-Csrf-Token (if non-empty)
     if let Some(header_val) = req
         .headers()
         .get("X-CSRF-Token")
         .or_else(|| req.headers().get("x-csrf-token"))
+        .or_else(|| req.headers().get("X-Csrf-Token"))
         .and_then(|h| h.to_str().ok())
     {
-        if verify_csrf_token(header_val.trim(), &expected_token) {
-            return next.run(req).await;
-        } else {
-            return reject_csrf(&req);
+        let trimmed = header_val.trim();
+        if !trimmed.is_empty() && trimmed != "undefined" && trimmed != "null" {
+            if verify_csrf_token(trimmed, &expected_token) {
+                return next.run(req).await;
+            } else {
+                return reject_csrf(&req);
+            }
         }
     }
 
@@ -54,10 +58,21 @@ pub async fn csrf_middleware(
 
     let mut token_found = None;
 
+    // Check query string as fallback
+    if let Some(q) = parts.uri.query() {
+        if let Ok(params) = serde_urlencoded::from_str::<HashMap<String, String>>(q) {
+            if let Some(t) = params.get("_csrf").or_else(|| params.get("csrf_token")) {
+                token_found = Some(t.clone());
+            }
+        }
+    }
+
     // Try parsing as form urlencoded
-    if let Ok(form_data) = serde_urlencoded::from_bytes::<HashMap<String, String>>(&bytes) {
-        if let Some(t) = form_data.get("_csrf").or_else(|| form_data.get("csrf_token")) {
-            token_found = Some(t.clone());
+    if token_found.is_none() {
+        if let Ok(form_data) = serde_urlencoded::from_bytes::<HashMap<String, String>>(&bytes) {
+            if let Some(t) = form_data.get("_csrf").or_else(|| form_data.get("csrf_token")) {
+                token_found = Some(t.clone());
+            }
         }
     }
 

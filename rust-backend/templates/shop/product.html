@@ -112,10 +112,16 @@
 							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">({{ total_reviews }} review{% if total_reviews != 1 %}s{% endif %})</a>
 						</div>
 
-						<span class="pdp-stock-badge {% if in_stock %}in-stock{% else %}out-of-stock{% endif %}" id="pdpStockBadge">
-							<i class="zmdi {% if in_stock %}zmdi-check-circle{% else %}zmdi-alert-circle-o{% endif %} m-r-4"></i>
-							{% if in_stock %}In Stock: {{ current_stock }}{% else %}Sold Out{% endif %}
-						</span>
+						{% if product.is_preorder and product.is_preorder == 1 %}
+							<span class="pdp-stock-badge pre-order" id="pdpStockBadge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">
+								<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order
+							</span>
+						{% else %}
+							<span class="pdp-stock-badge {% if in_stock %}in-stock{% else %}out-of-stock{% endif %}" id="pdpStockBadge">
+								<i class="zmdi {% if in_stock %}zmdi-check-circle{% else %}zmdi-alert-circle-o{% endif %} m-r-4"></i>
+								{% if in_stock %}In Stock: {{ current_stock }}{% else %}Sold Out{% endif %}
+							</span>
+						{% endif %}
 
 						{% if product.sku %}
 							<span class="pdp-sku-badge">SKU: <strong>{{ product.sku }}</strong></span>
@@ -626,8 +632,17 @@ document.addEventListener('DOMContentLoaded', function() {
 					priceElem.textContent = curSym + pVal.toFixed(2);
 				}
 
+				var isPreorder = {{ product.is_preorder | default(value=0) }} == 1;
 				var vStock = parseInt(match.stock, 10);
-				if (vStock > 0) {
+				if (isPreorder) {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge pre-order';
+						stockBadge.style.cssText = 'background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order';
+					}
+					if (addBtn) addBtn.disabled = false;
+					if (buyBtn) buyBtn.disabled = false;
+				} else if (vStock > 0) {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge in-stock';
 						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;

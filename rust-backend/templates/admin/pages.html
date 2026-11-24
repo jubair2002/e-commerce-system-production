@@ -41,7 +41,7 @@
             <td>{{ p.position }}</td>
             <td>
               <form method="post" class="d-inline">
-                {{ csrf_token() }}
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="toggle_status">
                 <input type="hidden" name="id" value="{{ p.id }}">
                 <button type="submit" class="badge status-{{ p.status }} border-0 cursor-pointer" title="Click to toggle status">
@@ -54,7 +54,7 @@
               <a href="{{ url(path='page/' ~ p.slug) }}" target="_blank" class="btn btn-sm btn-light me-1" title="View page"><i class="bi bi-box-arrow-up-right"></i></a>
               <a href="{{ admin_url(path='page_form.php?id=' ~ p.id) }}" class="btn btn-sm btn-light me-1" title="Edit"><i class="bi bi-pencil"></i></a>
               <form method="post" class="d-inline" onsubmit="return confirm('Permanently delete this page?');">
-                {{ csrf_token() }}
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="{{ p.id }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

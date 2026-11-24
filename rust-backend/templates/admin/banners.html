@@ -53,7 +53,7 @@
             <td class="text-end">
               <a href="{{ admin_url(path='banner_form.php?id=' ~ b.id) }}" class="btn btn-sm btn-light me-1" title="Edit"><i class="bi bi-pencil"></i></a>
               <form method="post" class="d-inline" onsubmit="return confirm('Permanently delete this banner?');">
-                {{ csrf_token() }}
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="{{ b.id }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

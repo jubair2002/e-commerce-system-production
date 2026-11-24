@@ -15,6 +15,8 @@ pub struct Product {
     pub stock: i32,
     pub low_stock_threshold: Option<i32>,
     pub allow_backorder: i8,
+    #[sqlx(default)]
+    pub is_preorder: i8,
     pub track_inventory: i8,
     pub image: Option<String>,
     pub description: Option<String>,

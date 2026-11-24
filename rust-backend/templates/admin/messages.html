@@ -124,7 +124,7 @@
 </div>
 
 <form method="post" id="msg_action_form" style="display:none;">
-  {{ csrf_token() }}
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="action" id="maf_action">
   <input type="hidden" name="id" id="maf_id">
   <input type="hidden" name="status" id="maf_status">

@@ -420,6 +420,8 @@ struct ProductEditRow {
     featured: i8,
     track_inventory: i8,
     allow_backorder: i8,
+    #[sqlx(default)]
+    is_preorder: i8,
     low_stock_threshold: i32,
     show_stock_count: i8,
     weight_g: Option<i32>,
@@ -501,7 +503,7 @@ pub async fn admin_product_form_get_handler(
         "id": 0, "category_id": null, "name": "", "slug": "", "sku": "",
         "product_type": "simple", "short_description": "", "description": "",
         "price": "0.00", "sale_price": "", "stock": 0, "image": null, "status": "active",
-        "featured": 0, "track_inventory": 1, "allow_backorder": 0, "low_stock_threshold": 5,
+        "featured": 0, "track_inventory": 1, "allow_backorder": 0, "is_preorder": 0, "low_stock_threshold": 5,
         "show_stock_count": 1, "weight_g": "", "brand": "", "tags": "",
         "meta_title": "", "meta_description": "", "meta_keywords": "", "updated_at": ""
     });
@@ -514,7 +516,7 @@ pub async fn admin_product_form_get_handler(
         let p_row = sqlx::query_as::<_, ProductEditRow>(
             "SELECT id, category_id, name, slug, sku, product_type, short_description, description,
                     price, sale_price, stock, image, status, featured, track_inventory,
-                    allow_backorder, low_stock_threshold, show_stock_count, weight_g,
+                    allow_backorder, is_preorder, low_stock_threshold, show_stock_count, weight_g,
                     brand, tags, meta_title, meta_description, meta_keywords, updated_at
              FROM products WHERE id = ? LIMIT 1"
         )
@@ -541,6 +543,7 @@ pub async fn admin_product_form_get_handler(
                 "featured": p.featured,
                 "track_inventory": p.track_inventory,
                 "allow_backorder": p.allow_backorder,
+                "is_preorder": p.is_preorder,
                 "low_stock_threshold": p.low_stock_threshold,
                 "show_stock_count": p.show_stock_count,
                 "weight_g": p.weight_g.map(|w| w.to_string()).unwrap_or_default(),
@@ -733,6 +736,7 @@ pub async fn admin_product_form_post_handler(
     let mut featured: i8 = 0;
     let mut track_inventory: i8 = 1;
     let mut allow_backorder: i8 = 0;
+    let mut is_preorder: i8 = 0;
     let mut low_stock_threshold: i32 = 5;
     let mut show_stock_count: i8 = 1;
     let mut weight_g: Option<i32> = None;
@@ -785,6 +789,8 @@ pub async fn admin_product_form_post_handler(
             track_inventory = 1;
         } else if field_name == "allow_backorder" {
             allow_backorder = 1;
+        } else if field_name == "is_preorder" {
+            is_preorder = 1;
         } else if field_name == "low_stock_threshold" {
             low_stock_threshold = field.text().await.unwrap_or_default().parse().unwrap_or(5);
         } else if field_name == "show_stock_count" {
@@ -809,7 +815,7 @@ pub async fn admin_product_form_post_handler(
             variants_json = field.text().await.unwrap_or_default();
         } else if field_name == "original_updated_at" {
             original_updated_at = field.text().await.unwrap_or_default().trim().to_string();
-        } else if field_name == "delete_gallery_images[]" {
+        } else if field_name == "delete_gallery_images[]" || field_name == "delete_gallery_images" {
             if let Ok(del_id) = field.text().await.unwrap_or_default().parse::<u32>() {
                 delete_gallery_ids.push(del_id);
             }
@@ -963,7 +969,7 @@ pub async fn admin_product_form_post_handler(
                     category_id = ?, name = ?, slug = ?, product_type = ?, sku = ?,
                     short_description = ?, description = ?, price = ?, sale_price = ?,
                     image = ?, file_id = ?, status = ?, featured = ?, track_inventory = ?,
-                    allow_backorder = ?, low_stock_threshold = ?, show_stock_count = ?,
+                    allow_backorder = ?, is_preorder = ?, low_stock_threshold = ?, show_stock_count = ?,
                     weight_g = ?, brand = ?, tags = ?, meta_title = ?, meta_description = ?,
                     meta_keywords = ?, updated_at = NOW()
                  WHERE id = ?"
@@ -983,6 +989,7 @@ pub async fn admin_product_form_post_handler(
             .bind(featured)
             .bind(track_inventory)
             .bind(allow_backorder)
+            .bind(is_preorder)
             .bind(low_stock_threshold)
             .bind(show_stock_count)
             .bind(weight_g)
@@ -1000,7 +1007,7 @@ pub async fn admin_product_form_post_handler(
                     category_id = ?, name = ?, slug = ?, product_type = ?, sku = ?,
                     short_description = ?, description = ?, price = ?, sale_price = ?,
                     status = ?, featured = ?, track_inventory = ?, allow_backorder = ?,
-                    low_stock_threshold = ?, show_stock_count = ?, weight_g = ?, brand = ?,
+                    is_preorder = ?, low_stock_threshold = ?, show_stock_count = ?, weight_g = ?, brand = ?,
                     tags = ?, meta_title = ?, meta_description = ?, meta_keywords = ?,
                     updated_at = NOW()
                  WHERE id = ?"
@@ -1018,6 +1025,7 @@ pub async fn admin_product_form_post_handler(
             .bind(featured)
             .bind(track_inventory)
             .bind(allow_backorder)
+            .bind(is_preorder)
             .bind(low_stock_threshold)
             .bind(show_stock_count)
             .bind(weight_g)
@@ -1054,10 +1062,10 @@ pub async fn admin_product_form_post_handler(
             "INSERT INTO products
                 (category_id, name, slug, product_type, sku, short_description, description,
                  price, sale_price, stock, image, file_id, status, featured, track_inventory,
-                 allow_backorder, low_stock_threshold, show_stock_count, weight_g, brand,
+                 allow_backorder, is_preorder, low_stock_threshold, show_stock_count, weight_g, brand,
                  tags, meta_title, meta_description, meta_keywords, created_at, updated_at)
              VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
         )
         .bind(if category_id > 0 { Some(category_id) } else { None })
         .bind(&name)
@@ -1075,6 +1083,7 @@ pub async fn admin_product_form_post_handler(
         .bind(featured)
         .bind(track_inventory)
         .bind(allow_backorder)
+        .bind(is_preorder)
         .bind(low_stock_threshold)
         .bind(show_stock_count)
         .bind(weight_g)

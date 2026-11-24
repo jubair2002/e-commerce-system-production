@@ -31,7 +31,7 @@
       </div>
       <div class="card-body p-4">
         <form method="post" enctype="multipart/form-data" id="importForm">
-          {{ csrf_token() }}
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
           <div class="mb-4">
             <label class="form-label fw-bold">Select CSV File <span class="text-danger">*</span></label>

@@ -122,6 +122,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         mailer,
     };
 
+    // Spawn background system metrics collector (initial collection + every 60s)
+    let metrics_pool = db_pool.clone();
+    tokio::spawn(async move {
+        let _ = jobs::collect_metrics::run_collect_metrics(&metrics_pool, false, false).await;
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+            if let Err(e) = jobs::collect_metrics::run_collect_metrics(&metrics_pool, false, false).await {
+                tracing::warn!("Metrics collection error: {}", e);
+            }
+        }
+    });
+
+    // Spawn background mail queue runner (every 10s)
+    let mail_pool = db_pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+        loop {
+            interval.tick().await;
+            if let Err(e) = jobs::mail_worker::run_mail_worker(&mail_pool, false, 25).await {
+                tracing::warn!("Mail worker error: {}", e);
+            }
+        }
+    });
+
     let session_store = MySqlStore::new(db_pool)
         .with_schema_name(&config.db_name)
         .map_err(std::io::Error::other)?

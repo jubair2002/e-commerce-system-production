@@ -88,10 +88,12 @@
 							<i class="zmdi zmdi-account"></i>
 						</a>
 
+						{% if dark_mode_enabled %}
 						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
 							<i class="fa fa-sun-o theme-icon-sun"></i>
 							<i class="fa fa-moon-o theme-icon-moon"></i>
 						</div>
+						{% endif %}
 					</div>
 				</nav>
 			</div>	
@@ -124,10 +126,12 @@
 					<i class="zmdi zmdi-favorite-outline"></i>
 				</a>
 
+				{% if dark_mode_enabled %}
 				<div class="icon-header-item cl2 hov-cl1 trans-04 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
 					<i class="fa fa-sun-o theme-icon-sun"></i>
 					<i class="fa fa-moon-o theme-icon-moon"></i>
 				</div>
+				{% endif %}
 			</div>
 
 			<!-- Button show menu -->

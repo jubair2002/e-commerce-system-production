@@ -54,7 +54,7 @@
                 </a>
                 {% if me.role == 'admin' %}
                   <form method="post" class="d-inline" onsubmit="return confirm('Delete this category? Products in it will be unlinked.');">
-                    {{ csrf_token() }}
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id" value="{{ c.id }}">
                     <button class="btn btn-sm btn-outline-danger" title="Delete">

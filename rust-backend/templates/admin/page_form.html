@@ -8,7 +8,7 @@
         <h5 class="card-title mb-4">{% if id > 0 %}Edit CMS Page{% else %}Add New Page{% endif %}</h5>
 
         <form method="post">
-          {{ csrf_token() }}
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="id" value="{{ id }}">
 
           <div class="mb-3">

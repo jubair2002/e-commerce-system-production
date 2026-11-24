@@ -101,7 +101,7 @@
 
         {% if valid_next | length > 0 %}
           <form method="post">
-            {{ csrf_token() }}
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="action" value="update_status">
             <div class="mb-3">
               <label class="form-label small fw-semibold">Next Allowed Status</label>
@@ -128,7 +128,7 @@
       <div class="card-body">
         <h5 class="card-title mb-3">Courier & Tracking</h5>
         <form method="post">
-          {{ csrf_token() }}
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="action" value="update_tracking">
           <div class="mb-3">
             <label class="form-label small">Courier Service</label>

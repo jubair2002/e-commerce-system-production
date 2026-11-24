@@ -59,7 +59,7 @@
 <div class="card shadow-sm border-0">
   <div class="card-body">
     <form method="post" id="reviews_bulk_form">
-      {{ csrf_token() }}
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="action" value="bulk">
 
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -141,7 +141,7 @@
 </div>
 
 <form method="post" id="single_review_form" style="display:none;">
-  {{ csrf_token() }}
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="action" id="srf_action">
   <input type="hidden" name="id" id="srf_id">
   <input type="hidden" name="status" id="srf_status">

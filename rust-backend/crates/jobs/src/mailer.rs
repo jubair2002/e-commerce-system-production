@@ -114,15 +114,37 @@ pub async fn send_queued_email(
     let subject: String = row.try_get("subject").unwrap_or_default();
     let body_html: String = row.try_get("body_html").unwrap_or_default();
 
-    let host = settings.get_or("mail_host", "localhost");
-    let port = settings.get_or("mail_port", "587").parse::<u16>().unwrap_or(587);
-    let user = settings.get_or("mail_username", "");
-    let enc_pass = settings.get_or("mail_password", "");
-    let from_email = settings.get_or("mail_from_address", "noreply@jinishpotro.com");
-    let from_name = settings.get_or("mail_from_name", "Jinish Potro");
+    let host = {
+        let h = settings.get_or("smtp_host", "");
+        if !h.is_empty() { h } else { settings.get_or("mail_host", "localhost") }
+    };
+    let port = {
+        let p = settings.get_or("smtp_port", "");
+        if !p.is_empty() { p.parse::<u16>().unwrap_or(587) } else { settings.get_or("mail_port", "587").parse::<u16>().unwrap_or(587) }
+    };
+    let user = {
+        let u = settings.get_or("smtp_user", "");
+        if !u.is_empty() { u } else { settings.get_or("mail_username", "") }
+    };
+    let enc_pass = {
+        let p = settings.get_or("smtp_pass", "");
+        if !p.is_empty() { p } else { settings.get_or("mail_password_enc", &settings.get_or("mail_password", "")) }
+    };
+    let from_email = {
+        let f = settings.get_or("mail_from_address", "");
+        if !f.is_empty() { f } else { settings.get_or("mail_from_email", &settings.get_or("site_email", "noreply@jinishpotro.com")) }
+    };
+    let from_name = {
+        let n = settings.get_or("mail_from_name", "");
+        if !n.is_empty() { n } else { settings.get_or("site_name", "Jinish Potro") }
+    };
 
     let app_key = settings.get_or("app_key", "");
-    let pass = app_decrypt(&enc_pass, &app_key).unwrap_or(enc_pass);
+    let pass = if !enc_pass.is_empty() {
+        app_decrypt(&enc_pass, &app_key).unwrap_or(enc_pass)
+    } else {
+        String::new()
+    };
 
     let to_header = match to_name {
         Some(name) => format!("{} <{}>", name, to_email),
@@ -154,7 +176,7 @@ pub async fn send_queued_email(
 
     match mailer.send(email).await {
         Ok(_) => {
-            let _ = sqlx::query("UPDATE email_queue SET status = 'sent', sent_at = NOW() WHERE id = ?")
+            let _ = sqlx::query("UPDATE email_queue SET status = 'sent', sent_at = NOW(), last_error = NULL WHERE id = ?")
                 .bind(queue_id)
                 .execute(pool)
                 .await;
@@ -163,7 +185,7 @@ pub async fn send_queued_email(
         Err(e) => {
             let err_msg = format!("{:?}", e);
             let _ = sqlx::query(
-                "UPDATE email_queue SET status = 'failed', error_message = ?, attempts = attempts + 1 WHERE id = ?",
+                "UPDATE email_queue SET status = 'failed', last_error = ?, attempts = attempts + 1 WHERE id = ?",
             )
             .bind(&err_msg)
             .bind(queue_id)

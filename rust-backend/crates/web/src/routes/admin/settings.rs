@@ -597,6 +597,7 @@ pub async fn admin_settings_post_handler(
 #[derive(Debug, Deserialize)]
 pub struct MailSettingsForm {
     pub action: Option<String>,
+    pub mail_enabled: Option<String>,
     pub smtp_host: Option<String>,
     pub smtp_port: Option<String>,
     pub smtp_user: Option<String>,
@@ -717,29 +718,60 @@ pub async fn admin_mail_settings_post_handler(
             "<h3>Test Email Successful!</h3><p>Your mail server settings are configured properly. Sent at <strong>{}</strong>.</p>",
             Utc::now().format("%Y-%m-%d %H:%M:%S")
         );
+        let subject = format!("Test email from {}", site_name);
 
-        let _ = sqlx::query(
+        let res = sqlx::query(
             "INSERT INTO email_queue (template_slug, to_email, to_name, subject, body_html, status, attempts, scheduled_at, created_at)
              VALUES ('test_email', ?, 'Admin', ?, ?, 'pending', 0, NOW(), NOW())"
         )
         .bind(&recipient)
-        .bind(format!("Test email from {}", site_name))
+        .bind(&subject)
         .bind(&html_body)
         .execute(&state.db)
         .await;
 
-        log_activity(&state.db, Some(admin.id), "mail.test_sent", &format!("Queued test email to {}", recipient), None).await;
-        SessionHelper::add_flash(&session, "success", &format!("Test email queued for delivery to {}.", recipient)).await;
+        if let Ok(r) = res {
+            let qid = r.last_insert_id();
+            let current_settings = db::SettingsRepository::load(&state.db).await.unwrap_or_else(|_| state.settings.clone());
+            match jobs::mailer::send_queued_email(&state.db, &current_settings, qid).await {
+                Ok(_) => {
+                    log_activity(&state.db, Some(admin.id), "mail.test_sent", &format!("Successfully sent test email to {}", recipient), None).await;
+                    SessionHelper::add_flash(&session, "success", &format!("Test email sent successfully to {}!", recipient)).await;
+                }
+                Err(err) => {
+                    log_activity(&state.db, Some(admin.id), "mail.test_failed", &format!("Failed sending test email to {}: {}", recipient, err), None).await;
+                    SessionHelper::add_flash(&session, "danger", &format!("Failed to send test email: {}. Please verify your SMTP settings.", err)).await;
+                }
+            }
+        } else {
+            SessionHelper::add_flash(&session, "danger", "Failed to queue test email in database.").await;
+        }
+
         return Redirect::to("/admin/mail_settings.php").into_response();
     }
 
     // Save mail settings
+    let is_enabled = if form.mail_enabled.as_deref() == Some("1") { "1" } else { "0" };
+    let _ = sqlx::query(
+        "INSERT INTO settings (key_name, value, updated_at)
+         VALUES ('mail_enabled', ?, NOW())
+         ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()"
+    )
+    .bind(is_enabled)
+    .execute(&state.db)
+    .await;
+
     let pairs = vec![
-        ("smtp_host", form.smtp_host),
-        ("smtp_port", form.smtp_port),
-        ("smtp_user", form.smtp_user),
-        ("smtp_encryption", form.smtp_encryption),
-        ("mail_from_address", form.mail_from_address),
+        ("smtp_host", form.smtp_host.clone()),
+        ("mail_host", form.smtp_host),
+        ("smtp_port", form.smtp_port.clone()),
+        ("mail_port", form.smtp_port),
+        ("smtp_user", form.smtp_user.clone()),
+        ("mail_username", form.smtp_user),
+        ("smtp_encryption", form.smtp_encryption.clone()),
+        ("mail_encryption", form.smtp_encryption),
+        ("mail_from_address", form.mail_from_address.clone()),
+        ("mail_from_email", form.mail_from_address),
         ("mail_from_name", form.mail_from_name),
         ("mail_driver", form.mail_driver),
     ];
@@ -767,7 +799,16 @@ pub async fn admin_mail_settings_post_handler(
                  VALUES ('smtp_pass', ?, NOW())
                  ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()"
             )
-            .bind(enc_pw)
+            .bind(&enc_pw)
+            .execute(&state.db)
+            .await;
+
+            let _ = sqlx::query(
+                "INSERT INTO settings (key_name, value, updated_at)
+                 VALUES ('mail_password_enc', ?, NOW())
+                 ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()"
+            )
+            .bind(&enc_pw)
             .execute(&state.db)
             .await;
         }

@@ -245,6 +245,12 @@ SET @s = (SELECT IF(COUNT(*) = 0,
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'allow_backorder');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `products` ADD COLUMN `is_preorder` TINYINT(1) NOT NULL DEFAULT 0',
+  'SELECT ''products.is_preorder exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'is_preorder');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = (SELECT IF(COUNT(*) = 0,
   'ALTER TABLE `products` ADD COLUMN `low_stock_threshold` INT NOT NULL DEFAULT 5',
   'SELECT ''products.low_stock_threshold exists'' AS info')
   FROM information_schema.COLUMNS

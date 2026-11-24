@@ -34,23 +34,51 @@ pub struct MailConfig {
 }
 
 pub async fn load_mail_config(settings: &SettingsRepository) -> MailConfig {
-    let enc_pass = settings.get_or("mail_password_enc", "");
+    let enc_pass = {
+        let p = settings.get_or("smtp_pass", "");
+        if !p.is_empty() { p } else { settings.get_or("mail_password_enc", &settings.get_or("mail_password", "")) }
+    };
     let app_key = settings.get_or("app_key", "");
     let password = if !enc_pass.is_empty() {
-        app_decrypt(&enc_pass, &app_key).unwrap_or_default()
+        app_decrypt(&enc_pass, &app_key).unwrap_or(enc_pass)
     } else {
-        settings.get_or("mail_password", "")
+        String::new()
+    };
+
+    let host = {
+        let h = settings.get_or("smtp_host", "");
+        if !h.is_empty() { h } else { settings.get_or("mail_host", "localhost") }
+    };
+    let port = {
+        let p = settings.get_or("smtp_port", "");
+        if !p.is_empty() { p.parse::<u16>().unwrap_or(587) } else { settings.get_or("mail_port", "587").parse::<u16>().unwrap_or(587) }
+    };
+    let username = {
+        let u = settings.get_or("smtp_user", "");
+        if !u.is_empty() { u } else { settings.get_or("mail_username", "") }
+    };
+    let encryption = {
+        let e = settings.get_or("smtp_encryption", "");
+        if !e.is_empty() { e } else { settings.get_or("mail_encryption", "tls") }
+    };
+    let from_email = {
+        let f = settings.get_or("mail_from_address", "");
+        if !f.is_empty() { f } else { settings.get_or("mail_from_email", &settings.get_or("site_email", "noreply@example.com")) }
+    };
+    let from_name = {
+        let n = settings.get_or("mail_from_name", "");
+        if !n.is_empty() { n } else { settings.get_or("site_name", "Jinish Potro") }
     };
 
     MailConfig {
         enabled: settings.get_or("mail_enabled", "0") == "1",
-        host: settings.get_or("mail_host", "localhost"),
-        port: settings.get_or("mail_port", "587").parse::<u16>().unwrap_or(587),
-        username: settings.get_or("mail_username", ""),
+        host,
+        port,
+        username,
         password,
-        encryption: settings.get_or("mail_encryption", "tls"),
-        from_email: settings.get_or("mail_from_email", &settings.get_or("site_email", "noreply@example.com")),
-        from_name: settings.get_or("mail_from_name", &settings.get_or("site_name", "Jinish Potro")),
+        encryption,
+        from_email,
+        from_name,
         reply_to: settings.get_or("mail_reply_to", ""),
         max_attempts: settings.get_or("mail_max_attempts", "3").parse::<i32>().unwrap_or(3).max(1),
         timeout_secs: settings.get_or("mail_timeout", "8").parse::<u64>().unwrap_or(8).clamp(2, 30),

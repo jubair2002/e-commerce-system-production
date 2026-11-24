@@ -111,7 +111,7 @@
 </div>
 
 <form method="post" id="sub_action_form" style="display:none;">
-  {{ csrf_token() }}
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="action" id="saf_action">
   <input type="hidden" name="id" id="saf_id">
   <input type="hidden" name="status" id="saf_status">

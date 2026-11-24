@@ -570,11 +570,13 @@
         <td style="min-width:120px;">
           <select class="form-select form-select-sm var-image-select">
             <option value="">No image</option>
-            ${galleryImages.map(img => `
+            ${galleryImages.map(img => {
+              const fname = (img.filename || '').split('/').pop() || img.filename || '';
+              return `
               <option value="${escapeHtml(img.filename)}" ${v.image === img.filename ? 'selected' : ''}>
-                ${escapeHtml(img.filename.substring(0, 16))}...
+                ${escapeHtml(fname)}
               </option>
-            `).join('')}
+            `;}).join('')}
           </select>
         </td>
       `;

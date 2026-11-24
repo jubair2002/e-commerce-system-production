@@ -57,7 +57,7 @@
 <div class="card shadow-sm">
   <div class="card-body">
     <form method="post" id="bulk_action_form">
-      {{ csrf_token() }}
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="action" value="bulk">
 
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -220,7 +220,7 @@
 
 <!-- Single Delete Form (Hidden) -->
 <form method="post" id="single_delete_form" style="display:none;">
-  {{ csrf_token() }}
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="action" value="delete">
   <input type="hidden" name="id" id="delete_target_id" value="">
 </form>

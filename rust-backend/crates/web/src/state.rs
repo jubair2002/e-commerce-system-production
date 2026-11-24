@@ -272,10 +272,11 @@ pub async fn build_base_context(
     ctx.insert("announcement_bar", &announcement_text);
 
     let theme_accent = state.settings.get_or("theme_accent_color", "#717fe0");
-    let dark_mode = state.settings.get_or("theme_dark_mode", "0") == "1";
+    let dark_mode_enabled = state.settings.get_or("dark_mode_enabled", "1") == "1";
     ctx.insert("theme_accent", &theme_accent);
     ctx.insert("theme_accent_color", &theme_accent);
-    ctx.insert("dark_mode", &dark_mode);
+    ctx.insert("dark_mode_enabled", &dark_mode_enabled);
+    ctx.insert("dark_mode", &dark_mode_enabled);
 
     let currency_sym = state.settings.get_or("currency_symbol", "৳");
     ctx.insert("currency_symbol", &currency_sym);
