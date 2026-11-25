@@ -182,16 +182,35 @@ if (APP_ENV === 'development') {
 
 // ----- Session -----
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-    if (!empty($_GET['test_sess']) && preg_match('/^[a-zA-Z0-9,-]+$/', $_GET['test_sess'])) {
+    // Session fixation protection: test_sess only permitted during testing environment
+    if (APP_ENV === 'testing' && !empty($_GET['test_sess']) && preg_match('/^[a-zA-Z0-9,-]+$/', $_GET['test_sess'])) {
         session_id($_GET['test_sess']);
+    }
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_httponly', '1');
+    if (is_https()) {
+        ini_set('session.cookie_secure', '1');
     }
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
         'httponly' => true,
+        'secure'   => is_https(),
         'samesite' => 'Lax',
     ]);
     session_start();
+}
+
+// Global HTTP security headers
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    if (is_https()) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 }
 
 // Default timezone - guarded for when settings table is not yet created

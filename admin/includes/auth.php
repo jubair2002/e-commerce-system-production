@@ -11,18 +11,34 @@ require_once __DIR__ . '/../../includes/inventory.php';
 require_once __DIR__ . '/../../includes/mailer.php';
 require_once __DIR__ . '/../../includes/analytics.php';
 require_once __DIR__ . '/../../includes/permissions.php';
+require_once __DIR__ . '/../../includes/customer_auth.php';
 
 function attempt_login(string $email, string $password): bool
 {
+    $ip = get_client_ip();
+    if (function_exists('auth_is_rate_limited') && auth_is_rate_limited('login', $email, $ip)) {
+        return false;
+    }
+
     $stmt = db()->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
     $stmt->execute([':email' => $email]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password'])) {
+        if (function_exists('auth_attempt_log')) {
+            auth_attempt_log('login', $email, $ip, false);
+        }
         return false;
     }
     if ($user['status'] !== 'active') {
+        if (function_exists('auth_attempt_log')) {
+            auth_attempt_log('login', $email, $ip, false);
+        }
         return false;
+    }
+
+    if (function_exists('auth_attempt_log')) {
+        auth_attempt_log('login', $email, $ip, true);
     }
 
     // Re-hash if PHP suggests a stronger algorithm.

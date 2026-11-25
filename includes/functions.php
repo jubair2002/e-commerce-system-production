@@ -251,8 +251,11 @@ function csrf_field(): string
     return '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">';
 }
 
-function csrf_verify(?string $token): bool
+function csrf_verify(?string $token = null): bool
 {
+    if ($token === null) {
+        $token = $_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    }
     return !empty($token)
         && !empty($_SESSION['csrf_token'])
         && hash_equals($_SESSION['csrf_token'], $token);
@@ -261,7 +264,7 @@ function csrf_verify(?string $token): bool
 function require_csrf(): void
 {
     if ($_SERVER['REQUEST_METHOD'] === 'POST'
-        && !csrf_verify($_POST['_csrf'] ?? null)) {
+        && !csrf_verify($_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null)) {
         http_response_code(403);
         die('Invalid CSRF token.');
     }

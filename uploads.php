@@ -29,8 +29,12 @@ if (empty($requested)) {
     }
 }
 
-// Security: strip null bytes and directory traversal sequences
-$requested = str_replace(["\0", '../', '..\\'], '', (string)$requested);
+// Security: strip null bytes and directory traversal sequences recursively
+$requested = str_replace("\0", '', (string)$requested);
+$requested = str_replace('\\', '/', $requested);
+while (strpos($requested, '../') !== false) {
+    $requested = str_replace('../', '', $requested);
+}
 $requested = ltrim($requested, '/');
 
 if (empty($requested)) {
@@ -86,6 +90,31 @@ foreach ($candidatePaths as $candidate) {
     if (!empty($candidate) && file_exists($candidate) && is_file($candidate)) {
         $filePath = $candidate;
         break;
+    }
+}
+
+// Canonical path verification to prevent path traversal outside allowed asset directories
+if ($filePath) {
+    $realPath = realpath($filePath);
+    $allowedRoots = array_filter([
+        realpath(UPLOADS_PATH),
+        realpath(ROOT_PATH . '/assets/uploads'),
+        realpath(ROOT_PATH . '/assets'),
+    ]);
+
+    $isAllowed = false;
+    if ($realPath !== false) {
+        foreach ($allowedRoots as $root) {
+            if ($root !== false && (str_starts_with($realPath, $root . DIRECTORY_SEPARATOR) || $realPath === $root)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+    }
+
+    if (!$isAllowed) {
+        http_response_code(403);
+        exit('Access denied.');
     }
 }
 
@@ -159,6 +188,9 @@ header('Cache-Control: public, max-age=31536000, immutable');
 header('ETag: ' . $etag);
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
 header('X-Content-Type-Options: nosniff');
+if ($ext === 'svg' || $contentType === 'image/svg+xml') {
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'");
+}
 
 if (
     (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) ||

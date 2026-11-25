@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `updated_at`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_products_category` (`category_id`),
+  KEY `idx_products_cat_status` (`category_id`, `status`),
   KEY `idx_products_status`   (`status`),
   KEY `idx_products_featured` (`featured`),
   CONSTRAINT `fk_products_category`

@@ -11,6 +11,11 @@ header('Cache-Control: no-store');
 $action = $_POST['action'] ?? $_GET['action'] ?? 'get';
 $response = ['ok' => true, 'action' => $action];
 
+// For read-only cart fetching, release session write lock early to avoid blocking concurrent requests
+if ($action === 'get' && session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $productId = (int)($_POST['product_id'] ?? 0);
     $variantId = !empty($_POST['variant_id']) ? (int)$_POST['variant_id'] : null;
@@ -185,6 +190,10 @@ ob_start();
 <?php endif; ?>
 <?php
 $response['html'] = ob_get_clean();
+
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 if (function_exists('app_finish_response')) app_finish_response();

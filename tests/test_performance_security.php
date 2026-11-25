@@ -1,0 +1,68 @@
+<?php
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/FileCache.php';
+require_once __DIR__ . '/../admin/includes/auth.php';
+
+echo "=== Running Security & Performance Verification ===\n";
+
+// 1. FileCache Object Injection Test
+class MaliciousPayload {
+    public $hook = 'evil';
+}
+$testKey = 'test_security_object_injection';
+FileCache::set($testKey, 'safe_string_data', 60);
+
+// Verify L1 cache hit
+$val1 = FileCache::get($testKey);
+assert($val1 === 'safe_string_data', 'L1 Cache get failed');
+
+// Overwrite cache file directly with a serialized object to test deserialization safety
+$normKey = FileCache::normalizeKey($testKey);
+$filePath = FileCache::getFilePath($normKey);
+$poisoned = serialize([
+    'key'  => $normKey,
+    'exp'  => time() + 60,
+    'data' => new MaliciousPayload()
+]);
+file_put_contents($filePath, $poisoned);
+
+// Flush L1 to force disk read
+FileCache::deletePattern('unrelated:*'); // wipes L1
+$val2 = FileCache::get($testKey);
+// In PHP with allowed_classes => false, non-allowed objects become __PHP_Incomplete_Class
+assert(!($val2 instanceof MaliciousPayload), 'Object injection payload must NOT instantiate MaliciousPayload class!');
+echo "[PASS] FileCache object injection protection confirmed.\n";
+
+// Clean up
+FileCache::delete($testKey);
+assert(FileCache::get($testKey) === null, 'Cache delete failed');
+echo "[PASS] FileCache deletion and invalidation confirmed.\n";
+
+// 2. CSRF Token via Header Test
+$_SESSION['csrf_token'] = 'test_valid_csrf_token_12345';
+$_SERVER['HTTP_X_CSRF_TOKEN'] = 'test_valid_csrf_token_12345';
+unset($_POST['_csrf']);
+assert(csrf_verify() === true, 'csrf_verify should succeed when X-CSRF-Token header matches');
+echo "[PASS] CSRF verification via X-CSRF-Token header confirmed.\n";
+
+$_SERVER['HTTP_X_CSRF_TOKEN'] = 'wrong_token';
+assert(csrf_verify() === false, 'csrf_verify should fail with wrong token');
+echo "[PASS] CSRF verification rejection confirmed.\n";
+
+// 3. Admin Rate Limiting Test
+$testAdminEmail = 'rate_limit_test_' . time() . '@example.com';
+$fakeIp = '198.51.100.99';
+$_SERVER['REMOTE_ADDR'] = $fakeIp;
+
+// 5 failed attempts
+for ($i = 0; $i < 5; $i++) {
+    attempt_login($testAdminEmail, 'wrong_pass_' . $i);
+}
+assert(auth_is_rate_limited('login', $testAdminEmail, $fakeIp) === true, 'Admin login must be rate limited after 5 failed attempts');
+echo "[PASS] Admin brute force rate limiting confirmed.\n";
+
+// Clean up test attempts
+db()->prepare("DELETE FROM auth_attempts WHERE ip = :ip")->execute([':ip' => $fakeIp]);
+
+echo "\nAll Security & Performance checks PASSED!\n";

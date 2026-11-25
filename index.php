@@ -46,13 +46,11 @@ try {
     $categories = FileCache::remember('home:categories:all', 300, function () use ($pdo) {
         return $pdo->query(
             "SELECT c.id, c.name, c.slug, c.description, NULL AS image,
-                    (SELECT COUNT(*) FROM products p 
-                     WHERE (p.category_id = c.id 
-                        OR ((p.category_id IS NULL OR p.category_id = 0) 
-                            AND (LOWER(p.tags) LIKE CONCAT('%', LOWER(c.slug), '%') OR LOWER(p.tags) LIKE CONCAT('%', LOWER(c.name), '%')))) 
-                       AND p.status = 'active') AS product_count
+                    COUNT(p.id) AS product_count
              FROM categories c
+             LEFT JOIN products p ON p.category_id = c.id AND p.status = 'active'
              WHERE c.status = 'active'
+             GROUP BY c.id, c.name, c.slug, c.description
              ORDER BY product_count DESC, c.name ASC"
         )->fetchAll() ?: [];
     });

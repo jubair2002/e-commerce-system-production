@@ -13,7 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email']    ?? '');
     $password = (string)($_POST['password'] ?? '');
 
-    if (!$email || !$password) {
+    $ip = get_client_ip();
+    if (function_exists('auth_is_rate_limited') && auth_is_rate_limited('login', $email, $ip)) {
+        $errors[] = 'Too many failed login attempts. Please wait 15 minutes before trying again.';
+    } elseif (!$email || !$password) {
         $errors[] = 'Email and password are required.';
     } elseif (!attempt_login($email, $password)) {
         $errors[] = 'Invalid credentials, or your account is disabled.';

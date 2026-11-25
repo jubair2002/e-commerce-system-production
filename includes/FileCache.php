@@ -45,6 +45,9 @@ final class FileCache
     /** Root directory for cache files */
     private static ?string $storageDir = null;
 
+    /** In-memory L1 cache for the current request lifecycle */
+    private static array $runtimeCache = [];
+
     /**
      * Get the absolute path to storage/cache directory.
      */
@@ -100,6 +103,16 @@ final class FileCache
         }
 
         $normKey = self::normalizeKey($key);
+
+        // Check L1 runtime cache first
+        if (array_key_exists($normKey, self::$runtimeCache)) {
+            $item = self::$runtimeCache[$normKey];
+            if ($item['exp'] === 0 || $item['exp'] >= time()) {
+                return $item['data'];
+            }
+            unset(self::$runtimeCache[$normKey]);
+        }
+
         $filePath = self::getFilePath($normKey);
 
         if (!file_exists($filePath)) {
@@ -111,7 +124,7 @@ final class FileCache
             return $default;
         }
 
-        $payload = @unserialize($content);
+        $payload = @unserialize($content, ['allowed_classes' => false]);
         if (!is_array($payload) || !isset($payload['exp'], $payload['data'], $payload['key'])) {
             @unlink($filePath);
             return $default;
@@ -127,6 +140,11 @@ final class FileCache
             @unlink($filePath);
             return $default;
         }
+
+        self::$runtimeCache[$normKey] = [
+            'exp'  => (int)$payload['exp'],
+            'data' => $payload['data'],
+        ];
 
         return $payload['data'];
     }
@@ -180,6 +198,11 @@ final class FileCache
             return false;
         }
 
+        self::$runtimeCache[$normKey] = [
+            'exp'  => $ttl > 0 ? (time() + $ttl) : 0,
+            'data' => $value,
+        ];
+
         return true;
     }
 
@@ -189,6 +212,7 @@ final class FileCache
     public static function delete(string $key): bool
     {
         $normKey = self::normalizeKey($key);
+        unset(self::$runtimeCache[$normKey]);
         $filePath = self::getFilePath($normKey);
         if (file_exists($filePath)) {
             return @unlink($filePath);
@@ -201,6 +225,7 @@ final class FileCache
      */
     public static function deletePattern(string $pattern): int
     {
+        self::$runtimeCache = [];
         $dir = self::getStorageDir();
         if (!is_dir($dir)) {
             return 0;
@@ -225,7 +250,7 @@ final class FileCache
             if ($item->isFile() && $item->getExtension() === 'cache') {
                 $content = @file_get_contents($item->getPathname());
                 if ($content !== false) {
-                    $payload = @unserialize($content);
+                    $payload = @unserialize($content, ['allowed_classes' => false]);
                     if (is_array($payload) && isset($payload['key'])) {
                         if (preg_match($regexPattern, $payload['key'])) {
                             @unlink($item->getPathname());
@@ -264,6 +289,7 @@ final class FileCache
      */
     public static function flush(): bool
     {
+        self::$runtimeCache = [];
         $dir = self::getStorageDir();
         if (!is_dir($dir)) {
             return true;
