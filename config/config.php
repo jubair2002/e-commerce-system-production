@@ -31,11 +31,6 @@ define('APP_KEY', (string)env('APP_KEY', 'CHANGE_ME_TO_64_RANDOM_CHARS'));
 if (!function_exists('is_https')) {
     function is_https(): bool
     {
-        $force = function_exists('env') ? env('FORCE_HTTPS') : null;
-        if ($force === true || $force === 'true' || $force === '1' || $force === 1) {
-            return true;
-        }
-
         if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
             return true;
         }
@@ -79,11 +74,13 @@ if (!function_exists('is_https')) {
     }
 }
 
-// Optional: Force HTTPS redirect when FORCE_HTTPS=true in production
+// Optional: Force HTTPS redirect when FORCE_HTTPS=true in production (excluding localhost and IP addresses)
 $forceHttps = function_exists('env') ? env('FORCE_HTTPS', false) : false;
 if (($forceHttps === true || $forceHttps === 'true' || $forceHttps === '1') && !is_https() && PHP_SAPI !== 'cli') {
     $currentHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    if (!in_array($currentHost, ['localhost', '127.0.0.1'], true) && !str_starts_with($currentHost, 'localhost:') && !str_starts_with($currentHost, '127.0.0.1:')) {
+    $hostOnly = explode(':', $currentHost)[0];
+    $isIpOrLocal = in_array($hostOnly, ['localhost', '127.0.0.1', '::1'], true) || filter_var($hostOnly, FILTER_VALIDATE_IP);
+    if (!$isIpOrLocal) {
         $dest = 'https://' . $currentHost . ($_SERVER['REQUEST_URI'] ?? '/');
         header('Location: ' . $dest, true, 301);
         exit;
@@ -208,14 +205,15 @@ if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    if (is_https()) {
+
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    if (strpos($host, ':') !== false) {
+        $host = explode(':', $host)[0];
+    }
+    $isLocalOrIp = in_array($host, ['localhost', '127.0.0.1', '::1', ''], true) || filter_var($host, FILTER_VALIDATE_IP);
+    if (is_https() && !$isLocalOrIp && APP_ENV === 'production') {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }
-}
-
-// Transparent HTTP GZIP compression for maximum network performance
-if (PHP_SAPI !== 'cli' && extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
-    @ini_set('zlib.output_compression', '1');
 }
 
 // Default timezone - guarded for when settings table is not yet created
