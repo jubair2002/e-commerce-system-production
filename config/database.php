@@ -119,8 +119,8 @@ class Database
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
-                // On high-traffic Linux production, persistent connections can be enabled:
-                PDO::ATTR_PERSISTENT         => false,
+                // On high-traffic Linux production, persistent connections can be enabled via DB_PERSISTENT=true
+                PDO::ATTR_PERSISTENT         => (function_exists('env') ? (bool)env('DB_PERSISTENT', false) : false),
                 // Set timezone directly on initialization to save extra round-trips
                 (defined('Pdo\Mysql::ATTR_INIT_COMMAND')
                     ? \Pdo\Mysql::ATTR_INIT_COMMAND

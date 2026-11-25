@@ -213,6 +213,11 @@ if (!headers_sent()) {
     }
 }
 
+// Transparent HTTP GZIP compression for maximum network performance
+if (PHP_SAPI !== 'cli' && extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    @ini_set('zlib.output_compression', '1');
+}
+
 // Default timezone - guarded for when settings table is not yet created
 $appTimezone = 'Asia/Dhaka';
 if (function_exists('setting')) {

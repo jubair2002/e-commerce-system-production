@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_log_user`   (`user_id`),
+  KEY `idx_activity_created` (`created_at`),
   CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -86,6 +87,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   KEY `idx_products_category` (`category_id`),
   KEY `idx_products_cat_status` (`category_id`, `status`),
   KEY `idx_products_status`   (`status`),
+  KEY `idx_products_sku`      (`sku`),
   KEY `idx_products_featured` (`featured`),
   CONSTRAINT `fk_products_category`
       FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL
@@ -111,9 +113,10 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `created_at`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_orders_status`     (`status`),
-  KEY `idx_orders_email`      (`customer_email`),
-  KEY `idx_orders_created_at` (`created_at`)
+  KEY `idx_orders_status`          (`status`),
+  KEY `idx_orders_shipping_method` (`shipping_method_id`),
+  KEY `idx_orders_email`           (`customer_email`),
+  KEY `idx_orders_created_at`      (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `order_items` (
@@ -198,6 +201,7 @@ CREATE TABLE IF NOT EXISTS `product_variants` (
   UNIQUE KEY `uq_variant_combo` (`product_id`,`option_hash`),
   KEY `idx_variant_sku` (`sku`),
   KEY `idx_variant_status_stock` (`product_id`,`status`,`stock`),
+  KEY `idx_pv_status_pid_stock` (`status`,`product_id`,`stock`),
   CONSTRAINT `fk_variant_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -386,7 +390,8 @@ CREATE TABLE IF NOT EXISTS `shipping_methods` (
   `cod_allowed` TINYINT(1) NOT NULL DEFAULT 1,
   `status`      ENUM('active','inactive') NOT NULL DEFAULT 'active',
   `position`    INT NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_sm_status_pos` (`status`, `position`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `coupons` (
@@ -403,7 +408,8 @@ CREATE TABLE IF NOT EXISTS `coupons` (
   `status`      ENUM('active','inactive') NOT NULL DEFAULT 'active',
   `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_coupon_code` (`code`)
+  UNIQUE KEY `uq_coupon_code` (`code`),
+  KEY `idx_coupons_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `order_status_history` (

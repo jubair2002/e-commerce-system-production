@@ -3,80 +3,93 @@
  * Catalog helpers: products, options, variants, pricing, and availability.
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/FileCache.php';
 
 /**
  * Fetch a single product by ID (any status).
  */
-function product_get(int $id): ?array
+function product_get(int $id, bool $forceReload = false): ?array
 {
+    static $runtimeCache = [];
+    if (!$forceReload && array_key_exists($id, $runtimeCache)) {
+        return $runtimeCache[$id];
+    }
     $stmt = db()->prepare("SELECT * FROM products WHERE id = :id LIMIT 1");
     $stmt->execute([':id' => $id]);
     $row = $stmt->fetch();
-    return $row ?: null;
+    $runtimeCache[$id] = $row ?: null;
+    return $runtimeCache[$id];
 }
 
 /**
  * Fetch a product by slug for storefront (active only).
  */
-function product_get_by_slug(string $slug): ?array
+function product_get_by_slug(string $slug, bool $forceReload = false): ?array
 {
+    static $runtimeCache = [];
+    if (!$forceReload && array_key_exists($slug, $runtimeCache)) {
+        return $runtimeCache[$slug];
+    }
     $stmt = db()->prepare("SELECT * FROM products WHERE slug = :slug AND status = 'active' LIMIT 1");
     $stmt->execute([':slug' => $slug]);
     $row = $stmt->fetch();
-    return $row ?: null;
+    $runtimeCache[$slug] = $row ?: null;
+    return $runtimeCache[$slug];
 }
 
 /**
- * Get all options with their values for a product.
+ * Get all options with their values for a product (cached 10 min).
  * Returns: [ ['id','name','display_type','values'=>[['id','value','swatch_hex']]] ] ordered by position.
  */
 function product_options_get(int $productId): array
 {
-    $stmtOpt = db()->prepare(
-        "SELECT id, name, display_type, position
-         FROM product_options
-         WHERE product_id = :pid
-         ORDER BY position ASC, id ASC"
-    );
-    $stmtOpt->execute([':pid' => $productId]);
-    $options = $stmtOpt->fetchAll();
-    if (!$options) {
-        return [];
-    }
+    return FileCache::remember("products:options:{$productId}", 600, function () use ($productId) {
+        $stmtOpt = db()->prepare(
+            "SELECT id, name, display_type, position
+             FROM product_options
+             WHERE product_id = :pid
+             ORDER BY position ASC, id ASC"
+        );
+        $stmtOpt->execute([':pid' => $productId]);
+        $options = $stmtOpt->fetchAll();
+        if (!$options) {
+            return [];
+        }
 
-    $optIds = array_map('intval', array_column($options, 'id'));
-    $placeholders = implode(',', array_fill(0, count($optIds), '?'));
+        $optIds = array_map('intval', array_column($options, 'id'));
+        $placeholders = implode(',', array_fill(0, count($optIds), '?'));
 
-    $stmtVal = db()->prepare(
-        "SELECT id, option_id, value, swatch_hex, position
-         FROM product_option_values
-         WHERE option_id IN ($placeholders)
-         ORDER BY position ASC, id ASC"
-    );
-    $stmtVal->execute($optIds);
-    $allValues = $stmtVal->fetchAll();
+        $stmtVal = db()->prepare(
+            "SELECT id, option_id, value, swatch_hex, position
+             FROM product_option_values
+             WHERE option_id IN ($placeholders)
+             ORDER BY position ASC, id ASC"
+        );
+        $stmtVal->execute($optIds);
+        $allValues = $stmtVal->fetchAll();
 
-    $valuesByOpt = [];
-    foreach ($allValues as $val) {
-        $valuesByOpt[$val['option_id']][] = [
-            'id'         => (int)$val['id'],
-            'value'      => $val['value'],
-            'swatch_hex' => $val['swatch_hex'],
-        ];
-    }
+        $valuesByOpt = [];
+        foreach ($allValues as $val) {
+            $valuesByOpt[$val['option_id']][] = [
+                'id'         => (int)$val['id'],
+                'value'      => $val['value'],
+                'swatch_hex' => $val['swatch_hex'],
+            ];
+        }
 
-    $result = [];
-    foreach ($options as $opt) {
-        $result[] = [
-            'id'           => (int)$opt['id'],
-            'name'         => $opt['name'],
-            'display_type' => $opt['display_type'],
-            'position'     => (int)$opt['position'],
-            'values'       => $valuesByOpt[$opt['id']] ?? [],
-        ];
-    }
+        $result = [];
+        foreach ($options as $opt) {
+            $result[] = [
+                'id'           => (int)$opt['id'],
+                'name'         => $opt['name'],
+                'display_type' => $opt['display_type'],
+                'position'     => (int)$opt['position'],
+                'values'       => $valuesByOpt[$opt['id']] ?? [],
+            ];
+        }
 
-    return $result;
+        return $result;
+    });
 }
 
 /**
@@ -87,6 +100,14 @@ function product_options_get(int $productId): array
  */
 function variants_get(int $productId, bool $onlyActive = true): array
 {
+    $cacheKey = $onlyActive ? "products:variants:active:{$productId}" : null;
+    if ($cacheKey !== null) {
+        $cached = FileCache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+    }
+
     $sql = "SELECT * FROM product_variants WHERE product_id = :pid";
     if ($onlyActive) {
         $sql .= " AND status = 'active'";
@@ -97,6 +118,9 @@ function variants_get(int $productId, bool $onlyActive = true): array
     $stmt->execute([':pid' => $productId]);
     $variants = $stmt->fetchAll();
     if (!$variants) {
+        if ($cacheKey !== null) {
+            FileCache::set($cacheKey, [], 600);
+        }
         return [];
     }
 
@@ -136,18 +160,28 @@ function variants_get(int $productId, bool $onlyActive = true): array
     }
     unset($v);
 
+    if ($cacheKey !== null) {
+        FileCache::set($cacheKey, $variants, 600);
+    }
+
     return $variants;
 }
 
 /**
  * Fetch a single variant by ID, including hydrated option_value_ids and label.
  */
-function variant_get(int $variantId): ?array
+function variant_get(int $variantId, bool $forceReload = false): ?array
 {
+    static $runtimeCache = [];
+    if (!$forceReload && array_key_exists($variantId, $runtimeCache)) {
+        return $runtimeCache[$variantId];
+    }
+
     $stmt = db()->prepare("SELECT * FROM product_variants WHERE id = :id LIMIT 1");
     $stmt->execute([':id' => $variantId]);
     $v = $stmt->fetch();
     if (!$v) {
+        $runtimeCache[$variantId] = null;
         return null;
     }
 
@@ -179,6 +213,7 @@ function variant_get(int $variantId): ?array
     $v['option_value_ids'] = $map;
     $v['label'] = !empty($labels) ? implode(' / ', $labels) : ($v['sku'] ?: 'Default');
 
+    $runtimeCache[$variantId] = $v;
     return $v;
 }
 
@@ -253,17 +288,19 @@ function variant_hash(array $optionValueIds): string
 }
 
 /**
- * Get all gallery images for a product, sorted with primary first.
+ * Get all gallery images for a product, sorted with primary first (cached 10 min).
  */
 function product_gallery_images(int $productId): array
 {
-    $stmt = db()->prepare(
-        "SELECT * FROM product_images
-         WHERE product_id = :pid
-         ORDER BY is_primary DESC, position ASC, id ASC"
-    );
-    $stmt->execute([':pid' => $productId]);
-    return $stmt->fetchAll() ?: [];
+    return FileCache::remember("products:gallery:{$productId}", 600, function () use ($productId) {
+        $stmt = db()->prepare(
+            "SELECT * FROM product_images
+             WHERE product_id = :pid
+             ORDER BY is_primary DESC, position ASC, id ASC"
+        );
+        $stmt->execute([':pid' => $productId]);
+        return $stmt->fetchAll() ?: [];
+    });
 }
 
 /**
@@ -373,24 +410,26 @@ function storefront_banners_get(string $placement = 'hero'): array
 }
 
 /**
- * Get delivery estimate string from active shipping methods.
+ * Get delivery estimate string from active shipping methods (cached 60 min).
  */
 function shipping_delivery_estimate(): ?string
 {
-    try {
-        $stmt = db()->query(
-            "SELECT MIN(min_days) AS min_d, MAX(max_days) AS max_d
-             FROM shipping_methods
-             WHERE status = 'active'"
-        );
-        $row = $stmt->fetch();
-        if ($row && !empty($row['max_d'])) {
-            $min = (int)($row['min_d'] ?: 1);
-            $max = (int)$row['max_d'];
-            return "{$min}–{$max} business days";
-        }
-    } catch (Throwable $e) {}
-    return '2–4 business days';
+    return FileCache::remember('shipping:delivery_estimate', 3600, function () {
+        try {
+            $stmt = db()->query(
+                "SELECT MIN(min_days) AS min_d, MAX(max_days) AS max_d
+                 FROM shipping_methods
+                 WHERE status = 'active'"
+            );
+            $row = $stmt->fetch();
+            if ($row && !empty($row['max_d'])) {
+                $min = (int)($row['min_d'] ?: 1);
+                $max = (int)$row['max_d'];
+                return "{$min}–{$max} business days";
+            }
+        } catch (Throwable $e) {}
+        return '2–4 business days';
+    });
 }
 
 /**

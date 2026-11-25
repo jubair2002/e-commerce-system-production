@@ -65,4 +65,27 @@ echo "[PASS] Admin brute force rate limiting confirmed.\n";
 // Clean up test attempts
 db()->prepare("DELETE FROM auth_attempts WHERE ip = :ip")->execute([':ip' => $fakeIp]);
 
+// 4. Catalog & Cart Memoization Test
+require_once __DIR__ . '/../includes/catalog.php';
+require_once __DIR__ . '/../includes/shop_bootstrap.php';
+
+// Shipping estimate caching
+$est1 = shipping_delivery_estimate();
+$est2 = shipping_delivery_estimate();
+assert(!empty($est1) && $est1 === $est2, 'shipping_delivery_estimate failed');
+echo "[PASS] shipping_delivery_estimate caching confirmed.\n";
+
+// Cart load memoization
+$_SESSION['cart'] = ['1:0' => 1];
+$c1 = cart_load();
+$c2 = cart_load();
+assert($c1 === $c2, 'cart_load memoization must return identical instance');
+echo "[PASS] cart_load memoization confirmed.\n";
+
+// Product get memoization
+$p1 = product_get(3);
+$p2 = product_get(3);
+assert($p1 === $p2, 'product_get memoization failed');
+echo "[PASS] product_get runtime memoization confirmed.\n";
+
 echo "\nAll Security & Performance checks PASSED!\n";

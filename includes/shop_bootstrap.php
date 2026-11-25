@@ -377,11 +377,21 @@ function cart_count(): int
  *   'warnings' => string[], // alias of alerts
  * ]
  */
-function cart_load(): array
+function cart_load(bool $forceReload = false): array
 {
+    static $staticMemo = null;
+    static $staticMemoHash = null;
+
     $rawCart = cart_raw();
     if (!$rawCart) {
+        $staticMemo = null;
+        $staticMemoHash = null;
         return ['items' => [], 'subtotal' => 0.0, 'alerts' => [], 'warnings' => []];
+    }
+
+    $cartHash = md5(serialize($rawCart));
+    if (!$forceReload && $staticMemo !== null && $staticMemoHash === $cartHash) {
+        return $staticMemo;
     }
 
     $parsedItems = [];
@@ -552,12 +562,15 @@ function cart_load(): array
 
     $subtotal = round($subtotal, 2);
 
-    return [
+    $staticMemo = [
         'items'    => $items,
         'subtotal' => $subtotal,
         'alerts'   => $alerts,
         'warnings' => $alerts,
     ];
+    $staticMemoHash = $cartHash;
+
+    return $staticMemo;
 }
 
 /**
