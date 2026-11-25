@@ -233,6 +233,12 @@ CREATE TABLE IF NOT EXISTS `product_images` (
 
 -- New product-level columns
 SET @s = (SELECT IF(COUNT(*) = 0,
+  'ALTER TABLE `products` ADD COLUMN `is_preorder` TINYINT(1) NOT NULL DEFAULT 0 AFTER `featured`',
+  'SELECT ''products.is_preorder exists'' AS info')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'is_preorder');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = (SELECT IF(COUNT(*) = 0,
   'ALTER TABLE `products` ADD COLUMN `product_type` ENUM(''simple'',''variable'') NOT NULL DEFAULT ''simple'' AFTER `slug`',
   'SELECT ''products.product_type exists'' AS info')
   FROM information_schema.COLUMNS

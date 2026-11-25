@@ -272,6 +272,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':mk'    => $metaKeywords !== '' ? $metaKeywords : null,
             ];
 
+            // Ensure is_preorder column exists on the products table (self-healing for legacy databases)
+            static $hasPreorder = null;
+            if ($hasPreorder === null) {
+                try {
+                    $chk = $pdo->query("SHOW COLUMNS FROM products LIKE 'is_preorder'")->fetch();
+                    if (!$chk) {
+                        $pdo->exec("ALTER TABLE `products` ADD COLUMN `is_preorder` TINYINT(1) NOT NULL DEFAULT 0 AFTER `featured`");
+                        $hasPreorder = true;
+                    } else {
+                        $hasPreorder = true;
+                    }
+                } catch (Throwable $e) {
+                    try {
+                        $chk2 = $pdo->query("SHOW COLUMNS FROM products LIKE 'is_preorder'")->fetch();
+                        $hasPreorder = (bool)$chk2;
+                    } catch (Throwable) {
+                        $hasPreorder = false;
+                    }
+                }
+            }
+
+            if (!$hasPreorder) {
+                unset($productData[':preorder']);
+            }
+
+            $preorderSet = $hasPreorder ? ", is_preorder = :preorder" : "";
+            $preorderCol = $hasPreorder ? ", is_preorder" : "";
+            $preorderVal = $hasPreorder ? ", :preorder" : "";
+
             $oldStock = 0;
             if ($id) {
                 $stmtOldStock = $pdo->prepare("SELECT stock, product_type FROM products WHERE id = :id");
@@ -287,7 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "UPDATE products SET
                         category_id = :cid, name = :name, slug = :slug, product_type = :ptype, sku = :sku,
                         short_description = :sd, description = :d, price = :price, sale_price = :sp,
-                        image = :img, file_id = :fid, status = :st, featured = :feat, is_preorder = :preorder,
+                        image = :img, file_id = :fid, status = :st, featured = :feat{$preorderSet},
                         track_inventory = :ti, allow_backorder = :ab, low_stock_threshold = :lst,
                         show_stock_count = :ssc, weight_g = :wg, brand = :brand, tags = :tags,
                         meta_title = :mt, meta_description = :md, meta_keywords = :mk
@@ -300,12 +329,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtInsert = $pdo->prepare(
                     "INSERT INTO products
                         (category_id, name, slug, product_type, sku, short_description, description,
-                         price, sale_price, stock, image, file_id, status, featured, is_preorder,
+                         price, sale_price, stock, image, file_id, status, featured{$preorderCol},
                          track_inventory, allow_backorder, low_stock_threshold, show_stock_count,
                          weight_g, brand, tags, meta_title, meta_description, meta_keywords)
                      VALUES
                         (:cid, :name, :slug, :ptype, :sku, :sd, :d,
-                         :price, :sp, :stock, :img, :fid, :st, :feat, :preorder,
+                         :price, :sp, :stock, :img, :fid, :st, :feat{$preorderVal},
                          :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md, :mk)"
                 );
                 $stmtInsert->execute($insertData);
