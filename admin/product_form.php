@@ -11,7 +11,7 @@ $product = [
     'product_type' => 'simple',
     'short_description' => '', 'description' => '',
     'price' => '0.00', 'sale_price' => '', 'stock' => '0',
-    'image' => null, 'status' => 'active', 'featured' => 0,
+    'image' => null, 'status' => 'active', 'featured' => 0, 'is_preorder' => 0,
     'track_inventory' => 1, 'allow_backorder' => 0, 'low_stock_threshold' => 5,
     'show_stock_count' => 1, 'weight_g' => '', 'brand' => '', 'tags' => '',
     'meta_title' => '', 'meta_description' => '', 'meta_keywords' => '', 'updated_at' => '',
@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description       = trim((string)($_POST['description']       ?? ''));
     $status            = in_array($_POST['status'] ?? '', ['active', 'inactive', 'draft'], true) ? $_POST['status'] : 'active';
     $featured          = isset($_POST['featured']) ? 1 : 0;
+    $isPreorder        = isset($_POST['is_preorder']) ? 1 : 0;
 
     $trackInventory    = isset($_POST['track_inventory']) ? 1 : 0;
     $allowBackorder    = isset($_POST['allow_backorder']) ? 1 : 0;
@@ -258,6 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':fid'   => $primaryFileId,
                 ':st'    => $status,
                 ':feat'  => $featured,
+                ':preorder' => $isPreorder,
                 ':ti'    => $trackInventory,
                 ':ab'    => $allowBackorder,
                 ':lst'   => $lowStockThreshold,
@@ -285,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "UPDATE products SET
                         category_id = :cid, name = :name, slug = :slug, product_type = :ptype, sku = :sku,
                         short_description = :sd, description = :d, price = :price, sale_price = :sp,
-                        image = :img, file_id = :fid, status = :st, featured = :feat,
+                        image = :img, file_id = :fid, status = :st, featured = :feat, is_preorder = :preorder,
                         track_inventory = :ti, allow_backorder = :ab, low_stock_threshold = :lst,
                         show_stock_count = :ssc, weight_g = :wg, brand = :brand, tags = :tags,
                         meta_title = :mt, meta_description = :md, meta_keywords = :mk
@@ -298,12 +300,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtInsert = $pdo->prepare(
                     "INSERT INTO products
                         (category_id, name, slug, product_type, sku, short_description, description,
-                         price, sale_price, stock, image, file_id, status, featured,
+                         price, sale_price, stock, image, file_id, status, featured, is_preorder,
                          track_inventory, allow_backorder, low_stock_threshold, show_stock_count,
                          weight_g, brand, tags, meta_title, meta_description, meta_keywords)
                      VALUES
                         (:cid, :name, :slug, :ptype, :sku, :sd, :d,
-                         :price, :sp, :stock, :img, :fid, :st, :feat,
+                         :price, :sp, :stock, :img, :fid, :st, :feat, :preorder,
                          :ti, :ab, :lst, :ssc, :wg, :brand, :tags, :mt, :md, :mk)"
                 );
                 $stmtInsert->execute($insertData);
@@ -661,7 +663,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'category_id' => $categoryId ?: null,
         'short_description' => $shortDescription, 'description' => $description,
         'price' => $price, 'sale_price' => $salePrice, 'stock' => $stock,
-        'status' => $status, 'featured' => $featured,
+        'status' => $status, 'featured' => $featured, 'is_preorder' => $isPreorder,
         'track_inventory' => $trackInventory, 'allow_backorder' => $allowBackorder,
         'low_stock_threshold' => $lowStockThreshold, 'show_stock_count' => $showStockCount,
         'weight_g' => $weightG, 'brand' => $brand, 'tags' => $tags,
@@ -966,6 +968,13 @@ include __DIR__ . '/includes/header.php';
               <i class="bi bi-star-fill text-warning"></i> Featured product
             </label>
           </div>
+          <div class="form-check mt-2">
+            <input type="checkbox" name="is_preorder" id="is_preorder" class="form-check-input" value="1"
+                   <?= ((int)($product['is_preorder'] ?? 0) === 1) ? 'checked' : '' ?>>
+            <label for="is_preorder" class="form-check-label">
+              <i class="bi bi-clock-history text-primary"></i> Pre-Order Product
+            </label>
+          </div>
         </div>
       </div>
 
@@ -998,23 +1007,46 @@ include __DIR__ . '/includes/header.php';
             <div class="row g-2">
               <?php foreach ($existingImages as $img): ?>
                 <div class="col-4 text-center">
-                  <div class="border rounded p-1 position-relative bg-light">
+                  <div class="border rounded p-1 position-relative bg-light transition-all" id="gallery_item_<?= (int)$img['id'] ?>">
                     <img src="<?= e(product_image_url($img['filename'])) ?>" class="img-fluid rounded" style="height:60px; object-fit:cover;" alt="">
                     <div class="d-flex align-items-center justify-content-between mt-1 px-1">
                       <div class="form-check mb-0" title="Set as primary image">
                         <input type="radio" name="selected_primary_image" value="<?= e($img['filename']) ?>"
                                class="form-check-input" <?= ($product['image'] === $img['filename']) ? 'checked' : '' ?>>
                       </div>
-                      <div class="form-check mb-0" title="Delete image on save">
-                        <input type="checkbox" name="delete_gallery_images[]" value="<?= (int)$img['id'] ?>" class="form-check-input border-danger">
-                        <label class="form-check-label text-danger" style="font-size:11px;"><i class="bi bi-trash"></i></label>
+                      <div class="form-check mb-0" title="Click to delete this image on save">
+                        <input type="checkbox" name="delete_gallery_images[]" id="del_img_<?= (int)$img['id'] ?>" value="<?= (int)$img['id'] ?>" class="form-check-input border-danger d-none" onchange="updateGalleryDelState(<?= (int)$img['id'] ?>)">
+                        <label for="del_img_<?= (int)$img['id'] ?>" class="btn btn-outline-danger btn-sm p-0 px-1 border-0" style="cursor: pointer;" title="Delete image">
+                          <i class="bi bi-trash fs-6"></i>
+                        </label>
                       </div>
                     </div>
+                    <div id="del_badge_<?= (int)$img['id'] ?>" class="badge bg-danger position-absolute top-50 start-50 translate-middle d-none" style="font-size: 10px;">To Delete</div>
                   </div>
                 </div>
               <?php endforeach; ?>
             </div>
-            <small class="text-muted d-block mt-2" style="font-size:11px;">Select radio to set as primary, check trash to delete on save.</small>
+            <script>
+              function updateGalleryDelState(id) {
+                const cb = document.getElementById('del_img_' + id);
+                const item = document.getElementById('gallery_item_' + id);
+                const badge = document.getElementById('del_badge_' + id);
+                if (cb && item) {
+                  if (cb.checked) {
+                    item.style.opacity = '0.45';
+                    item.style.borderColor = '#dc3545';
+                    item.style.backgroundColor = '#fff5f5';
+                    if (badge) badge.classList.remove('d-none');
+                  } else {
+                    item.style.opacity = '1';
+                    item.style.borderColor = '';
+                    item.style.backgroundColor = '';
+                    if (badge) badge.classList.add('d-none');
+                  }
+                }
+              }
+            </script>
+            <small class="text-muted d-block mt-2" style="font-size:11px;">Select radio to set as primary, click trash icon to mark for deletion on save.</small>
           <?php endif; ?>
         </div>
       </div>

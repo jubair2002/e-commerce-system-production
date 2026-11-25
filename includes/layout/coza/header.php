@@ -101,10 +101,12 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 							<i class="zmdi zmdi-account"></i>
 						</a>
 
+						<?php if ((int)setting('dark_mode_enabled', '1') === 1): ?>
 						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
 							<i class="fa fa-sun-o theme-icon-sun"></i>
 							<i class="fa fa-moon-o theme-icon-moon"></i>
 						</div>
+						<?php endif; ?>
 					</div>
 				</nav>
 			</div>	
@@ -137,10 +139,12 @@ $announcementEnabled = (int)setting('announcement_bar_enabled', '0') === 1 && $a
 					<i class="zmdi zmdi-favorite-outline"></i>
 				</a>
 
+				<?php if ((int)setting('dark_mode_enabled', '1') === 1): ?>
 				<div class="icon-header-item cl2 hov-cl1 trans-04 pointer" data-theme-toggle title="Toggle Dark/Light Mode" role="button" aria-label="Toggle Dark/Light Mode" style="cursor: pointer;">
 					<i class="fa fa-sun-o theme-icon-sun"></i>
 					<i class="fa fa-moon-o theme-icon-moon"></i>
 				</div>
+				<?php endif; ?>
 			</div>
 
 			<!-- Button show menu -->

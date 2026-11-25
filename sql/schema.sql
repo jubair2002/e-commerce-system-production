@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `image`            VARCHAR(255)  DEFAULT NULL,
   `status`           ENUM('active','inactive','draft') NOT NULL DEFAULT 'active',
   `featured`         TINYINT(1)    NOT NULL DEFAULT 0,
+  `is_preorder`      TINYINT(1)    NOT NULL DEFAULT 0,
   `created_at`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

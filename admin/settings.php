@@ -416,6 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = settings_save($_POST, $rules, 'storefront');
         if (isset($_POST['theme_accent_color']) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $_POST['theme_accent_color'])) {
             update_setting('theme_accent', $_POST['theme_accent_color']);
+            update_setting('theme_accent_color', $_POST['theme_accent_color']);
         }
 
         // Pretty URLs lockfile toggle

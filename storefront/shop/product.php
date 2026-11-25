@@ -291,10 +291,16 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
 						</div>
 
-						<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>" id="pdpStockBadge">
-							<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
-							<?= $inStock ? 'In Stock: ' . (int)$currentStock : 'Sold Out' ?>
-						</span>
+						<?php if (!empty($product['is_preorder'])): ?>
+							<span class="pdp-stock-badge in-stock pre-order" id="pdpStockBadge" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+								<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order
+							</span>
+						<?php else: ?>
+							<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>" id="pdpStockBadge">
+								<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
+								<?= $inStock ? 'In Stock: ' . (int)$currentStock : 'Sold Out' ?>
+							</span>
+						<?php endif; ?>
 
 						<?php if (!empty($product['sku'])): ?>
 							<span class="pdp-sku-badge">SKU: <strong><?= htmlspecialchars($product['sku'], ENT_QUOTES, 'UTF-8') ?></strong></span>
@@ -821,10 +827,24 @@ document.addEventListener('DOMContentLoaded', function() {
 					priceElem.textContent = curSym + pVal.toFixed(2);
 				}
 
+				var isPreorder = <?= !empty($product['is_preorder']) ? 'true' : 'false' ?>;
 				var vStock = parseInt(match.stock, 10);
-				if (vStock > 0) {
+				if (isPreorder) {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge in-stock pre-order';
+						stockBadge.style.backgroundColor = '#e0f2fe';
+						stockBadge.style.color = '#0369a1';
+						stockBadge.style.borderColor = '#bae6fd';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order';
+					}
+					if (addBtn) addBtn.disabled = false;
+					if (buyBtn) buyBtn.disabled = false;
+				} else if (vStock > 0) {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge in-stock';
+						stockBadge.style.backgroundColor = '';
+						stockBadge.style.color = '';
+						stockBadge.style.borderColor = '';
 						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;
 					}
 					if (addBtn) addBtn.disabled = false;
@@ -833,6 +853,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge out-of-stock';
+						stockBadge.style.backgroundColor = '';
+						stockBadge.style.color = '';
+						stockBadge.style.borderColor = '';
 						stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
 					}
 					if (addBtn) addBtn.disabled = true;
