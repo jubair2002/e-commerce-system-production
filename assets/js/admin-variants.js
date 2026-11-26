@@ -199,25 +199,57 @@
 
           <label class="form-label small fw-semibold">Option values (type or paste multiple values separated by commas)</label>
           <div class="values-tag-container d-flex flex-wrap align-items-center gap-2 p-2 border rounded bg-white">
-            ${(opt.values || []).map((val, valIndex) => `
-              <span class="badge border text-dark d-flex align-items-center gap-1 p-2 bg-light val-badge" data-val-index="${valIndex}">
+            ${(opt.values || []).map((val, valIndex) => {
+              const valHex = val.swatch_hex || colorNameToHex(val.value) || '#3b82f6';
+              const isWhite = ['#ffffff', '#fff', '#fafafa', '#f8fafc'].includes(valHex.toLowerCase());
+              return `
+              <span class="badge border text-dark d-inline-flex align-items-center gap-1 p-2 bg-light val-badge position-relative" data-val-index="${valIndex}">
                 ${isSwatch ? `
-                  <input type="color" class="form-control form-control-color p-0 border-0 val-color-picker"
-                         value="${val.swatch_hex || colorNameToHex(val.value) || '#3b82f6'}" style="width:22px;height:22px;cursor:pointer;" title="Pick color">
+                  <span class="val-swatch-circle rounded-circle shadow-xs me-1 position-relative"
+                        style="width:22px;height:22px;background-color:${valHex};border:1.5px solid ${isWhite ? '#94a3b8' : 'rgba(0,0,0,0.25)'};display:inline-block;flex-shrink:0;cursor:pointer;overflow:hidden;"
+                        title="Click to change color (${valHex})">
+                    <input type="color" class="val-color-picker"
+                           value="${valHex}"
+                           style="position:absolute;top:-4px;left:-4px;width:32px;height:32px;opacity:0.01;cursor:pointer;padding:0;border:0;"
+                           title="Change color (${escapeHtml(val.value)})">
+                  </span>
                 ` : ''}
-                <span class="val-text">${escapeHtml(val.value)}</span>
-                <button type="button" class="btn-close btn-close-sm val-remove-btn" aria-label="Remove" style="font-size:0.65rem;"></button>
+                <span class="val-text fw-medium">${escapeHtml(val.value)}</span>
+                <button type="button" class="btn-close btn-close-sm val-remove-btn ms-1" aria-label="Remove" style="font-size:0.65rem;"></button>
               </span>
-            `).join('')}
+            `;}).join('')}
             <input type="text" class="border-0 flex-grow-1 val-input" placeholder="+ Add value (or paste multiple, comma-separated)..." style="min-width:160px; outline:none;">
           </div>
           ${isSwatch ? `
+            <!-- Manual Color Insertion Panel -->
+            <div class="card mt-2 border-primary-subtle bg-light-subtle shadow-xs opt-manual-color-box">
+              <div class="card-body p-2 d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-flex align-items-center gap-1">
+                  <i class="bi bi-eyedropper"></i> Add Custom Color
+                </span>
+                <div class="input-group input-group-sm" style="max-width: 250px;">
+                  <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                  <input type="text" class="form-control opt-manual-title" placeholder="Color name (e.g. Midnight Green)" aria-label="Color title">
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <input type="color" class="form-control form-control-color form-control-sm p-1 opt-manual-picker" value="#10b981" title="Choose color" style="width: 38px; height: 31px; cursor: pointer;">
+                  <input type="text" class="form-control form-control-sm opt-manual-hex" value="#10b981" placeholder="#10b981" style="width: 82px; font-family: monospace; text-transform: uppercase;">
+                </div>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1 opt-manual-add-btn">
+                  <i class="bi bi-plus-circle"></i> Add Color
+                </button>
+              </div>
+            </div>
+
             <div class="d-flex align-items-center flex-wrap gap-1 mt-2 p-2 bg-light rounded border">
-              <small class="text-muted fw-semibold me-1"><i class="bi bi-palette"></i> Quick Colors:</small>
-              ${['Black', 'White', 'Midnight Green', 'Navy', 'Red', 'Blue', 'Gold', 'Silver', 'Purple', 'Pink', 'Gray'].map(c => `
+              <small class="text-muted fw-semibold me-1"><i class="bi bi-palette"></i> Quick Presets:</small>
+              ${[
+                'Black', 'White', 'Midnight Green', 'Deep Purple', 'Navy', 'Royal Blue', 'Sierra Blue',
+                'Green', 'Rose Gold', 'Pink', 'Gold', 'Silver', 'Space Gray', 'Red', 'Yellow', 'Orange'
+              ].map(c => `
                 <button type="button" class="btn btn-sm p-0 rounded-circle border opt-preset-color"
                         data-color-name="${c}" data-hex="${COLOR_PALETTE[c.toLowerCase()] || '#000000'}"
-                        style="width:22px;height:22px;background-color:${COLOR_PALETTE[c.toLowerCase()] || '#000000'};cursor:pointer;"
+                        style="width:22px;height:22px;background-color:${COLOR_PALETTE[c.toLowerCase()] || '#000000'};cursor:pointer;border:1px solid rgba(0,0,0,0.2) !important;"
                         title="Add ${c}"></button>
               `).join('')}
             </div>
@@ -367,17 +399,100 @@
         });
       });
 
-      // Color picker for swatch
+      // Color picker for swatch tag
       optCard.querySelectorAll('.val-color-picker').forEach((picker) => {
-        picker.addEventListener('change', (e) => {
-          const badge = e.target.closest('.val-badge');
+        const updateColor = (newHex) => {
+          const badge = picker.closest('.val-badge');
+          const circle = badge.querySelector('.val-swatch-circle');
           const valIdx = parseInt(badge.dataset.valIndex, 10);
           if (opt.values[valIdx]) {
-            opt.values[valIdx].swatch_hex = e.target.value;
+            opt.values[valIdx].swatch_hex = newHex;
+            if (circle) {
+              circle.style.backgroundColor = newHex;
+              circle.title = `Click to change color (${newHex})`;
+            }
             syncJsonInputs();
           }
-        });
+        };
+        picker.addEventListener('input', (e) => updateColor(e.target.value));
+        picker.addEventListener('change', (e) => updateColor(e.target.value));
       });
+
+      // Manual Color Insertion Handler
+      if (isSwatch) {
+        const manualTitle = optCard.querySelector('.opt-manual-title');
+        const manualPicker = optCard.querySelector('.opt-manual-picker');
+        const manualHex = optCard.querySelector('.opt-manual-hex');
+        const manualAddBtn = optCard.querySelector('.opt-manual-add-btn');
+
+        if (manualTitle && manualPicker && manualHex && manualAddBtn) {
+          manualTitle.addEventListener('input', () => {
+            const suggested = colorNameToHex(manualTitle.value.trim());
+            if (suggested && suggested !== '#3b82f6') {
+              manualPicker.value = suggested;
+              manualHex.value = suggested.toUpperCase();
+            }
+          });
+
+          manualPicker.addEventListener('input', (e) => {
+            manualHex.value = e.target.value.toUpperCase();
+          });
+
+          manualHex.addEventListener('input', (e) => {
+            let val = e.target.value.trim();
+            if (!val.startsWith('#') && val.length > 0) val = '#' + val;
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+              manualPicker.value = val;
+            }
+          });
+
+          const doAddManualColor = () => {
+            const title = manualTitle.value.trim();
+            if (!title) {
+              manualTitle.focus();
+              return;
+            }
+            let hex = manualHex.value.trim() || manualPicker.value;
+            if (!hex.startsWith('#')) hex = '#' + hex;
+            if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+              hex = manualPicker.value || '#3b82f6';
+            }
+
+            opt.values = opt.values || [];
+            const existing = opt.values.find(v => v.value.toLowerCase() === title.toLowerCase());
+            if (existing) {
+              existing.swatch_hex = hex;
+            } else {
+              opt.values.push({
+                id: null,
+                value: title,
+                swatch_hex: hex
+              });
+            }
+            manualTitle.value = '';
+            renderOptions(optIndex);
+          };
+
+          manualAddBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            doAddManualColor();
+          });
+
+          manualTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              doAddManualColor();
+            }
+          });
+
+          manualHex.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              doAddManualColor();
+            }
+          });
+        }
+      }
 
       optionsContainer.appendChild(optCard);
     });
@@ -806,6 +921,17 @@
   window.initProductVariantsBuilder = function (initialOptions, initialVariants, initialGallery) {
     options = Array.isArray(initialOptions) ? initialOptions : [];
     let rawVariants = Array.isArray(initialVariants) ? initialVariants : [];
+
+    // Auto-resolve missing or white-default swatch_hex for swatch options
+    options.forEach(opt => {
+      if (opt.display_type === 'swatch' && Array.isArray(opt.values)) {
+        opt.values.forEach(v => {
+          if (!v.swatch_hex || (v.swatch_hex.toLowerCase() === '#ffffff' && !v.value.toLowerCase().includes('white'))) {
+            v.swatch_hex = colorNameToHex(v.value) || v.swatch_hex || '#3b82f6';
+          }
+        });
+      }
+    });
 
     // Reconstruct or ensure combo is present for all existing variants
     rawVariants.forEach(v => {

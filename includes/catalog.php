@@ -70,21 +70,32 @@ function product_options_get(int $productId): array
 
         $valuesByOpt = [];
         foreach ($allValues as $val) {
+            $hex = $val['swatch_hex'];
             $valuesByOpt[$val['option_id']][] = [
                 'id'         => (int)$val['id'],
                 'value'      => $val['value'],
-                'swatch_hex' => $val['swatch_hex'],
+                'swatch_hex' => $hex,
             ];
         }
 
         $result = [];
         foreach ($options as $opt) {
+            $isSwatch = ($opt['display_type'] ?? '') === 'swatch';
+            $optVals = $valuesByOpt[$opt['id']] ?? [];
+            if ($isSwatch) {
+                foreach ($optVals as &$ov) {
+                    if (empty($ov['swatch_hex']) && function_exists('color_name_to_hex')) {
+                        $ov['swatch_hex'] = color_name_to_hex($ov['value']) ?: '#3b82f6';
+                    }
+                }
+                unset($ov);
+            }
             $result[] = [
                 'id'           => (int)$opt['id'],
                 'name'         => $opt['name'],
                 'display_type' => $opt['display_type'],
                 'position'     => (int)$opt['position'],
-                'values'       => $valuesByOpt[$opt['id']] ?? [],
+                'values'       => $optVals,
             ];
         }
 

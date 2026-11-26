@@ -758,15 +758,25 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
-	// Interactive Button / Swatch Click Handler
+	// Interactive Button / Swatch Click Handler (with toggle unselect)
 	$('.js-pdp-opt-btn').on('click', function(e) {
 		e.preventDefault();
 		var $btn = $(this);
 		var optId = $btn.data('option-id');
 		var valId = $btn.data('val-id');
 		var valName = $btn.data('val-name');
-
 		var $group = $btn.closest('.pdp-option-group');
+		var $hiddenInput = $group.find('input.option-select');
+
+		if ($btn.hasClass('active')) {
+			// Toggle unselect
+			$btn.removeClass('active');
+			$btn.find('.pdp-swatch-check').hide();
+			$('#opt_label_' + optId).text('');
+			$hiddenInput.val('').trigger('change');
+			return;
+		}
+
 		$group.find('.js-pdp-opt-btn').removeClass('active');
 		$group.find('.pdp-swatch-check').hide();
 
@@ -774,27 +784,41 @@ document.addEventListener('DOMContentLoaded', function() {
 		$btn.find('.pdp-swatch-check').show();
 
 		$('#opt_label_' + optId).text(valName);
-
-		var $hiddenInput = $group.find('input.option-select');
 		$hiddenInput.val(valId).trigger('change');
 	});
 
-	// Radio Handler
-	$('.js-pdp-radio-val').on('change', function() {
+	// Radio Handler (with toggle unselect)
+	$('.js-pdp-radio-val').on('click', function(e) {
 		var $radio = $(this);
 		var optId = $radio.data('option-id');
-		var valId = $radio.data('val-id');
-		var valName = $radio.data('val-name');
+		var $group = $radio.closest('.pdp-option-group');
+		var $hiddenInput = $group.find('input.option-select');
 
-		$('#opt_label_' + optId).text(valName);
-
-		var $hiddenInput = $radio.closest('.pdp-option-group').find('input.option-select');
-		$hiddenInput.val(valId).trigger('change');
+		if ($radio.data('checked') === true) {
+			$radio.prop('checked', false);
+			$radio.data('checked', false);
+			$('#opt_label_' + optId).text('');
+			$hiddenInput.val('').trigger('change');
+		} else {
+			$group.find('.js-pdp-radio-val').data('checked', false);
+			$radio.data('checked', true);
+			var valId = $radio.data('val-id');
+			var valName = $radio.data('val-name');
+			$('#opt_label_' + optId).text(valName);
+			$hiddenInput.val(valId).trigger('change');
+		}
 	});
 
 	// Real-Time Variant Option & Stock Updates
 	var variantsData = <?= json_encode($variants) ?>;
 	var totalOptionsCount = <?= count($options ?? []) ?>;
+	var allowBackorder = <?= !empty($product['allow_backorder']) ? 'true' : 'false' ?>;
+	var isProductPreorder = <?= !empty($product['is_preorder']) ? 'true' : 'false' ?>;
+	var defaultStock = <?= (int)$currentStock ?>;
+	var defaultPriceFormatted = <?= json_encode(price((float)($product['sale_price'] ?? $product['price'] ?? 0))) ?>;
+	var defaultOldPriceFormatted = <?= (!empty($product['sale_price']) && (float)$product['sale_price'] < (float)$product['price']) ? json_encode(price((float)$product['price'])) : 'null' ?>;
+	var curSym = <?= json_encode(setting('currency_symbol', '৳')) ?>;
+
 	if (variantsData && variantsData.length > 0) {
 		$('.option-select').on('change', function() {
 			var selectedOpts = {};
@@ -811,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					var v = variantsData[i];
 					var isMatch = true;
 					for (var optId in selectedOpts) {
-						if (v.option_value_ids && v.option_value_ids[optId] != selectedOpts[optId]) {
+						if (!v.option_value_ids || v.option_value_ids[optId] != selectedOpts[optId]) {
 							isMatch = false;
 							break;
 						}
@@ -825,71 +849,154 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			var vIdInput = document.getElementById('selectedVariantId');
 			var priceElem = document.getElementById('pdpPrice');
+			var oldPriceElem = document.getElementById('pdpOldPrice');
 			var stockBadge = document.getElementById('pdpStockBadge');
 			var addBtn = document.getElementById('pdpAddBtn');
 			var buyBtn = document.getElementById('pdpBuyNowBtn');
 			var qtyInput = document.getElementById('pdpQtyInput');
 
-			if (match) {
-				if (vIdInput) vIdInput.value = match.id;
+			if (selectedCount === totalOptionsCount && totalOptionsCount > 0) {
+				// All required options are selected
+				if (match) {
+					if (vIdInput) vIdInput.value = match.id;
 
-				var pVal = parseFloat(match.sale_price || match.price || 0);
-				if (priceElem && pVal > 0) {
-					var curSym = <?= json_encode(setting('currency_symbol', '৳')) ?>;
-					priceElem.textContent = curSym + pVal.toFixed(2);
-				}
+					var pVal = parseFloat(match.sale_price || match.price || 0);
+					if (priceElem && pVal > 0) {
+						priceElem.textContent = curSym + pVal.toFixed(2);
+					}
+					if (oldPriceElem) {
+						if (match.sale_price && parseFloat(match.sale_price) < parseFloat(match.price)) {
+							oldPriceElem.textContent = curSym + parseFloat(match.price).toFixed(2);
+							oldPriceElem.style.display = '';
+						} else {
+							oldPriceElem.style.display = 'none';
+						}
+					}
 
-				var isPreorder = <?= !empty($product['is_preorder']) ? 'true' : 'false' ?>;
-				var vStock = parseInt(match.stock, 10);
-				if (isPreorder) {
-					if (stockBadge) {
-						stockBadge.className = 'pdp-stock-badge in-stock pre-order';
-						stockBadge.style.backgroundColor = '#e0f2fe';
-						stockBadge.style.color = '#0369a1';
-						stockBadge.style.borderColor = '#bae6fd';
-						stockBadge.innerHTML = '<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order';
+					var vStock = parseInt(match.stock, 10);
+					if (isProductPreorder) {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge in-stock pre-order';
+							stockBadge.style.backgroundColor = '#e0f2fe';
+							stockBadge.style.color = '#0369a1';
+							stockBadge.style.borderColor = '#bae6fd';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order';
+						}
+						if (addBtn) addBtn.disabled = false;
+						if (buyBtn) buyBtn.disabled = false;
+						if (qtyInput) qtyInput.removeAttribute('max');
+					} else if (vStock > 0) {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge in-stock';
+							stockBadge.style.backgroundColor = '#ecfdf5';
+							stockBadge.style.color = '#065f46';
+							stockBadge.style.borderColor = '#a7f3d0';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;
+						}
+						if (addBtn) addBtn.disabled = false;
+						if (buyBtn) buyBtn.disabled = false;
+						if (qtyInput) qtyInput.max = vStock;
+					} else if (allowBackorder) {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge backorder';
+							stockBadge.style.backgroundColor = '#fef3c7';
+							stockBadge.style.color = '#92400e';
+							stockBadge.style.borderColor = '#fde68a';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-time m-r-4"></i> Out of Stock (Backorder Available)';
+						}
+						if (addBtn) addBtn.disabled = false;
+						if (buyBtn) buyBtn.disabled = false;
+						if (qtyInput) qtyInput.removeAttribute('max');
+					} else {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge out-of-stock';
+							stockBadge.style.backgroundColor = '#fee2e2';
+							stockBadge.style.color = '#991b1b';
+							stockBadge.style.borderColor = '#fecaca';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+						}
+						if (addBtn) addBtn.disabled = true;
+						if (buyBtn) buyBtn.disabled = true;
 					}
-					if (addBtn) addBtn.disabled = false;
-					if (buyBtn) buyBtn.disabled = false;
-				} else if (vStock > 0) {
-					if (stockBadge) {
-						stockBadge.className = 'pdp-stock-badge in-stock';
-						stockBadge.style.backgroundColor = '';
-						stockBadge.style.color = '';
-						stockBadge.style.borderColor = '';
-						stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + vStock;
-					}
-					if (addBtn) addBtn.disabled = false;
-					if (buyBtn) buyBtn.disabled = false;
-					if (qtyInput) qtyInput.max = vStock;
-				} else if (allowBackorder) {
-					if (stockBadge) {
-						stockBadge.className = 'pdp-stock-badge backorder';
-						stockBadge.style.backgroundColor = '#fef3c7';
-						stockBadge.style.color = '#92400e';
-						stockBadge.style.borderColor = '#fde68a';
-						stockBadge.innerHTML = '<i class="zmdi zmdi-time m-r-4"></i> Backorder';
-					}
-					if (addBtn) addBtn.disabled = false;
-					if (buyBtn) buyBtn.disabled = false;
-					if (qtyInput) qtyInput.removeAttribute('max');
 				} else {
-					if (stockBadge) {
-						stockBadge.className = 'pdp-stock-badge out-of-stock';
-						stockBadge.style.backgroundColor = '';
-						stockBadge.style.color = '';
-						stockBadge.style.borderColor = '';
-						stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+					// All options picked, combination has no variant record or 0 stock
+					if (vIdInput) vIdInput.value = '';
+					if (allowBackorder) {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge backorder';
+							stockBadge.style.backgroundColor = '#fef3c7';
+							stockBadge.style.color = '#92400e';
+							stockBadge.style.borderColor = '#fde68a';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-time m-r-4"></i> Out of Stock (Backorder Available)';
+						}
+						if (addBtn) addBtn.disabled = false;
+						if (buyBtn) buyBtn.disabled = false;
+						if (qtyInput) qtyInput.removeAttribute('max');
+					} else {
+						if (stockBadge) {
+							stockBadge.className = 'pdp-stock-badge out-of-stock';
+							stockBadge.style.backgroundColor = '#fee2e2';
+							stockBadge.style.color = '#991b1b';
+							stockBadge.style.borderColor = '#fecaca';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+						}
+						if (addBtn) addBtn.disabled = true;
+						if (buyBtn) buyBtn.disabled = true;
 					}
-					if (addBtn) addBtn.disabled = true;
-					if (buyBtn) buyBtn.disabled = true;
 				}
 			} else {
+				// One or more options unselected
 				if (vIdInput) vIdInput.value = '';
-				if (stockBadge && totalOptionsCount > 0) {
-					stockBadge.className = 'pdp-stock-badge out-of-stock';
-					stockBadge.innerHTML = '<i class="zmdi zmdi-help-outline m-r-4"></i> Select Options';
+				if (priceElem && defaultPriceFormatted) {
+					priceElem.textContent = defaultPriceFormatted;
 				}
+				if (oldPriceElem) {
+					if (defaultOldPriceFormatted) {
+						oldPriceElem.textContent = defaultOldPriceFormatted;
+						oldPriceElem.style.display = '';
+					} else {
+						oldPriceElem.style.display = 'none';
+					}
+				}
+
+				if (stockBadge && totalOptionsCount > 0) {
+					if (selectedCount === 0) {
+						if (isProductPreorder) {
+							stockBadge.className = 'pdp-stock-badge in-stock pre-order';
+							stockBadge.style.backgroundColor = '#e0f2fe';
+							stockBadge.style.color = '#0369a1';
+							stockBadge.style.borderColor = '#bae6fd';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order';
+						} else if (defaultStock > 0) {
+							stockBadge.className = 'pdp-stock-badge in-stock';
+							stockBadge.style.backgroundColor = '#ecfdf5';
+							stockBadge.style.color = '#065f46';
+							stockBadge.style.borderColor = '#a7f3d0';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: ' + defaultStock;
+						} else if (allowBackorder) {
+							stockBadge.className = 'pdp-stock-badge backorder';
+							stockBadge.style.backgroundColor = '#fef3c7';
+							stockBadge.style.color = '#92400e';
+							stockBadge.style.borderColor = '#fde68a';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-time m-r-4"></i> Backorder Available';
+						} else {
+							stockBadge.className = 'pdp-stock-badge out-of-stock';
+							stockBadge.style.backgroundColor = '#fee2e2';
+							stockBadge.style.color = '#991b1b';
+							stockBadge.style.borderColor = '#fecaca';
+							stockBadge.innerHTML = '<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out';
+						}
+					} else {
+						stockBadge.className = 'pdp-stock-badge out-of-stock';
+						stockBadge.style.backgroundColor = '#f8fafc';
+						stockBadge.style.color = '#64748b';
+						stockBadge.style.borderColor = '#cbd5e1';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-help-outline m-r-4"></i> Select Options';
+					}
+				}
+				if (addBtn) addBtn.disabled = false;
+				if (buyBtn) buyBtn.disabled = false;
+				if (qtyInput) qtyInput.removeAttribute('max');
 			}
 		});
 

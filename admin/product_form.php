@@ -452,7 +452,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach (($opt['values'] ?? []) as $valPos => $val) {
                         $valStr = trim((string)($val['value'] ?? ''));
                         if ($valStr === '') continue;
-                        $hex = (!empty($val['swatch_hex']) && preg_match('/^#[0-9a-fA-F]{6}$/', $val['swatch_hex'])) ? $val['swatch_hex'] : null;
+                        $hex = (!empty($val['swatch_hex']) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $val['swatch_hex'])) ? $val['swatch_hex'] : null;
+                        if (!$hex && $optType === 'swatch' && function_exists('color_name_to_hex')) {
+                            $hex = color_name_to_hex($valStr);
+                        }
                         $valId = !empty($val['id']) ? (int)$val['id'] : ($existingValMap[strtolower($valStr)] ?? 0);
 
                         if ($valId > 0) {

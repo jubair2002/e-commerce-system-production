@@ -254,17 +254,34 @@ include __DIR__ . '/includes/partials/header.php';
 					$matchedCount = null;
 					$matchedCat = null;
 					if (!empty($categories)) {
-						// 1. Try URL slug exact match
+						// 1. Try URL slug or ID exact match
 						$urlSlug = null;
+						$urlCatId = null;
 						if (!empty($bUrl)) {
 							if (preg_match('/[?&]slug=([^&#]+)/', $bUrl, $m)) {
 								$urlSlug = urldecode($m[1]);
 							} elseif (preg_match('#/(?:category|shop)/([^/?&#]+)#', $bUrl, $m)) {
 								$urlSlug = urldecode($m[1]);
+							} elseif (preg_match('/[?&](?:category|cat|cat_id|category_id)=([^&#]+)/', $bUrl, $m)) {
+								$val = urldecode($m[1]);
+								if (is_numeric($val)) {
+									$urlCatId = (int)$val;
+								} else {
+									$urlSlug = $val;
+								}
 							}
 						}
 
-						if ($urlSlug) {
+						if ($urlCatId) {
+							foreach ($categories as $cat) {
+								if ((int)$cat['id'] === $urlCatId) {
+									$matchedCat = $cat;
+									break;
+								}
+							}
+						}
+
+						if (!$matchedCat && $urlSlug) {
 							foreach ($categories as $cat) {
 								if (strcasecmp($cat['slug'], $urlSlug) === 0) {
 									$matchedCat = $cat;
@@ -313,6 +330,8 @@ include __DIR__ . '/includes/partials/header.php';
 						$displaySub = $matchedCount === 1 ? '1 Product' : "{$matchedCount} Products";
 					} elseif (!empty($bSub)) {
 						$displaySub = $bSub;
+					} elseif (!empty($matchedCat['description'])) {
+						$displaySub = $matchedCat['description'];
 					} else {
 						$displaySub = 'Explore Collection';
 					}
@@ -357,6 +376,9 @@ include __DIR__ . '/includes/partials/header.php';
 				foreach ($bannerCats as $cat): 
 					$catImg = category_image_url($cat['image'] ?? null);
 					$pCount = (int)($cat['product_count'] ?? 0);
+					$catSub = ($pCount > 0)
+						? ($pCount === 1 ? '1 Product' : "{$pCount} Products")
+						: (!empty($cat['description']) ? $cat['description'] : 'Explore Collection');
 				?>
 				<div class="col-md-6 col-xl-4 p-b-30 m-lr-auto">
 					<!-- Block1 -->
@@ -370,7 +392,7 @@ include __DIR__ . '/includes/partials/header.php';
 								</span>
 
 								<span class="block1-info stext-102 trans-04">
-									<?= $pCount === 1 ? '1 Product' : "{$pCount} Products" ?>
+									<?= htmlspecialchars($catSub, ENT_QUOTES, 'UTF-8') ?>
 								</span>
 							</div>
 
