@@ -243,7 +243,9 @@ foreach ($queue as $idx => $item) {
     // Detect MIME and checksum
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, $localSourcePath);
-    finfo_close($finfo);
+    if (PHP_VERSION_ID < 80500 && is_resource($finfo)) {
+        @finfo_close($finfo);
+    }
 
     $fileSize = filesize($localSourcePath);
     $checksum = hash_file('sha256', $localSourcePath);

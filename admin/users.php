@@ -167,52 +167,44 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 </div>
 
-<!-- KPI Cards -->
+<!-- KPI Info Boxes -->
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-xl-3">
-    <div class="card border-0 shadow-sm stat-card">
-      <div class="stat-icon bg-primary-subtle text-primary">
-        <i class="bi bi-people-fill"></i>
-      </div>
-      <div>
-        <div class="stat-value"><?= number_format($statsTotal) ?></div>
-        <div class="stat-label">Total Staff Accounts</div>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-primary shadow-sm"><i class="bi bi-people-fill"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Total Staff Accounts</span>
+        <span class="info-box-number fs-4"><?= number_format($statsTotal) ?></span>
       </div>
     </div>
   </div>
 
   <div class="col-sm-6 col-xl-3">
-    <div class="card border-0 shadow-sm stat-card">
-      <div class="stat-icon bg-indigo-subtle text-indigo" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5;">
-        <i class="bi bi-shield-lock-fill"></i>
-      </div>
-      <div>
-        <div class="stat-value"><?= number_format($statsAdmins) ?></div>
-        <div class="stat-label">Super Administrators</div>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-indigo text-white shadow-sm" style="background-color: #6610f2 !important; color: #fff !important;"><i class="bi bi-shield-lock-fill"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Super Administrators</span>
+        <span class="info-box-number fs-4"><?= number_format($statsAdmins) ?></span>
       </div>
     </div>
   </div>
 
   <div class="col-sm-6 col-xl-3">
-    <div class="card border-0 shadow-sm stat-card">
-      <div class="stat-icon bg-info-subtle text-info">
-        <i class="bi bi-person-badge-fill"></i>
-      </div>
-      <div>
-        <div class="stat-value"><?= number_format($statsStaff) ?></div>
-        <div class="stat-label">Role-Restricted Staff</div>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-info text-white shadow-sm"><i class="bi bi-person-badge-fill"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Role-Restricted Staff</span>
+        <span class="info-box-number fs-4"><?= number_format($statsStaff) ?></span>
       </div>
     </div>
   </div>
 
   <div class="col-sm-6 col-xl-3">
-    <div class="card border-0 shadow-sm stat-card">
-      <div class="stat-icon bg-success-subtle text-success">
-        <i class="bi bi-check-circle-fill"></i>
-      </div>
-      <div>
-        <div class="stat-value"><?= number_format($statsActive) ?></div>
-        <div class="stat-label">Active Accounts</div>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-success shadow-sm"><i class="bi bi-check-circle-fill"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Active Accounts</span>
+        <span class="info-box-number fs-4"><?= number_format($statsActive) ?></span>
       </div>
     </div>
   </div>

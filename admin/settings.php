@@ -229,6 +229,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: AJAX Sync Local Files to AWS S3
+    if ($action === 'sync_storage_to_s3') {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $storage = \App\Storage\StorageManager::getInstance();
+            $s3Driver = null;
+            try {
+                $s3Driver = $storage->getDriver('s3');
+            } catch (Throwable $e) {
+                echo json_encode(['ok' => false, 'error' => 'AWS S3 is not configured: ' . $e->getMessage()]);
+                exit;
+            }
+
+            $pdo = db();
+            $stmt = $pdo->prepare(
+                "SELECT * FROM files
+                 WHERE (provider = 'local' OR sync_status = 'pending')
+                   AND status = 'ready'
+                   AND deleted_at IS NULL
+                 ORDER BY id ASC
+                 LIMIT 250"
+            );
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Also check for unindexed product banners/uploads on disk
+            $inRepoPath = dirname(__DIR__) . '/assets/uploads';
+            $extraSynced = 0;
+            if (empty($rows)) {
+                // If files table has no local files, check disk for any legacy product/banner uploads
+                $bannerFiles = glob($inRepoPath . '/banners/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: [];
+                foreach ($bannerFiles as $bf) {
+                    $fn = basename($bf);
+                    $chk = $pdo->prepare("SELECT id FROM files WHERE original_name = :fn AND provider = 's3' AND deleted_at IS NULL LIMIT 1");
+                    $chk->execute([':fn' => $fn]);
+                    if (!$chk->fetchColumn()) {
+                        $targetKey = 'banner/' . date('Y/m') . '/' . md5($fn . time()) . '.' . pathinfo($fn, PATHINFO_EXTENSION);
+                        if ($s3Driver->put($targetKey, $bf, ['mime_type' => 'image/webp', 'visibility' => 'public'])) {
+                            $pdo->prepare("INSERT INTO files (storage_key, provider, bucket, original_name, mime_type, size, status, sync_status, created_at, updated_at) VALUES (:k, 's3', :b, :orig, 'image/webp', :sz, 'ready', 'synced', NOW(), NOW())")
+                                ->execute([
+                                    ':k' => $targetKey,
+                                    ':b' => $s3Driver->getBucket(),
+                                    ':orig' => $fn,
+                                    ':sz' => filesize($bf),
+                                ]);
+                            $extraSynced++;
+                        }
+                    }
+                }
+            }
+
+            $synced = 0;
+            $failed = 0;
+            $errors = [];
+
+            foreach ($rows as $row) {
+                $fileId = (int)$row['id'];
+                $key = $row['storage_key'];
+                try {
+                    $localDriver = $storage->getDriver('local');
+                    $stream = $localDriver->getStream($key);
+                    if (!$stream) {
+                        throw new RuntimeException("Could not read local file stream for key: {$key}");
+                    }
+                    $opts = [
+                        'mime_type'  => $row['mime_type'],
+                        'visibility' => $row['visibility'] ?? 'public',
+                        'metadata'   => [
+                            'original_name' => $row['original_name'],
+                            'purpose'       => $row['purpose'],
+                            'checksum'      => $row['checksum_sha256'],
+                            'synced_at'     => date('c'),
+                        ],
+                    ];
+                    $uploaded = $s3Driver->put($key, $stream, $opts);
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                    if (!$uploaded) {
+                        $err = method_exists($s3Driver, 'getLastError') ? $s3Driver->getLastError() : 'PutObject failed';
+                        throw new RuntimeException($err);
+                    }
+
+                    // Sync variants if product
+                    if ($row['purpose'] === 'product') {
+                        $pathInfo = pathinfo($key);
+                        $dir = $pathInfo['dirname'];
+                        $fn  = $pathInfo['filename'];
+                        foreach (['thumb', 'card', 'detail'] as $sizeLabel) {
+                            $variantKey = "{$dir}/{$fn}_{$sizeLabel}.webp";
+                            if ($localDriver->exists($variantKey)) {
+                                $vStream = $localDriver->getStream($variantKey);
+                                if ($vStream) {
+                                    $s3Driver->put($variantKey, $vStream, ['mime_type' => 'image/webp', 'visibility' => 'public']);
+                                    if (is_resource($vStream)) fclose($vStream);
+                                }
+                            }
+                        }
+                    }
+
+                    $bucket = method_exists($s3Driver, 'getBucket') ? $s3Driver->getBucket() : null;
+                    $pdo->prepare("UPDATE files SET provider = 's3', bucket = :b, sync_status = 'synced', updated_at = NOW() WHERE id = :id")
+                        ->execute([':b' => $bucket, ':id' => $fileId]);
+                    $synced++;
+                } catch (Throwable $e) {
+                    $failed++;
+                    $errors[] = "File #{$fileId} ({$key}): " . $e->getMessage();
+                }
+            }
+
+            $totalDone = $synced + $extraSynced;
+            $msg = "Storage Sync Finished: {$totalDone} file(s) synchronized to S3 bucket '{$s3Driver->getBucket()}'.";
+            if ($failed > 0) {
+                $msg .= " ({$failed} failed).";
+            }
+            echo json_encode([
+                'ok' => true,
+                'synced' => $totalDone,
+                'failed' => $failed,
+                'message' => $msg,
+                'errors' => $errors,
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
+    }
+
     // Action: Save Storage Settings
     if ($action === 'save_storage') {
         $primary  = in_array($_POST['storage_primary'] ?? '', ['local', 's3'], true) ? $_POST['storage_primary'] : 'local';
@@ -2089,7 +2218,7 @@ include __DIR__ . '/includes/header.php';
       $totalFiles   = (int)db()->query("SELECT COUNT(*) FROM files WHERE deleted_at IS NULL")->fetchColumn();
       $s3Files      = (int)db()->query("SELECT COUNT(*) FROM files WHERE provider = 's3' AND deleted_at IS NULL")->fetchColumn();
       $localFiles   = (int)db()->query("SELECT COUNT(*) FROM files WHERE provider = 'local' AND deleted_at IS NULL")->fetchColumn();
-      $pendingSync  = (int)db()->query("SELECT COUNT(*) FROM files WHERE sync_status = 'pending' AND deleted_at IS NULL")->fetchColumn();
+      $pendingSync  = (int)db()->query("SELECT COUNT(*) FROM files WHERE (provider = 'local' OR sync_status = 'pending') AND status = 'ready' AND deleted_at IS NULL")->fetchColumn();
 
       $curPrimary   = setting('storage_primary') ?: (function_exists('env') ? env('STORAGE_PRIMARY', 'local') : 'local');
       $curFallback  = setting('storage_fallback') ?: (function_exists('env') ? env('STORAGE_FALLBACK', 'none') : 'none');
@@ -2130,6 +2259,9 @@ include __DIR__ . '/includes/header.php';
             <p class="text-muted small mb-0">Production-grade dual storage layer supporting local disk and AWS S3 with automatic failover and CloudFront CDN.</p>
           </div>
           <div>
+            <button type="button" id="btnSyncS3" class="btn btn-warning btn-sm me-2">
+              <i class="bi bi-cloud-arrow-up me-1"></i> Sync Local to S3
+            </button>
             <button type="button" id="btnTestS3" class="btn btn-outline-info btn-sm me-2">
               <i class="bi bi-broadcast me-1"></i> Test S3 Connection
             </button>
@@ -2314,6 +2446,9 @@ include __DIR__ . '/includes/header.php';
             <button type="button" id="btnTestS3Footer" class="btn btn-outline-info">
               <i class="bi bi-broadcast me-1"></i> Test S3 Connection
             </button>
+            <button type="button" id="btnSyncS3Footer" class="btn btn-warning">
+              <i class="bi bi-cloud-arrow-up me-1"></i> Sync Local Files to S3 Now
+            </button>
           </div>
         </form>
 
@@ -2406,8 +2541,72 @@ include __DIR__ . '/includes/header.php';
             });
           }
 
+          function runS3Sync() {
+            var btn = document.getElementById('btnSyncS3');
+            var btnFoot = document.getElementById('btnSyncS3Footer');
+            var alertBox = document.getElementById('s3TestAlert');
+
+            if (btn) btn.disabled = true;
+            if (btnFoot) btnFoot.disabled = true;
+            if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Syncing to S3...';
+            if (btnFoot) btnFoot.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Syncing to S3...';
+
+            alertBox.className = 'alert alert-warning py-2 small';
+            alertBox.style.display = 'block';
+            alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Transferring local media files to AWS S3 bucket... Please do not close this window.';
+
+            var formData = new FormData();
+            formData.append('_csrf', '<?= csrf_token() ?>');
+            formData.append('action', 'sync_storage_to_s3');
+
+            fetch('settings.php', {
+              method: 'POST',
+              body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Sync Local to S3';
+              }
+              if (btnFoot) {
+                btnFoot.disabled = false;
+                btnFoot.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Sync Local Files to S3 Now';
+              }
+
+              if (data.ok) {
+                alertBox.className = 'alert alert-success py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> <strong>S3 Sync Complete:</strong> ' + data.message;
+                setTimeout(function() {
+                  window.location.reload();
+                }, 2000);
+              } else {
+                alertBox.className = 'alert alert-danger py-2 small';
+                alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>S3 Sync Failed:</strong> ' + data.error;
+              }
+            })
+            .catch(function(err) {
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Sync Local to S3';
+              }
+              if (btnFoot) {
+                btnFoot.disabled = false;
+                btnFoot.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Sync Local Files to S3 Now';
+              }
+              alertBox.className = 'alert alert-danger py-2 small';
+              alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Network error: ' + err.message;
+            });
+          }
+
           document.getElementById('btnTestS3').addEventListener('click', runS3Test);
           document.getElementById('btnTestS3Footer').addEventListener('click', runS3Test);
+          if (document.getElementById('btnSyncS3')) {
+            document.getElementById('btnSyncS3').addEventListener('click', runS3Sync);
+          }
+          if (document.getElementById('btnSyncS3Footer')) {
+            document.getElementById('btnSyncS3Footer').addEventListener('click', runS3Sync);
+          }
         })();
         </script>
       </div>

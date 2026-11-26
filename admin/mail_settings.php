@@ -167,34 +167,34 @@ include __DIR__ . '/includes/header.php';
 <!-- Health & Queue Panel -->
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-md-3">
-    <div class="card stat-card shadow-sm border-0">
-      <div class="stat-icon bg-indigo"><i class="bi bi-hourglass-split"></i></div>
-      <div>
-        <p class="stat-label">Pending in Queue</p>
-        <p class="stat-value"><?= number_format($queueStats['pending']) ?></p>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-warning text-white shadow-sm"><i class="bi bi-hourglass-split"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Pending in Queue</span>
+        <span class="info-box-number fs-4"><?= number_format($queueStats['pending']) ?></span>
       </div>
     </div>
   </div>
   <div class="col-sm-6 col-md-3">
-    <div class="card stat-card shadow-sm border-0">
-      <div class="stat-icon bg-emerald"><i class="bi bi-check2-circle"></i></div>
-      <div>
-        <p class="stat-label">Successfully Sent</p>
-        <p class="stat-value"><?= number_format($queueStats['sent']) ?></p>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-success shadow-sm"><i class="bi bi-check2-circle"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Successfully Sent</span>
+        <span class="info-box-number fs-4"><?= number_format($queueStats['sent']) ?></span>
       </div>
     </div>
   </div>
   <div class="col-sm-6 col-md-3">
-    <div class="card stat-card shadow-sm border-0">
-      <div class="stat-icon bg-rose"><i class="bi bi-exclamation-octagon"></i></div>
-      <div>
-        <p class="stat-label">Failed Deliveries</p>
-        <p class="stat-value text-danger"><?= number_format($queueStats['failed']) ?></p>
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-danger shadow-sm"><i class="bi bi-exclamation-octagon"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Failed Deliveries</span>
+        <span class="info-box-number fs-4 text-danger"><?= number_format($queueStats['failed']) ?></span>
       </div>
     </div>
   </div>
   <div class="col-sm-6 col-md-3">
-    <div class="card stat-card shadow-sm border-0 d-flex flex-column justify-content-center p-3">
+    <div class="card shadow-sm border h-100 d-flex flex-column justify-content-center p-3">
       <div class="small text-muted">Last Sent: <strong><?= $lastSent ? date('M j, g:i a', strtotime($lastSent)) : 'Never' ?></strong></div>
       <form method="post" class="mt-2">
         <?= csrf_field() ?>

@@ -60,17 +60,18 @@ class S3Storage implements StorageInterface
                 $clientOptions['credentials']['token'] = (string)$config['token'];
             }
         } else {
-            // Strip any dummy/empty environment variables that could hijack IAM provider
-            if (isset($_SERVER['AWS_ACCESS_KEY_ID']) && (empty($_SERVER['AWS_ACCESS_KEY_ID']) || str_starts_with($_SERVER['AWS_ACCESS_KEY_ID'], 'your-aws-'))) {
-                unset($_SERVER['AWS_ACCESS_KEY_ID'], $_ENV['AWS_ACCESS_KEY_ID']);
-                putenv('AWS_ACCESS_KEY_ID');
+            // When static key/secret are not provided in settings, use the AWS default provider chain.
+            // This safely supports:
+            // 1. AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from Docker / system environment / .env
+            // 2. AWS ECS Container Task Role (AWS_CONTAINER_CREDENTIALS_RELATIVE_URI)
+            // 3. AWS EC2 Instance Profile (IMDSv1 & IMDSv2)
+            // 4. Standard ~/.aws/credentials file
+            try {
+                $clientOptions['credentials'] = \Aws\Credentials\CredentialProvider::defaultProvider();
+            } catch (Throwable $e) {
+                // Fallback to instance profile if default provider chain initialization fails
+                $clientOptions['credentials'] = \Aws\Credentials\CredentialProvider::instanceProfile();
             }
-            if (isset($_SERVER['AWS_SECRET_ACCESS_KEY']) && (empty($_SERVER['AWS_SECRET_ACCESS_KEY']) || str_starts_with($_SERVER['AWS_SECRET_ACCESS_KEY'], 'your-aws-'))) {
-                unset($_SERVER['AWS_SECRET_ACCESS_KEY'], $_ENV['AWS_SECRET_ACCESS_KEY']);
-                putenv('AWS_SECRET_ACCESS_KEY');
-            }
-            // Explicitly use EC2 Instance Profile provider
-            $clientOptions['credentials'] = \Aws\Credentials\CredentialProvider::instanceProfile();
         }
 
         $this->client = new S3Client($clientOptions);

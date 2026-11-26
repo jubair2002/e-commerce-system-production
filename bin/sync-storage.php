@@ -51,15 +51,16 @@ if ($syncAll) {
          LIMIT :limit"
     );
 } else {
-    // Sync pending files (or any file where provider != targetName and sync_status = 'pending')
+    // Sync pending files OR any file currently stored on local disk when target is S3
     $stmt = $pdo->prepare(
         "SELECT * FROM files
-         WHERE sync_status = 'pending'
+         WHERE ((provider = 'local' AND :targetName = 's3') OR sync_status = 'pending')
            AND status = 'ready'
            AND deleted_at IS NULL
          ORDER BY id ASC
          LIMIT :limit"
     );
+    $stmt->bindValue(':targetName', $targetName, PDO::PARAM_STR);
 }
 
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);

@@ -300,40 +300,40 @@ $statusBadge = [
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="row g-3 mb-3">
-  <div class="col-sm-6 col-md-3">
-    <div class="card stat-card">
-      <div class="stat-icon bg-indigo"><i class="bi bi-receipt"></i></div>
-      <div>
-        <p class="stat-label">Total Orders</p>
-        <p class="stat-value"><?= number_format((int)$stats['total_orders']) ?></p>
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-primary shadow-sm"><i class="bi bi-receipt"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Total Orders</span>
+        <span class="info-box-number fs-4"><?= number_format((int)$stats['total_orders']) ?></span>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="card stat-card">
-      <div class="stat-icon bg-amber"><i class="bi bi-hourglass-split"></i></div>
-      <div>
-        <p class="stat-label">Pending Orders</p>
-        <p class="stat-value"><?= number_format((int)$stats['pending_orders']) ?></p>
+  <div class="col-sm-6 col-xl-3">
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-warning text-white shadow-sm"><i class="bi bi-hourglass-split"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Pending Orders</span>
+        <span class="info-box-number fs-4"><?= number_format((int)$stats['pending_orders']) ?></span>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="card stat-card">
-      <div class="stat-icon bg-rose"><i class="bi bi-exclamation-circle"></i></div>
-      <div>
-        <p class="stat-label">Pending COD &gt; 48h</p>
-        <p class="stat-value text-danger"><?= number_format((int)$stats['pending_cod_48h']) ?></p>
+  <div class="col-sm-6 col-xl-3">
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-danger shadow-sm"><i class="bi bi-exclamation-triangle"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Pending COD &gt; 48h</span>
+        <span class="info-box-number fs-4 <?= (int)$stats['pending_cod_48h'] > 0 ? 'text-danger' : '' ?>"><?= number_format((int)$stats['pending_cod_48h']) ?></span>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="card stat-card">
-      <div class="stat-icon bg-emerald"><i class="bi bi-cash-stack"></i></div>
-      <div>
-        <p class="stat-label">Net Revenue</p>
-        <p class="stat-value"><?= e(price((float)$stats['revenue'])) ?></p>
+  <div class="col-sm-6 col-xl-3">
+    <div class="info-box shadow-sm">
+      <span class="info-box-icon text-bg-success shadow-sm"><i class="bi bi-cash-stack"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Net Revenue</span>
+        <span class="info-box-number fs-4"><?= e(price((float)$stats['revenue'])) ?></span>
       </div>
     </div>
   </div>
