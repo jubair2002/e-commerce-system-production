@@ -522,7 +522,7 @@
     if (variants.length === 0) {
       variantsTbody.innerHTML = `
         <tr>
-          <td colspan="9" class="text-center text-muted py-4">
+          <td colspan="10" class="text-center text-muted py-4">
             No variants generated yet. Define options above and click <strong>"Generate combinations"</strong>.
           </td>
         </tr>
@@ -579,6 +579,11 @@
             `;}).join('')}
           </select>
         </td>
+        <td class="text-center" style="width:40px;">
+          <button type="button" class="btn btn-outline-danger btn-sm p-0 px-1 border-0 var-delete-btn" title="Remove this variant" data-index="${vIndex}">
+            <i class="bi bi-trash fs-6"></i>
+          </button>
+        </td>
       `;
 
       // Event handlers for variant row inputs
@@ -616,6 +621,15 @@
       tr.querySelector('.var-image-select').addEventListener('change', (e) => {
         v.image = e.target.value || null;
         syncJsonInputs();
+      });
+
+      tr.querySelector('.var-delete-btn').addEventListener('click', (e) => {
+        const rowIdx = parseInt(e.currentTarget.dataset.index, 10);
+        const targetV = variants[rowIdx];
+        if (confirm(`Remove variant "${targetV.label || targetV.sku || 'this combination'}"?`)) {
+          variants.splice(rowIdx, 1);
+          renderVariants();
+        }
       });
 
       variantsTbody.appendChild(tr);
@@ -737,7 +751,27 @@
   // -------------------------------------------------------------
   window.initProductVariantsBuilder = function (initialOptions, initialVariants, initialGallery) {
     options = Array.isArray(initialOptions) ? initialOptions : [];
-    variants = Array.isArray(initialVariants) ? initialVariants : [];
+    let rawVariants = Array.isArray(initialVariants) ? initialVariants : [];
+
+    // Filter out orphan variants whose option values or option count no longer match defined options
+    if (options.length > 0) {
+      const validValNames = new Set();
+      options.forEach(opt => {
+        (opt.values || []).forEach(v => {
+          if (v && v.value) validValNames.add(v.value.toLowerCase().trim());
+        });
+      });
+
+      rawVariants = rawVariants.filter(v => {
+        if (v.combo && Array.isArray(v.combo)) {
+          if (v.combo.length !== options.length) return false;
+          return v.combo.every(c => validValNames.has((c.value || '').toLowerCase().trim()));
+        }
+        return true;
+      });
+    }
+
+    variants = rawVariants;
     galleryImages = Array.isArray(initialGallery) ? initialGallery : [];
 
     loadPresets();

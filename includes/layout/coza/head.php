@@ -21,6 +21,35 @@ $favUrl = store_favicon_url($storeFavicon ?? null);
 
 $themeAccent = setting('theme_accent_color', setting('theme_accent', '#717fe0'));
 $darkModeEnabled = (int)setting('dark_mode_enabled', '1') === 1;
+
+$topBarMatchAccent = (int)setting('top_bar_match_accent', '0') === 1;
+$topBarBg = $topBarMatchAccent ? $themeAccent : setting('top_bar_bg_color', '#0f172a');
+if (empty($topBarBg) || !preg_match('/^#[0-9a-fA-F]{3,8}$/', $topBarBg)) {
+    $topBarBg = '#0f172a';
+}
+// Compute readable contrast
+$calcHex = ltrim($topBarBg, '#');
+if (strlen($calcHex) === 3) {
+    $calcHex = $calcHex[0].$calcHex[0].$calcHex[1].$calcHex[1].$calcHex[2].$calcHex[2];
+}
+$topBarYiq = 0;
+if (strlen($calcHex) >= 6) {
+    $r = hexdec(substr($calcHex, 0, 2));
+    $g = hexdec(substr($calcHex, 2, 2));
+    $b = hexdec(substr($calcHex, 4, 2));
+    $topBarYiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
+}
+if ($topBarYiq >= 145) {
+    $topBarTextColor = '#1e293b';
+    $topBarTextMuted = '#475569';
+    $topBarTextHover = '#020617';
+    $topBarBorder = 'rgba(0, 0, 0, 0.1)';
+} else {
+    $topBarTextColor = '#cbd5e1';
+    $topBarTextMuted = '#94a3b8';
+    $topBarTextHover = '#ffffff';
+    $topBarBorder = 'rgba(255, 255, 255, 0.1)';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,10 +131,31 @@ $darkModeEnabled = (int)setting('dark_mode_enabled', '1') === 1;
 			display: none !important;
 		}
 
-		/* Dynamic Theme Accent Color */
+		/* Dynamic Theme Accent & Top Bar Colors */
 		:root {
 			--theme-accent: <?= htmlspecialchars($themeAccent, ENT_QUOTES, 'UTF-8') ?>;
 			--accent-color: <?= htmlspecialchars($themeAccent, ENT_QUOTES, 'UTF-8') ?>;
+			--top-bar-bg: <?= htmlspecialchars($topBarBg, ENT_QUOTES, 'UTF-8') ?>;
+			--top-bar-text: <?= $topBarTextColor ?>;
+			--top-bar-text-muted: <?= $topBarTextMuted ?>;
+			--top-bar-text-hover: <?= $topBarTextHover ?>;
+			--top-bar-border: <?= $topBarBorder ?>;
+		}
+		.top-bar, .topbar-mobile {
+			background-color: var(--top-bar-bg) !important;
+			border-bottom: 1px solid var(--top-bar-border) !important;
+		}
+		.top-bar .left-top-bar, .topbar-mobile .left-top-bar {
+			color: var(--top-bar-text-muted) !important;
+		}
+		.top-bar a, .right-top-bar a, .topbar-mobile a,
+		.top-bar a:first-child, .right-top-bar a:first-child,
+		.topbar-track-btn {
+			color: var(--top-bar-text) !important;
+		}
+		.top-bar a:hover, .right-top-bar a:hover, .topbar-mobile a:hover,
+		.top-bar a.active, .right-top-bar a.active, .topbar-track-btn:hover {
+			color: var(--top-bar-text-hover) !important;
 		}
 		.bg1, .btn-primary, .pdp-btn-buy, .btn-card-buynow {
 			background-color: var(--accent-color) !important;

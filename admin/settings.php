@@ -389,6 +389,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'social_instagram'         => ['type' => 'url'],
             'social_whatsapp'          => ['type' => 'text'],
             'theme_accent_color'       => ['type' => 'hex'],
+            'top_bar_match_accent'     => ['type' => 'bool'],
+            'top_bar_bg_color'         => ['type' => 'hex'],
             'maintenance_mode'         => ['type' => 'bool'],
             'pretty_urls'              => ['type' => 'bool'],
             'dark_mode_enabled'        => ['type' => 'bool'],
@@ -1109,17 +1111,83 @@ include __DIR__ . '/includes/header.php';
               <label class="form-label fw-semibold">Theme Accent Color</label>
               <?php $accent = setting('theme_accent_color', setting('theme_accent', '#111111')); ?>
               <div class="input-group">
-                <input type="color" class="form-control form-control-color" id="accentColorPicker" value="<?= e($accent) ?>" oninput="document.getElementById('accentText').value = this.value; document.getElementById('swatchPreview').style.backgroundColor = this.value;">
-                <input type="text" name="theme_accent_color" id="accentText" class="form-control" value="<?= e($accent) ?>" maxlength="7" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) { document.getElementById('accentColorPicker').value = this.value; document.getElementById('swatchPreview').style.backgroundColor = this.value; }">
+                <input type="color" class="form-control form-control-color" id="accentColorPicker" value="<?= e($accent) ?>" oninput="handleAccentChange(this.value)">
+                <input type="text" name="theme_accent_color" id="accentText" class="form-control" value="<?= e($accent) ?>" maxlength="7" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) { handleAccentChange(this.value); }">
               </div>
               <div class="mt-2 d-flex align-items-center gap-2">
                 <span class="small text-muted">Live Preview:</span>
                 <span id="swatchPreview" class="d-inline-block rounded border" style="width: 28px; height: 28px; background-color: <?= e($accent) ?>;"></span>
-                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#111111'; document.getElementById('accentText').value='#111111'; document.getElementById('swatchPreview').style.backgroundColor='#111111';">Reset Black</button>
-                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#2563eb'; document.getElementById('accentText').value='#2563eb'; document.getElementById('swatchPreview').style.backgroundColor='#2563eb';">Blue</button>
-                <button type="button" class="btn btn-link btn-sm p-0" onclick="document.getElementById('accentColorPicker').value='#16a34a'; document.getElementById('accentText').value='#16a34a'; document.getElementById('swatchPreview').style.backgroundColor='#16a34a';">Green</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="handleAccentChange('#111111');">Reset Black</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="handleAccentChange('#2563eb');">Blue</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="handleAccentChange('#16a34a');">Green</button>
               </div>
             </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Storefront Top Header Bar Color</label>
+              <?php 
+                $topBarMatch = setting('top_bar_match_accent', '0') == '1';
+                $topBarBg = setting('top_bar_bg_color', '#0f172a');
+                $effectiveTopBar = $topBarMatch ? $accent : $topBarBg;
+              ?>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" name="top_bar_match_accent" id="topBarMatchAccent" value="1" <?= $topBarMatch ? 'checked' : '' ?> onchange="toggleTopBarMatch(this.checked)">
+                <label class="form-check-label fw-medium small" for="topBarMatchAccent">Match Top Bar with Accent Color</label>
+              </div>
+              <div class="input-group" id="topBarInputGroup">
+                <input type="color" class="form-control form-control-color" id="topBarColorPicker" value="<?= e($effectiveTopBar) ?>" <?= $topBarMatch ? 'disabled' : '' ?> oninput="handleTopBarChange(this.value)">
+                <input type="text" name="top_bar_bg_color" id="topBarText" class="form-control" value="<?= e($effectiveTopBar) ?>" maxlength="7" <?= $topBarMatch ? 'readonly' : '' ?> oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) { handleTopBarChange(this.value); }">
+              </div>
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <span class="small text-muted">Preview:</span>
+                <span id="topBarPreview" class="d-inline-block rounded border" style="width: 28px; height: 28px; background-color: <?= e($effectiveTopBar) ?>;"></span>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="setTopBarManual('#0f172a');">Dark Navy</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="setTopBarManual('#111111');">Dark Slate</button>
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="setTopBarManual('#717fe0');">Purple</button>
+              </div>
+            </div>
+
+            <script>
+            function handleAccentChange(val) {
+              document.getElementById('accentColorPicker').value = val;
+              document.getElementById('accentText').value = val;
+              document.getElementById('swatchPreview').style.backgroundColor = val;
+              if (document.getElementById('topBarMatchAccent').checked) {
+                document.getElementById('topBarColorPicker').value = val;
+                document.getElementById('topBarText').value = val;
+                document.getElementById('topBarPreview').style.backgroundColor = val;
+              }
+            }
+            function handleTopBarChange(val) {
+              document.getElementById('topBarColorPicker').value = val;
+              document.getElementById('topBarText').value = val;
+              document.getElementById('topBarPreview').style.backgroundColor = val;
+            }
+            function toggleTopBarMatch(checked) {
+              var picker = document.getElementById('topBarColorPicker');
+              var text = document.getElementById('topBarText');
+              var preview = document.getElementById('topBarPreview');
+              if (checked) {
+                var accent = document.getElementById('accentText').value;
+                picker.disabled = true;
+                text.readOnly = true;
+                picker.value = accent;
+                text.value = accent;
+                preview.style.backgroundColor = accent;
+              } else {
+                picker.disabled = false;
+                text.readOnly = false;
+              }
+            }
+            function setTopBarManual(val) {
+              var chk = document.getElementById('topBarMatchAccent');
+              if (chk.checked) {
+                chk.checked = false;
+                toggleTopBarMatch(false);
+              }
+              handleTopBarChange(val);
+            }
+            </script>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold">Announcement Bar</label>

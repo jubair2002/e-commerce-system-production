@@ -30,7 +30,33 @@ if ($id) {
     }
 
     $existingOptions  = product_options_get($id);
-    $existingVariants = variants_get($id, false); // include inactive for admin editing
+    $allDbVariants    = variants_get($id, false); // include inactive for admin editing
+
+    // Filter out orphan/obsolete variants whose option values or option count no longer match current product options
+    $validOptionValueIds = [];
+    $activeOptCount = count($existingOptions);
+    foreach ($existingOptions as $opt) {
+        foreach (($opt['values'] ?? []) as $val) {
+            $validOptionValueIds[(int)$val['id']] = true;
+        }
+    }
+
+    $existingVariants = [];
+    foreach ($allDbVariants as $v) {
+        $vOptValIds = array_values($v['option_value_ids'] ?? []);
+        $matchesCurrentOptions = ($activeOptCount > 0 && count($vOptValIds) === $activeOptCount);
+        if ($matchesCurrentOptions) {
+            foreach ($vOptValIds as $ovid) {
+                if (!isset($validOptionValueIds[(int)$ovid])) {
+                    $matchesCurrentOptions = false;
+                    break;
+                }
+            }
+        }
+        if ($matchesCurrentOptions || empty($existingOptions)) {
+            $existingVariants[] = $v;
+        }
+    }
 
     $stmtImg = db()->prepare('SELECT * FROM product_images WHERE product_id = :id ORDER BY position ASC, id ASC');
     $stmtImg->execute([':id' => $id]);
@@ -551,15 +577,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // Deactivate variants no longer in combination list (never hard delete if existing orders rely on it)
+                // Clean up or deactivate variants no longer in combination list
                 if ($activeHashes) {
                     $hashPlaceholders = implode(',', array_fill(0, count($activeHashes), '?'));
-                    $deactParams = array_merge([$id], $activeHashes);
-                    $stmtDeact = $pdo->prepare(
-                        "UPDATE product_variants SET status = 'inactive'
-                         WHERE product_id = ? AND option_hash NOT IN ($hashPlaceholders)"
+                    $findParams = array_merge([$id], $activeHashes);
+                    $stmtOrphans = $pdo->prepare(
+                        "SELECT id FROM product_variants WHERE product_id = ? AND option_hash NOT IN ($hashPlaceholders)"
                     );
-                    $stmtDeact->execute($deactParams);
+                    $stmtOrphans->execute($findParams);
+                    $orphanIds = $stmtOrphans->fetchAll(PDO::FETCH_COLUMN);
+
+                    if (!empty($orphanIds)) {
+                        $stmtCheckOrder = $pdo->prepare("SELECT COUNT(*) FROM order_items WHERE variant_id = ?");
+                        $stmtDelVarVal  = $pdo->prepare("DELETE FROM product_variant_values WHERE variant_id = ?");
+                        $stmtDelVar     = $pdo->prepare("DELETE FROM product_variants WHERE id = ?");
+                        $stmtInactVar   = $pdo->prepare("UPDATE product_variants SET status = 'inactive' WHERE id = ?");
+
+                        foreach ($orphanIds as $orphanId) {
+                            $orphanId = (int)$orphanId;
+                            $stmtCheckOrder->execute([$orphanId]);
+                            $orderCount = (int)$stmtCheckOrder->fetchColumn();
+
+                            if ($orderCount === 0) {
+                                $stmtDelVarVal->execute([$orphanId]);
+                                $stmtDelVar->execute([$orphanId]);
+                            } else {
+                                $stmtInactVar->execute([$orphanId]);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -666,6 +712,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $selImg = trim($_POST['selected_primary_image']);
                 $pdo->prepare("UPDATE product_images SET is_primary = IF(filename = :fn, 1, 0) WHERE product_id = :pid")->execute([':fn' => $selImg, ':pid' => $id]);
                 $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $selImg, ':id' => $id]);
+            }
+
+            // 4. Update gallery image positions / custom ordering
+            if (!empty($_POST['gallery_order']) && is_array($_POST['gallery_order'])) {
+                $posStmt = $pdo->prepare("UPDATE product_images SET position = :pos WHERE id = :id AND product_id = :pid");
+                $gPos = 1;
+                foreach ($_POST['gallery_order'] as $gId) {
+                    $gId = (int)$gId;
+                    if ($gId > 0) {
+                        $posStmt->execute([':pos' => $gPos++, ':id' => $gId, ':pid' => $id]);
+                    }
+                }
             }
 
             $pdo->commit();
@@ -895,10 +953,11 @@ include __DIR__ . '/includes/header.php';
                   <th>Stock</th>
                   <th>Weight</th>
                   <th>Image</th>
+                  <th style="width:40px;" class="text-center">Action</th>
                 </tr>
               </thead>
               <tbody id="variants_tbody">
-                <tr><td colspan="9" class="text-center text-muted py-3">No variants generated yet.</td></tr>
+                <tr><td colspan="10" class="text-center text-muted py-3">No variants generated yet.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1030,52 +1089,179 @@ include __DIR__ . '/includes/header.php';
 
           <?php if (!empty($existingImages)): ?>
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="small fw-semibold text-muted">Gallery Images (<?= count($existingImages) ?>)</span>
-              <span class="small text-muted" style="font-size:11px;">Radio = Primary | Checkbox = Delete</span>
+              <span class="small fw-bold text-title">Gallery Images (<span id="gallery_count_num"><?= count($existingImages) ?></span>)</span>
+              <span class="small text-muted" style="font-size:11px;">Drag or arrows to order &middot; Radio = Primary</span>
             </div>
-            <div class="row g-2">
-              <?php foreach ($existingImages as $img): ?>
-                <div class="col-4 text-center">
-                  <div class="border rounded p-1 position-relative bg-light transition-all" id="gallery_item_<?= (int)$img['id'] ?>">
-                    <img src="<?= e(product_image_url($img['filename'])) ?>" class="img-fluid rounded" style="height:60px; object-fit:cover;" alt="">
-                    <div class="d-flex align-items-center justify-content-between mt-1 px-1">
-                      <div class="form-check mb-0" title="Set as primary image">
-                        <input type="radio" name="selected_primary_image" value="<?= e($img['filename']) ?>"
-                               class="form-check-input" <?= ($product['image'] === $img['filename']) ? 'checked' : '' ?>>
-                      </div>
-                      <div class="form-check mb-0" title="Click to delete this image on save">
-                        <input type="checkbox" name="delete_gallery_images[]" id="del_img_<?= (int)$img['id'] ?>" value="<?= (int)$img['id'] ?>" class="form-check-input border-danger d-none" onchange="updateGalleryDelState(<?= (int)$img['id'] ?>)">
-                        <label for="del_img_<?= (int)$img['id'] ?>" class="btn btn-outline-danger btn-sm p-0 px-1 border-0" style="cursor: pointer;" title="Delete image">
-                          <i class="bi bi-trash fs-6"></i>
-                        </label>
+
+            <div id="gallery_images_grid" class="row g-2">
+              <?php foreach ($existingImages as $gIdx => $img): ?>
+                <div class="col-4 text-center gallery-col" id="gallery_col_<?= (int)$img['id'] ?>" data-id="<?= (int)$img['id'] ?>">
+                  <div class="gallery-card border rounded-3 p-1 position-relative bg-white shadow-sm transition-all h-100 d-flex flex-column justify-content-between"
+                       id="gallery_item_<?= (int)$img['id'] ?>" draggable="true">
+
+                    <!-- Hidden Order Input -->
+                    <input type="hidden" name="gallery_order[]" value="<?= (int)$img['id'] ?>" class="gallery-order-val">
+
+                    <!-- Hidden Delete Input -->
+                    <input type="checkbox" name="delete_gallery_images[]" id="del_img_<?= (int)$img['id'] ?>" value="<?= (int)$img['id'] ?>" class="d-none">
+
+                    <!-- Top Order Badge & Drag Handle -->
+                    <div class="d-flex align-items-center justify-content-between px-1 mb-1" style="font-size: 11px;">
+                      <span class="badge bg-light text-dark border gallery-pos-badge" style="font-size: 10px;">#<?= $gIdx + 1 ?></span>
+                      <span class="gallery-drag-handle text-muted" style="cursor: grab;" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
+                    </div>
+
+                    <!-- Image Thumbnail -->
+                    <div class="position-relative overflow-hidden rounded mb-1" style="height: 70px;">
+                      <img src="<?= e(product_image_url($img['filename'])) ?>" class="w-100 h-100 rounded" style="object-fit:cover;" alt="">
+                      <div id="del_badge_<?= (int)$img['id'] ?>" class="badge bg-danger position-absolute top-50 start-50 translate-middle d-none shadow-sm" style="font-size: 10px; z-index: 5;">
+                        <i class="bi bi-trash"></i> To Delete
                       </div>
                     </div>
-                    <div id="del_badge_<?= (int)$img['id'] ?>" class="badge bg-danger position-absolute top-50 start-50 translate-middle d-none" style="font-size: 10px;">To Delete</div>
+
+                    <!-- Bottom Controls: Primary Radio + Reorder Arrows + Delete Toggle -->
+                    <div class="d-flex align-items-center justify-content-between px-1 pt-1 border-top mt-auto">
+                      <!-- Primary Radio -->
+                      <div class="form-check mb-0" title="Set as primary product image">
+                        <input type="radio" name="selected_primary_image" value="<?= e($img['filename']) ?>"
+                               class="form-check-input" <?= ($product['image'] === $img['filename'] || ((int)($img['is_primary'] ?? 0) === 1)) ? 'checked' : '' ?> style="cursor: pointer;">
+                      </div>
+
+                      <!-- Reorder Buttons -->
+                      <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light btn-sm p-0 px-1 border-0" title="Move earlier" onclick="moveGalleryItem(<?= (int)$img['id'] ?>, -1)">
+                          <i class="bi bi-chevron-left" style="font-size: 11px;"></i>
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm p-0 px-1 border-0" title="Move later" onclick="moveGalleryItem(<?= (int)$img['id'] ?>, 1)">
+                          <i class="bi bi-chevron-right" style="font-size: 11px;"></i>
+                        </button>
+                      </div>
+
+                      <!-- Delete Action Toggle -->
+                      <button type="button" class="btn btn-outline-danger btn-sm p-0 px-1 border-0" id="del_btn_<?= (int)$img['id'] ?>" onclick="toggleGalleryDelete(<?= (int)$img['id'] ?>)" title="Click to mark image for deletion">
+                        <i class="bi bi-trash fs-6"></i>
+                      </button>
+                    </div>
+
                   </div>
                 </div>
               <?php endforeach; ?>
             </div>
+
+            <!-- JavaScript for Drag-and-Drop, Arrow Reordering & Deletion -->
             <script>
-              function updateGalleryDelState(id) {
+            (function () {
+              const grid = document.getElementById('gallery_images_grid');
+              if (!grid) return;
+
+              function refreshPositions() {
+                const cols = grid.querySelectorAll('.gallery-col');
+                cols.forEach((col, idx) => {
+                  const badge = col.querySelector('.gallery-pos-badge');
+                  if (badge) badge.textContent = '#' + (idx + 1);
+                });
+              }
+
+              window.moveGalleryItem = function (id, dir) {
+                const col = document.getElementById('gallery_col_' + id);
+                if (!col) return;
+                if (dir === -1 && col.previousElementSibling) {
+                  grid.insertBefore(col, col.previousElementSibling);
+                  refreshPositions();
+                  saveGalleryOrderAjax();
+                } else if (dir === 1 && col.nextElementSibling) {
+                  grid.insertBefore(col.nextElementSibling, col);
+                  refreshPositions();
+                  saveGalleryOrderAjax();
+                }
+              };
+
+              window.toggleGalleryDelete = function (id) {
                 const cb = document.getElementById('del_img_' + id);
                 const item = document.getElementById('gallery_item_' + id);
                 const badge = document.getElementById('del_badge_' + id);
-                if (cb && item) {
-                  if (cb.checked) {
-                    item.style.opacity = '0.45';
-                    item.style.borderColor = '#dc3545';
-                    item.style.backgroundColor = '#fff5f5';
-                    if (badge) badge.classList.remove('d-none');
-                  } else {
-                    item.style.opacity = '1';
-                    item.style.borderColor = '';
-                    item.style.backgroundColor = '';
-                    if (badge) badge.classList.add('d-none');
+                const btn = document.getElementById('del_btn_' + id);
+                if (!cb || !item) return;
+
+                cb.checked = !cb.checked;
+                if (cb.checked) {
+                  item.style.opacity = '0.45';
+                  item.style.borderColor = '#dc3545';
+                  item.style.backgroundColor = '#fff5f5';
+                  if (badge) badge.classList.remove('d-none');
+                  if (btn) {
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-danger', 'text-white');
+                  }
+                } else {
+                  item.style.opacity = '1';
+                  item.style.borderColor = '';
+                  item.style.backgroundColor = '';
+                  if (badge) badge.classList.add('d-none');
+                  if (btn) {
+                    btn.classList.remove('btn-danger', 'text-white');
+                    btn.classList.add('btn-outline-danger');
                   }
                 }
+              };
+
+              // Drag and drop implementation
+              let draggedCol = null;
+              grid.querySelectorAll('.gallery-card').forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                  draggedCol = card.closest('.gallery-col');
+                  e.dataTransfer.effectAllowed = 'move';
+                  card.classList.add('opacity-50');
+                });
+
+                card.addEventListener('dragend', () => {
+                  card.classList.remove('opacity-50');
+                  draggedCol = null;
+                  refreshPositions();
+                  saveGalleryOrderAjax();
+                });
+
+                card.addEventListener('dragover', (e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                });
+
+                card.addEventListener('drop', (e) => {
+                  e.preventDefault();
+                  const targetCol = card.closest('.gallery-col');
+                  if (draggedCol && targetCol && draggedCol !== targetCol) {
+                    const allCols = Array.from(grid.querySelectorAll('.gallery-col'));
+                    const draggedIdx = allCols.indexOf(draggedCol);
+                    const targetIdx = allCols.indexOf(targetCol);
+                    if (draggedIdx < targetIdx) {
+                      grid.insertBefore(draggedCol, targetCol.nextSibling);
+                    } else {
+                      grid.insertBefore(draggedCol, targetCol);
+                    }
+                    refreshPositions();
+                    saveGalleryOrderAjax();
+                  }
+                });
+              });
+
+              // Save order via AJAX in background when changed
+              function saveGalleryOrderAjax() {
+                const prodId = <?= (int)$id ?>;
+                if (!prodId) return;
+                const order = Array.from(grid.querySelectorAll('.gallery-order-val')).map(inp => parseInt(inp.value, 10));
+                const fd = new FormData();
+                fd.append('action', 'reorder');
+                fd.append('product_id', prodId);
+                order.forEach(id => fd.append('order[]', id));
+                fetch('ajax/gallery_action.php', { method: 'POST', body: fd })
+                  .then(r => r.json())
+                  .catch(() => {});
               }
+            })();
             </script>
-            <small class="text-muted d-block mt-2" style="font-size:11px;">Select radio to set as primary, click trash icon to mark for deletion on save.</small>
+            <small class="text-muted d-block mt-2" style="font-size:11px;">
+              <i class="bi bi-arrows-move me-1"></i> Drag cards or click &larr; &rarr; to reorder gallery. Click trash to mark for deletion.
+            </small>
           <?php endif; ?>
         </div>
       </div>
