@@ -58,9 +58,52 @@ if ($id) {
         }
     }
 
-    $stmtImg = db()->prepare('SELECT * FROM product_images WHERE product_id = :id ORDER BY position ASC, id ASC');
+    $stmtImg = db()->prepare(
+        'SELECT pi.*, f.original_name
+         FROM product_images pi
+         LEFT JOIN files f ON f.id = pi.file_id AND f.deleted_at IS NULL
+         WHERE pi.product_id = :id
+         ORDER BY pi.position ASC, pi.id ASC'
+    );
     $stmtImg->execute([':id' => $id]);
     $existingImages = $stmtImg->fetchAll();
+
+    // Hydrate display_name and image_url for gallery & variant image picker
+    $seenGalleryFiles = [];
+    foreach ($existingImages as &$imgRow) {
+        $fn = (string)($imgRow['filename'] ?? '');
+        $seenGalleryFiles[$fn] = true;
+        if (empty($imgRow['original_name']) && $fn !== '') {
+            $stmtOrig = db()->prepare('SELECT original_name FROM files WHERE storage_key = :sk AND deleted_at IS NULL LIMIT 1');
+            $stmtOrig->execute([':sk' => $fn]);
+            $origName = $stmtOrig->fetchColumn();
+            if ($origName) {
+                $imgRow['original_name'] = $origName;
+            }
+        }
+        $imgRow['display_name'] = !empty($imgRow['original_name']) ? $imgRow['original_name'] : basename($fn);
+        $imgRow['image_url']    = product_image_url($fn);
+    }
+    unset($imgRow);
+
+    if (!empty($product['image']) && empty($seenGalleryFiles[$product['image']])) {
+        $pOrig = null;
+        if (!empty($product['file_id'])) {
+            $stmtPOrig = db()->prepare('SELECT original_name FROM files WHERE id = :fid AND deleted_at IS NULL LIMIT 1');
+            $stmtPOrig->execute([':fid' => (int)$product['file_id']]);
+            $pOrig = $stmtPOrig->fetchColumn() ?: null;
+        }
+        array_unshift($existingImages, [
+            'id'            => 0,
+            'product_id'    => $id,
+            'filename'      => $product['image'],
+            'file_id'       => $product['file_id'] ?? null,
+            'original_name' => $pOrig,
+            'display_name'  => $pOrig ?: basename((string)$product['image']),
+            'image_url'     => product_image_url($product['image']),
+            'is_primary'    => 1,
+        ]);
+    }
 }
 
 $categories = db()->query('SELECT id, name FROM categories ORDER BY name ASC')->fetchAll();
@@ -1128,10 +1171,11 @@ include __DIR__ . '/includes/header.php';
             </div>
 
             <div id="gallery_images_grid" class="row g-2">
-              <?php foreach ($existingImages as $gIdx => $img): ?>
+              <?php foreach ($existingImages as $gIdx => $img): if ((int)($img['id'] ?? 0) <= 0) continue; ?>
+                <?php $imgLabel = $img['display_name'] ?? basename((string)$img['filename']); ?>
                 <div class="col-4 text-center gallery-col" id="gallery_col_<?= (int)$img['id'] ?>" data-id="<?= (int)$img['id'] ?>">
                   <div class="gallery-card border rounded-3 p-1 position-relative bg-white shadow-sm transition-all h-100 d-flex flex-column justify-content-between"
-                       id="gallery_item_<?= (int)$img['id'] ?>" draggable="true">
+                       id="gallery_item_<?= (int)$img['id'] ?>" draggable="true" title="<?= e($imgLabel) ?>">
 
                     <!-- Hidden Order Input -->
                     <input type="hidden" name="gallery_order[]" value="<?= (int)$img['id'] ?>" class="gallery-order-val">
@@ -1147,10 +1191,14 @@ include __DIR__ . '/includes/header.php';
 
                     <!-- Image Thumbnail -->
                     <div class="position-relative overflow-hidden rounded mb-1" style="height: 70px;">
-                      <img src="<?= e(product_image_url($img['filename'])) ?>" class="w-100 h-100 rounded" style="object-fit:cover;" alt="">
+                      <img src="<?= e($img['image_url'] ?? product_image_url($img['filename'])) ?>" class="w-100 h-100 rounded" style="object-fit:cover;" alt="<?= e($imgLabel) ?>">
                       <div id="del_badge_<?= (int)$img['id'] ?>" class="badge bg-danger position-absolute top-50 start-50 translate-middle d-none shadow-sm" style="font-size: 10px; z-index: 5;">
                         <i class="bi bi-trash"></i> To Delete
                       </div>
+                    </div>
+
+                    <div class="text-truncate text-muted px-1 mb-1" style="font-size: 10px;" title="<?= e($imgLabel) ?>">
+                      <?= e($imgLabel) ?>
                     </div>
 
                     <!-- Bottom Controls: Primary Radio + Reorder Arrows + Delete Toggle -->

@@ -624,6 +624,173 @@
   }
 
   // -------------------------------------------------------------
+  // Visual Variant Image Picker Helpers
+  // -------------------------------------------------------------
+  function getImageMeta(filename) {
+    if (!filename) return { url: '', label: 'No image' };
+    const found = (galleryImages || []).find(img => img.filename === filename);
+    if (found) {
+      const fallbackName = (found.filename || '').split('/').pop() || found.filename;
+      return {
+        url: found.image_url || '',
+        label: found.display_name || found.original_name || fallbackName || 'Image'
+      };
+    }
+    return {
+      url: '',
+      label: filename.split('/').pop() || filename
+    };
+  }
+
+  let pickerModalEl = null;
+  let pickerModalInst = null;
+  let activePickerVariantIndex = null;
+
+  function ensureImagePickerModal() {
+    if (pickerModalEl) return pickerModalEl;
+    pickerModalEl = document.createElement('div');
+    pickerModalEl.className = 'modal fade';
+    pickerModalEl.id = 'variantImagePickerModal';
+    pickerModalEl.tabIndex = -1;
+    pickerModalEl.innerHTML = `
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <div>
+              <h6 class="modal-title mb-0 fw-bold"><i class="bi bi-images me-1 text-primary"></i> Select Variant Image</h6>
+              <small class="text-muted" id="vip_variant_subtitle"></small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="vip_batch_apply_wrap" class="alert alert-light border py-2 px-3 mb-3 d-none">
+              <div class="small fw-semibold mb-1"><i class="bi bi-magic text-primary me-1"></i> Also apply selected image to all variants sharing:</div>
+              <div id="vip_batch_options" class="d-flex flex-wrap gap-3"></div>
+            </div>
+            <div id="vip_image_grid" class="row g-2"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(pickerModalEl);
+    if (window.bootstrap && window.bootstrap.Modal) {
+      pickerModalInst = new window.bootstrap.Modal(pickerModalEl);
+    }
+    return pickerModalEl;
+  }
+
+  function openVariantImagePicker(vIndex) {
+    const v = variants[vIndex];
+    if (!v) return;
+    ensureImagePickerModal();
+    activePickerVariantIndex = vIndex;
+
+    const subtitle = pickerModalEl.querySelector('#vip_variant_subtitle');
+    if (subtitle) subtitle.textContent = v.label || v.sku || `Variant #${vIndex + 1}`;
+
+    const batchWrap = pickerModalEl.querySelector('#vip_batch_apply_wrap');
+    const batchOpts = pickerModalEl.querySelector('#vip_batch_options');
+    if (batchWrap && batchOpts) {
+      batchOpts.innerHTML = '';
+      if (Array.isArray(v.combo) && v.combo.length > 0) {
+        batchWrap.classList.remove('d-none');
+        v.combo.forEach((c, cIdx) => {
+          const isColorOpt = (c.option_name || '').toLowerCase().includes('color');
+          const id = `vip_batch_cb_${cIdx}`;
+          batchOpts.innerHTML += `
+            <div class="form-check form-check-inline m-0">
+              <input class="form-check-input vip-batch-cb" type="checkbox" id="${id}"
+                     data-opt-name="${escapeHtml(c.option_name)}" data-opt-val="${escapeHtml(c.value)}"
+                     ${isColorOpt ? 'checked' : ''}>
+              <label class="form-check-label small" for="${id}">
+                All <strong>${escapeHtml(c.option_name)}: ${escapeHtml(c.value)}</strong>
+              </label>
+            </div>
+          `;
+        });
+      } else {
+        batchWrap.classList.add('d-none');
+      }
+    }
+
+    const grid = pickerModalEl.querySelector('#vip_image_grid');
+    grid.innerHTML = '';
+
+    // "No image" option card
+    const isNoneActive = !v.image;
+    grid.innerHTML += `
+      <div class="col-6 col-sm-4 col-md-3">
+        <button type="button" class="btn w-100 h-100 p-2 border rounded text-center vip-pick-item ${isNoneActive ? 'border-primary bg-primary-subtle' : 'bg-light'}" data-filename="">
+          <div class="d-flex align-items-center justify-content-center rounded bg-white border mb-2" style="height:92px;">
+            <i class="bi bi-slash-circle text-muted fs-3"></i>
+          </div>
+          <div class="small fw-semibold text-dark text-truncate">No image</div>
+          <div class="text-muted" style="font-size:11px;">Use product default</div>
+        </button>
+      </div>
+    `;
+
+    (galleryImages || []).forEach(img => {
+      const fn = img.filename || '';
+      const meta = getImageMeta(fn);
+      const isSelected = v.image === fn;
+      grid.innerHTML += `
+        <div class="col-6 col-sm-4 col-md-3">
+          <button type="button" class="btn w-100 h-100 p-2 border rounded text-center vip-pick-item ${isSelected ? 'border-primary bg-primary-subtle shadow-sm' : 'bg-white'}"
+                  data-filename="${escapeHtml(fn)}" title="${escapeHtml(meta.label)}">
+            <div class="overflow-hidden rounded bg-light border mb-2" style="height:92px;">
+              ${meta.url
+                ? `<img src="${escapeHtml(meta.url)}" alt="" class="w-100 h-100" style="object-fit:cover;">`
+                : `<div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-image fs-3"></i></div>`
+              }
+            </div>
+            <div class="small fw-semibold text-dark text-truncate">${escapeHtml(meta.label)}</div>
+          </button>
+        </div>
+      `;
+    });
+
+    grid.querySelectorAll('.vip-pick-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const chosenFile = btn.dataset.filename || null;
+        readVariantsFromDOM();
+        if (variants[activePickerVariantIndex]) {
+          variants[activePickerVariantIndex].image = chosenFile;
+        }
+        // Apply to all variants sharing any checked option (e.g., same Color)
+        const checkedFilters = [];
+        pickerModalEl.querySelectorAll('.vip-batch-cb:checked').forEach(cb => {
+          checkedFilters.push({
+            optName: (cb.dataset.optName || '').toLowerCase(),
+            optVal: (cb.dataset.optVal || '').toLowerCase()
+          });
+        });
+        if (checkedFilters.length > 0) {
+          variants.forEach(item => {
+            if (!Array.isArray(item.combo)) return;
+            const matchesAny = checkedFilters.some(f =>
+              item.combo.some(c =>
+                (c.option_name || '').toLowerCase() === f.optName &&
+                (c.value || '').toLowerCase() === f.optVal
+              )
+            );
+            if (matchesAny) {
+              item.image = chosenFile;
+            }
+          });
+        }
+
+        renderVariants();
+        if (pickerModalInst) pickerModalInst.hide();
+      });
+    });
+
+    if (pickerModalInst) {
+      pickerModalInst.show();
+    }
+  }
+
+  // -------------------------------------------------------------
   // Render Variants Table
   // -------------------------------------------------------------
   function renderVariants() {
@@ -653,6 +820,7 @@
       const tr = document.createElement('tr');
       tr.className = `variant-row ${v.status === 'inactive' ? 'table-light text-muted' : ''}`;
       tr.dataset.index = vIndex;
+      const imgMeta = getImageMeta(v.image);
 
       tr.innerHTML = `
         <td class="text-center" style="width:40px;">
@@ -682,17 +850,17 @@
         <td style="min-width:90px;">
           <input type="number" min="0" class="form-control form-control-sm var-weight" value="${escapeHtml(v.weight_g || '')}" placeholder="g">
         </td>
-        <td style="min-width:120px;">
-          <select class="form-select form-select-sm var-image-select">
-            <option value="">No image</option>
-            ${galleryImages.map(img => {
-              const fname = (img.filename || '').split('/').pop() || img.filename || '';
-              return `
-              <option value="${escapeHtml(img.filename)}" ${v.image === img.filename ? 'selected' : ''}>
-                ${escapeHtml(fname)}
-              </option>
-            `;}).join('')}
-          </select>
+        <td style="min-width:165px;">
+          <input type="hidden" class="var-image-select" value="${escapeHtml(v.image || '')}">
+          <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 w-100 text-start var-image-picker-btn"
+                  style="max-width: 195px;" title="${escapeHtml(imgMeta.label)}">
+            ${imgMeta.url
+              ? `<img src="${escapeHtml(imgMeta.url)}" alt="" class="rounded border flex-shrink-0" style="width:26px;height:26px;object-fit:cover;">`
+              : `<span class="rounded border bg-light d-inline-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width:26px;height:26px;"><i class="bi bi-image" style="font-size:0.75rem;"></i></span>`
+            }
+            <span class="text-truncate small flex-grow-1">${escapeHtml(imgMeta.label)}</span>
+            <i class="bi bi-chevron-down small text-muted flex-shrink-0"></i>
+          </button>
         </td>
         <td class="text-center" style="width:40px;">
           <button type="button" class="btn btn-outline-danger btn-sm p-0 px-1 border-0 var-delete-btn" title="Remove this variant" data-index="${vIndex}">
@@ -753,9 +921,8 @@
         syncJsonInputs();
       });
 
-      tr.querySelector('.var-image-select').addEventListener('change', (e) => {
-        v.image = e.target.value || null;
-        syncJsonInputs();
+      tr.querySelector('.var-image-picker-btn').addEventListener('click', () => {
+        openVariantImagePicker(vIndex);
       });
 
       tr.querySelector('.var-delete-btn').addEventListener('click', (e) => {

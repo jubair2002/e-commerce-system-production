@@ -136,16 +136,28 @@ class StorageManager
     }
 
     /**
-     * Generate secure storage key: {purpose}/{yyyy}/{mm}/{random-32-hex}.{ext}
+     * Generate secure storage key: {purpose}/{yyyy}/{mm}/{slug}-{short-hex}.{ext}
+     * (or {purpose}/{yyyy}/{mm}/{random-32-hex}.{ext} when no original name is supplied).
      */
-    public function generateStorageKey(string $purpose, string $ext): string
+    public function generateStorageKey(string $purpose, string $ext, ?string $originalName = null): string
     {
         $purpose = preg_replace('/[^a-z0-9_-]/i', '', strtolower($purpose)) ?: 'misc';
         $year    = date('Y');
         $month   = date('m');
-        $random  = bin2hex(random_bytes(16));
         $ext     = ltrim(strtolower($ext), '.');
 
+        if ($originalName !== null && $originalName !== '') {
+            $base = pathinfo($originalName, PATHINFO_FILENAME);
+            $slug = strtolower(trim((string)preg_replace('/[^a-z0-9]+/i', '-', $base), '-'));
+            if ($slug !== '') {
+                $slug = substr($slug, 0, 48);
+                $slug = rtrim($slug, '-');
+                $shortHex = bin2hex(random_bytes(4));
+                return "{$purpose}/{$year}/{$month}/{$slug}-{$shortHex}.{$ext}";
+            }
+        }
+
+        $random = bin2hex(random_bytes(16));
         return "{$purpose}/{$year}/{$month}/{$random}.{$ext}";
     }
 
@@ -246,7 +258,7 @@ class StorageManager
 
         // 6. Determine final safe extension
         $safeExt = self::MIME_EXTENSIONS[$finalMime] ?? 'bin';
-        $storageKey = $this->generateStorageKey($purpose, $safeExt);
+        $storageKey = $this->generateStorageKey($purpose, $safeExt, $originalName);
         $checksum = hash_file('sha256', $sourceToStore);
         $visibility = $options['visibility'] ?? 'public';
 
