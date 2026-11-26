@@ -119,9 +119,14 @@ try {
     }
 } catch (Throwable $e) {}
 
-$currentStock = $stockCount;
-$inStock      = $currentStock > 0;
-$deliveryEst  = shipping_delivery_estimate();
+$currentStock   = $stockCount;
+$isPreorder     = !empty($product['is_preorder']);
+$allowBackorder = !empty($product['allow_backorder']);
+$inStock        = $currentStock > 0;
+$isBackorder    = (!$isPreorder && !$inStock && $allowBackorder);
+$isSoldOut      = (!$isPreorder && !$inStock && !$allowBackorder);
+$canPurchase    = ($inStock || $isPreorder || $allowBackorder);
+$deliveryEst    = shipping_delivery_estimate();
 
 // Reviews Data
 $reviews = [];
@@ -291,14 +296,21 @@ include __DIR__ . '/../../includes/partials/header.php';
 							<a href="#reviews" class="pdp-reviews-link" onclick="$('#tabLinkReviews').tab('show');">(<?= $totalReviews ?> review<?= $totalReviews === 1 ? '' : 's' ?>)</a>
 						</div>
 
-						<?php if (!empty($product['is_preorder'])): ?>
+						<?php if ($isPreorder): ?>
 							<span class="pdp-stock-badge in-stock pre-order" id="pdpStockBadge" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
 								<i class="zmdi zmdi-time-restore m-r-4"></i> Pre-Order
 							</span>
+						<?php elseif ($inStock): ?>
+							<span class="pdp-stock-badge in-stock" id="pdpStockBadge">
+								<i class="zmdi zmdi-check-circle m-r-4"></i> In Stock: <?= (int)$currentStock ?>
+							</span>
+						<?php elseif ($isBackorder): ?>
+							<span class="pdp-stock-badge backorder" id="pdpStockBadge" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+								<i class="zmdi zmdi-time m-r-4"></i> Backorder
+							</span>
 						<?php else: ?>
-							<span class="pdp-stock-badge <?= $inStock ? 'in-stock' : 'out-of-stock' ?>" id="pdpStockBadge">
-								<i class="zmdi <?= $inStock ? 'zmdi-check-circle' : 'zmdi-alert-circle-o' ?> m-r-4"></i>
-								<?= $inStock ? 'In Stock: ' . (int)$currentStock : 'Sold Out' ?>
+							<span class="pdp-stock-badge out-of-stock" id="pdpStockBadge">
+								<i class="zmdi zmdi-alert-circle-o m-r-4"></i> Sold Out
 							</span>
 						<?php endif; ?>
 
@@ -433,12 +445,12 @@ include __DIR__ . '/../../includes/partials/header.php';
 								</div>
 
 								<!-- Add to Cart (AJAX - stays on page) -->
-								<button type="button" class="pdp-btn-cart" id="pdpAddBtn" <?= !$inStock ? 'disabled' : '' ?>>
+								<button type="button" class="pdp-btn-cart" id="pdpAddBtn" <?= !$canPurchase ? 'disabled' : '' ?>>
 									<i class="zmdi zmdi-shopping-cart-plus m-r-8 fs-18"></i> Add to Cart
 								</button>
 
 								<!-- Buy Now (Direct Checkout) -->
-								<button type="submit" name="action_type" value="buy_now" class="pdp-btn-buy" id="pdpBuyNowBtn" <?= !$inStock ? 'disabled' : '' ?>>
+								<button type="submit" name="action_type" value="buy_now" class="pdp-btn-buy" id="pdpBuyNowBtn" <?= !$canPurchase ? 'disabled' : '' ?>>
 									<i class="zmdi zmdi-flash m-r-8 fs-18"></i> Buy Now
 								</button>
 
@@ -850,6 +862,17 @@ document.addEventListener('DOMContentLoaded', function() {
 					if (addBtn) addBtn.disabled = false;
 					if (buyBtn) buyBtn.disabled = false;
 					if (qtyInput) qtyInput.max = vStock;
+				} else if (allowBackorder) {
+					if (stockBadge) {
+						stockBadge.className = 'pdp-stock-badge backorder';
+						stockBadge.style.backgroundColor = '#fef3c7';
+						stockBadge.style.color = '#92400e';
+						stockBadge.style.borderColor = '#fde68a';
+						stockBadge.innerHTML = '<i class="zmdi zmdi-time m-r-4"></i> Backorder';
+					}
+					if (addBtn) addBtn.disabled = false;
+					if (buyBtn) buyBtn.disabled = false;
+					if (qtyInput) qtyInput.removeAttribute('max');
 				} else {
 					if (stockBadge) {
 						stockBadge.className = 'pdp-stock-badge out-of-stock';

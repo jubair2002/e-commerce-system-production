@@ -142,12 +142,19 @@ function variants_get(int $productId, bool $onlyActive = true): array
 
     $map = [];
     $labels = [];
+    $combos = [];
     foreach ($rows as $r) {
         $vid  = (int)$r['variant_id'];
         $oid  = (int)$r['option_id'];
         $ovid = (int)$r['option_value_id'];
         $map[$vid][$oid] = $ovid;
         $labels[$vid][] = $r['option_name'] . ': ' . $r['option_value'];
+        $combos[$vid][] = [
+            'option_id'   => $oid,
+            'option_name' => $r['option_name'],
+            'value_id'    => $ovid,
+            'value'       => $r['option_value'],
+        ];
     }
 
     foreach ($variants as &$v) {
@@ -156,6 +163,7 @@ function variants_get(int $productId, bool $onlyActive = true): array
         $v['product_id'] = (int)$v['product_id'];
         $v['stock'] = (int)$v['stock'];
         $v['option_value_ids'] = $map[$vid] ?? [];
+        $v['combo'] = $combos[$vid] ?? [];
         $v['label'] = !empty($labels[$vid]) ? implode(' / ', $labels[$vid]) : ($v['sku'] ?: 'Default');
     }
     unset($v);
@@ -519,6 +527,19 @@ function products_attach_card_data(array &$products): void
         }
     } catch (Throwable $e) {}
 
+    // Attach accurate variant stock totals from v_product_stock
+    $stockData = [];
+    try {
+        $st = db()->prepare("SELECT product_id, total_stock, variant_count FROM v_product_stock WHERE product_id IN ($in)");
+        $st->execute($ids);
+        foreach ($st->fetchAll() as $r) {
+            $stockData[(int)$r['product_id']] = [
+                'total_stock'   => (int)$r['total_stock'],
+                'variant_count' => (int)$r['variant_count'],
+            ];
+        }
+    } catch (Throwable $e) {}
+
     foreach ($products as &$p) {
         $pid = (int)$p['id'];
         if (empty($p['image']) && !empty($primaryGallery[$pid])) {
@@ -526,6 +547,13 @@ function products_attach_card_data(array &$products): void
         }
         $p['second_image'] = $second[$pid] ?? ''; // '' (not null) so the card won't re-query
         $p['swatches']     = $sw[$pid] ?? [];
+        if (isset($stockData[$pid])) {
+            $p['calculated_stock'] = $stockData[$pid]['total_stock'];
+            $p['variant_count']    = $stockData[$pid]['variant_count'];
+        } else {
+            $p['calculated_stock'] = (int)($p['stock'] ?? 0);
+            $p['variant_count']    = 0;
+        }
     }
     unset($p);
 }

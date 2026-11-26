@@ -8,9 +8,12 @@ $onSale      = product_is_on_sale($p);
 $discount    = $onSale ? product_discount_percent($p) : 0;
 $productType = $p['product_type'] ?? 'simple';
 $isSimple    = ($productType === 'simple');
-$stock       = (int)($p['stock'] ?? 0);
+$stock       = (int)($p['calculated_stock'] ?? $p['stock'] ?? 0);
 $lowThresh   = (int)($p['low_stock_threshold'] ?? 5);
-$isSoldOut   = ($stock <= 0 && empty($p['allow_backorder']));
+
+$isPreorder  = !empty($p['is_preorder']);
+$isBackorder = (!$isPreorder && $stock <= 0 && !empty($p['allow_backorder']));
+$isSoldOut   = (!$isPreorder && $stock <= 0 && empty($p['allow_backorder']));
 
 $primaryImg   = product_image_url($p['image'] ?? null, 'thumbnail', $pid);
 $fullImg      = product_image_url($p['image'] ?? null, 'full', $pid);
@@ -43,12 +46,16 @@ $extraClass  = !empty($productCardExtraClass) ? ' ' . $productCardExtraClass : '
 				<?php endif; ?>
 			</a>
 
-			<?php if ($isSoldOut): ?>
-				<span class="stext-109 cl0 bg-dark p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">Sold Out</span>
+			<?php if ($isPreorder): ?>
+				<span class="stext-109 cl0 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px; background-color: #0284c7 !important; z-index: 5;">Pre-Order</span>
+			<?php elseif ($isSoldOut): ?>
+				<span class="stext-109 cl0 bg-dark p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px; z-index: 5;">Sold Out</span>
+			<?php elseif ($isBackorder): ?>
+				<span class="stext-109 cl0 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px; background-color: #d97706 !important; z-index: 5;">Backorder</span>
 			<?php elseif ($onSale && $discount > 0): ?>
-				<span class="stext-109 cl0 bg1 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">-<?= (int)$discount ?>%</span>
+				<span class="stext-109 cl0 bg1 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px; z-index: 5;">-<?= (int)$discount ?>%</span>
 			<?php elseif (!empty($p['featured'])): ?>
-				<span class="stext-109 cl0 bg3 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px;">Featured</span>
+				<span class="stext-109 cl0 bg3 p-lr-8 p-tb-2 pos-absolute ab-t-l m-2" style="border-radius: 2px; z-index: 5;">Featured</span>
 			<?php endif; ?>
 
 			<!-- Quick Actions Overlay (Add to Cart / Buy Now) -->

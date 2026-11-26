@@ -329,9 +329,9 @@ include __DIR__ . '/includes/header.php';
                 </td>
                 <td>
                   <?php if ($isVariable): ?>
-                    <span class="badge bg-indigo-subtle text-indigo border border-indigo-subtle">Options</span>
+                    <span class="badge text-bg-primary">Options</span>
                   <?php else: ?>
-                    <span class="badge bg-light text-secondary border">Simple</span>
+                    <span class="badge text-bg-secondary">Simple</span>
                   <?php endif; ?>
                 </td>
                 <td><code><?= e($p['sku'] ?: '—') ?></code></td>
@@ -357,8 +357,15 @@ include __DIR__ . '/includes/header.php';
                   <?php endif; ?>
                 </td>
                 <td>
-                  <span class="badge status-<?= e($p['status'] === 'active' ? 'active' : 'inactive') ?>">
-                    <?= e(ucfirst($p['status'])) ?>
+                  <?php
+                    $stBadgeClass = match($p['status'] ?? 'inactive') {
+                        'active'   => 'text-bg-success',
+                        'draft'    => 'text-bg-warning text-dark',
+                        default    => 'text-bg-secondary',
+                    };
+                  ?>
+                  <span class="badge <?= $stBadgeClass ?> status-<?= e($p['status']) ?>">
+                    <?= e(ucfirst($p['status'] ?? 'inactive')) ?>
                   </span>
                 </td>
                 <td class="text-end">

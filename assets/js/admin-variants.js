@@ -598,22 +598,42 @@
         syncJsonInputs();
       });
 
-      tr.querySelector('.var-price').addEventListener('input', (e) => {
+      const priceInp = tr.querySelector('.var-price');
+      priceInp.addEventListener('input', (e) => {
+        v.price = e.target.value.trim();
+        syncJsonInputs();
+      });
+      priceInp.addEventListener('change', (e) => {
         v.price = e.target.value.trim();
         syncJsonInputs();
       });
 
-      tr.querySelector('.var-sale-price').addEventListener('input', (e) => {
+      const saleInp = tr.querySelector('.var-sale-price');
+      saleInp.addEventListener('input', (e) => {
+        v.sale_price = e.target.value.trim();
+        syncJsonInputs();
+      });
+      saleInp.addEventListener('change', (e) => {
         v.sale_price = e.target.value.trim();
         syncJsonInputs();
       });
 
-      tr.querySelector('.var-stock').addEventListener('input', (e) => {
+      const stockInp = tr.querySelector('.var-stock');
+      stockInp.addEventListener('input', (e) => {
+        v.stock = Math.max(0, parseInt(e.target.value, 10) || 0);
+        syncJsonInputs();
+      });
+      stockInp.addEventListener('change', (e) => {
         v.stock = Math.max(0, parseInt(e.target.value, 10) || 0);
         syncJsonInputs();
       });
 
-      tr.querySelector('.var-weight').addEventListener('input', (e) => {
+      const weightInp = tr.querySelector('.var-weight');
+      weightInp.addEventListener('input', (e) => {
+        v.weight_g = e.target.value.trim();
+        syncJsonInputs();
+      });
+      weightInp.addEventListener('change', (e) => {
         v.weight_g = e.target.value.trim();
         syncJsonInputs();
       });
@@ -667,6 +687,7 @@
   const bulkPriceInput = document.getElementById('bulk_price_input');
   if (bulkSetPriceBtn && bulkPriceInput) {
     bulkSetPriceBtn.addEventListener('click', () => {
+      readVariantsFromDOM();
       const val = bulkPriceInput.value.trim();
       const targets = getSelectedVariants();
       targets.forEach(idx => { if (variants[idx]) variants[idx].price = val; });
@@ -678,6 +699,7 @@
   const bulkStockInput = document.getElementById('bulk_stock_input');
   if (bulkSetStockBtn && bulkStockInput) {
     bulkSetStockBtn.addEventListener('click', () => {
+      readVariantsFromDOM();
       const val = Math.max(0, parseInt(bulkStockInput.value, 10) || 0);
       const targets = getSelectedVariants();
       targets.forEach(idx => { if (variants[idx]) variants[idx].stock = val; });
@@ -688,6 +710,7 @@
   const bulkAddStockBtn = document.getElementById('bulk_add_10_stock_btn');
   if (bulkAddStockBtn) {
     bulkAddStockBtn.addEventListener('click', () => {
+      readVariantsFromDOM();
       const targets = getSelectedVariants();
       targets.forEach(idx => {
         if (variants[idx]) {
@@ -699,9 +722,40 @@
   }
 
   // -------------------------------------------------------------
+  // Read Current Live Values from DOM
+  // -------------------------------------------------------------
+  function readVariantsFromDOM() {
+    if (!variantsTbody) return;
+    const rows = variantsTbody.querySelectorAll('.variant-row');
+    rows.forEach(tr => {
+      const idx = parseInt(tr.dataset.index, 10);
+      if (variants[idx]) {
+        const skuInp = tr.querySelector('.var-sku');
+        const priceInp = tr.querySelector('.var-price');
+        const saleInp = tr.querySelector('.var-sale-price');
+        const stockInp = tr.querySelector('.var-stock');
+        const weightInp = tr.querySelector('.var-weight');
+        const imgSel = tr.querySelector('.var-image-select');
+        const switchInp = tr.querySelector('.var-active-switch');
+
+        if (skuInp) variants[idx].sku = skuInp.value.trim();
+        if (priceInp) variants[idx].price = priceInp.value.trim();
+        if (saleInp) variants[idx].sale_price = saleInp.value.trim();
+        if (stockInp) variants[idx].stock = Math.max(0, parseInt(stockInp.value, 10) || 0);
+        if (weightInp) variants[idx].weight_g = weightInp.value.trim();
+        if (imgSel) variants[idx].image = imgSel.value || null;
+        if (switchInp) variants[idx].status = switchInp.checked ? 'active' : 'inactive';
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
   // Synchronize Hidden JSON Inputs
   // -------------------------------------------------------------
-  function syncJsonInputs() {
+  function syncJsonInputs(readDOM = false) {
+    if (readDOM) {
+      readVariantsFromDOM();
+    }
     if (optionsJsonInput) {
       optionsJsonInput.value = JSON.stringify(options);
     }
@@ -715,7 +769,7 @@
   // -------------------------------------------------------------
   if (productForm) {
     productForm.addEventListener('submit', (e) => {
-      syncJsonInputs();
+      syncJsonInputs(true);
 
       if (typeVariable && typeVariable.checked) {
         if (options.length === 0) {
@@ -753,6 +807,31 @@
     options = Array.isArray(initialOptions) ? initialOptions : [];
     let rawVariants = Array.isArray(initialVariants) ? initialVariants : [];
 
+    // Reconstruct or ensure combo is present for all existing variants
+    rawVariants.forEach(v => {
+      if ((!v.combo || !Array.isArray(v.combo) || v.combo.length === 0) && v.option_value_ids && options.length > 0) {
+        const reconstructed = [];
+        options.forEach(opt => {
+          const valId = v.option_value_ids[opt.id];
+          if (valId) {
+            const valObj = (opt.values || []).find(val => parseInt(val.id, 10) === parseInt(valId, 10));
+            if (valObj) {
+              reconstructed.push({
+                option_id: opt.id,
+                option_name: opt.name,
+                value_id: valObj.id,
+                value: valObj.value,
+                swatch_hex: valObj.swatch_hex || null
+              });
+            }
+          }
+        });
+        if (reconstructed.length > 0) {
+          v.combo = reconstructed;
+        }
+      }
+    });
+
     // Filter out orphan variants whose option values or option count no longer match defined options
     if (options.length > 0) {
       const validValNames = new Set();
@@ -763,7 +842,7 @@
       });
 
       rawVariants = rawVariants.filter(v => {
-        if (v.combo && Array.isArray(v.combo)) {
+        if (v.combo && Array.isArray(v.combo) && v.combo.length > 0) {
           if (v.combo.length !== options.length) return false;
           return v.combo.every(c => validValNames.has((c.value || '').toLowerCase().trim()));
         }

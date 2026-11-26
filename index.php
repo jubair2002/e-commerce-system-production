@@ -252,14 +252,50 @@ include __DIR__ . '/includes/partials/header.php';
 
 					$displaySub = $bSub;
 					$matchedCount = null;
+					$matchedCat = null;
 					if (!empty($categories)) {
-						foreach ($categories as $cat) {
-							if (strcasecmp($cat['name'], $bTitle) === 0 
-							    || (!empty($bUrl) && (str_contains($bUrl, 'slug=' . $cat['slug']) || str_ends_with(rtrim($bUrl, '/'), '/' . $cat['slug']) || str_contains($bUrl, '/' . $cat['slug'])))
-							    || (stripos($bTitle, $cat['name']) !== false || stripos($cat['name'], $bTitle) !== false)) {
-								$matchedCount = (int)($cat['product_count'] ?? 0);
-								break;
+						// 1. Try URL slug exact match
+						$urlSlug = null;
+						if (!empty($bUrl)) {
+							if (preg_match('/[?&]slug=([^&#]+)/', $bUrl, $m)) {
+								$urlSlug = urldecode($m[1]);
+							} elseif (preg_match('#/(?:category|shop)/([^/?&#]+)#', $bUrl, $m)) {
+								$urlSlug = urldecode($m[1]);
 							}
+						}
+
+						if ($urlSlug) {
+							foreach ($categories as $cat) {
+								if (strcasecmp($cat['slug'], $urlSlug) === 0) {
+									$matchedCat = $cat;
+									break;
+								}
+							}
+						}
+
+						// 2. Try exact name match or slugified name match
+						if (!$matchedCat) {
+							foreach ($categories as $cat) {
+								if (strcasecmp($cat['name'], $bTitle) === 0 || strcasecmp($cat['slug'], slugify($bTitle)) === 0) {
+									$matchedCat = $cat;
+									break;
+								}
+							}
+						}
+
+						// 3. Try word boundary match (prevents "Men" matching inside "Women")
+						if (!$matchedCat) {
+							foreach ($categories as $cat) {
+								if (preg_match('/\b' . preg_quote($cat['name'], '/') . '\b/i', $bTitle) ||
+								    preg_match('/\b' . preg_quote($bTitle, '/') . '\b/i', $cat['name'])) {
+									$matchedCat = $cat;
+									break;
+								}
+							}
+						}
+
+						if ($matchedCat) {
+							$matchedCount = (int)($matchedCat['product_count'] ?? 0);
 						}
 					}
 
@@ -273,8 +309,12 @@ include __DIR__ . '/includes/partials/header.php';
 						} catch (Throwable $e) {}
 					}
 
-					if ($matchedCount !== null) {
+					if ($matchedCount !== null && $matchedCount > 0) {
 						$displaySub = $matchedCount === 1 ? '1 Product' : "{$matchedCount} Products";
+					} elseif (!empty($bSub)) {
+						$displaySub = $bSub;
+					} else {
+						$displaySub = 'Explore Collection';
 					}
 				?>
 				<div class="<?= $colClass ?> p-b-30 m-lr-auto">

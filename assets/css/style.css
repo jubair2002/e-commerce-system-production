@@ -876,7 +876,22 @@ a:hover {
     color: #dc3545 !important;
 }
 .stat-icon.bg-emerald {
-    background-color: rgba(25, 135, 84, 0.12) !important;
+    background-color: rgba(255, 193, 7, 0.15) !important;
     color: #198754 !important;
 }
+
+/* Admin Status Badges */
+.badge.status-active, .badge.badge-active {
+    background-color: #198754 !important;
+    color: #ffffff !important;
+}
+.badge.status-inactive, .badge.badge-inactive {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+}
+.badge.status-draft, .badge.badge-draft {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
 

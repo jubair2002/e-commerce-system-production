@@ -247,7 +247,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $finalSlug = unique_slug($finalSlug, 'products', $id);
 
             $primaryImage = $product['image'] ?? null;
+            $primaryFileId = $product['file_id'] ?? null;
+            $removePrimary = !empty($_POST['remove_primary_image']);
             $uploadedPrimaryFile = null;
+
+            if ($removePrimary && !$hasPrimaryUpload) {
+                $primaryImage = null;
+                $primaryFileId = null;
+            }
 
             // Handle primary image upload if file selected and validated via StorageManager
             if ($hasPrimaryUpload) {
@@ -524,6 +531,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     if (empty($valIds)) {
+                        // Fallback: If combo values couldn't be mapped directly, but existing variant ID is provided, load its value links
+                        if (!empty($v['id'])) {
+                            $existingVarId = (int)$v['id'];
+                            $stmtVv = $pdo->prepare("SELECT option_id, option_value_id FROM product_variant_values WHERE variant_id = ? ORDER BY option_id");
+                            $stmtVv->execute([$existingVarId]);
+                            foreach ($stmtVv->fetchAll() as $vvr) {
+                                $valIds[] = (int)$vvr['option_value_id'];
+                                $linkPairs[] = ['option_id' => (int)$vvr['option_id'], 'value_id' => (int)$vvr['option_value_id']];
+                            }
+                        }
+                    }
+
+                    if (empty($valIds)) {
                         continue;
                     }
 
@@ -707,11 +727,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // 3. Update primary image selection from gallery if chosen
+            // 3. Update primary image selection from gallery if chosen or handle removal
             if (!empty($_POST['selected_primary_image'])) {
                 $selImg = trim($_POST['selected_primary_image']);
                 $pdo->prepare("UPDATE product_images SET is_primary = IF(filename = :fn, 1, 0) WHERE product_id = :pid")->execute([':fn' => $selImg, ':pid' => $id]);
                 $pdo->prepare("UPDATE products SET image = :img WHERE id = :id")->execute([':img' => $selImg, ':id' => $id]);
+            } elseif ($removePrimary && !$hasPrimaryUpload) {
+                $pdo->prepare("UPDATE product_images SET is_primary = 0 WHERE product_id = :pid")->execute([':pid' => $id]);
+                $pdo->prepare("UPDATE products SET image = NULL, file_id = NULL WHERE id = :id")->execute([':id' => $id]);
             }
 
             // 4. Update gallery image positions / custom ordering
@@ -1069,13 +1092,21 @@ include __DIR__ . '/includes/header.php';
       <!-- Primary Image Card -->
       <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <h6 class="card-title">Primary Image</h6>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="card-title mb-0">Primary Image</h6>
+            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 <?= empty($product['image']) ? 'd-none' : '' ?>" id="remove_primary_image_btn" title="Remove primary image">
+              <i class="bi bi-trash"></i> Remove
+            </button>
+          </div>
           <div class="text-center mb-3">
             <img src="<?= e(product_image_url($product['image'] ?? null)) ?>"
                  id="primary_image_preview" class="img-fluid rounded border p-1" style="max-height:180px; object-fit:cover;"
-                 alt="Product image preview">
+                 alt="Product image preview"
+                 data-placeholder="<?= e(product_image_url(null)) ?>"
+                 data-has-image="<?= !empty($product['image']) ? '1' : '0' ?>">
           </div>
-          <input type="file" name="image" class="form-control mb-1" accept="image/*">
+          <input type="file" name="image" id="primary_image_input" class="form-control mb-1" accept="image/*">
+          <input type="hidden" name="remove_primary_image" id="remove_primary_image" value="0">
           <small class="text-muted">JPG, PNG, GIF, WEBP &le; 4 MB.</small>
         </div>
       </div>
@@ -1294,6 +1325,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (window.initProductVariantsBuilder) {
     window.initProductVariantsBuilder(initialOptions, initialVariants, initialGallery);
+  }
+
+  // Primary Image Preview and Remove Handler
+  const primaryInput = document.getElementById('primary_image_input');
+  const previewImg   = document.getElementById('primary_image_preview');
+  const removeBtn    = document.getElementById('remove_primary_image_btn');
+  const removeHidden = document.getElementById('remove_primary_image');
+
+  if (primaryInput && previewImg) {
+    primaryInput.addEventListener('change', function () {
+      const file = this.files && this.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          alert('Please select a valid image file (JPG, PNG, GIF, WEBP).');
+          this.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          previewImg.src = e.target.result;
+          if (removeHidden) removeHidden.value = '0';
+          if (removeBtn) removeBtn.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (removeBtn && previewImg) {
+    removeBtn.addEventListener('click', function () {
+      if (primaryInput) primaryInput.value = '';
+      if (removeHidden) removeHidden.value = '1';
+      const placeholder = previewImg.dataset.placeholder || '';
+      if (placeholder) {
+        previewImg.src = placeholder;
+      }
+      removeBtn.classList.add('d-none');
+      document.querySelectorAll('input[name="selected_primary_image"]').forEach(r => { r.checked = false; });
+    });
   }
 });
 </script>
