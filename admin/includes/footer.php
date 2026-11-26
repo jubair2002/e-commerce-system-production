@@ -1,9 +1,16 @@
     </div><!-- /.app-content -->
 
     <footer class="app-footer">
-      <small>
-        &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>.
-      </small>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <small class="text-muted">
+          &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>. All rights reserved.
+        </small>
+        <div class="d-flex align-items-center gap-3 small text-muted">
+          <a href="<?= e(admin_url('monitoring.php')) ?>" class="footer-link">System Health</a>
+          <span>&middot;</span>
+          <a href="<?= e(url('')) ?>" target="_blank" class="footer-link">Storefront</a>
+        </div>
+      </div>
     </footer>
   </main><!-- /.app-main -->
 </div><!-- /.app -->

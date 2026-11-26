@@ -234,71 +234,79 @@ include __DIR__ . '/includes/header.php';
 
 <style>
 /* ==========================================================
-   Dashboard Unified Layout & Geometric Consistency
+   Dashboard Horizon UI Geometric Styling & Alignment
    ========================================================== */
 
 /* Welcome Banner */
 .dash-welcome-banner {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-radius: 14px;
-  padding: 1.5rem 1.75rem;
+  background: var(--horizon-brand-gradient);
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
   color: #ffffff;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
-  margin-bottom: 1.5rem;
+  box-shadow: 0px 18px 40px rgba(67, 24, 255, 0.25);
+  margin-bottom: 1.75rem;
 }
 .dash-welcome-banner::after {
   content: '';
   position: absolute;
   top: -40px;
   right: -40px;
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 70%);
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
   pointer-events: none;
 }
 .dash-live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 3px 10px;
-  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 4px 12px;
+  border-radius: 30px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #e2e8f0;
+  letter-spacing: 0.06em;
+  color: #ffffff;
 }
 .dash-live-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+  background: #05CD99;
+  box-shadow: 0 0 0 3px rgba(5, 205, 153, 0.45);
 }
 
 /* Card Foundation */
 .dash-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+  background: var(--horizon-card-bg);
+  border: none;
+  border-radius: 20px;
+  box-shadow: var(--horizon-shadow-card);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
+[data-bs-theme="dark"] .dash-card {
+  background: #111C44;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
 .dash-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
-  border-color: #cbd5e1;
+  box-shadow: 0px 22px 45px rgba(112, 144, 176, 0.18);
+}
+[data-bs-theme="dark"] .dash-card:hover {
+  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.35);
 }
 
-/* Primary KPI Cards (Consistent Height & Internal Grid) */
+/* Primary KPI Cards (Horizon UI Stat Cards) */
 .dash-kpi-card {
   height: 154px;
-  padding: 1.25rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -307,76 +315,82 @@ include __DIR__ . '/includes/header.php';
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 .dash-kpi-title {
-  font-size: 11px;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: var(--horizon-text-muted);
   margin-bottom: 4px;
 }
 .dash-kpi-value {
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--horizon-text-title);
   line-height: 1.15;
   margin: 0;
 }
 .dash-kpi-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   flex-shrink: 0;
 }
 .dash-kpi-footer {
   padding-top: 0.65rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--horizon-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
   line-height: 1.3;
 }
+[data-bs-theme="dark"] .dash-kpi-footer {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
 
-/* Secondary Compact KPI Cards (Exact Equal 4-Column Grid) */
+/* Secondary Compact KPI Cards */
 .dash-sub-card {
-  height: 84px;
-  padding: 0.85rem 1.15rem;
+  height: 88px;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 .dash-sub-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
 /* Matched Card Headers */
 .dash-card-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--horizon-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: transparent;
+}
+[data-bs-theme="dark"] .dash-card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 .dash-card-title {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--horizon-text-title);
   margin: 0;
   display: flex;
   align-items: center;
@@ -391,7 +405,7 @@ include __DIR__ . '/includes/header.php';
 }
 .dash-upper-body {
   flex: 1 1 auto;
-  padding: 1.25rem;
+  padding: 1.5rem;
   position: relative;
   overflow: hidden;
 }
@@ -416,11 +430,11 @@ include __DIR__ . '/includes/header.php';
   background: transparent;
 }
 .dash-lower-body::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+  background: rgba(163, 174, 208, 0.3);
   border-radius: 9999px;
 }
 .dash-lower-body::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  background: rgba(163, 174, 208, 0.5);
 }
 
 /* Store Activity Feed Styling */
@@ -429,68 +443,79 @@ include __DIR__ . '/includes/header.php';
   flex-direction: column;
 }
 .dash-activity-item {
-  border: 1px solid #f1f5f9;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--horizon-border);
+  background: var(--horizon-card-bg);
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 0.5rem;
+}
+[data-bs-theme="dark"] .dash-activity-item {
+  background: #1B254B;
+  border-color: rgba(255, 255, 255, 0.06);
 }
 .dash-activity-item:last-child {
   margin-bottom: 0;
 }
 .dash-activity-item:hover {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--horizon-brand-light);
+  border-color: var(--horizon-brand);
   transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 12px rgba(67, 24, 255, 0.08);
 }
 .dash-activity-icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
   flex-shrink: 0;
 }
 .dash-activity-badge {
   font-size: 9.5px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: 2px 7px;
+  border-radius: 20px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   display: inline-block;
   line-height: 1.2;
 }
 .dash-activity-title {
-  color: #334155;
-  font-weight: 500;
-  font-size: 12px;
+  color: var(--horizon-text-body);
+  font-weight: 600;
+  font-size: 12.5px;
   line-height: 1.4;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+[data-bs-theme="dark"] .dash-activity-title {
+  color: #FFFFFF;
+}
 .dash-activity-meta {
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
+  background: var(--horizon-bg);
+  border: 1px solid var(--horizon-border);
   border-radius: 6px;
   padding: 3px 8px;
-  color: #64748b;
+  color: var(--horizon-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10.5px !important;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+[data-bs-theme="dark"] .dash-activity-meta {
+  background: #111C44;
+  border-color: rgba(255, 255, 255, 0.08);
+}
 
 /* Table and Timeline Elements */
 .dash-avatar-circle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: var(--horizon-brand-gradient);
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -498,31 +523,36 @@ include __DIR__ . '/includes/header.php';
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(67, 24, 255, 0.25);
 }
 .status-pill {
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 9999px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 30px;
   letter-spacing: 0.02em;
   display: inline-block;
 }
 .chart-toggle-pill {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  padding: 5px 14px;
+  border-radius: 30px;
+  border: 1px solid var(--horizon-border);
+  background: var(--horizon-bg);
+  color: var(--horizon-text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
+[data-bs-theme="dark"] .chart-toggle-pill {
+  background: #1B254B;
+  border-color: rgba(255, 255, 255, 0.08);
+}
 .chart-toggle-pill.active {
-  background: #4f46e5;
+  background: var(--horizon-brand);
   color: #ffffff;
-  border-color: #4f46e5;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+  border-color: var(--horizon-brand);
+  box-shadow: 0 4px 12px rgba(67, 24, 255, 0.35);
 }
 </style>
 
@@ -539,13 +569,13 @@ include __DIR__ . '/includes/header.php';
     <p class="text-white-50 small mb-0">Here is your executive store performance overview and operational health.</p>
   </div>
   <div class="d-flex flex-wrap align-items-center gap-2">
-    <a href="<?= e(admin_url('product_form.php')) ?>" class="btn btn-primary px-3 shadow-sm rounded-pill fw-medium">
+    <a href="<?= e(admin_url('product_form.php')) ?>" class="btn btn-light px-3 shadow-sm rounded-pill fw-bold" style="color: #4318FF;">
       <i class="bi bi-plus-lg me-1"></i> Add Product
     </a>
-    <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-light px-3 shadow-sm rounded-pill text-dark fw-medium">
+    <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-light px-3 shadow-sm rounded-pill text-dark fw-bold">
       <i class="bi bi-receipt me-1"></i> Orders
     </a>
-    <a href="<?= e(url()) ?>" target="_blank" class="btn btn-outline-light px-3 rounded-pill fw-medium">
+    <a href="<?= e(url()) ?>" target="_blank" class="btn btn-outline-light px-3 rounded-pill fw-bold">
       <i class="bi bi-box-arrow-up-right me-1"></i> Storefront
     </a>
   </div>
@@ -561,7 +591,7 @@ include __DIR__ . '/includes/header.php';
           <div class="dash-kpi-title">Total Revenue</div>
           <h3 class="dash-kpi-value"><?= e(price($totalRevenue)) ?></h3>
         </div>
-        <div class="dash-kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+        <div class="dash-kpi-icon" style="background: rgba(5, 205, 153, 0.12); color: #05CD99;">
           <i class="bi bi-cash-stack"></i>
         </div>
       </div>
@@ -581,7 +611,7 @@ include __DIR__ . '/includes/header.php';
             <div class="dash-kpi-title">Total Orders</div>
             <h3 class="dash-kpi-value"><?= number_format($totalOrders) ?></h3>
           </div>
-          <div class="dash-kpi-icon" style="background: rgba(79, 70, 229, 0.12); color: #4f46e5;">
+          <div class="dash-kpi-icon" style="background: rgba(67, 24, 255, 0.12); color: #4318FF;">
             <i class="bi bi-bag-check"></i>
           </div>
         </div>
@@ -602,7 +632,7 @@ include __DIR__ . '/includes/header.php';
             <div class="dash-kpi-title">Active Catalog</div>
             <h3 class="dash-kpi-value"><?= number_format($activeProducts) ?></h3>
           </div>
-          <div class="dash-kpi-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+          <div class="dash-kpi-icon" style="background: rgba(57, 101, 255, 0.12); color: #3965FF;">
             <i class="bi bi-box-seam"></i>
           </div>
         </div>
@@ -623,7 +653,7 @@ include __DIR__ . '/includes/header.php';
             <div class="dash-kpi-title">Total Customers</div>
             <h3 class="dash-kpi-value"><?= number_format($totalCustomers ?: 1) ?></h3>
           </div>
-          <div class="dash-kpi-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+          <div class="dash-kpi-icon" style="background: rgba(117, 81, 255, 0.12); color: #7551FF;">
             <i class="bi bi-people"></i>
           </div>
         </div>
@@ -935,12 +965,12 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Revenue ($)',
                 data: revData,
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                borderColor: '#4318FF',
+                backgroundColor: 'rgba(67, 24, 255, 0.08)',
                 fill: true,
                 tension: 0.35,
                 borderWidth: 2.5,
-                pointBackgroundColor: '#4f46e5',
+                pointBackgroundColor: '#4318FF',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 pointRadius: 4,
@@ -953,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function () {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#0f172a',
+                    backgroundColor: '#111C44',
                     padding: 10,
                     cornerRadius: 8,
                     callbacks: {
@@ -966,13 +996,13 @@ document.addEventListener('DOMContentLoaded', function () {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { font: { size: 11 } }
+                    ticks: { font: { size: 11, family: 'Plus Jakarta Sans' } }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                    grid: { color: 'rgba(224, 229, 242, 0.6)' },
                     ticks: {
-                        font: { size: 11 },
+                        font: { size: 11, family: 'Plus Jakarta Sans' },
                         callback: function(val) {
                             return currentMode === 'revenue' ? ('$' + val) : val;
                         }
@@ -992,9 +1022,9 @@ document.addEventListener('DOMContentLoaded', function () {
             btnOrders.classList.remove('active');
             chart.data.datasets[0].label = 'Revenue ($)';
             chart.data.datasets[0].data = revData;
-            chart.data.datasets[0].borderColor = '#4f46e5';
-            chart.data.datasets[0].backgroundColor = 'rgba(79, 70, 229, 0.08)';
-            chart.data.datasets[0].pointBackgroundColor = '#4f46e5';
+            chart.data.datasets[0].borderColor = '#4318FF';
+            chart.data.datasets[0].backgroundColor = 'rgba(67, 24, 255, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#4318FF';
             chart.update();
         });
 
@@ -1004,9 +1034,9 @@ document.addEventListener('DOMContentLoaded', function () {
             btnRev.classList.remove('active');
             chart.data.datasets[0].label = 'Orders (#)';
             chart.data.datasets[0].data = ordersData;
-            chart.data.datasets[0].borderColor = '#10b981';
-            chart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.08)';
-            chart.data.datasets[0].pointBackgroundColor = '#10b981';
+            chart.data.datasets[0].borderColor = '#05CD99';
+            chart.data.datasets[0].backgroundColor = 'rgba(5, 205, 153, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#05CD99';
             chart.update();
         });
     }

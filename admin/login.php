@@ -35,64 +35,65 @@ $siteName = setting('site_name', APP_NAME);
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login · <?= e($siteName) ?></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap/bootstrap.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>">
 <style>
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
   .auth-wrapper {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0a0f1d url('<?= e(url('assets/images/admin-login-bg.jpg')) ?>') no-repeat center center / cover fixed;
+    background: #0B1437 radial-gradient(circle at 80% 20%, rgba(67, 24, 255, 0.25) 0%, rgba(11, 20, 55, 0) 65%);
     padding: 1.5rem;
     position: relative;
-  }
-  .auth-wrapper::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(10, 15, 29, 0.35) 0%, rgba(10, 15, 29, 0.78) 100%);
-    pointer-events: none;
   }
   .auth-card {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 420px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 1.25rem;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    max-width: 440px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0px 25px 60px rgba(11, 20, 55, 0.45);
   }
   .auth-brand .brand-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 58px;
-    height: 58px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    color: #38bdf8;
-    font-size: 1.7rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
+    color: #ffffff;
+    font-size: 1.75rem;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 10px 25px rgba(67, 24, 255, 0.35);
   }
   .btn-admin-submit {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: #4318FF;
     border: none;
     color: #fff;
-    padding: 0.65rem 1rem;
-    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(67, 24, 255, 0.3);
     transition: all 0.2s ease;
   }
   .btn-admin-submit:hover {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    background: #3311DB;
     color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+    box-shadow: 0 14px 28px rgba(67, 24, 255, 0.4);
   }
 </style>
 </head>

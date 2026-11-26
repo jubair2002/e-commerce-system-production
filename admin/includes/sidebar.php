@@ -26,9 +26,14 @@ $canSeeConfig = has_permission(
 ?>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <a href="<?= e(admin_url('dashboard.php')) ?>" class="d-flex align-items-center gap-2 text-decoration-none">
-      <span class="brand-icon"><i class="bi bi-shield-lock-fill"></i></span>
-      <span class="brand-text"><?= e(setting('site_name', APP_NAME)) ?></span>
+    <a href="<?= e(admin_url('dashboard.php')) ?>" class="d-flex align-items-center gap-3 text-decoration-none">
+      <div class="brand-icon">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div class="brand-meta">
+        <div class="brand-text"><?= e(setting('site_name', APP_NAME)) ?></div>
+        <div class="brand-subtext">ADMIN DASHBOARD</div>
+      </div>
     </a>
   </div>
 

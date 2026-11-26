@@ -9,14 +9,21 @@ require_login();
 $pageTitle = $pageTitle ?? 'Dashboard';
 $me        = current_user() ?: ['name' => 'Admin', 'email' => 'admin@example.com', 'avatar' => null];
 $siteName  = setting('site_name', APP_NAME);
+$themeCookie = $_COOKIE['theme'] ?? 'light';
+if (!in_array($themeCookie, ['light', 'dark'], true)) {
+    $themeCookie = 'light';
+}
 ?>
 <!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="<?= e($themeCookie) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($pageTitle) ?> · <?= e($siteName) ?></title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap/bootstrap.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>?v=<?= filemtime(__DIR__ . '/../../assets/css/style.css') ?>">
@@ -29,15 +36,24 @@ $siteName  = setting('site_name', APP_NAME);
 
   <main class="app-main">
 
-    <!-- Top bar -->
+    <!-- Top bar (Horizon UI Floating Glass Layout) -->
     <nav class="topbar">
-      <button class="btn btn-light btn-sm" id="sidebarToggle" type="button" title="Toggle Sidebar">
-        <i class="bi bi-three-dots-vertical"></i>
-      </button>
+      <div class="topbar-left d-flex align-items-center gap-3">
+        <button class="topbar-toggle-btn" id="sidebarToggle" type="button" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+          <i class="bi bi-list fs-5"></i>
+        </button>
 
-      <h1 class="topbar-title"><?= e($pageTitle) ?></h1>
+        <div class="topbar-title-group">
+          <div class="topbar-breadcrumb">
+            <span class="text-muted">Pages</span>
+            <span class="mx-1 text-muted">/</span>
+            <span class="fw-semibold active-crumb"><?= e($pageTitle) ?></span>
+          </div>
+          <h1 class="topbar-title"><?= e($pageTitle) ?></h1>
+        </div>
+      </div>
 
-      <div class="ms-auto d-flex align-items-center gap-2">
+      <div class="ms-auto topbar-pill-container">
         <?php
           // Real-time admin actionable notifications
           $notifPendingOrders = 0;
@@ -86,15 +102,20 @@ $siteName  = setting('site_name', APP_NAME);
           } catch (Throwable $e) {}
         ?>
 
+        <!-- Storefront Shortcut Button -->
+        <a href="<?= e(url('')) ?>" target="_blank" class="topbar-pill-btn" title="View Storefront">
+          <i class="bi bi-shop"></i>
+        </a>
+
         <!-- Health Badge -->
-        <a href="<?= e(admin_url('monitoring.php')) ?>" class="btn btn-light btn-sm d-flex align-items-center gap-1 text-decoration-none" title="<?= e($serverHealthTitle) ?>">
+        <a href="<?= e(admin_url('monitoring.php')) ?>" class="topbar-pill-btn topbar-health-btn text-decoration-none" title="<?= e($serverHealthTitle) ?>">
           <span class="rounded-circle bg-<?= e($serverHealthColor) ?> shadow-sm" style="width: 8px; height: 8px; display: inline-block;"></span>
-          <span class="small d-none d-md-inline text-muted">Health</span>
+          <span class="small d-none d-lg-inline text-muted fw-semibold">Health</span>
         </a>
 
         <!-- Notifications Dropdown -->
         <div class="dropdown">
-          <button class="btn btn-light btn-sm position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+          <button class="topbar-pill-btn position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
             <i class="bi bi-bell"></i>
             <?php if ($rawNotifCount > 0): ?>
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
@@ -103,11 +124,11 @@ $siteName  = setting('site_name', APP_NAME);
               </span>
             <?php endif; ?>
           </button>
-          <div class="dropdown-menu dropdown-menu-end shadow-sm p-0" style="min-width: 320px; max-width: 380px;">
-            <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
+          <div class="dropdown-menu dropdown-menu-end shadow p-0 topbar-notif-dropdown">
+            <div class="d-flex align-items-center justify-content-between p-3 border-bottom notif-header">
               <span class="fw-bold fs-6">Notifications</span>
               <?php if ($rawNotifCount > 0): ?>
-                <span class="badge text-bg-primary"><?= $rawNotifCount ?> active</span>
+                <span class="badge rounded-pill bg-primary"><?= $rawNotifCount ?> active</span>
               <?php endif; ?>
             </div>
             <div class="list-group list-group-flush" style="max-height: 320px; overflow-y: auto;">
@@ -145,7 +166,7 @@ $siteName  = setting('site_name', APP_NAME);
                 </div>
               <?php endif; ?>
             </div>
-            <div class="p-2 border-top text-center bg-light">
+            <div class="p-2 border-top text-center notif-footer">
               <a href="<?= e(admin_url('activity.php')) ?>" class="text-decoration-none small text-primary fw-medium">
                 View Activity Log <i class="bi bi-arrow-right"></i>
               </a>
@@ -153,24 +174,26 @@ $siteName  = setting('site_name', APP_NAME);
           </div>
         </div>
 
-        <button class="btn btn-light btn-sm" id="themeToggle" title="Toggle theme">
+        <!-- Theme Toggle -->
+        <button class="topbar-pill-btn" id="themeToggle" type="button" title="Toggle theme">
           <i class="bi bi-moon-stars"></i>
         </button>
 
+        <!-- User Profile Dropdown -->
         <div class="dropdown">
-          <button class="btn btn-light btn-sm dropdown-toggle d-flex align-items-center gap-2"
-                  data-bs-toggle="dropdown" aria-expanded="false">
+          <button class="topbar-avatar-btn dropdown-toggle d-flex align-items-center gap-2"
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <img src="<?= e(avatar_url($me['avatar'] ?? null, $me['name'])) ?>"
-                 class="rounded-circle" width="28" height="28" alt="">
-            <span class="d-none d-sm-inline"><?= e($me['name']) ?></span>
+                 class="rounded-circle topbar-avatar-img" width="32" height="32" alt="<?= e($me['name']) ?>">
+            <span class="d-none d-sm-inline fw-semibold small text-body"><?= e($me['name']) ?></span>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul class="dropdown-menu dropdown-menu-end shadow">
             <li><h6 class="dropdown-header"><?= e($me['email']) ?></h6></li>
             <li><a class="dropdown-item" href="<?= e(admin_url('profile.php')) ?>">
-              <i class="bi bi-person"></i> Profile</a></li>
+              <i class="bi bi-person me-2"></i> Profile</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger" href="<?= e(admin_url('logout.php')) ?>">
-              <i class="bi bi-box-arrow-right"></i> Logout</a></li>
+              <i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
           </ul>
         </div>
       </div>
