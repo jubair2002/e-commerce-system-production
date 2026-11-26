@@ -70,6 +70,12 @@ $discount   = $onSale ? product_discount_percent($product) : 0;
 $isVariable = ($product['product_type'] === 'variable');
 $options    = $isVariable ? product_options_get($productId) : [];
 $variants   = $isVariable ? variants_get($productId, true) : [];
+if (!empty($variants)) {
+    foreach ($variants as &$vItem) {
+        $vItem['image_url'] = !empty($vItem['image']) ? product_image_url($vItem['image']) : null;
+    }
+    unset($vItem);
+}
 
 // Gallery Images
 $rawGallery = product_gallery_images($productId);
@@ -672,8 +678,17 @@ include __DIR__ . '/../../includes/partials/header.php';
 <!-- Switch PDP Main Image Function & Enhanced Controls -->
 <script>
 function switchPdpImage(el, url) {
+	if (!url) return;
 	var thumbs = document.querySelectorAll('.pdp-thumb-item');
-	thumbs.forEach(function(item) { item.classList.remove('active'); });
+	thumbs.forEach(function(item) {
+		item.classList.remove('active');
+		if (!el) {
+			var img = item.querySelector('img');
+			if (img && img.getAttribute('src') === url) {
+				item.classList.add('active');
+			}
+		}
+	});
 	if (el) el.classList.add('active');
 	var main = document.getElementById('pdpMainImg');
 	if (main) main.src = url;
@@ -817,10 +832,44 @@ document.addEventListener('DOMContentLoaded', function() {
 	var defaultStock = <?= (int)$currentStock ?>;
 	var defaultPriceFormatted = <?= json_encode(price((float)($product['sale_price'] ?? $product['price'] ?? 0))) ?>;
 	var defaultOldPriceFormatted = <?= (!empty($product['sale_price']) && (float)$product['sale_price'] < (float)$product['price']) ? json_encode(price((float)$product['price'])) : 'null' ?>;
+	var defaultMainImgUrl = <?= json_encode($mainImgUrl) ?>;
 	var curSym = <?= json_encode(setting('currency_symbol', '৳')) ?>;
+
+	function findVariantImageForSelection(selectedOpts, changedOptId) {
+		if (!variantsData || !variantsData.length) return null;
+		var selKeys = Object.keys(selectedOpts);
+		if (!selKeys.length) return null;
+
+		// 1. Try a variant matching ALL currently selected options that has an image
+		for (var i = 0; i < variantsData.length; i++) {
+			var v = variantsData[i];
+			if (!v.image_url) continue;
+			var ok = true;
+			for (var k = 0; k < selKeys.length; k++) {
+				var oid = selKeys[k];
+				if (!v.option_value_ids || v.option_value_ids[oid] != selectedOpts[oid]) {
+					ok = false;
+					break;
+				}
+			}
+			if (ok) return v.image_url;
+		}
+
+		// 2. Fallback: match the most recently changed option if it has a dedicated variant image
+		if (changedOptId && selectedOpts[changedOptId]) {
+			for (var j = 0; j < variantsData.length; j++) {
+				var v2 = variantsData[j];
+				if (v2.image_url && v2.option_value_ids && v2.option_value_ids[changedOptId] == selectedOpts[changedOptId]) {
+					return v2.image_url;
+				}
+			}
+		}
+		return null;
+	}
 
 	if (variantsData && variantsData.length > 0) {
 		$('.option-select').on('change', function() {
+			var changedOptId = $(this).data('option-id');
 			var selectedOpts = {};
 			$('.option-select').each(function() {
 				var optId = $(this).data('option-id');
@@ -845,6 +894,20 @@ document.addEventListener('DOMContentLoaded', function() {
 						break;
 					}
 				}
+			}
+
+			// Switch PDP main image based on matched variant or partial selection (Color / Model)
+			if (match && match.image_url) {
+				switchPdpImage(null, match.image_url);
+			} else if (selectedCount > 0) {
+				var partialImg = findVariantImageForSelection(selectedOpts, changedOptId);
+				if (partialImg) {
+					switchPdpImage(null, partialImg);
+				} else {
+					switchPdpImage(document.querySelector('.pdp-thumb-item'), defaultMainImgUrl);
+				}
+			} else {
+				switchPdpImage(document.querySelector('.pdp-thumb-item'), defaultMainImgUrl);
 			}
 
 			var vIdInput = document.getElementById('selectedVariantId');
@@ -997,19 +1060,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (addBtn) addBtn.disabled = false;
 				if (buyBtn) buyBtn.disabled = false;
 				if (qtyInput) qtyInput.removeAttribute('max');
-			}
-		});
-
-		// Auto-select first value for swatches and buttons on page load
-		$('.pdp-option-group').each(function() {
-			var $firstBtn = $(this).find('.js-pdp-opt-btn').first();
-			if ($firstBtn.length) {
-				$firstBtn.trigger('click');
-			} else {
-				var $firstRadio = $(this).find('.js-pdp-radio-val').first();
-				if ($firstRadio.length) {
-					$firstRadio.prop('checked', true).trigger('change');
-				}
 			}
 		});
 	}

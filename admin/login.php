@@ -49,9 +49,9 @@ $bgUrl = url('assets/images/login-bg.jpg');
   :root {
     --now-primary-grad: linear-gradient(135deg, #f96332 0%, #ff3b30 100%);
     --now-primary-hover: linear-gradient(135deg, #fa7346 0%, #ff4d43 100%);
-    --now-glass-bg: rgba(255, 255, 255, 0.14);
-    --now-glass-border: rgba(255, 255, 255, 0.28);
-    --now-glass-focus: rgba(255, 255, 255, 0.22);
+    --now-glass-bg: rgba(255, 255, 255, 0.06);
+    --now-glass-border: rgba(255, 255, 255, 0.30);
+    --now-glass-focus: rgba(255, 255, 255, 0.12);
   }
 
   html, body {
@@ -265,23 +265,23 @@ $bgUrl = url('assets/images/login-bg.jpg');
     background: var(--now-glass-bg);
     border: 1px solid var(--now-glass-border);
     border-radius: 30px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     padding: 3px 6px;
     transition: all 0.25s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.15);
   }
   .now-pill-group:focus-within {
     background: var(--now-glass-focus);
-    border-color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
   }
 
   .now-pill-icon {
     background: transparent !important;
     border: none !important;
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
     padding-left: 14px;
     padding-right: 6px;
     font-size: 1rem;
@@ -295,14 +295,22 @@ $bgUrl = url('assets/images/login-bg.jpg');
     font-weight: 400;
     padding: 11px 10px;
     box-shadow: none !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   }
   .now-pill-input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.75);
     font-weight: 300;
     letter-spacing: 0.3px;
   }
   .now-pill-input:focus {
     color: #ffffff !important;
+  }
+  .now-pill-input:-webkit-autofill,
+  .now-pill-input:-webkit-autofill:hover,
+  .now-pill-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s;
+    box-shadow: none !important;
   }
 
   /* Password Toggle Button inside pill */

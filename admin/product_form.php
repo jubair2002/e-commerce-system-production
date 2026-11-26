@@ -1319,7 +1319,7 @@ include __DIR__ . '/includes/header.php';
   </div>
 </form>
 
-<script src="<?= e(url('assets/js/admin-variants.js')) ?>"></script>
+<script src="<?= e(url('assets/js/admin-variants.js')) ?>?v=<?= @filemtime(__DIR__ . '/../assets/js/admin-variants.js') ?: time() ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const initialOptions  = <?= json_encode($existingOptions, JSON_UNESCAPED_UNICODE) ?>;
