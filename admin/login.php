@@ -37,111 +37,64 @@ $siteName = setting('site_name', APP_NAME);
 <title>Login · <?= e($siteName) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap/bootstrap.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>">
-<style>
-  body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
-  .auth-wrapper {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0B1437 radial-gradient(circle at 80% 20%, rgba(67, 24, 255, 0.25) 0%, rgba(11, 20, 55, 0) 65%);
-    padding: 1.5rem;
-    position: relative;
-  }
-  .auth-card {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 440px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0px 25px 60px rgba(11, 20, 55, 0.45);
-  }
-  .auth-brand .brand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
-    color: #ffffff;
-    font-size: 1.75rem;
-    margin-bottom: 0.85rem;
-    box-shadow: 0 10px 25px rgba(67, 24, 255, 0.35);
-  }
-  .btn-admin-submit {
-    background: #4318FF;
-    border: none;
-    color: #fff;
-    padding: 0.75rem 1.25rem;
-    font-weight: 700;
-    border-radius: 14px;
-    box-shadow: 0 10px 24px rgba(67, 24, 255, 0.3);
-    transition: all 0.2s ease;
-  }
-  .btn-admin-submit:hover {
-    background: #3311DB;
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 14px 28px rgba(67, 24, 255, 0.4);
-  }
-</style>
 </head>
-<body>
-<div class="auth-wrapper">
-  <div class="card auth-card">
-    <div class="card-body">
-
-      <div class="auth-brand">
-        <div class="brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
-        <h4 class="mb-1 fw-bold text-dark"><?= e($siteName) ?></h4>
-        <p class="text-muted small mb-0">Admin Management Portal</p>
-      </div>
+<body class="login-page bg-body-secondary">
+<div class="login-box">
+  <div class="login-logo mb-3">
+    <a href="<?= e(url()) ?>" class="text-decoration-none text-body">
+      <b><?= e($siteName) ?></b> ADMIN
+    </a>
+  </div>
+  <!-- /.login-logo -->
+  <div class="card card-outline card-primary shadow-sm">
+    <div class="card-body login-card-body p-4">
+      <p class="login-box-msg text-secondary">Sign in to start your session</p>
 
       <?php foreach (get_flashes() as $f): ?>
-        <div class="alert alert-<?= e($f['type']) ?> py-2"><?= e($f['message']) ?></div>
+        <div class="alert alert-<?= e($f['type']) ?> py-2 small"><?= e($f['message']) ?></div>
       <?php endforeach; ?>
 
       <?php foreach ($errors as $err): ?>
-        <div class="alert alert-danger py-2"><?= e($err) ?></div>
+        <div class="alert alert-danger py-2 small"><?= e($err) ?></div>
       <?php endforeach; ?>
 
       <form method="post" autocomplete="off" novalidate>
         <?= csrf_field() ?>
         <div class="mb-3">
-          <label class="form-label fw-medium text-secondary small">Email address</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
             <input type="email" name="email" class="form-control"
-                   value="<?= old('email') ?>" required autofocus placeholder="admin@store.com">
+                   value="<?= old('email') ?>" required autofocus placeholder="Email">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
           </div>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-medium text-secondary small">Password</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-key"></i></span>
-            <input type="password" name="password" id="adminPasswordInput" class="form-control" required placeholder="••••••••">
+            <input type="password" name="password" id="adminPasswordInput" class="form-control" required placeholder="Password">
             <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" aria-label="Toggle password visibility" title="Toggle password visibility">
               <i class="bi bi-eye" id="togglePasswordIcon"></i>
             </button>
           </div>
         </div>
-        <button class="btn btn-admin-submit w-100 mt-2">
-          <i class="bi bi-box-arrow-in-right me-1"></i> Sign in
-        </button>
+        <div class="row align-items-center mb-3">
+          <div class="col-8">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="rememberMe">
+              <label class="form-check-label small" for="rememberMe">Remember Me</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <button type="submit" class="btn btn-primary w-100">
+              Sign In
+            </button>
+          </div>
+        </div>
       </form>
 
-      <div class="text-center mt-3 pt-3 border-top">
+      <div class="text-center pt-3 border-top">
         <a href="<?= e(url()) ?>" class="text-muted small text-decoration-none">
           <i class="bi bi-arrow-left me-1"></i> Return to Storefront
         </a>

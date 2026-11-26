@@ -233,184 +233,20 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <style>
-/* ==========================================================
-   Dashboard Horizon UI Geometric Styling & Alignment
-   ========================================================== */
-
-/* Welcome Banner */
-.dash-welcome-banner {
-  background: var(--horizon-brand-gradient);
-  border-radius: 20px;
-  padding: 1.75rem 2rem;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0px 18px 40px rgba(67, 24, 255, 0.25);
-  margin-bottom: 1.75rem;
-}
-.dash-welcome-banner::after {
-  content: '';
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
-  pointer-events: none;
-}
-.dash-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 4px 12px;
-  border-radius: 30px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #ffffff;
-}
-.dash-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #05CD99;
-  box-shadow: 0 0 0 3px rgba(5, 205, 153, 0.45);
-}
-
-/* Card Foundation */
-.dash-card {
-  background: var(--horizon-card-bg);
-  border: none;
-  border-radius: 20px;
-  box-shadow: var(--horizon-shadow-card);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-[data-bs-theme="dark"] .dash-card {
-  background: #111C44;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-.dash-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 22px 45px rgba(112, 144, 176, 0.18);
-}
-[data-bs-theme="dark"] .dash-card:hover {
-  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.35);
-}
-
-/* Primary KPI Cards (Horizon UI Stat Cards) */
-.dash-kpi-card {
-  height: 154px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.dash-kpi-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.dash-kpi-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--horizon-text-muted);
-  margin-bottom: 4px;
-}
-.dash-kpi-value {
-  font-size: 1.7rem;
-  font-weight: 800;
-  color: var(--horizon-text-title);
-  line-height: 1.15;
-  margin: 0;
-}
-.dash-kpi-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  flex-shrink: 0;
-}
-.dash-kpi-footer {
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--horizon-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  line-height: 1.3;
-}
-[data-bs-theme="dark"] .dash-kpi-footer {
-  border-top-color: rgba(255, 255, 255, 0.06);
-}
-
-/* Secondary Compact KPI Cards */
-.dash-sub-card {
-  height: 88px;
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.dash-sub-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-/* Matched Card Headers */
-.dash-card-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--horizon-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: transparent;
-}
-[data-bs-theme="dark"] .dash-card-header {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
-.dash-card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--horizon-text-title);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Equalized Pair Heights */
+/* Equalized Pair Heights for AdminLTE Dashboard */
 .dash-upper-card {
-  height: 410px;
+  height: 390px;
   display: flex;
   flex-direction: column;
 }
 .dash-upper-body {
   flex: 1 1 auto;
-  padding: 1.5rem;
+  padding: 1rem;
   position: relative;
   overflow: hidden;
 }
 .dash-lower-card {
-  height: 450px;
+  height: 420px;
   display: flex;
   flex-direction: column;
 }
@@ -421,334 +257,246 @@ include __DIR__ . '/includes/header.php';
   overflow-x: hidden !important;
   position: relative;
 }
-
-/* Custom sleek scrollbar for dashboard scrollable bodies */
 .dash-lower-body::-webkit-scrollbar {
   width: 5px;
 }
-.dash-lower-body::-webkit-scrollbar-track {
-  background: transparent;
-}
 .dash-lower-body::-webkit-scrollbar-thumb {
-  background: rgba(163, 174, 208, 0.3);
-  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
 }
-.dash-lower-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 174, 208, 0.5);
+[data-bs-theme="dark"] .dash-lower-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Store Activity Feed Styling */
 .dash-activity-timeline {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 .dash-activity-item {
-  border: 1px solid var(--horizon-border);
-  background: var(--horizon-card-bg);
-  border-radius: 14px;
-  padding: 0.75rem 0.85rem;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 0.5rem;
-}
-[data-bs-theme="dark"] .dash-activity-item {
-  background: #1B254B;
-  border-color: rgba(255, 255, 255, 0.06);
-}
-.dash-activity-item:last-child {
-  margin-bottom: 0;
+  border: 1px solid var(--lte-border-color);
+  background: var(--lte-card-bg);
+  border-radius: 0.25rem;
+  padding: 0.55rem 0.75rem;
+  transition: background 0.15s ease;
 }
 .dash-activity-item:hover {
-  background: var(--horizon-brand-light);
-  border-color: var(--horizon-brand);
-  transform: translateX(2px);
-  box-shadow: 0 4px 12px rgba(67, 24, 255, 0.08);
+  background: rgba(13, 110, 253, 0.05);
 }
 .dash-activity-icon-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 0.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 .dash-activity-badge {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 20px;
-  letter-spacing: 0.02em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   display: inline-block;
   line-height: 1.2;
 }
 .dash-activity-title {
-  color: var(--horizon-text-body);
   font-weight: 600;
   font-size: 12.5px;
-  line-height: 1.4;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-[data-bs-theme="dark"] .dash-activity-title {
-  color: #FFFFFF;
+  line-height: 1.35;
+  color: var(--lte-text-body);
 }
 .dash-activity-meta {
-  background: var(--horizon-bg);
-  border: 1px solid var(--horizon-border);
-  border-radius: 6px;
-  padding: 3px 8px;
-  color: var(--horizon-text-muted);
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--lte-border-color);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--lte-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10.5px !important;
-  word-break: break-word;
-  overflow-wrap: anywhere;
 }
 [data-bs-theme="dark"] .dash-activity-meta {
-  background: #111C44;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-/* Table and Timeline Elements */
 .dash-avatar-circle {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--horizon-brand-gradient);
+  background: #0d6efd;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(67, 24, 255, 0.25);
-}
-.status-pill {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 30px;
-  letter-spacing: 0.02em;
-  display: inline-block;
-}
-.chart-toggle-pill {
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 30px;
-  border: 1px solid var(--horizon-border);
-  background: var(--horizon-bg);
-  color: var(--horizon-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-[data-bs-theme="dark"] .chart-toggle-pill {
-  background: #1B254B;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-.chart-toggle-pill.active {
-  background: var(--horizon-brand);
-  color: #ffffff;
-  border-color: var(--horizon-brand);
-  box-shadow: 0 4px 12px rgba(67, 24, 255, 0.35);
 }
 </style>
 
-<!-- 1. Hero Welcome & Shortcuts -->
-<div class="dash-welcome-banner d-flex flex-wrap align-items-center justify-content-between gap-3">
-  <div>
-    <div class="d-flex align-items-center gap-2 mb-2">
-      <span class="dash-live-badge">
-        <span class="dash-live-dot"></span> Live Store Operations
-      </span>
-      <span class="text-white-50 small">&middot; <?= date('l, F j, Y') ?></span>
+<!-- 1. Header Welcome Callout -->
+<div class="card card-outline card-primary mb-3">
+  <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h4 class="mb-1 fw-bold fs-5">Welcome back, <?= e(current_user()['name'] ?? ($_SESSION['user_name'] ?? 'Admin')) ?>!</h4>
+      <p class="text-muted small mb-0">Operational summary &amp; performance overview for <?= date('l, F j, Y') ?>.</p>
     </div>
-    <h2 class="h3 fw-bold mb-1 text-white">Welcome back, <?= e(current_user()['name'] ?? ($_SESSION['user_name'] ?? 'Admin')) ?> 👋</h2>
-    <p class="text-white-50 small mb-0">Here is your executive store performance overview and operational health.</p>
-  </div>
-  <div class="d-flex flex-wrap align-items-center gap-2">
-    <a href="<?= e(admin_url('product_form.php')) ?>" class="btn btn-light px-3 shadow-sm rounded-pill fw-bold" style="color: #4318FF;">
-      <i class="bi bi-plus-lg me-1"></i> Add Product
-    </a>
-    <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-light px-3 shadow-sm rounded-pill text-dark fw-bold">
-      <i class="bi bi-receipt me-1"></i> Orders
-    </a>
-    <a href="<?= e(url()) ?>" target="_blank" class="btn btn-outline-light px-3 rounded-pill fw-bold">
-      <i class="bi bi-box-arrow-up-right me-1"></i> Storefront
-    </a>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <a href="<?= e(admin_url('product_form.php')) ?>" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> Add Product
+      </a>
+      <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-receipt me-1"></i> Orders
+      </a>
+      <a href="<?= e(url()) ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-box-arrow-up-right me-1"></i> View Store
+      </a>
+    </div>
   </div>
 </div>
 
-<!-- 2. Row 1: Primary 4 KPI Cards (Uniform Sizes & Heights) -->
+<!-- 2. Row 1: AdminLTE Iconic Small Boxes -->
 <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-3">
-  <!-- Card 1: Total Revenue -->
+  <!-- Small Box 1: Revenue -->
   <div class="col">
-    <div class="dash-card dash-kpi-card">
-      <div class="dash-kpi-header">
-        <div>
-          <div class="dash-kpi-title">Total Revenue</div>
-          <h3 class="dash-kpi-value"><?= e(price($totalRevenue)) ?></h3>
-        </div>
-        <div class="dash-kpi-icon" style="background: rgba(5, 205, 153, 0.12); color: #05CD99;">
-          <i class="bi bi-cash-stack"></i>
-        </div>
+    <div class="small-box bg-success">
+      <div class="inner">
+        <h3><?= e(price($totalRevenue)) ?></h3>
+        <p>Total Revenue</p>
       </div>
-      <div class="dash-kpi-footer">
-        <span class="text-muted">Today's Sales</span>
-        <span class="fw-bold text-success">+<?= e(price($todayRevenue)) ?></span>
+      <div class="small-box-icon">
+        <i class="bi bi-currency-dollar"></i>
       </div>
+      <a href="<?= e(admin_url('orders.php')) ?>" class="small-box-footer">
+        Today: +<?= e(price($todayRevenue)) ?> <i class="bi bi-arrow-right-circle ms-1"></i>
+      </a>
     </div>
   </div>
 
-  <!-- Card 2: Total Orders -->
+  <!-- Small Box 2: Total Orders -->
   <div class="col">
-    <a href="<?= e(admin_url('orders.php')) ?>" class="text-decoration-none">
-      <div class="dash-card dash-kpi-card">
-        <div class="dash-kpi-header">
-          <div>
-            <div class="dash-kpi-title">Total Orders</div>
-            <h3 class="dash-kpi-value"><?= number_format($totalOrders) ?></h3>
-          </div>
-          <div class="dash-kpi-icon" style="background: rgba(67, 24, 255, 0.12); color: #4318FF;">
-            <i class="bi bi-bag-check"></i>
-          </div>
-        </div>
-        <div class="dash-kpi-footer">
-          <span class="text-muted">Pending Orders</span>
-          <span class="badge rounded-pill bg-warning text-dark px-2 py-1"><?= number_format($pendingOrders) ?> pending</span>
-        </div>
+    <div class="small-box bg-primary">
+      <div class="inner">
+        <h3><?= number_format($totalOrders) ?></h3>
+        <p>Total Orders</p>
       </div>
-    </a>
+      <div class="small-box-icon">
+        <i class="bi bi-receipt"></i>
+      </div>
+      <a href="<?= e(admin_url('orders.php')) ?>" class="small-box-footer">
+        <?= number_format($pendingOrders) ?> Pending <i class="bi bi-arrow-right-circle ms-1"></i>
+      </a>
+    </div>
   </div>
 
-  <!-- Card 3: Active Catalog -->
+  <!-- Small Box 3: Active Catalog -->
   <div class="col">
-    <a href="<?= e(admin_url('products.php')) ?>" class="text-decoration-none">
-      <div class="dash-card dash-kpi-card">
-        <div class="dash-kpi-header">
-          <div>
-            <div class="dash-kpi-title">Active Catalog</div>
-            <h3 class="dash-kpi-value"><?= number_format($activeProducts) ?></h3>
-          </div>
-          <div class="dash-kpi-icon" style="background: rgba(57, 101, 255, 0.12); color: #3965FF;">
-            <i class="bi bi-box-seam"></i>
-          </div>
-        </div>
-        <div class="dash-kpi-footer">
-          <span class="text-muted">In Categories</span>
-          <span class="fw-semibold text-secondary"><?= number_format($totalCategories) ?> categories</span>
-        </div>
+    <div class="small-box bg-info">
+      <div class="inner">
+        <h3><?= number_format($activeProducts) ?></h3>
+        <p>Active Products</p>
       </div>
-    </a>
+      <div class="small-box-icon">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <a href="<?= e(admin_url('products.php')) ?>" class="small-box-footer">
+        <?= number_format($totalCategories) ?> Categories <i class="bi bi-arrow-right-circle ms-1"></i>
+      </a>
+    </div>
   </div>
 
-  <!-- Card 4: Total Customers -->
+  <!-- Small Box 4: Total Customers -->
   <div class="col">
-    <a href="<?= e(admin_url('customers.php')) ?>" class="text-decoration-none">
-      <div class="dash-card dash-kpi-card">
-        <div class="dash-kpi-header">
-          <div>
-            <div class="dash-kpi-title">Total Customers</div>
-            <h3 class="dash-kpi-value"><?= number_format($totalCustomers ?: 1) ?></h3>
-          </div>
-          <div class="dash-kpi-icon" style="background: rgba(117, 81, 255, 0.12); color: #7551FF;">
-            <i class="bi bi-people"></i>
-          </div>
-        </div>
-        <div class="dash-kpi-footer">
-          <span class="text-muted">Recent Buyers</span>
-          <span class="badge rounded-pill bg-light text-dark border px-2 py-1">+<?= number_format($newCustomers7d) ?> (7 days)</span>
-        </div>
+    <div class="small-box bg-warning">
+      <div class="inner">
+        <h3><?= number_format($totalCustomers ?: 1) ?></h3>
+        <p>Registered Customers</p>
       </div>
-    </a>
+      <div class="small-box-icon">
+        <i class="bi bi-people"></i>
+      </div>
+      <a href="<?= e(admin_url('customers.php')) ?>" class="small-box-footer">
+        +<?= number_format($newCustomers7d) ?> New (7d) <i class="bi bi-arrow-right-circle ms-1"></i>
+      </a>
+    </div>
   </div>
 </div>
 
-<!-- 3. Row 2: Secondary 4 Metric Cards (Consistent Height & 4-Column Grid) -->
-<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-4">
-  <!-- Sub Card 1: Inventory Valuation -->
+<!-- 3. Row 2: AdminLTE Info Boxes -->
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 mb-3">
+  <!-- Info Box 1: Inventory Valuation -->
   <div class="col">
-    <a href="<?= e(admin_url('inventory.php')) ?>" class="text-decoration-none text-dark">
-      <div class="dash-card dash-sub-card">
-        <div>
-          <div class="dash-kpi-title">Inventory Value</div>
-          <div class="fw-bold fs-6 text-dark"><?= e(price($inventoryValue)) ?></div>
-        </div>
-        <div class="dash-sub-icon bg-light text-primary border">
-          <i class="bi bi-wallet2"></i>
+    <a href="<?= e(admin_url('inventory.php')) ?>" class="text-decoration-none text-body">
+      <div class="info-box">
+        <span class="info-box-icon bg-primary shadow-sm"><i class="bi bi-wallet2"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Inventory Value</span>
+          <span class="info-box-number"><?= e(price($inventoryValue)) ?></span>
         </div>
       </div>
     </a>
   </div>
 
-  <!-- Sub Card 2: Stock Health -->
+  <!-- Info Box 2: Stock Health -->
   <div class="col">
-    <a href="<?= e(admin_url('inventory.php?filter=low')) ?>" class="text-decoration-none text-dark">
-      <div class="dash-card dash-sub-card">
-        <div>
-          <div class="dash-kpi-title">Low Stock Alert</div>
-          <div class="fw-bold fs-6 text-dark">
-            <span class="<?= count($lowStock) > 0 ? 'text-danger' : 'text-success' ?>"><?= count($lowStock) ?> items</span>
-            <span class="text-muted small fw-normal">(<?= number_format($outOfStock) ?> out)</span>
-          </div>
-        </div>
-        <div class="dash-sub-icon <?= count($lowStock) > 0 ? 'bg-danger bg-opacity-10 text-danger border border-danger-subtle' : 'bg-light text-muted border' ?>">
+    <a href="<?= e(admin_url('inventory.php?filter=low')) ?>" class="text-decoration-none text-body">
+      <div class="info-box">
+        <span class="info-box-icon <?= count($lowStock) > 0 ? 'bg-danger' : 'bg-success' ?> shadow-sm">
           <i class="bi bi-exclamation-triangle"></i>
+        </span>
+        <div class="info-box-content">
+          <span class="info-box-text">Low Stock Alert</span>
+          <span class="info-box-number">
+            <span class="<?= count($lowStock) > 0 ? 'text-danger' : 'text-success' ?>"><?= count($lowStock) ?> items</span>
+            <small class="text-muted fw-normal">(<?= number_format($outOfStock) ?> out)</small>
+          </span>
         </div>
       </div>
     </a>
   </div>
 
-  <!-- Sub Card 3: Newsletter Subscribers -->
+  <!-- Info Box 3: Newsletter Subscribers -->
   <div class="col">
-    <a href="<?= e(admin_url('subscribers.php')) ?>" class="text-decoration-none text-dark">
-      <div class="dash-card dash-sub-card">
-        <div>
-          <div class="dash-kpi-title">Subscribers</div>
-          <div class="fw-bold fs-6 text-dark"><?= number_format($totalSubscribers) ?> audience</div>
-        </div>
-        <div class="dash-sub-icon bg-light text-success border">
-          <i class="bi bi-envelope-check"></i>
+    <a href="<?= e(admin_url('subscribers.php')) ?>" class="text-decoration-none text-body">
+      <div class="info-box">
+        <span class="info-box-icon bg-success shadow-sm"><i class="bi bi-envelope-check"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Subscribers</span>
+          <span class="info-box-number"><?= number_format($totalSubscribers) ?> audience</span>
         </div>
       </div>
     </a>
   </div>
 
-  <!-- Sub Card 4: Customer Retention -->
+  <!-- Info Box 4: Customer Retention -->
   <div class="col">
-    <a href="<?= e(admin_url('customers.php?orders=has_orders')) ?>" class="text-decoration-none text-dark">
-      <div class="dash-card dash-sub-card">
-        <div>
-          <div class="dash-kpi-title">Repeat Buyers</div>
-          <div class="fw-bold fs-6 text-dark">
-            <?= $totalCustomers > 0 ? round(($repeatCustomers / $totalCustomers) * 100, 1) : 0 ?>% retention
-          </div>
-        </div>
-        <div class="dash-sub-icon bg-light text-info border">
-          <i class="bi bi-arrow-repeat"></i>
+    <a href="<?= e(admin_url('customers.php?orders=has_orders')) ?>" class="text-decoration-none text-body">
+      <div class="info-box">
+        <span class="info-box-icon bg-secondary shadow-sm"><i class="bi bi-arrow-repeat"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Repeat Buyers</span>
+          <span class="info-box-number"><?= $totalCustomers > 0 ? round(($repeatCustomers / $totalCustomers) * 100, 1) : 0 ?>% retention</span>
         </div>
       </div>
     </a>
   </div>
 </div>
 
-<!-- 4. Row 3: Upper Matched Pair (Chart & Low Stock Alerts: Exact 410px Height) -->
-<div class="row g-4 mb-4">
-  <!-- Left: Performance Analytics Chart (Height: 410px) -->
+<!-- 4. Row 3: Performance Chart & Stock Watchlist -->
+<div class="row g-3 mb-3">
+  <!-- Left: Performance Analytics Chart -->
   <div class="col-xl-8">
-    <div class="dash-card dash-upper-card">
-      <div class="dash-card-header">
-        <div>
-          <h5 class="dash-card-title">
-            <i class="bi bi-graph-up text-primary"></i> Store Performance (Last 7 Days)
-          </h5>
-          <span class="text-muted small">Daily revenue volume and customer orders trend.</span>
-        </div>
-        <div class="d-flex align-items-center gap-1">
-          <button type="button" class="chart-toggle-pill active" id="btnChartRev">Revenue ($)</button>
-          <button type="button" class="chart-toggle-pill" id="btnChartOrders">Orders (#)</button>
+    <div class="card card-outline card-primary dash-upper-card">
+      <div class="card-header">
+        <h5 class="card-title">
+          <i class="bi bi-graph-up text-primary"></i> Store Performance (Last 7 Days)
+        </h5>
+        <div class="card-tools btn-group btn-group-sm">
+          <button type="button" class="btn btn-primary active" id="btnChartRev">Revenue ($)</button>
+          <button type="button" class="btn btn-outline-primary" id="btnChartOrders">Orders (#)</button>
         </div>
       </div>
       <div class="dash-upper-body">
@@ -759,32 +507,34 @@ include __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- Right: Low Stock Alert Watch (Matched Height: 410px) -->
+  <!-- Right: Stock Watchlist -->
   <div class="col-xl-4">
-    <div class="dash-card dash-upper-card">
-      <div class="dash-card-header">
-        <h5 class="dash-card-title">
+    <div class="card card-outline card-warning dash-upper-card">
+      <div class="card-header">
+        <h5 class="card-title">
           <i class="bi bi-exclamation-triangle text-warning"></i> Stock Watchlist
         </h5>
-        <a href="<?= e(admin_url('inventory.php?filter=low')) ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-          Inventory
-        </a>
+        <div class="card-tools">
+          <a href="<?= e(admin_url('inventory.php?filter=low')) ?>" class="btn btn-xs btn-outline-secondary btn-sm">
+            Inventory
+          </a>
+        </div>
       </div>
       <div class="dash-upper-body" style="overflow-y: auto;">
         <?php if (!empty($lowStock)): ?>
           <div class="d-flex flex-column gap-2">
             <?php foreach ($lowStock as $ls): ?>
-              <div class="p-2 rounded-3 border bg-light bg-opacity-50 d-flex align-items-center gap-2">
+              <div class="p-2 rounded border bg-body-tertiary d-flex align-items-center gap-2">
                 <img src="<?= e(product_image_url($ls['image'], 'thumbnail', (int)$ls['id'])) ?>"
-                     class="rounded border" width="38" height="38" style="object-fit: cover;" alt="">
+                     class="rounded border" width="34" height="34" style="object-fit: cover;" alt="">
                 <div class="flex-grow-1 min-w-0">
-                  <a href="<?= e(admin_url('product_form.php?id=' . (int)$ls['id'])) ?>" class="fw-semibold text-dark text-truncate d-block small text-decoration-none">
+                  <a href="<?= e(admin_url('product_form.php?id=' . (int)$ls['id'])) ?>" class="fw-semibold text-body text-truncate d-block small text-decoration-none">
                     <?= e($ls['name']) ?>
                   </a>
                   <span class="text-muted" style="font-size: 11px;">SKU: <?= e($ls['sku'] ?: '-') ?></span>
                 </div>
                 <div class="text-end">
-                  <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle fw-bold" style="font-size: 11px;">
+                  <span class="badge bg-danger">
                     <?= (int)$ls['stock'] ?> left
                   </span>
                 </div>
@@ -794,7 +544,7 @@ include __DIR__ . '/includes/header.php';
         <?php else: ?>
           <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center py-4 text-muted">
             <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
-            <span class="small fw-semibold text-dark">Stock Levels Healthy</span>
+            <span class="small fw-semibold text-body">Stock Levels Healthy</span>
             <span class="small text-muted mt-1">All products currently satisfy minimum inventory thresholds.</span>
           </div>
         <?php endif; ?>
@@ -803,21 +553,20 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- 5. Row 4: Lower Matched Pair (Recent Orders & Activity Stream: Exact 450px Height) -->
-<div class="row g-4">
-  <!-- Left: Recent Orders Table (Height: 450px) -->
+<!-- 5. Row 4: Recent Orders & Store Activity Stream -->
+<div class="row g-3">
+  <!-- Left: Recent Orders Table -->
   <div class="col-xl-8">
-    <div class="dash-card dash-lower-card">
-      <div class="dash-card-header">
-        <div>
-          <h5 class="dash-card-title">
-            <i class="bi bi-receipt text-primary"></i> Recent Customer Orders
-          </h5>
-          <span class="text-muted small">Latest purchases processed on the storefront.</span>
+    <div class="card card-outline card-info dash-lower-card">
+      <div class="card-header">
+        <h5 class="card-title">
+          <i class="bi bi-receipt text-info"></i> Recent Customer Orders
+        </h5>
+        <div class="card-tools">
+          <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-outline-secondary btn-sm">
+            View All
+          </a>
         </div>
-        <a href="<?= e(admin_url('orders.php')) ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-          View All
-        </a>
       </div>
       <div class="dash-lower-body">
         <div class="table-responsive">
@@ -863,14 +612,14 @@ include __DIR__ . '/includes/header.php';
                     <td>
                       <div class="d-flex align-items-center gap-2">
                         <span class="dash-avatar-circle"><?= e($initials) ?></span>
-                        <span class="fw-medium text-dark small text-truncate" style="max-width: 140px;"><?= e($cName) ?></span>
+                        <span class="fw-medium text-body small text-truncate" style="max-width: 140px;"><?= e($cName) ?></span>
                       </div>
                     </td>
-                    <td class="fw-bold text-dark small">
+                    <td class="fw-bold text-body small">
                       <?= e(price((float)$ro['total'])) ?>
                     </td>
                     <td>
-                      <span class="status-pill <?= e($statusBadges[$ro['status']] ?? 'bg-light text-dark border') ?>">
+                      <span class="badge <?= e($statusBadges[$ro['status']] ?? 'bg-secondary text-white') ?>">
                         <?= e(ucfirst($ro['status'])) ?>
                       </span>
                     </td>
@@ -878,7 +627,7 @@ include __DIR__ . '/includes/header.php';
                       <?= date('M j, g:i a', strtotime($ro['created_at'])) ?>
                     </td>
                     <td class="text-end pe-3">
-                      <a href="<?= e(admin_url('order_view.php?id=' . (int)$ro['id'])) ?>" class="btn btn-sm btn-light border" title="View Order Details">
+                      <a href="<?= e(admin_url('order_view.php?id=' . (int)$ro['id'])) ?>" class="btn btn-sm btn-outline-secondary" title="View Order Details">
                         <i class="bi bi-chevron-right"></i>
                       </a>
                     </td>
@@ -892,30 +641,32 @@ include __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- Right: Recent Store Activity (Matched Height: 450px) -->
+  <!-- Right: Recent Store Activity -->
   <div class="col-xl-4">
-    <div class="dash-card dash-lower-card">
-      <div class="dash-card-header">
-        <h5 class="dash-card-title">
-          <i class="bi bi-clock-history text-primary"></i> Store Activity Feed
+    <div class="card card-outline card-secondary dash-lower-card">
+      <div class="card-header">
+        <h5 class="card-title">
+          <i class="bi bi-clock-history text-secondary"></i> Store Activity Feed
         </h5>
-        <a href="<?= e(admin_url('activity.php')) ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;">
-          All Logs
-        </a>
+        <div class="card-tools">
+          <a href="<?= e(admin_url('activity.php')) ?>" class="btn btn-outline-secondary btn-sm">
+            All Logs
+          </a>
+        </div>
       </div>
       <div class="dash-lower-body">
         <?php if (!empty($recentActivity)): ?>
-          <div class="dash-activity-timeline p-3">
+          <div class="dash-activity-timeline p-2">
             <?php foreach ($recentActivity as $act): ?>
               <?php $p = dash_format_activity($act); ?>
-              <div class="dash-activity-item d-flex align-items-start gap-2.5">
+              <div class="dash-activity-item d-flex align-items-start gap-2">
                 <div class="dash-activity-icon-box" style="background-color: <?= $p['badgeBg'] ?>; color: <?= $p['badgeColor'] ?>;">
                   <i class="bi <?= $p['icon'] ?>"></i>
                 </div>
                 <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere; word-break: break-word;">
                   <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
-                    <div class="d-flex align-items-center gap-1.5" style="min-width: 0;">
-                      <span class="fw-bold text-dark text-truncate" style="font-size: 12.5px;"><?= e($p['user']) ?></span>
+                    <div class="d-flex align-items-center gap-1" style="min-width: 0;">
+                      <span class="fw-bold text-body text-truncate" style="font-size: 12px;"><?= e($p['user']) ?></span>
                       <span class="dash-activity-badge text-truncate" style="background-color: <?= $p['badgeBg'] ?>; color: <?= $p['badgeColor'] ?>;">
                         <?= e($p['actionLabel']) ?>
                       </span>
@@ -928,7 +679,7 @@ include __DIR__ . '/includes/header.php';
                     <?= e($p['title']) ?>
                   </div>
                   <?php if (!empty($p['details'])): ?>
-                    <div class="dash-activity-meta mt-1.5" title="<?= e($p['details']) ?>">
+                    <div class="dash-activity-meta mt-1" title="<?= e($p['details']) ?>">
                       <i class="bi bi-sliders me-1 opacity-75"></i><?= e($p['details']) ?>
                     </div>
                   <?php endif; ?>
@@ -965,16 +716,16 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Revenue ($)',
                 data: revData,
-                borderColor: '#4318FF',
-                backgroundColor: 'rgba(67, 24, 255, 0.08)',
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.08)',
                 fill: true,
-                tension: 0.35,
-                borderWidth: 2.5,
-                pointBackgroundColor: '#4318FF',
+                tension: 0.3,
+                borderWidth: 2,
+                pointBackgroundColor: '#0d6efd',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
+                pointBorderWidth: 1.5,
+                pointRadius: 3.5,
+                pointHoverRadius: 5.5
             }]
         },
         options: {
@@ -983,9 +734,8 @@ document.addEventListener('DOMContentLoaded', function () {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#111C44',
-                    padding: 10,
-                    cornerRadius: 8,
+                    padding: 8,
+                    cornerRadius: 4,
                     callbacks: {
                         label: function(context) {
                             return (currentMode === 'revenue' ? '$' : '') + context.parsed.y.toLocaleString();
@@ -996,13 +746,13 @@ document.addEventListener('DOMContentLoaded', function () {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { font: { size: 11, family: 'Plus Jakarta Sans' } }
+                    ticks: { font: { size: 11, family: 'Source Sans 3' } }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(224, 229, 242, 0.6)' },
+                    grid: { color: 'rgba(0, 0, 0, 0.06)' },
                     ticks: {
-                        font: { size: 11, family: 'Plus Jakarta Sans' },
+                        font: { size: 11, family: 'Source Sans 3' },
                         callback: function(val) {
                             return currentMode === 'revenue' ? ('$' + val) : val;
                         }
@@ -1018,25 +768,29 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnRev && btnOrders) {
         btnRev.addEventListener('click', function() {
             currentMode = 'revenue';
-            btnRev.classList.add('active');
-            btnOrders.classList.remove('active');
+            btnRev.classList.add('active', 'btn-primary');
+            btnRev.classList.remove('btn-outline-primary');
+            btnOrders.classList.remove('active', 'btn-primary');
+            btnOrders.classList.add('btn-outline-primary');
             chart.data.datasets[0].label = 'Revenue ($)';
             chart.data.datasets[0].data = revData;
-            chart.data.datasets[0].borderColor = '#4318FF';
-            chart.data.datasets[0].backgroundColor = 'rgba(67, 24, 255, 0.08)';
-            chart.data.datasets[0].pointBackgroundColor = '#4318FF';
+            chart.data.datasets[0].borderColor = '#0d6efd';
+            chart.data.datasets[0].backgroundColor = 'rgba(13, 110, 253, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#0d6efd';
             chart.update();
         });
 
         btnOrders.addEventListener('click', function() {
             currentMode = 'orders';
-            btnOrders.classList.add('active');
-            btnRev.classList.remove('active');
+            btnOrders.classList.add('active', 'btn-primary');
+            btnOrders.classList.remove('btn-outline-primary');
+            btnRev.classList.remove('active', 'btn-primary');
+            btnRev.classList.add('btn-outline-primary');
             chart.data.datasets[0].label = 'Orders (#)';
             chart.data.datasets[0].data = ordersData;
-            chart.data.datasets[0].borderColor = '#05CD99';
-            chart.data.datasets[0].backgroundColor = 'rgba(5, 205, 153, 0.08)';
-            chart.data.datasets[0].pointBackgroundColor = '#05CD99';
+            chart.data.datasets[0].borderColor = '#198754';
+            chart.data.datasets[0].backgroundColor = 'rgba(25, 135, 84, 0.08)';
+            chart.data.datasets[0].pointBackgroundColor = '#198754';
             chart.update();
         });
     }

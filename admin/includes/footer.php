@@ -1,19 +1,22 @@
+      </div><!-- /.container-fluid -->
     </div><!-- /.app-content -->
 
-    <footer class="app-footer">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <small class="text-muted">
-          &copy; <?= date('Y') ?> <?= e(setting('site_name', APP_NAME)) ?>. All rights reserved.
-        </small>
-        <div class="d-flex align-items-center gap-3 small text-muted">
-          <a href="<?= e(admin_url('monitoring.php')) ?>" class="footer-link">System Health</a>
+    <!-- AdminLTE v4 App Footer -->
+    <footer class="app-footer border-top bg-body py-2 px-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+        <div>
+          <strong>Copyright &copy; <?= date('Y') ?> <a href="<?= e(url('')) ?>" target="_blank" class="text-decoration-none"><?= e(setting('site_name', APP_NAME)) ?></a>.</strong>
+          All rights reserved.
+        </div>
+        <div class="d-flex align-items-center gap-3 text-muted">
+          <a href="<?= e(admin_url('monitoring.php')) ?>" class="text-decoration-none text-muted">System Health</a>
           <span>&middot;</span>
-          <a href="<?= e(url('')) ?>" target="_blank" class="footer-link">Storefront</a>
+          <span class="d-none d-sm-inline"><b>AdminLTE</b> 4.0</span>
         </div>
       </div>
     </footer>
   </main><!-- /.app-main -->
-</div><!-- /.app -->
+</div><!-- /.app-wrapper -->
 
 <script src="<?= e(url('assets/vendor/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
 <script src="<?= e(url('assets/vendor/chartjs/chart.umd.min.js')) ?>"></script>
